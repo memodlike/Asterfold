@@ -15,7 +15,7 @@ import { SortableContext, rectSortingStrategy, sortableKeyboardCoordinates } fro
 import { createPortal } from "react-dom";
 import { useCallback, useMemo, useState, type CSSProperties, type MouseEvent } from "react";
 import { FolderPlus, Plus } from "lucide-react";
-import type { AppSettings, Board, Bookmark, ThemeConfig } from "../../domain/models";
+import type { AppSettings, Board, Bookmark } from "../../domain/models";
 import { Button } from "../../components/Button";
 import { useI18n } from "../../i18n";
 import { BoardColumn } from "./BoardColumn";
@@ -26,7 +26,6 @@ interface BoardCanvasProps {
   bookmarks: Bookmark[];
   privacy: boolean;
   selectedIds: Set<string>;
-  theme: ThemeConfig;
   settings: Pick<AppSettings, "workspaceLayoutMode" | "workspaceRows" | "workspaceAlignment">;
   onCreateBoard: () => void;
   onAddBookmark: (board: Board) => void;
@@ -161,7 +160,6 @@ export function BoardCanvas(props: BoardCanvasProps) {
                 bookmarks={bookmarksByBoard.get(board.id) ?? []}
                 privacy={props.privacy}
                 selectedIds={props.selectedIds}
-                theme={props.theme}
                 onAddBookmark={props.onAddBookmark}
                 onEditBoard={props.onEditBoard}
                 onPatchBoard={props.onPatchBoard}

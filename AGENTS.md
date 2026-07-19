@@ -9,10 +9,7 @@ Read these files before changing code:
 1. `AGENTS.md`
 2. `README.md`
 3. `DECISIONS.md`
-4. `IMPLEMENTATION_STATUS.md`
-5. `FINAL_PARITY_REPORT.md`
-6. `SECURITY_REVIEW.md` and `THREAT_MODEL.md`
-7. The report relevant to the task (`QA_REPORT.md`, `PERFORMANCE_REPORT.md`, or `DESIGN_FIDELITY_REPORT.md`)
+4. `SECURITY_REVIEW.md` and `THREAT_MODEL.md`
 
 For installation and release work, also read `INSTALL.md`, `PERMISSIONS.md`, `PRIVACY.md`, and `RELEASE_NOTES.md`.
 
@@ -68,4 +65,3 @@ npm run release
 If Chromium is not auto-detected, install it with Playwright and set `ASTERFOLD_CHROMIUM_PATH` to the executable. An environment that forbids Chromium sockets cannot run extension E2E; report that infrastructure limitation explicitly rather than marking E2E as passed.
 
 The installable result is `release/chrome-unpacked/`. The portable archive is `release/chrome-unpacked.zip`.
-

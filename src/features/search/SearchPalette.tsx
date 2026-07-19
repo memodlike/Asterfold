@@ -19,7 +19,6 @@ interface SearchPaletteProps {
   onMove: (bookmark: Bookmark) => void;
   onCopy: (bookmark: Bookmark) => void;
   onDelete: (bookmark: Bookmark) => void;
-  onQueryCommitted: (query: string) => void;
 }
 
 export function SearchPalette(props: SearchPaletteProps) {
@@ -41,7 +40,6 @@ export function SearchPalette(props: SearchPaletteProps) {
   }, [props.open]);
 
   const close = (): void => {
-    if (query.trim()) props.onQueryCommitted(query.trim());
     props.onClose();
   };
 

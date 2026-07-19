@@ -3,7 +3,7 @@ import { SortableContext, rectSortingStrategy, useSortable } from "@dnd-kit/sort
 import { CSS } from "@dnd-kit/utilities";
 import { Check, Copy, MoveRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { memo, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
-import type { Board, Bookmark, ThemeConfig } from "../../domain/models";
+import type { Board, Bookmark } from "../../domain/models";
 import { useI18n } from "../../i18n";
 import { BookmarkCard } from "../bookmarks/BookmarkCard";
 import type { BoardPlacement } from "./layout";
@@ -14,7 +14,6 @@ interface BoardColumnProps {
   bookmarks: Bookmark[];
   privacy: boolean;
   selectedIds: Set<string>;
-  theme: ThemeConfig;
   onAddBookmark: (board: Board) => void;
   onEditBoard: (board: Board) => void;
   onPatchBoard: (board: Board, patch: Partial<Pick<Board, "bookmarkColumns" | "gridSpan">>) => void;
@@ -102,7 +101,6 @@ export const BoardColumn = memo(function BoardColumn(props: BoardColumnProps) {
             bookmark={bookmark}
             privacy={props.privacy}
             selected={props.selectedIds.has(bookmark.id)}
-            theme={props.theme}
             onOpen={props.onOpenBookmark}
             onEdit={props.onEditBookmark}
             onMove={props.onMoveBookmark}

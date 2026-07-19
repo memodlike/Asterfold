@@ -72,10 +72,9 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
     initialSettingsSeen.current = true;
     performance.mark("asterfold-interactive");
     setSessionPrivacy(workspace.settings.privacyPersist && workspace.settings.privacyEnabled);
-    if (!workspace.settings.onboardingComplete) void updateSettings({ onboardingComplete: true });
     const requestedPage = new URLSearchParams(location.search).get("page");
     if (requestedPage && workspace.pages.some((page) => page.id === requestedPage)) void updateSettings({ activePageId: requestedPage });
-  }, [workspace.pages, workspace.settings.onboardingComplete, workspace.settings.privacyEnabled, workspace.settings.privacyPersist]);
+  }, [workspace.pages, workspace.settings.privacyEnabled, workspace.settings.privacyPersist]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent): void => {
@@ -187,10 +186,6 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
       downloadText("asterfold-selection.json", serializeBackup(backup), "application/json");
     });
   };
-  const saveRecentQuery = (query: string): void => {
-    const next = [query, ...workspace.settings.recentQueries.filter((item) => item !== query)].slice(0, 10);
-    void updateSettings({ recentQueries: next });
-  };
   const openSettings = (section: SettingsSection): void => {
     setSettingsSection(section);
     setSettingsOpen(true);
@@ -204,7 +199,6 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
         bookmarks={bookmarks}
         privacy={privacy}
         selectedIds={selectedIds}
-        theme={workspace.settings.theme}
         settings={workspace.settings}
         onCreateBoard={() => setNameIntent({ kind: "new-board" })}
         onAddBookmark={(board) => setEditor({ bookmark: null, boardId: board.id })}
@@ -250,7 +244,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
       {selectedIds.size > 0 ? <div className="bulk-toolbar"><strong>{selectedIds.size}</strong><Button size="small" onClick={() => setMoveIntent({ kind: "bulk" })}>{t("generic.move")}</Button><Button size="small" icon={<Download size={14} />} onClick={exportSelected}>Export</Button><Button size="small" variant="danger" onClick={bulkDelete}>{t("generic.delete")}</Button><IconButton label={t("generic.close")} onClick={() => setSelectedIds(new Set())}><X size={16} /></IconButton></div> : null}
 
       <Suspense fallback={null}>
-        {searchOpen ? <SearchPalette open privacy={privacy} pages={workspace.pages} boards={workspace.boards} bookmarks={workspace.bookmarks} activePageId={activePage.id} onClose={() => setSearchOpen(false)} onOpen={openBookmark} onReveal={revealBookmark} onEdit={(bookmark) => setEditor({ bookmark, boardId: bookmark.boardId })} onMove={(bookmark) => setMoveIntent({ kind: "bookmark", bookmark })} onCopy={copyUrl} onDelete={deleteBookmark} onQueryCommitted={saveRecentQuery} /> : null}
+        {searchOpen ? <SearchPalette open privacy={privacy} pages={workspace.pages} boards={workspace.boards} bookmarks={workspace.bookmarks} activePageId={activePage.id} onClose={() => setSearchOpen(false)} onOpen={openBookmark} onReveal={revealBookmark} onEdit={(bookmark) => setEditor({ bookmark, boardId: bookmark.boardId })} onMove={(bookmark) => setMoveIntent({ kind: "bookmark", bookmark })} onCopy={copyUrl} onDelete={deleteBookmark} /> : null}
         {editor !== null ? <BookmarkEditor open bookmark={editor.bookmark} initialBoardId={editor.boardId || boards[0]?.id || ""} pages={workspace.pages} boards={workspace.boards} onClose={() => setEditor(null)} onSaved={() => { changeBus.publish("bookmark"); notifySuccess(t("bookmark.saved")); }} onError={notifyError} /> : null}
       </Suspense>
       <NameDialog open={nameIntent !== null} title={t(nameIntent?.kind === "new-page" ? "name.newPage" : nameIntent?.kind === "rename-page" ? "name.renamePage" : nameIntent?.kind === "new-board" ? "name.newBoard" : "name.renameBoard")} label={t("generic.title")} initialValue={nameIntent && "page" in nameIntent ? nameIntent.page.title : nameIntent && "board" in nameIntent ? nameIntent.board.title : ""} submitLabel={t(nameIntent?.kind.startsWith("new-") ? "generic.create" : "generic.save")} onClose={() => setNameIntent(null)} onSubmit={handleNameSubmit} />

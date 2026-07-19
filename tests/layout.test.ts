@@ -28,4 +28,21 @@ describe("board packing", () => {
     expect(result.rowCount).toBe(1);
     expect([...result.placements.values()].every((placement) => placement.row === 0 && placement.span === 3)).toBe(true);
   });
+
+  it("packs one hundred bookmark-bearing boards deterministically without overlaps", () => {
+    const boards = Array.from({ length: 100 }, (_, index) => board(`board-${index}`, (index % 12) + 1, index % 2 as 0 | 1, (index % 3 + 1) * 2));
+    const counts = new Map(boards.map((item, index) => [item.id, 1 + (index % 25)]));
+    const first = packBoards(boards, counts, 2, true);
+    const second = packBoards(boards, counts, 2, true);
+    expect(first).toEqual(second);
+
+    const occupied = new Set<string>();
+    for (const placement of first.placements.values()) {
+      for (let column = placement.column; column < placement.column + placement.span; column += 1) {
+        const key = `${placement.row}:${column}`;
+        expect(occupied.has(key), `overlap at ${key}`).toBe(false);
+        occupied.add(key);
+      }
+    }
+  });
 });

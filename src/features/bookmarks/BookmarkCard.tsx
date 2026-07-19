@@ -2,7 +2,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Copy, ExternalLink, Link2, MoveRight, Pencil, Trash2 } from "lucide-react";
 import { memo, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
-import type { Bookmark, ThemeConfig } from "../../domain/models";
+import type { Bookmark } from "../../domain/models";
 import { faviconUrl } from "../../browser/api";
 import { useI18n } from "../../i18n";
 
@@ -10,7 +10,6 @@ interface BookmarkCardProps {
   bookmark: Bookmark;
   privacy: boolean;
   selected: boolean;
-  theme: ThemeConfig;
   onOpen: (bookmark: Bookmark) => void;
   onEdit: (bookmark: Bookmark) => void;
   onMove: (bookmark: Bookmark) => void;
