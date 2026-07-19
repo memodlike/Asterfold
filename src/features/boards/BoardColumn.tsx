@@ -1,24 +1,27 @@
 import { useDroppable } from "@dnd-kit/core";
-import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableContext, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronDown, ChevronRight, Copy, GripHorizontal, LayoutGrid, List, MoreHorizontal, MoveRight, Pencil, Plus, Trash2 } from "lucide-react";
-import type { MouseEvent } from "react";
+import { Check, Copy, MoveRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { memo, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
 import type { Board, Bookmark, ThemeConfig } from "../../domain/models";
+import { useI18n } from "../../i18n";
 import { BookmarkCard } from "../bookmarks/BookmarkCard";
+import type { BoardPlacement } from "./layout";
 
 interface BoardColumnProps {
   board: Board;
+  placement?: BoardPlacement | undefined;
   bookmarks: Bookmark[];
   privacy: boolean;
   selectedIds: Set<string>;
   theme: ThemeConfig;
   onAddBookmark: (board: Board) => void;
   onEditBoard: (board: Board) => void;
+  onPatchBoard: (board: Board, patch: Partial<Pick<Board, "bookmarkColumns" | "gridSpan">>) => void;
   onMoveBoard: (board: Board) => void;
   onDuplicateBoard: (board: Board) => void;
   onDeleteBoard: (board: Board) => void;
-  onToggleBoard: (board: Board) => void;
-  onToggleLayout: (board: Board) => void;
+  onKeyboardMoveBoard: (board: Board, delta: -1 | 1) => void;
   onOpenBookmark: (bookmark: Bookmark) => void;
   onEditBookmark: (bookmark: Bookmark) => void;
   onMoveBookmark: (bookmark: Bookmark) => void;
@@ -29,59 +32,97 @@ interface BoardColumnProps {
   onSelectBookmark: (bookmark: Bookmark, event: MouseEvent) => void;
 }
 
-export function BoardColumn(props: BoardColumnProps) {
+export const BoardColumn = memo(function BoardColumn(props: BoardColumnProps) {
+  const { t } = useI18n();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const rootRef = useRef<HTMLElement>(null);
   const sortable = useSortable({ id: `board:${props.board.id}`, data: { type: "board", boardId: props.board.id } });
   const drop = useDroppable({ id: `board-drop:${props.board.id}`, data: { type: "board-drop", boardId: props.board.id } });
-  const style = { transform: CSS.Transform.toString(sortable.transform), transition: sortable.transition };
-  const setRefs = (node: HTMLDivElement | null): void => {
+  const columns = props.board.bookmarkColumns === "auto" ? ((props.placement?.span ?? 3) >= 4 || props.bookmarks.length >= 12 ? 2 : 1) : props.board.bookmarkColumns;
+  const style = {
+    transform: CSS.Transform.toString(sortable.transform),
+    transition: sortable.transition,
+    gridColumn: `${props.placement?.column ?? 1} / span ${props.placement?.span ?? 3}`,
+    gridRow: `${(props.placement?.row ?? 0) + 1}`,
+  } as CSSProperties;
+  const setRefs = (node: HTMLElement | null): void => {
+    rootRef.current = node;
     sortable.setNodeRef(node);
-    drop.setNodeRef(node);
   };
+
+  useEffect(() => {
+    const close = (event: PointerEvent): void => {
+      if (!rootRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, []);
+
+  const openContext = (event: MouseEvent | KeyboardEvent): void => {
+    event.preventDefault();
+    setMenuOpen(true);
+  };
+  const action = (callback: () => void): void => {
+    callback();
+    setMenuOpen(false);
+  };
+
   return (
-    <section ref={setRefs} style={style} className={`board ${drop.isOver ? "is-over" : ""} ${sortable.isDragging ? "is-dragging" : ""}`} data-board-id={props.board.id}>
+    <section
+      ref={setRefs}
+      style={style}
+      className={`board ${drop.isOver ? "is-over" : ""} ${sortable.isDragging ? "is-dragging" : ""}`}
+      data-board-id={props.board.id}
+      onContextMenu={openContext}
+      onKeyDown={(event) => { if (event.shiftKey && event.key === "F10") openContext(event); }}
+    >
       <header className="board__header">
-        <button className="drag-handle board__drag" aria-label={`Reorder ${props.board.title}`} {...sortable.attributes} {...sortable.listeners}><GripHorizontal size={17} /></button>
-        <button className="board__title" onClick={() => props.onToggleBoard(props.board)}>
-          {props.board.collapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
-          <strong>{props.board.title}</strong><span>{props.bookmarks.length}</span>
+        <button
+          className="board__title"
+          aria-label={t("board.actions", { name: props.board.title })}
+          aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight"
+          {...sortable.attributes}
+          {...sortable.listeners}
+          onKeyDown={(event) => {
+            if (event.altKey && ["ArrowLeft", "ArrowUp", "ArrowRight", "ArrowDown"].includes(event.key)) {
+              event.preventDefault();
+              event.stopPropagation();
+              props.onKeyboardMoveBoard(props.board, event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : -1);
+            }
+          }}
+        >
+          <strong>{props.board.title}</strong>
         </button>
-        <button className="board__add" onClick={() => props.onAddBookmark(props.board)} aria-label={`Add bookmark to ${props.board.title}`}><Plus size={18} /></button>
-        <details className="menu">
-          <summary aria-label={`Actions for ${props.board.title}`}><MoreHorizontal size={17} /></summary>
-          <div className="menu__popover menu__popover--right">
-            <button onClick={() => props.onEditBoard(props.board)}><Pencil size={15} />Rename</button>
-            <button onClick={() => props.onToggleLayout(props.board)}>{props.board.layout === "list" ? <LayoutGrid size={15} /> : <List size={15} />}Switch layout</button>
-            <button onClick={() => props.onMoveBoard(props.board)}><MoveRight size={15} />Move to Page</button>
-            <button onClick={() => props.onDuplicateBoard(props.board)}><Copy size={15} />Duplicate</button>
-            <button className="danger" onClick={() => props.onDeleteBoard(props.board)}><Trash2 size={15} />Move to Trash</button>
-          </div>
-        </details>
+        <button className="board__add" onClick={() => props.onAddBookmark(props.board)} aria-label={t("board.add", { name: props.board.title })}><Plus size={17} /></button>
       </header>
-      {!props.board.collapsed ? (
-        <div className={`board__items board__items--${props.board.layout}`}>
-          <SortableContext items={props.bookmarks.map((bookmark) => `bookmark:${bookmark.id}`)} strategy={verticalListSortingStrategy}>
-            {props.bookmarks.map((bookmark) => (
-              <BookmarkCard
-                key={bookmark.id}
-                bookmark={bookmark}
-                privacy={props.privacy}
-                selected={props.selectedIds.has(bookmark.id)}
-                theme={props.theme}
-                onOpen={props.onOpenBookmark}
-                onEdit={props.onEditBookmark}
-                onMove={props.onMoveBookmark}
-                onDuplicate={props.onDuplicateBookmark}
-                onDelete={props.onDeleteBookmark}
-                onCopyUrl={props.onCopyUrl}
-                onCopyMarkdown={props.onCopyMarkdown}
-                onSelect={props.onSelectBookmark}
-              />
-            ))}
-          </SortableContext>
-          {props.bookmarks.length === 0 ? <div className="board__empty">Drop a link here or add one</div> : null}
-        </div>
-      ) : null}
-      {!props.board.collapsed ? <button className="board__footer" onClick={() => props.onAddBookmark(props.board)}><Plus size={16} />Add bookmark</button> : null}
+      <div ref={drop.setNodeRef} className={`board__items board__items--columns-${columns}`}>
+        <SortableContext items={props.bookmarks.map((bookmark) => `bookmark:${bookmark.id}`)} strategy={rectSortingStrategy}>
+          {props.bookmarks.map((bookmark) => <BookmarkCard
+            key={bookmark.id}
+            bookmark={bookmark}
+            privacy={props.privacy}
+            selected={props.selectedIds.has(bookmark.id)}
+            theme={props.theme}
+            onOpen={props.onOpenBookmark}
+            onEdit={props.onEditBookmark}
+            onMove={props.onMoveBookmark}
+            onDuplicate={props.onDuplicateBookmark}
+            onDelete={props.onDeleteBookmark}
+            onCopyUrl={props.onCopyUrl}
+            onCopyMarkdown={props.onCopyMarkdown}
+            onSelect={props.onSelectBookmark}
+          />)}
+        </SortableContext>
+        {props.bookmarks.length === 0 ? <button className="board__empty" onClick={() => props.onAddBookmark(props.board)}>{t("board.empty")}</button> : null}
+      </div>
+      {menuOpen ? <div className="context-menu board-context" role="menu" aria-label={t("board.actions", { name: props.board.title })}>
+        <button onClick={() => action(() => props.onEditBoard(props.board))}><Pencil size={15} />{t("generic.rename")}</button>
+        <div className="context-menu__group"><span>{t("board.columns")}</span>{(["auto", 1, 2] as const).map((value) => <button key={value} onClick={() => action(() => props.onPatchBoard(props.board, { bookmarkColumns: value }))}>{props.board.bookmarkColumns === value ? <Check size={14} /> : <i />}{t(value === "auto" ? "board.columnsAuto" : value === 1 ? "board.columnsOne" : "board.columnsTwo")}</button>)}</div>
+        <div className="context-menu__group"><span>{t("board.size")}</span>{([2, 4, 6] as const).map((value) => <button key={value} onClick={() => action(() => props.onPatchBoard(props.board, { gridSpan: value }))}>{props.board.gridSpan === value ? <Check size={14} /> : <i />}{t(value === 2 ? "board.sizeSmall" : value === 4 ? "board.sizeMedium" : "board.sizeLarge")}</button>)}</div>
+        <button onClick={() => action(() => props.onMoveBoard(props.board))}><MoveRight size={15} />{t("board.movePage")}</button>
+        <button onClick={() => action(() => props.onDuplicateBoard(props.board))}><Copy size={15} />{t("generic.duplicate")}</button>
+        <button className="danger" onClick={() => action(() => props.onDeleteBoard(props.board))}><Trash2 size={15} />{t("bookmark.moveTrash")}</button>
+      </div> : null}
     </section>
   );
-}
+});

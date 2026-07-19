@@ -24,6 +24,8 @@ const base: Omit<ThemeConfig, "preset" | "mode" | "accent" | "canvas"> = {
   wallpaperSaturation: 1,
   wallpaperPosition: "center",
   wallpaperZoom: 1,
+  glassVariant: "regular",
+  backgroundMode: "auto",
 };
 
 export const THEME_PRESETS: readonly ThemePreset[] = [
@@ -49,8 +51,8 @@ export function validateTheme(theme: ThemeConfig): ThemeConfig {
     ...theme,
     accent: isValidHexColor(theme.accent) ? theme.accent : "#155eef",
     canvas: isValidHexColor(theme.canvas) ? theme.canvas : "#f5f7fb",
-    surfaceOpacity: Math.min(1, Math.max(0.45, theme.surfaceOpacity)),
-    blur: Math.min(40, Math.max(0, theme.blur)),
+    surfaceOpacity: Math.min(1, Math.max(0.2, theme.surfaceOpacity)),
+    blur: Math.min(32, Math.max(0, theme.blur)),
     radius: Math.min(28, Math.max(4, theme.radius)),
     fontScale: Math.min(1.25, Math.max(0.9, theme.fontScale)),
     boardWidth: Math.min(520, Math.max(280, theme.boardWidth)),
@@ -59,5 +61,7 @@ export function validateTheme(theme: ThemeConfig): ThemeConfig {
     wallpaperBlur: Math.min(30, Math.max(0, theme.wallpaperBlur)),
     wallpaperSaturation: Math.min(1.8, Math.max(0, theme.wallpaperSaturation)),
     wallpaperZoom: Math.min(2, Math.max(1, theme.wallpaperZoom)),
+    glassVariant: theme.glassVariant === "clear" ? "clear" : "regular",
+    backgroundMode: ["auto", "solid", "wallpaper"].includes(theme.backgroundMode) ? theme.backgroundMode : "auto",
   };
 }

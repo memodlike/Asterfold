@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { IconButton } from "./IconButton";
+import { useI18n } from "../i18n";
 
 interface ModalProps {
   open: boolean;
@@ -16,6 +17,7 @@ interface ModalProps {
 const FOCUSABLE = "button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex='-1'])";
 
 export function Modal({ open, title, description, size = "medium", side = false, onClose, children, footer }: ModalProps) {
+  const { t } = useI18n();
   const titleId = useId();
   const descriptionId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -67,7 +69,7 @@ export function Modal({ open, title, description, size = "medium", side = false,
             <h2 id={titleId}>{title}</h2>
             {description ? <p id={descriptionId}>{description}</p> : null}
           </div>
-          <IconButton label="Close" onClick={onClose}><X size={18} /></IconButton>
+          <IconButton label={t("generic.close")} onClick={onClose}><X size={18} /></IconButton>
         </header>
         <div className="modal__body">{children}</div>
         {footer ? <footer className="modal__footer">{footer}</footer> : null}

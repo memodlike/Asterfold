@@ -26,6 +26,10 @@ export interface Board {
   position: string;
   collapsed: boolean;
   layout: "list" | "grid";
+  bookmarkColumns: "auto" | 1 | 2;
+  gridColumn: number;
+  gridRow: 0 | 1;
+  gridSpan: number;
   createdAt: ISODate;
   updatedAt: ISODate;
   deletedAt: ISODate | null;
@@ -67,6 +71,11 @@ export type ThemePresetId =
 export type ThemeMode = "system" | "light" | "dark";
 export type Density = "compact" | "comfortable" | "spacious";
 export type CardVariant = "minimal" | "standard" | "visual";
+export type GlassVariant = "regular" | "clear";
+export type BackgroundMode = "auto" | "solid" | "wallpaper";
+export type LocalePreference = "auto" | "ru" | "kk";
+export type WorkspaceLayoutMode = "auto" | "free";
+export type WorkspaceAlignment = "left" | "center" | "right";
 
 export interface ThemeConfig {
   preset: ThemePresetId;
@@ -90,6 +99,8 @@ export interface ThemeConfig {
   wallpaperSaturation: number;
   wallpaperPosition: string;
   wallpaperZoom: number;
+  glassVariant: GlassVariant;
+  backgroundMode: BackgroundMode;
 }
 
 export interface AppSettings {
@@ -97,6 +108,10 @@ export interface AppSettings {
   schemaVersion: number;
   activePageId: EntityId | null;
   navigationMode: "rail" | "expanded";
+  locale: LocalePreference;
+  workspaceLayoutMode: WorkspaceLayoutMode;
+  workspaceRows: 1 | 2;
+  workspaceAlignment: WorkspaceAlignment;
   theme: ThemeConfig;
   privacyPersist: boolean;
   privacyEnabled: boolean;

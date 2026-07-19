@@ -8,14 +8,18 @@ import {
   useSensors,
   type DragEndEvent,
   type DragStartEvent,
+  type CollisionDetection,
+  type KeyboardCoordinateGetter,
 } from "@dnd-kit/core";
-import { SortableContext, horizontalListSortingStrategy, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { SortableContext, rectSortingStrategy, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { createPortal } from "react-dom";
-import { useState, type MouseEvent } from "react";
-import { FolderPlus, GripVertical, Plus } from "lucide-react";
-import type { Board, Bookmark, ThemeConfig } from "../../domain/models";
+import { useCallback, useMemo, useState, type CSSProperties, type MouseEvent } from "react";
+import { FolderPlus, Plus } from "lucide-react";
+import type { AppSettings, Board, Bookmark, ThemeConfig } from "../../domain/models";
 import { Button } from "../../components/Button";
+import { useI18n } from "../../i18n";
 import { BoardColumn } from "./BoardColumn";
+import { packBoards } from "./layout";
 
 interface BoardCanvasProps {
   boards: Board[];
@@ -23,15 +27,15 @@ interface BoardCanvasProps {
   privacy: boolean;
   selectedIds: Set<string>;
   theme: ThemeConfig;
+  settings: Pick<AppSettings, "workspaceLayoutMode" | "workspaceRows" | "workspaceAlignment">;
   onCreateBoard: () => void;
   onAddBookmark: (board: Board) => void;
   onEditBoard: (board: Board) => void;
+  onPatchBoard: (board: Board, patch: Partial<Pick<Board, "bookmarkColumns" | "gridSpan">>) => void;
   onMoveBoard: (board: Board) => void;
   onDuplicateBoard: (board: Board) => void;
   onDeleteBoard: (board: Board) => void;
-  onToggleBoard: (board: Board) => void;
-  onToggleLayout: (board: Board) => void;
-  onMoveBoardIndex: (id: string, index: number) => void;
+  onMoveBoardIndex: (id: string, index: number, targetId: string) => void;
   onOpenBookmark: (bookmark: Bookmark) => void;
   onEditBookmark: (bookmark: Bookmark) => void;
   onMoveBookmark: (bookmark: Bookmark) => void;
@@ -45,12 +49,43 @@ interface BoardCanvasProps {
 }
 
 export function BoardCanvas(props: BoardCanvasProps) {
+  const { t } = useI18n();
   const [active, setActive] = useState<{ type: "board" | "bookmark"; title: string } | null>(null);
+  const keyboardCoordinates = useCallback<KeyboardCoordinateGetter>((event, args) => {
+    if (args.context.active?.data.current?.type !== "board") return sortableKeyboardCoordinates(event, args);
+    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.code)) return undefined;
+    event.preventDefault();
+    const boardIds = props.boards.map((board) => `board:${board.id}`);
+    const activeIndex = boardIds.indexOf(String(args.context.active.id));
+    const delta = event.code === "ArrowRight" || event.code === "ArrowDown" ? 1 : -1;
+    const targetId = boardIds[activeIndex + delta];
+    const targetRect = targetId ? args.context.droppableRects.get(targetId) : undefined;
+    return targetRect ? { x: targetRect.left, y: targetRect.top } : undefined;
+  }, [props.boards]);
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 7 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: keyboardCoordinates }),
   );
-  const bookmarksByBoard = new Map(props.boards.map((board) => [board.id, props.bookmarks.filter((bookmark) => bookmark.boardId === board.id)]));
+  const bookmarksByBoard = useMemo(() => {
+    const groups = new Map(props.boards.map((board) => [board.id, [] as Bookmark[]]));
+    for (const bookmark of props.bookmarks) groups.get(bookmark.boardId)?.push(bookmark);
+    return groups;
+  }, [props.boards, props.bookmarks]);
+  const bookmarkCounts = useMemo(() => new Map([...bookmarksByBoard].map(([id, items]) => [id, items.length])), [bookmarksByBoard]);
+  const packed = useMemo(
+    () => packBoards(props.boards, bookmarkCounts, props.settings.workspaceRows, props.settings.workspaceLayoutMode === "free"),
+    [bookmarkCounts, props.boards, props.settings.workspaceLayoutMode, props.settings.workspaceRows],
+  );
+  const collisionDetection = useCallback<CollisionDetection>((args) => {
+    const activeType = args.active.data.current?.type;
+    const droppableContainers = args.droppableContainers.filter((container) => {
+      const targetType = container.data.current?.type;
+      return activeType === "board"
+        ? targetType === "board" && container.id !== args.active.id
+        : targetType === "bookmark" || targetType === "board-drop";
+    });
+    return closestCorners({ ...args, droppableContainers });
+  }, []);
 
   const handleStart = (event: DragStartEvent): void => {
     const data = event.active.data.current;
@@ -69,8 +104,9 @@ export function BoardCanvas(props: BoardCanvasProps) {
     const source = event.active.data.current;
     const target = event.over.data.current;
     if (source?.type === "board") {
-      const index = props.boards.findIndex((board) => `board:${board.id}` === event.over?.id);
-      if (index >= 0) props.onMoveBoardIndex(String(source.boardId), index);
+      const targetId = target?.boardId ? String(target.boardId) : String(event.over.id).replace("board:", "");
+      const index = props.boards.findIndex((board) => board.id === targetId);
+      if (index >= 0) props.onMoveBoardIndex(String(source.boardId), index, targetId);
       return;
     }
     if (source?.type !== "bookmark") return;
@@ -78,8 +114,7 @@ export function BoardCanvas(props: BoardCanvasProps) {
     let targetIndex = Number.MAX_SAFE_INTEGER;
     if (target?.type === "bookmark") {
       targetBoardId = String(target.boardId);
-      const targetItems = bookmarksByBoard.get(targetBoardId) ?? [];
-      targetIndex = targetItems.findIndex((bookmark) => bookmark.id === target.bookmarkId);
+      targetIndex = (bookmarksByBoard.get(targetBoardId) ?? []).findIndex((bookmark) => bookmark.id === target.bookmarkId);
     } else if (target?.type === "board" || target?.type === "board-drop") {
       targetBoardId = String(target.boardId);
       targetIndex = (bookmarksByBoard.get(targetBoardId) ?? []).length;
@@ -91,36 +126,48 @@ export function BoardCanvas(props: BoardCanvasProps) {
     return (
       <main className="canvas canvas--empty">
         <div className="empty-state">
-          <span className="empty-state__icon"><FolderPlus size={31} /></span>
-          <h2>Create your first board</h2>
-          <p>Boards keep links grouped by project, topic, or anything that matters.</p>
-          <Button variant="primary" icon={<Plus size={17} />} onClick={props.onCreateBoard}>Create your first board</Button>
-          <Button variant="ghost" onClick={props.onImport}>Import bookmarks</Button>
+          <span className="empty-state__icon"><FolderPlus size={29} /></span>
+          <h2>{t("board.createFirst")}</h2>
+          <p>{t("board.createFirstDescription")}</p>
+          <Button variant="primary" icon={<Plus size={17} />} onClick={props.onCreateBoard}>{t("generic.create")}</Button>
+          <Button variant="ghost" onClick={props.onImport}>{t("settings.importFile")}</Button>
         </div>
       </main>
     );
   }
 
+  const trackStyle = {
+    "--board-rows": packed.rowCount,
+    "--used-columns": packed.usedColumns,
+  } as CSSProperties;
+
   return (
     <main className="canvas">
-      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleStart} onDragCancel={() => setActive(null)} onDragEnd={handleEnd}>
-        <SortableContext items={props.boards.map((board) => `board:${board.id}`)} strategy={horizontalListSortingStrategy}>
-          <div className="board-track">
-            {props.boards.map((board) => (
-              <BoardColumn
+      <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragStart={handleStart} onDragCancel={() => setActive(null)} onDragEnd={handleEnd}>
+        <SortableContext items={props.boards.map((board) => `board:${board.id}`)} strategy={rectSortingStrategy}>
+          <div className={`board-track board-track--${props.settings.workspaceAlignment}`} style={trackStyle}>
+            {props.boards.map((board) => {
+              const placement = packed.placements.get(board.id);
+              return <BoardColumn
                 key={board.id}
                 board={board}
+                placement={placement}
                 bookmarks={bookmarksByBoard.get(board.id) ?? []}
                 privacy={props.privacy}
                 selectedIds={props.selectedIds}
                 theme={props.theme}
                 onAddBookmark={props.onAddBookmark}
                 onEditBoard={props.onEditBoard}
+                onPatchBoard={props.onPatchBoard}
                 onMoveBoard={props.onMoveBoard}
                 onDuplicateBoard={props.onDuplicateBoard}
                 onDeleteBoard={props.onDeleteBoard}
-                onToggleBoard={props.onToggleBoard}
-                onToggleLayout={props.onToggleLayout}
+                onKeyboardMoveBoard={(movingBoard, delta) => {
+                  const index = props.boards.findIndex((candidate) => candidate.id === movingBoard.id);
+                  const targetIndex = Math.max(0, Math.min(props.boards.length - 1, index + delta));
+                  const target = props.boards[targetIndex];
+                  if (target && targetIndex !== index) props.onMoveBoardIndex(movingBoard.id, targetIndex, target.id);
+                }}
                 onOpenBookmark={props.onOpenBookmark}
                 onEditBookmark={props.onEditBookmark}
                 onMoveBookmark={props.onMoveBookmark}
@@ -129,14 +176,13 @@ export function BoardCanvas(props: BoardCanvasProps) {
                 onCopyUrl={props.onCopyUrl}
                 onCopyMarkdown={props.onCopyMarkdown}
                 onSelectBookmark={props.onSelectBookmark}
-              />
-            ))}
-            <button className="add-board-card" onClick={props.onCreateBoard}><Plus size={19} />Add board</button>
+              />;
+            })}
           </div>
         </SortableContext>
         {createPortal(
-          <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(.2,.8,.2,1)" }}>
-            {active ? <div className={`drag-overlay drag-overlay--${active.type}`}><GripVertical size={16} /><span>{active.title}</span></div> : null}
+          <DragOverlay dropAnimation={null}>
+            {active ? <div className={`drag-overlay drag-overlay--${active.type}`}><span>{active.title}</span></div> : null}
           </DragOverlay>,
           document.body,
         )}

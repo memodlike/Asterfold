@@ -5,6 +5,7 @@ import { db } from "../../db/database";
 import { emptyTrash, listTrash, permanentlyDelete, restoreBoard, restoreBookmark, restorePage } from "../../db/repository";
 import { Button } from "../../components/Button";
 import { Modal } from "../../components/Modal";
+import { useI18n } from "../../i18n";
 
 interface TrashDialogProps {
   open: boolean;
@@ -14,6 +15,7 @@ interface TrashDialogProps {
 }
 
 export function TrashDialog(props: TrashDialogProps) {
+  const { t } = useI18n();
   const trash = useLiveQuery(() => listTrash(db), [props.open], { pages: [], boards: [], bookmarks: [] });
   const [filter, setFilter] = useState<"all" | "page" | "board" | "bookmark">("all");
   const items = [
@@ -26,7 +28,7 @@ export function TrashDialog(props: TrashDialogProps) {
       if (type === "page") await restorePage(id);
       else if (type === "board") await restoreBoard(id);
       else await restoreBookmark(id);
-      props.onChanged("Restored from Trash");
+      props.onChanged(t("trash.restored"));
     } catch (error) { props.onError(error instanceof Error ? error.message : "Restore failed"); }
   };
   const remove = async (type: typeof items[number]["type"], id: string): Promise<void> => {
@@ -34,10 +36,10 @@ export function TrashDialog(props: TrashDialogProps) {
     try { await permanentlyDelete(type, id); props.onChanged("Permanently deleted"); } catch (error) { props.onError(error instanceof Error ? error.message : "Delete failed"); }
   };
   return (
-    <Modal open={props.open} size="large" title="Trash" description="Deleted items stay recoverable until retention cleanup." onClose={props.onClose} footer={<Button variant="danger" disabled={items.length === 0} onClick={() => { if (window.confirm("Empty Trash permanently? A local safety snapshot will be created first.")) void emptyTrash().then((count) => props.onChanged(`${count} items permanently deleted`)).catch((error: unknown) => props.onError(error instanceof Error ? error.message : "Unable to empty Trash")); }}>Empty Trash</Button>}>
-      <div className="trash-toolbar"><div className="segmented">{(["all", "page", "board", "bookmark"] as const).map((item) => <button className={filter === item ? "is-active" : ""} key={item} onClick={() => setFilter(item)}>{item === "all" ? "All" : `${item}s`}</button>)}</div><span>{items.length} items</span></div>
-      {items.length === 0 ? <div className="empty-inline"><Trash2 size={26} /><strong>Trash is empty</strong><span>Deleted Pages, Boards, and Bookmarks will appear here.</span></div> : (
-        <div className="trash-list">{items.map((item) => <div className="trash-row" key={`${item.type}:${item.id}`}><span className="trash-row__type">{item.type}</span><strong>{item.title}</strong><time>{item.deletedAt ? new Date(item.deletedAt).toLocaleString() : ""}</time><Button size="small" icon={<ArchiveRestore size={14} />} onClick={() => void restore(item.type, item.id)}>Restore</Button><Button size="small" variant="ghost" icon={<Trash2 size={14} />} onClick={() => void remove(item.type, item.id)}>Delete</Button></div>)}</div>
+    <Modal open={props.open} size="large" title={t("trash.title")} description={t("trash.description")} onClose={props.onClose} footer={<Button variant="danger" disabled={items.length === 0} onClick={() => { if (window.confirm(t("trash.permanent"))) void emptyTrash().then((count) => props.onChanged(t("trash.items", { count }))).catch((error: unknown) => props.onError(error instanceof Error ? error.message : "Unable to empty Trash")); }}>{t("trash.emptyAction")}</Button>}>
+      <div className="trash-toolbar"><div className="segmented">{(["all", "page", "board", "bookmark"] as const).map((item) => <button className={filter === item ? "is-active" : ""} key={item} onClick={() => setFilter(item)}>{t(item === "all" ? "trash.all" : item === "page" ? "trash.pages" : item === "board" ? "trash.boards" : "trash.bookmarks")}</button>)}</div><span>{t("trash.items", { count: items.length })}</span></div>
+      {items.length === 0 ? <div className="empty-inline"><Trash2 size={26} /><strong>{t("trash.empty")}</strong><span>{t("trash.emptyBody")}</span></div> : (
+        <div className="trash-list">{items.map((item) => <div className="trash-row" key={`${item.type}:${item.id}`}><span className="trash-row__type">{item.type}</span><strong>{item.title}</strong><time>{item.deletedAt ? new Date(item.deletedAt).toLocaleString() : ""}</time><Button size="small" icon={<ArchiveRestore size={14} />} onClick={() => void restore(item.type, item.id)}>{t("trash.restore")}</Button><Button size="small" variant="ghost" icon={<Trash2 size={14} />} onClick={() => void remove(item.type, item.id)}>{t("generic.delete")}</Button></div>)}</div>
       )}
     </Modal>
   );

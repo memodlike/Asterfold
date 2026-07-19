@@ -57,6 +57,31 @@ describe("safe import and lossless export", () => {
     expect(records[0]?.url).toBe("https://safe.example");
   });
 
+  it("normalizes a backup v1 payload to backup v2 defaults", async () => {
+    const backup = await createBackup({}, database);
+    const legacy = JSON.parse(serializeBackup(backup)) as Record<string, unknown> & { entities: { boards: Array<Record<string, unknown>> }; settings: Record<string, unknown>; theme: Record<string, unknown> };
+    legacy.schemaVersion = 1;
+    legacy.exportVersion = 1;
+    for (const board of legacy.entities.boards) {
+      delete board.bookmarkColumns;
+      delete board.gridColumn;
+      delete board.gridRow;
+      delete board.gridSpan;
+    }
+    delete legacy.settings.locale;
+    delete legacy.settings.workspaceLayoutMode;
+    delete legacy.settings.workspaceRows;
+    delete legacy.settings.workspaceAlignment;
+    delete (legacy.settings.theme as Record<string, unknown>).glassVariant;
+    delete (legacy.settings.theme as Record<string, unknown>).backgroundMode;
+    delete legacy.theme.glassVariant;
+    delete legacy.theme.backgroundMode;
+    const normalized = parseBackup(JSON.stringify(legacy));
+    expect(normalized).toMatchObject({ schemaVersion: 2, exportVersion: 2 });
+    expect(normalized.settings).toMatchObject({ schemaVersion: 3, locale: "auto", workspaceLayoutMode: "auto", workspaceRows: 2, workspaceAlignment: "center" });
+    expect(normalized.entities.boards[0]).toMatchObject({ bookmarkColumns: "auto", gridColumn: 1, gridRow: 0, gridSpan: 3 });
+  });
+
   it("reports invalid rows and skips normalized duplicates", async () => {
     const workspace = await ensureStarterWorkspace(database);
     const records = [
