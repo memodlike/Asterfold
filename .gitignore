@@ -1,0 +1,12 @@
+node_modules/
+.output/
+.wxt/
+.npm-cache/
+coverage/
+playwright-report/
+test-results/
+.env
+release/chrome-unpacked/
+release/*.zip
+release/checksums.txt
+*.log
