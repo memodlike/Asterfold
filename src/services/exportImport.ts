@@ -184,7 +184,7 @@ export async function createBackup(
     schemaVersion: 2,
     exportVersion: 2,
     exportedAt: nowIso(),
-    appVersion: "1.0.0",
+    appVersion: "2.0.0",
     scope,
     entities: { pages, boards, bookmarks },
     ...(scope === "full" ? { settings, theme: settings.theme } : {}),

@@ -168,7 +168,7 @@
 **Context:** Secure Page/Board share/revoke/expiry requires deployed policy, token hashing, and multi-user testing.  
 **Options:** unsafe local token links; placeholder buttons; omit from credential-free release.  
 **Decision:** Do not ship fake or insecure sharing UI. Document it as optional-cloud N/A in the local release.  
-**Consequences:** No public sharing in 1.0.0; core local parity is unaffected.  
+**Consequences:** No public sharing in 2.0.0; core local parity is unaffected.
 **Security/privacy:** Eliminates guessable-token and accidental-public-data risks from an undeployed feature.
 
 ## ADR-016 — Semantic theme tokens with portable custom theme JSON

@@ -1,6 +1,6 @@
 # Privacy policy for Asterfold
 
-Version 1.0.0 — 17 July 2026
+Version 2.0.0 — 19 July 2026
 
 Asterfold is a personal, local-first bookmark workspace. The default release has no account system, telemetry, analytics, advertising, affiliate tracking, payment code, or server endpoint.
 
