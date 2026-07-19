@@ -48,6 +48,12 @@ interface BoardCanvasProps {
   onImport: () => void;
 }
 
+function dndType(data: unknown): string | undefined {
+  if (typeof data !== "object" || data === null || !("type" in data)) return undefined;
+  const type = (data as { type?: unknown }).type;
+  return typeof type === "string" ? type : undefined;
+}
+
 export function BoardCanvas(props: BoardCanvasProps) {
   const { t } = useI18n();
   const [active, setActive] = useState<{ type: "board" | "bookmark"; title: string } | null>(null);
@@ -77,9 +83,9 @@ export function BoardCanvas(props: BoardCanvasProps) {
     [bookmarkCounts, props.boards, props.settings.workspaceLayoutMode, props.settings.workspaceRows],
   );
   const collisionDetection = useCallback<CollisionDetection>((args) => {
-    const activeType = args.active.data.current?.type;
+    const activeType = dndType(args.active.data.current);
     const droppableContainers = args.droppableContainers.filter((container) => {
-      const targetType = container.data.current?.type;
+      const targetType = dndType(container.data.current);
       return activeType === "board"
         ? targetType === "board" && container.id !== args.active.id
         : targetType === "bookmark" || targetType === "board-drop";
