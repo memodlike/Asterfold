@@ -36,6 +36,10 @@ export const boardSchema = baseEntitySchema.extend({
   position: z.string(),
   collapsed: z.boolean(),
   layout: z.enum(["list", "grid"]),
+  bookmarkColumns: z.union([z.literal("auto"), z.literal(1), z.literal(2)]).default("auto"),
+  gridColumn: z.number().int().min(1).max(12).default(1),
+  gridRow: z.union([z.literal(0), z.literal(1)]).default(0),
+  gridSpan: z.number().int().min(2).max(6).default(3),
 });
 
 export const bookmarkSchema = baseEntitySchema.extend({
@@ -74,6 +78,8 @@ export const themeSchema: z.ZodType<ThemeConfig> = z.object({
   wallpaperSaturation: z.number(),
   wallpaperPosition: z.string(),
   wallpaperZoom: z.number(),
+  glassVariant: z.enum(["regular", "clear"]).default("regular"),
+  backgroundMode: z.enum(["auto", "solid", "wallpaper"]).default("auto"),
 });
 
 export const settingsSchema = z.object({
@@ -81,6 +87,10 @@ export const settingsSchema = z.object({
   schemaVersion: z.number().int().positive(),
   activePageId: z.string().nullable(),
   navigationMode: z.enum(["rail", "expanded"]),
+  locale: z.enum(["auto", "ru", "kk"]).default("auto"),
+  workspaceLayoutMode: z.enum(["auto", "free"]).default("auto"),
+  workspaceRows: z.union([z.literal(1), z.literal(2)]).default(2),
+  workspaceAlignment: z.enum(["left", "center", "right"]).default("center"),
   theme: themeSchema,
   privacyPersist: z.boolean(),
   privacyEnabled: z.boolean(),
@@ -97,8 +107,8 @@ export const settingsSchema = z.object({
 });
 
 export const backupSchema = z.object({
-  schemaVersion: z.literal(1),
-  exportVersion: z.literal(1),
+  schemaVersion: z.union([z.literal(1), z.literal(2)]),
+  exportVersion: z.union([z.literal(1), z.literal(2)]),
   exportedAt: isoDate,
   appVersion: z.string(),
   scope: z.enum(["full", "page", "board"]),
@@ -171,8 +181,8 @@ export async function createBackup(
     bookmarks = allBookmarks.filter((bookmark) => boardIds.has(bookmark.boardId));
   }
   return backupSchema.parse({
-    schemaVersion: 1,
-    exportVersion: 1,
+    schemaVersion: 2,
+    exportVersion: 2,
     exportedAt: nowIso(),
     appVersion: "1.0.0",
     scope,
@@ -199,7 +209,12 @@ export function parseBackup(text: string): AsterfoldBackup {
     throw new ImportError(`Backup validation failed: ${result.error.issues[0]?.message ?? "unknown schema error"}`);
   }
   for (const bookmark of result.data.entities.bookmarks) normalizeUrl(bookmark.url, false);
-  return result.data;
+  return {
+    ...result.data,
+    schemaVersion: 2,
+    exportVersion: 2,
+    ...(result.data.settings ? { settings: { ...result.data.settings, schemaVersion: 3 } } : {}),
+  };
 }
 
 export async function restoreBackup(
@@ -380,6 +395,7 @@ export async function importRecords(
         board = {
           id: createId(), userId: null, pageId, title: folderTitle.slice(0, 240), icon: "folder", accent: null,
           position: evenlySpacedRanks(existingBoards.length + 1).at(-1)!, collapsed: false, layout: "list",
+          bookmarkColumns: "auto", gridColumn: 1, gridRow: 0, gridSpan: 3,
           createdAt: timestamp, updatedAt: timestamp, deletedAt: null, deletedBatchId: null, version: 1,
         };
         await database.boards.add(board);

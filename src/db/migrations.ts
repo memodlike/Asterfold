@@ -1,9 +1,10 @@
 import type { Transaction } from "dexie";
-import type { AppSettings, SyncState } from "../domain/models";
+import type { AppSettings, Board, SyncState } from "../domain/models";
 import { getThemePreset } from "../domain/themes";
 import { createId, nowIso } from "../utils/ids";
 
-export const CURRENT_DB_SCHEMA_VERSION = 2;
+const V2_DB_SCHEMA_VERSION = 2;
+export const CURRENT_DB_SCHEMA_VERSION = 3;
 
 export const V1_STORES = {
   pages: "id, userId, position, updatedAt, deletedAt, isDefault",
@@ -23,6 +24,8 @@ export const V2_STORES = {
   bookmarks: `${V1_STORES.bookmarks}, [boardId+position], [boardId+normalizedUrl]`,
 } as const;
 
+export const V3_STORES = { ...V2_STORES } as const;
+
 type LegacySettings = Partial<AppSettings> & Pick<AppSettings, "id">;
 
 export async function migrateToV2(transaction: Transaction): Promise<void> {
@@ -34,7 +37,7 @@ export async function migrateToV2(transaction: Transaction): Promise<void> {
     await settingsTable.put({
       ...current,
       id: "app",
-      schemaVersion: CURRENT_DB_SCHEMA_VERSION,
+      schemaVersion: V2_DB_SCHEMA_VERSION,
       activePageId: current.activePageId ?? null,
       navigationMode: current.navigationMode ?? "expanded",
       theme: { ...fallbackTheme, ...current.theme },
@@ -66,4 +69,41 @@ export async function migrateToV2(transaction: Transaction): Promise<void> {
       updatedAt: timestamp,
     });
   }
+}
+
+type V2Settings = Partial<AppSettings> & Pick<AppSettings, "id">;
+type V2Board = Partial<Board> & Pick<Board, "id">;
+
+export async function migrateToV3(transaction: Transaction): Promise<void> {
+  const timestamp = nowIso();
+  const settingsTable = transaction.table<V2Settings, string>("settings");
+  const current = await settingsTable.get("app");
+  if (current) {
+    const fallbackTheme = getThemePreset(current.theme?.preset ?? "frost-light");
+    await settingsTable.put({
+      ...current,
+      id: "app",
+      schemaVersion: CURRENT_DB_SCHEMA_VERSION,
+      locale: current.locale ?? "auto",
+      workspaceLayoutMode: current.workspaceLayoutMode ?? "auto",
+      workspaceRows: current.workspaceRows === 1 ? 1 : 2,
+      workspaceAlignment: current.workspaceAlignment ?? "center",
+      theme: {
+        ...fallbackTheme,
+        ...current.theme,
+        glassVariant: current.theme?.glassVariant ?? "regular",
+        backgroundMode: current.theme?.wallpaperId ? "wallpaper" : "auto",
+      },
+      updatedAt: timestamp,
+    });
+  }
+
+  const boardsTable = transaction.table<V2Board, string>("boards");
+  await boardsTable.toCollection().modify((board) => {
+    board.bookmarkColumns ??= board.layout === "grid" ? 2 : "auto";
+    board.gridColumn ??= 1;
+    board.gridRow ??= 0;
+    board.gridSpan ??= board.layout === "grid" ? 4 : 3;
+    board.updatedAt = timestamp;
+  });
 }

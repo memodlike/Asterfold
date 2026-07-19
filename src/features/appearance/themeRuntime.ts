@@ -14,41 +14,38 @@ interface Palette {
   shadow: string;
 }
 
-const palettes: Record<ThemeConfig["preset"], Palette> = {
-  "frost-light": { canvas: "#f5f7fb", surface: "255 255 255", surfaceSolid: "#ffffff", surfaceElevated: "#ffffff", text: "#141821", secondary: "#667085", border: "18 28 45", danger: "#d92d20", success: "#079455", shadow: "0 18px 48px rgb(16 24 40 / .12)" },
-  "graphite-dark": { canvas: "#0d1117", surface: "20 26 35", surfaceSolid: "#141a23", surfaceElevated: "#19212c", text: "#f2f4f7", secondary: "#98a2b3", border: "235 240 248", danger: "#ff6b66", success: "#47d18c", shadow: "0 22px 60px rgb(0 0 0 / .34)" },
-  midnight: { canvas: "#071124", surface: "12 28 52", surfaceSolid: "#0c1c34", surfaceElevated: "#112747", text: "#f3f6ff", secondary: "#a7b5ce", border: "219 230 255", danger: "#ff7772", success: "#4adea0", shadow: "0 24px 64px rgb(0 3 12 / .44)" },
-  aurora: { canvas: "#08122e", surface: "16 28 62", surfaceSolid: "#111d3f", surfaceElevated: "#172752", text: "#f6f3ff", secondary: "#beb8d9", border: "225 220 255", danger: "#ff7a78", success: "#55e2a3", shadow: "0 28px 70px rgb(1 4 18 / .46)" },
-  "warm-paper": { canvas: "#f6f0e6", surface: "255 252 246", surfaceSolid: "#fffaf2", surfaceElevated: "#fffdf9", text: "#27211b", secondary: "#776c60", border: "64 50 36", danger: "#bd342b", success: "#2f855a", shadow: "0 14px 38px rgb(63 45 24 / .12)" },
-  "high-contrast": { canvas: "#000000", surface: "0 0 0", surfaceSolid: "#000000", surfaceElevated: "#101010", text: "#ffffff", secondary: "#ffffff", border: "255 255 255", danger: "#ff5c5c", success: "#64ff9e", shadow: "0 0 0 2px #ffffff" },
-};
+const lightPalette: Palette = { canvas: "#f1f2f4", surface: "255 255 255", surfaceSolid: "#fbfbfc", surfaceElevated: "#ffffff", text: "#191a1d", secondary: "#6e7077", border: "19 20 23", danger: "#c9342f", success: "#237c4b", shadow: "0 20px 55px rgb(20 22 28 / .12)" };
+const darkPalette: Palette = { canvas: "#16171a", surface: "38 40 44", surfaceSolid: "#25272b", surfaceElevated: "#2d2f34", text: "#f5f5f6", secondary: "#a1a3aa", border: "255 255 255", danger: "#ff7772", success: "#64d79b", shadow: "0 24px 64px rgb(0 0 0 / .34)" };
 
 export const BUILTIN_WALLPAPERS = [
   { id: "builtin-aurora", name: "Quiet Aurora", value: 'url("/wallpapers/quiet-aurora.webp")' },
   { id: "builtin-mesh", name: "Blue Mesh", value: 'url("/wallpapers/blue-mesh.webp")' },
   { id: "builtin-dusk", name: "Dusk", value: 'url("/wallpapers/dusk.webp")' },
-  { id: "builtin-paper", name: "Paper Grain", value: 'url("/wallpapers/paper-grain.webp")' },
 ] as const;
 
-export function themeStyle(theme: ThemeConfig, wallpaper: Wallpaper | undefined, wallpaperUrl: string | null): CSSProperties {
-  const palette = palettes[theme.preset];
+export function themeStyle(theme: ThemeConfig, wallpaper: Wallpaper | undefined, wallpaperUrl: string | null, dark: boolean): CSSProperties {
+  const palette = dark ? darkPalette : lightPalette;
   const builtin = BUILTIN_WALLPAPERS.find((item) => item.id === theme.wallpaperId);
-  const wallpaperImage = wallpaperUrl ? `url("${wallpaperUrl}")` : builtin?.value ?? "none";
+  const wallpaperImage = theme.backgroundMode === "wallpaper" ? wallpaperUrl ? `url("${wallpaperUrl}")` : builtin?.value ?? "none" : "none";
+  const canvas = theme.backgroundMode === "solid" ? theme.canvas : palette.canvas;
   return {
-    "--color-canvas": theme.canvas || palette.canvas,
+    "--color-canvas": canvas,
     "--surface-rgb": palette.surface,
     "--color-surface": `rgb(${palette.surface} / ${theme.surfaceOpacity})`,
+    "--surface-opacity": theme.surfaceOpacity,
     "--color-surface-solid": palette.surfaceSolid,
     "--color-surface-elevated": palette.surfaceElevated,
     "--color-text": palette.text,
     "--color-text-secondary": palette.secondary,
     "--border-rgb": palette.border,
-    "--color-border": `rgb(${palette.border} / ${theme.preset === "high-contrast" ? ".72" : ".11"})`,
+    "--color-border": `rgb(${palette.border} / ${dark ? ".15" : ".10"})`,
     "--color-accent": theme.accent,
     "--color-danger": palette.danger,
     "--color-success": palette.success,
     "--shadow-panel": palette.shadow,
-    "--glass-blur": `${theme.blur}px`,
+    "--glass-blur": `${Math.min(32, theme.blur)}px`,
+    "--glass-highlight": dark ? "rgb(255 255 255 / .14)" : "rgb(255 255 255 / .70)",
+    "--glass-sheen": theme.glassVariant === "clear" ? ".09" : ".18",
     "--radius-card": `${theme.radius}px`,
     "--font-scale": theme.fontScale,
     "--board-width": `${theme.boardWidth}px`,

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_Asterfold" targetNamespace="https://asterfold.app/bpmn">
+  <bpmn:process id="Process_AsterfoldUserFlow" name="Работа пользователя с Asterfold" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_NewTab" name="Новая вкладка">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Task_ShowWorkspace" name="Asterfold показывает страницы, блоки и закладки">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gateway_Found" name="Нужная закладка видна?" default="Flow_4">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Task_OpenBookmark" name="Нажать на закладку">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_OpenLauncher" name="Открыть меню Asterfold">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gateway_Action" name="Что нужно сделать?">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+      <bpmn:outgoing>Flow_9</bpmn:outgoing>
+      <bpmn:outgoing>Flow_11</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Task_Search" name="Найти закладку через поиск">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_Organize" name="Создать или переставить блок">
+      <bpmn:incoming>Flow_9</bpmn:incoming>
+      <bpmn:outgoing>Flow_10</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_Settings" name="Изменить настройки">
+      <bpmn:incoming>Flow_11</bpmn:incoming>
+      <bpmn:outgoing>Flow_12</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="EndEvent_Site" name="Сайт открыт">
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_Organized" name="Рабочее пространство обновлено">
+      <bpmn:incoming>Flow_10</bpmn:incoming>
+      <bpmn:incoming>Flow_12</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_NewTab" targetRef="Task_ShowWorkspace" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_ShowWorkspace" targetRef="Gateway_Found" />
+    <bpmn:sequenceFlow id="Flow_3" name="Да" sourceRef="Gateway_Found" targetRef="Task_OpenBookmark" />
+    <bpmn:sequenceFlow id="Flow_4" name="Нет" sourceRef="Gateway_Found" targetRef="Task_OpenLauncher" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Task_OpenLauncher" targetRef="Gateway_Action" />
+    <bpmn:sequenceFlow id="Flow_6" name="Найти" sourceRef="Gateway_Action" targetRef="Task_Search" />
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Task_Search" targetRef="Task_OpenBookmark" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Task_OpenBookmark" targetRef="EndEvent_Site" />
+    <bpmn:sequenceFlow id="Flow_9" name="Организовать" sourceRef="Gateway_Action" targetRef="Task_Organize" />
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="Task_Organize" targetRef="EndEvent_Organized" />
+    <bpmn:sequenceFlow id="Flow_11" name="Настроить" sourceRef="Gateway_Action" targetRef="Task_Settings" />
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="Task_Settings" targetRef="EndEvent_Organized" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Asterfold">
+    <bpmndi:BPMNPlane id="BPMNPlane_Asterfold" bpmnElement="Process_AsterfoldUserFlow">
+      <bpmndi:BPMNShape id="StartEvent_NewTab_di" bpmnElement="StartEvent_NewTab"><dc:Bounds x="70" y="180" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="49" y="222" width="79" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ShowWorkspace_di" bpmnElement="Task_ShowWorkspace"><dc:Bounds x="160" y="155" width="190" height="86" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Found_di" bpmnElement="Gateway_Found" isMarkerVisible="true"><dc:Bounds x="410" y="173" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="380" y="229" width="110" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_OpenBookmark_di" bpmnElement="Task_OpenBookmark"><dc:Bounds x="555" y="70" width="150" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_OpenLauncher_di" bpmnElement="Task_OpenLauncher"><dc:Bounds x="540" y="235" width="180" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Action_di" bpmnElement="Gateway_Action" isMarkerVisible="true"><dc:Bounds x="785" y="246" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="755" y="302" width="110" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Search_di" bpmnElement="Task_Search"><dc:Bounds x="910" y="65" width="180" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Organize_di" bpmnElement="Task_Organize"><dc:Bounds x="910" y="210" width="180" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Settings_di" bpmnElement="Task_Settings"><dc:Bounds x="910" y="350" width="180" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Site_di" bpmnElement="EndEvent_Site"><dc:Bounds x="1180" y="83" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1163" y="125" width="70" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Organized_di" bpmnElement="EndEvent_Organized"><dc:Bounds x="1180" y="276" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1140" y="318" width="116" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1"><di:waypoint x="106" y="198" /><di:waypoint x="160" y="198" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2"><di:waypoint x="350" y="198" /><di:waypoint x="410" y="198" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3"><di:waypoint x="435" y="173" /><di:waypoint x="435" y="106" /><di:waypoint x="555" y="106" /><bpmndi:BPMNLabel><dc:Bounds x="462" y="84" width="18" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4"><di:waypoint x="435" y="223" /><di:waypoint x="435" y="271" /><di:waypoint x="540" y="271" /><bpmndi:BPMNLabel><dc:Bounds x="465" y="249" width="22" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5"><di:waypoint x="720" y="271" /><di:waypoint x="785" y="271" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6"><di:waypoint x="810" y="246" /><di:waypoint x="810" y="101" /><di:waypoint x="910" y="101" /><bpmndi:BPMNLabel><dc:Bounds x="831" y="79" width="38" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7"><di:waypoint x="910" y="101" /><di:waypoint x="705" y="106" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8"><di:waypoint x="705" y="106" /><di:waypoint x="1180" y="101" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9"><di:waypoint x="835" y="271" /><di:waypoint x="872" y="271" /><di:waypoint x="872" y="246" /><di:waypoint x="910" y="246" /><bpmndi:BPMNLabel><dc:Bounds x="841" y="248" width="84" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10"><di:waypoint x="1090" y="246" /><di:waypoint x="1135" y="246" /><di:waypoint x="1135" y="294" /><di:waypoint x="1180" y="294" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_11"><di:waypoint x="810" y="296" /><di:waypoint x="810" y="386" /><di:waypoint x="910" y="386" /><bpmndi:BPMNLabel><dc:Bounds x="829" y="364" width="64" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12_di" bpmnElement="Flow_12"><di:waypoint x="1090" y="386" /><di:waypoint x="1198" y="386" /><di:waypoint x="1198" y="312" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

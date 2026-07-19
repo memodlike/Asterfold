@@ -1,11 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { db } from "../../db/database";
 import type { ThemeConfig, Wallpaper } from "../../domain/models";
-import { isDarkTheme, themeStyle } from "./themeRuntime";
+import { themeStyle } from "./themeRuntime";
 
 export function useThemeRuntime(theme: ThemeConfig | undefined) {
   const [wallpaper, setWallpaper] = useState<Wallpaper>();
   const [wallpaperUrl, setWallpaperUrl] = useState<string | null>(null);
+  const [systemDark, setSystemDark] = useState(() => matchMedia("(prefers-color-scheme: dark)").matches);
+
+  useEffect(() => {
+    const query = matchMedia("(prefers-color-scheme: dark)");
+    const update = (): void => setSystemDark(query.matches);
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -31,9 +39,10 @@ export function useThemeRuntime(theme: ThemeConfig | undefined) {
 
   useEffect(() => {
     if (!theme) return;
-    document.documentElement.dataset.theme = theme.preset;
-    document.documentElement.style.colorScheme = isDarkTheme(theme) ? "dark" : "light";
-  }, [theme]);
+    const dark = theme.mode === "dark" || (theme.mode === "system" && systemDark);
+    document.documentElement.dataset.theme = dark ? "dark" : "light";
+    document.documentElement.style.colorScheme = dark ? "dark" : "light";
+  }, [systemDark, theme]);
 
-  return useMemo(() => theme ? themeStyle(theme, wallpaper, wallpaperUrl) : undefined, [theme, wallpaper, wallpaperUrl]);
+  return useMemo(() => theme ? themeStyle(theme, wallpaper, wallpaperUrl, theme.mode === "dark" || (theme.mode === "system" && systemDark)) : undefined, [systemDark, theme, wallpaper, wallpaperUrl]);
 }

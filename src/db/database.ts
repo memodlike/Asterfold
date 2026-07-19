@@ -10,7 +10,7 @@ import type {
   SyncState,
   Wallpaper,
 } from "../domain/models";
-import { migrateToV2, V1_STORES, V2_STORES } from "./migrations";
+import { migrateToV2, migrateToV3, V1_STORES, V2_STORES, V3_STORES } from "./migrations";
 
 export class AsterfoldDatabase extends Dexie {
   public pages!: EntityTable<Page, "id">;
@@ -27,6 +27,7 @@ export class AsterfoldDatabase extends Dexie {
     super(name);
     this.version(1).stores(V1_STORES);
     this.version(2).stores(V2_STORES).upgrade(migrateToV2);
+    this.version(3).stores(V3_STORES).upgrade(migrateToV3);
 
     this.on("versionchange", () => {
       this.close();

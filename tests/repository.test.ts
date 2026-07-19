@@ -15,6 +15,8 @@ import {
   softDeleteBoard,
   softDeleteBookmark,
   softDeletePage,
+  updateBoard,
+  updateSettings,
 } from "../src/db/repository";
 import { DuplicateError } from "../src/domain/errors";
 
@@ -77,5 +79,16 @@ describe("Dexie workspace repository", () => {
     await database.bookmarks.update(bookmark.id, { deletedAt: "2020-01-01T00:00:00.000Z" });
     expect(await purgeTrash(30, database)).toBe(1);
     expect(await database.bookmarks.get(bookmark.id)).toBeUndefined();
+  });
+
+  it("persists free-grid coordinates, board width, columns, and workspace layout", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const board = workspace.boards[0]!;
+    await updateBoard(board.id, { gridColumn: 7, gridRow: 1, gridSpan: 6, bookmarkColumns: 2 }, database);
+    await updateSettings({ workspaceLayoutMode: "free", workspaceRows: 1, workspaceAlignment: "right" }, database);
+    database.close();
+    await database.open();
+    expect(await database.boards.get(board.id)).toMatchObject({ gridColumn: 7, gridRow: 1, gridSpan: 6, bookmarkColumns: 2 });
+    expect(await database.settings.get("app")).toMatchObject({ workspaceLayoutMode: "free", workspaceRows: 1, workspaceAlignment: "right" });
   });
 });

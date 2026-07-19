@@ -144,6 +144,10 @@ export async function ensureStarterWorkspace(database: AsterfoldDatabase = db): 
         position: boardPosition,
         collapsed: false,
         layout: "list",
+        bookmarkColumns: "auto",
+        gridColumn: 1,
+        gridRow: 0,
+        gridSpan: 3,
         createdAt: timestamp,
         updatedAt: timestamp,
         deletedAt: null,
@@ -371,6 +375,10 @@ async function createReplacementPage(database: AsterfoldDatabase): Promise<Page>
     position: evenlySpacedRanks(1)[0]!,
     collapsed: false,
     layout: "list",
+    bookmarkColumns: "auto",
+    gridColumn: 1,
+    gridRow: 0,
+    gridSpan: 3,
     createdAt: timestamp,
     updatedAt: timestamp,
     deletedAt: null,
@@ -427,6 +435,10 @@ export async function createBoard(
       position,
       collapsed: false,
       layout: "list",
+      bookmarkColumns: "auto",
+      gridColumn: 1,
+      gridRow: 0,
+      gridSpan: 3,
       createdAt: timestamp,
       updatedAt: timestamp,
       deletedAt: null,
@@ -440,7 +452,7 @@ export async function createBoard(
 
 export async function updateBoard(
   id: string,
-  patch: Partial<Pick<Board, "title" | "collapsed" | "layout" | "icon" | "accent">>,
+  patch: Partial<Pick<Board, "title" | "collapsed" | "layout" | "bookmarkColumns" | "gridColumn" | "gridRow" | "gridSpan" | "icon" | "accent">>,
   database: AsterfoldDatabase = db,
 ): Promise<void> {
   const board = await database.boards.get(id);
@@ -448,6 +460,9 @@ export async function updateBoard(
   await database.boards.update(id, {
     ...patch,
     title: patch.title === undefined ? board.title : cleanTitle(patch.title, board.title),
+    gridColumn: patch.gridColumn === undefined ? board.gridColumn : Math.min(12, Math.max(1, Math.round(patch.gridColumn))),
+    gridRow: patch.gridRow === undefined ? board.gridRow : patch.gridRow === 1 ? 1 : 0,
+    gridSpan: patch.gridSpan === undefined ? board.gridSpan : Math.min(6, Math.max(2, Math.round(patch.gridSpan))),
     updatedAt: nowIso(),
     version: board.version + 1,
   });

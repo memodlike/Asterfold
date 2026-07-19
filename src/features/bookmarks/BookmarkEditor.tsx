@@ -6,6 +6,7 @@ import { DuplicateError } from "../../domain/errors";
 import { Button } from "../../components/Button";
 import { Modal } from "../../components/Modal";
 import { faviconUrl } from "../../browser/api";
+import { useI18n } from "../../i18n";
 
 interface BookmarkEditorProps {
   open: boolean;
@@ -22,6 +23,7 @@ interface BookmarkEditorProps {
 }
 
 export function BookmarkEditor(props: BookmarkEditorProps) {
+  const { t } = useI18n();
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [description, setDescription] = useState("");
@@ -89,30 +91,30 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
       open={props.open}
       side
       size="small"
-      title={props.bookmark ? "Edit bookmark" : "Add bookmark"}
-      description={props.bookmark ? "Update the link and where it belongs." : "Save a link directly into this workspace."}
+      title={t(props.bookmark ? "bookmark.editTitle" : "bookmark.add")}
+      description={t(props.bookmark ? "bookmark.editDescription" : "bookmark.addDescription")}
       onClose={props.onClose}
-      footer={<><Button onClick={props.onClose}>Cancel</Button><Button variant="primary" disabled={saving || !boardId} onClick={() => void save()}>{saving ? "Saving…" : "Save"}</Button></>}
+      footer={<><Button onClick={props.onClose}>{t("generic.cancel")}</Button><Button variant="primary" disabled={saving || !boardId} onClick={() => void save()}>{saving ? t("popup.saving") : t("generic.save")}</Button></>}
     >
       <form className="form-stack" onSubmit={(event) => { event.preventDefault(); void save(); }}>
         <div className="bookmark-preview">
           <span className="favicon favicon--large">{icon ? <img src={icon} alt="" /> : <BookmarkIcon size={22} />}</span>
-          <div><strong>{title || "Untitled bookmark"}</strong><small>{url}</small></div>
+          <div><strong>{title || t("bookmark.untitled")}</strong><small>{url}</small></div>
         </div>
-        <label>Title<input autoFocus value={title} maxLength={240} onChange={(event) => setTitle(event.target.value)} placeholder="Bookmark title" /></label>
-        <label>URL<input type="url" required value={url} maxLength={8192} onChange={(event) => setUrl(event.target.value)} placeholder="https://example.com" /></label>
-        <label>Description<textarea value={description} maxLength={2000} rows={4} onChange={(event) => setDescription(event.target.value)} placeholder="Optional note or context" /></label>
-        <label>Destination<select required value={boardId} onChange={(event) => setBoardId(event.target.value)}>
+        <label>{t("generic.title")}<input autoFocus value={title} maxLength={240} onChange={(event) => setTitle(event.target.value)} placeholder={t("bookmark.untitled")} /></label>
+        <label>{t("bookmark.url")}<input type="url" required value={url} maxLength={8192} onChange={(event) => setUrl(event.target.value)} placeholder="https://example.com" /></label>
+        <label>{t("generic.description")}<textarea value={description} maxLength={2000} rows={4} onChange={(event) => setDescription(event.target.value)} placeholder={t("bookmark.optionalNote")} /></label>
+        <label>{t("generic.destination")}<select required value={boardId} onChange={(event) => setBoardId(event.target.value)}>
           {boardOptions.map(({ page, boards }) => (
             <optgroup key={page.id} label={page.title}>{boards.map((board) => <option key={board.id} value={board.id}>{board.title}</option>)}</optgroup>
           ))}
         </select></label>
-        <label>Open mode<select value={openMode} onChange={(event) => setOpenMode(event.target.value as BookmarkOpenMode)}>
-          <option value="current">Current tab</option><option value="new-tab">New tab</option><option value="new-window">New window</option><option value="incognito">Incognito window</option>
+        <label>{t("bookmark.openMode")}<select value={openMode} onChange={(event) => setOpenMode(event.target.value as BookmarkOpenMode)}>
+          <option value="current">{t("bookmark.currentTab")}</option><option value="new-tab">{t("bookmark.newTab")}</option><option value="new-window">{t("bookmark.newWindow")}</option><option value="incognito">{t("bookmark.incognito")}</option>
         </select></label>
-        <label className="checkbox-row"><input type="checkbox" checked={pinned} onChange={(event) => setPinned(event.target.checked)} />Pin this bookmark</label>
+        <label className="checkbox-row"><input type="checkbox" checked={pinned} onChange={(event) => setPinned(event.target.checked)} />{t("bookmark.pin")}</label>
         {duplicate ? (
-          <div className="inline-warning"><AlertTriangle size={18} /><div><strong>Already saved in this board</strong><span>{duplicate.title}</span>{!props.bookmark ? <button type="button" onClick={() => setAllowDuplicate(true)}>{allowDuplicate ? "A duplicate will be created" : "Save another copy anyway"}</button> : null}</div><ExternalLink size={15} /></div>
+          <div className="inline-warning"><AlertTriangle size={18} /><div><strong>{t("bookmark.duplicateWarning")}</strong><span>{duplicate.title}</span>{!props.bookmark ? <button type="button" onClick={() => setAllowDuplicate(true)}>{t(allowDuplicate ? "bookmark.copyWillSave" : "bookmark.saveCopy")}</button> : null}</div><ExternalLink size={15} /></div>
         ) : null}
         <button type="submit" hidden aria-hidden="true" />
       </form>
