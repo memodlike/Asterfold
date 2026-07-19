@@ -4,10 +4,10 @@ Asterfold is complete in local-only mode. Cloud transport is opt-in and never re
 
 ## Configure Supabase
 
-1. Create a Supabase project and apply `supabase/migrations/0001_asterfold_sync.sql` with the Supabase CLI.
+1. Create a Supabase project and apply `docs/optional-sync/0001_asterfold_sync.sql` with the Supabase CLI.
 2. Enable Google under Authentication → Providers.
 3. Add the Chrome redirect URL shown by `chrome.identity.getRedirectURL("supabase-auth")` to the Supabase and Google OAuth allowlists. The unpacked extension ID must be stable before this step.
-4. Copy `.env.example` to `.env.local` and set:
+4. Copy `docs/optional-sync/env.example` to `.env.local` and set:
 
    ```text
    WXT_ENABLE_CLOUD_SYNC=true

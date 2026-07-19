@@ -1,17 +1,16 @@
-# Asterfold agent guide
+# Asterfold development guide
 
-These instructions apply to every AI agent working in this repository.
+These instructions apply to every contributor working in this repository.
 
 ## Start here
 
 Read these files before changing code:
 
-1. `AGENTS.md`
-2. `README.md`
-3. `DECISIONS.md`
-4. `SECURITY_REVIEW.md` and `THREAT_MODEL.md`
+1. `README.md`
+2. `docs/architecture/decisions.md`
+3. `docs/security/review.md` and `docs/security/threat-model.md`
 
-For installation and release work, also read `INSTALL.md`, `PERMISSIONS.md`, `PRIVACY.md`, and `RELEASE_NOTES.md`.
+For installation and release work, also read `docs/release/install.md`, `docs/security/permissions.md`, `docs/security/privacy.md`, and `docs/release/release-notes.md`.
 
 ## Product boundaries
 
@@ -31,7 +30,7 @@ For installation and release work, also read `INSTALL.md`, `PERMISSIONS.md`, `PR
 - `src/features/`: product workflows and UI components.
 - `src/search/`: local MiniSearch index and ranking.
 - `src/services/`: validated import/export formats.
-- `src/sync/` and `supabase/`: optional, disabled cloud adapter and RLS migration.
+- `src/sync/` and `docs/optional-sync/`: optional, disabled cloud adapter and RLS migration.
 - `tests/`: unit/integration coverage using Vitest and fake IndexedDB.
 - `e2e/`: serial Chromium tests loading the actual unpacked extension.
 - `scripts/release.mjs`: deterministic release creation and manifest/security validation.

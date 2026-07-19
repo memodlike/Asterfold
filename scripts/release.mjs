@@ -68,8 +68,13 @@ await rm(release, { recursive: true, force: true });
 await mkdir(release, { recursive: true });
 await cp(output, unpacked, { recursive: true, force: true });
 
-for (const name of ["INSTALL.md", "PERMISSIONS.md", "PRIVACY.md", "RELEASE_NOTES.md"]) {
-  await cp(join(root, name), join(release, name));
+for (const [source, outputName] of [
+  ["docs/release/install.md", "INSTALL.md"],
+  ["docs/security/permissions.md", "PERMISSIONS.md"],
+  ["docs/security/privacy.md", "PRIVACY.md"],
+  ["docs/release/release-notes.md", "RELEASE_NOTES.md"],
+]) {
+  await cp(join(root, source), join(release, outputName));
 }
 
 await validateUnpacked();
