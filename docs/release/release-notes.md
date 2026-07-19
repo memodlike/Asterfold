@@ -1,27 +1,33 @@
-# Asterfold 1.0.0 release notes
+# Asterfold 1.0.0
 
-Released 17 July 2026. Application version `1.0.0`; IndexedDB schema version `2`; minimum Chrome version `120`.
+Готовое расширение для новой вкладки Chrome. Сайты раскладываются по понятным блокам и остаются на вашем компьютере.
 
-## Included
+## Самый простой способ установить
 
-- Manifest V3 new-tab workspace with Pages, Boards, and Bookmarks.
-- Toolbar Quick Save, instant mode, context menus, and configurable keyboard shortcut.
-- Pointer and keyboard drag-and-drop, entity menus, duplicate/move flows, and multi-select bulk actions.
-- Local fuzzy/prefix/exact search with global, Page, and Board scopes.
-- JSON backup/merge/replace, Netscape HTML import/export, Markdown export, optional Chrome bookmark import, validation preview, and local snapshots.
-- Cascading Trash, restore, undo, permanent deletion, and configurable retention.
-- Privacy Mode, six complete themes, four original built-in wallpapers, user wallpaper upload, and theme import/export.
-- Dexie schema migration, safe URL/message/import validation, strict CSP, minimal permissions, and original Asterfold branding/assets.
-- Unit/integration, 10,000-record search, migration, and real unpacked-extension Chromium E2E coverage.
-- Optional Supabase PKCE/RLS/outbox sync source and migration, disabled safely by default.
+1. На странице этого релиза скачайте **`chrome-unpacked.zip`**.
+2. Распакуйте ZIP в любую постоянную папку, например «Документы/Asterfold».
+3. В Chrome откройте `chrome://extensions`.
+4. Включите **Режим разработчика** справа вверху.
+5. Нажмите **Загрузить распакованное расширение**.
+6. Выберите распакованную папку `chrome-unpacked`.
+7. Откройте новую вкладку Chrome.
 
-## Upgrade notes
+Готово: маленький знак Asterfold находится внизу слева. Через него можно создавать блоки, искать ссылки и открывать настройки.
 
-Schema 2 adds sync/outbox state and compound indexes while preserving schema-1 local settings and entities. Migration is transactional and covered by an upgrade fixture test. Export a JSON backup before any update.
+## Что есть в версии 1.0.0
 
-## Known limitations
+- страницы, блоки и закладки с перетаскиванием;
+- Quick Save для сохранения текущего сайта;
+- поиск, корзина и Privacy Mode;
+- русский и қазақша языки;
+- светлая/тёмная тема, обои и эффект стекла;
+- резервные копии и импорт закладок;
+- хранение данных локально в браузере — регистрация не нужна.
 
-- The default release is intentionally local-only. Live OAuth, two-user RLS isolation, cross-device synchronization, and sharing require a user-owned Supabase project and were not live-verified because no cloud credentials were supplied.
-- Public Page/Board sharing is not exposed in the local release.
-- Privacy Mode masks the interface; it is not at-rest encryption.
-- Unpacked extension identity is path-derived when no signing key is used. Keep the installation folder path stable across updates.
+## Файлы релиза
+
+- **`chrome-unpacked.zip`** — скачайте и установите в Chrome.
+- **`extension-source.zip`** — исходный код для разработчиков.
+- **`checksums.txt`** — контрольные суммы файлов.
+
+Если обновляете расширение, распаковывайте новую версию в ту же папку и в `chrome://extensions` нажимайте кнопку обновления у Asterfold.
