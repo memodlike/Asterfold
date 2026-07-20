@@ -79,6 +79,10 @@ test.describe.serial("Asterfold MV3 release", () => {
       headless: true,
       args: ["--no-sandbox", "--disable-crash-reporter", "--disable-features=DisableLoadExtensionCommandLineSwitch", `--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
     });
+    await context.addInitScript(() => {
+      Object.defineProperty(navigator, "hardwareConcurrency", { configurable: true, get: () => 2 });
+      Object.defineProperty(navigator, "deviceMemory", { configurable: true, get: () => 2 });
+    });
     worker = await extensionWorker(context);
     extensionId = new URL(worker.url()).hostname;
     await expect.poll(() => worker.evaluate(() => Boolean(globalThis.chrome?.runtime?.id)), { timeout: 15_000 }).toBe(true);
@@ -103,6 +107,8 @@ test.describe.serial("Asterfold MV3 release", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/newtab.html`);
     await expect(page).toHaveTitle("Новая вкладка");
+    await expect(page.locator(".app-shell")).toHaveClass(/performance-reduced/u);
+    await expect(page.locator(".wallpaper")).toHaveCSS("filter", "none");
     await expect(page.getByRole("button", { name: "Открыть меню Asterfold" })).toBeVisible();
 
     await openLauncher(page);

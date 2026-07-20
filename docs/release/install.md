@@ -1,4 +1,4 @@
-# Install Asterfold 2.0.1
+# Install Asterfold 2.0.2
 
 ## Requirements
 

@@ -28,6 +28,12 @@ export function themeStyle(theme: ThemeConfig, wallpaper: Wallpaper | undefined,
   const builtin = BUILTIN_WALLPAPERS.find((item) => item.id === theme.wallpaperId);
   const wallpaperImage = theme.backgroundMode === "wallpaper" ? wallpaperUrl ? `url("${wallpaperUrl}")` : builtin?.value ?? "none" : "none";
   const canvas = theme.backgroundMode === "solid" ? theme.canvas : palette.canvas;
+  const wallpaperFilter = theme.wallpaperBlur > 0 || theme.wallpaperSaturation !== 1
+    ? `blur(${theme.wallpaperBlur}px) saturate(${theme.wallpaperSaturation})`
+    : "none";
+  const wallpaperTransform = wallpaperImage !== "none" && theme.wallpaperZoom > 1
+    ? `scale(${theme.wallpaperZoom})`
+    : "none";
   return {
     "--color-canvas": canvas,
     "--surface-rgb": palette.surface,
@@ -52,10 +58,9 @@ export function themeStyle(theme: ThemeConfig, wallpaper: Wallpaper | undefined,
     "--favicon-size": `${theme.faviconSize}px`,
     "--wallpaper-image": wallpaperImage,
     "--wallpaper-dim": wallpaperImage === "none" ? 0 : theme.wallpaperDim,
-    "--wallpaper-blur": `${theme.wallpaperBlur}px`,
-    "--wallpaper-saturation": theme.wallpaperSaturation,
+    "--wallpaper-filter": wallpaperFilter,
     "--wallpaper-position": theme.wallpaperPosition,
-    "--wallpaper-scale": theme.wallpaperZoom * 1.025,
+    "--wallpaper-transform": wallpaperTransform,
     "--density-space": theme.density === "compact" ? "8px" : theme.density === "spacious" ? "16px" : "12px",
   } as CSSProperties;
 }

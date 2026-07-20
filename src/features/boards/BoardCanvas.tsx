@@ -147,7 +147,7 @@ export function BoardCanvas(props: BoardCanvasProps) {
   } as CSSProperties;
 
   return (
-    <main className="canvas">
+    <main className={`canvas ${active ? "canvas--dragging" : ""}`}>
       <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragStart={handleStart} onDragCancel={() => setActive(null)} onDragEnd={handleEnd}>
         <SortableContext items={props.boards.map((board) => `board:${board.id}`)} strategy={rectSortingStrategy}>
           <div className={`board-track board-track--${props.settings.workspaceAlignment}`} style={trackStyle}>
