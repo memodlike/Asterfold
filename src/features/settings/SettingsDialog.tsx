@@ -176,9 +176,26 @@ export function SettingsDialog(props: SettingsDialogProps) {
               <Range label={t("settings.transparency")} min={4} max={80} value={Math.round((1 - settings.theme.surfaceOpacity) * 100)} suffix="%" onChange={(value) => patchTheme({ surfaceOpacity: 1 - value / 100 })} />
               <Range label={t("settings.blur")} min={0} max={32} value={settings.theme.blur} suffix="px" onChange={(value) => patchTheme({ blur: value })} />
               <Range label={t("settings.wallpaperDim")} min={0} max={80} value={Math.round(settings.theme.wallpaperDim * 100)} suffix="%" onChange={(value) => patchTheme({ wallpaperDim: value / 100 })} />
+              <Range label={t("settings.wallpaperBlur")} min={0} max={20} value={settings.theme.wallpaperBlur} suffix="px" onChange={(value) => patchTheme({ wallpaperBlur: value })} />
+              <Range label={t("settings.wallpaperSaturation")} min={0} max={180} value={Math.round(settings.theme.wallpaperSaturation * 100)} suffix="%" onChange={(value) => patchTheme({ wallpaperSaturation: value / 100 })} />
             </div>
             <div className="wallpaper-grid"><button className={!settings.theme.wallpaperId ? "is-active" : ""} onClick={() => patchTheme({ wallpaperId: null, backgroundMode: "auto" })}><span className="wallpaper-none" />{t("settings.noWallpaper")}</button>{BUILTIN_WALLPAPERS.map((item) => <button key={item.id} className={settings.theme.wallpaperId === item.id ? "is-active" : ""} onClick={() => patchTheme({ wallpaperId: item.id, backgroundMode: "wallpaper" })}><span style={{ background: item.value }} />{item.name}</button>)}<button onClick={() => wallpaperInputRef.current?.click()}><span className="wallpaper-upload"><Upload size={19} /></span>{t("settings.uploadWallpaper")}</button></div>
             <input ref={wallpaperInputRef} hidden type="file" accept="image/png,image/jpeg,image/webp,image/avif" onChange={(event) => { const file = event.target.files?.[0]; if (file) void saveUploadedWallpaper(file); event.currentTarget.value = ""; }} />
+            <div className="settings-control-group">
+              <h3>{t("settings.performance")}</h3>
+              <SettingRow label={t("settings.lowPower")}><Switch label={t("settings.lowPower")} checked={settings.theme.lowPowerMode} onChange={(lowPowerMode) => patchTheme({ lowPowerMode })} /></SettingRow>
+              <p>{t("settings.lowPowerDescription")}</p>
+            </div>
+            <div className="settings-control-group">
+              <h3>{t("settings.animations")}</h3>
+              <SettingRow label={t("settings.motionAll")}><Switch label={t("settings.motionAll")} checked={settings.theme.motion} onChange={(motion) => patchTheme({ motion })} /></SettingRow>
+              {settings.theme.motion ? <>
+                <SettingRow label={t("settings.motionHover")}><Switch label={t("settings.motionHover")} checked={settings.theme.bookmarkHoverMotion} onChange={(bookmarkHoverMotion) => patchTheme({ bookmarkHoverMotion })} /></SettingRow>
+                <SettingRow label={t("settings.motionMenus")}><Switch label={t("settings.motionMenus")} checked={settings.theme.menuMotion} onChange={(menuMotion) => patchTheme({ menuMotion })} /></SettingRow>
+                <SettingRow label={t("settings.motionDrag")}><Switch label={t("settings.motionDrag")} checked={settings.theme.dragMotion} onChange={(dragMotion) => patchTheme({ dragMotion })} /></SettingRow>
+              </> : null}
+              <p>{t("settings.animationsDescription")}</p>
+            </div>
           </SettingsSection> : null}
 
           {section === "layout" ? <SettingsSection title={t("settings.layout")} description={t("settings.layoutDescription")}>
@@ -227,4 +244,8 @@ function Segmented({ value, items, onChange }: { value: string; items: Array<{ v
 
 function Range({ label, min, max, value, suffix, onChange }: { label: string; min: number; max: number; value: number; suffix: string; onChange: (value: number) => void }) {
   return <label className="range-control"><span><strong>{label}</strong><output>{Math.round(value)}{suffix}</output></span><input type="range" min={min} max={max} value={value} onChange={(event) => onChange(Number(event.target.value))} /></label>;
+}
+
+function Switch({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
+  return <label className="switch"><input aria-label={label} type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} /><span /></label>;
 }

@@ -74,11 +74,20 @@ describe("safe import and lossless export", () => {
     delete legacy.settings.workspaceAlignment;
     delete (legacy.settings.theme as Record<string, unknown>).glassVariant;
     delete (legacy.settings.theme as Record<string, unknown>).backgroundMode;
+    delete (legacy.settings.theme as Record<string, unknown>).lowPowerMode;
+    delete (legacy.settings.theme as Record<string, unknown>).bookmarkHoverMotion;
+    delete (legacy.settings.theme as Record<string, unknown>).menuMotion;
+    delete (legacy.settings.theme as Record<string, unknown>).dragMotion;
     delete legacy.theme.glassVariant;
     delete legacy.theme.backgroundMode;
+    delete legacy.theme.lowPowerMode;
+    delete legacy.theme.bookmarkHoverMotion;
+    delete legacy.theme.menuMotion;
+    delete legacy.theme.dragMotion;
     const normalized = parseBackup(JSON.stringify(legacy));
     expect(normalized).toMatchObject({ schemaVersion: 2, exportVersion: 2 });
-    expect(normalized.settings).toMatchObject({ schemaVersion: 3, locale: "auto", workspaceLayoutMode: "auto", workspaceRows: 2, workspaceAlignment: "center" });
+    expect(normalized.settings).toMatchObject({ schemaVersion: 4, locale: "auto", workspaceLayoutMode: "auto", workspaceRows: 2, workspaceAlignment: "center" });
+    expect(normalized.settings?.theme).toMatchObject({ lowPowerMode: false, bookmarkHoverMotion: true, menuMotion: true, dragMotion: true });
     expect(normalized.entities.boards[0]).toMatchObject({ bookmarkColumns: "auto", gridColumn: 1, gridRow: 0, gridSpan: 3 });
   });
 

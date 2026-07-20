@@ -44,16 +44,14 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .favicon > span { font-size: 8px; font-weight: 700; }
 .private-content { filter: blur(7px); user-select: none; }
 
-.context-menu { position: absolute; z-index: 40; display: grid; width: 218px; padding: 6px; border: 1px solid var(--color-border); border-radius: 13px; background: rgb(var(--surface-rgb) / .94); box-shadow: 0 22px 64px rgb(0 0 0 / .28), inset 0 1px 0 rgb(255 255 255 / .12); backdrop-filter: blur(22px); }
-.board-context { top: 38px; right: 10px; }
-.bookmark-context { top: 19px; left: 8px; }
-.context-menu button { display: flex; align-items: center; min-height: 31px; gap: 9px; padding: 6px 9px; border-radius: 8px; text-align: left; background: transparent; font-size: 12px; }
+.context-menu { position: fixed; z-index: 220; display: grid; width: min(202px, calc(100vw - 16px)); max-height: calc(100vh - 16px); padding: 4px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: 12px; background: rgb(var(--surface-rgb) / .96); box-shadow: 0 16px 42px rgb(0 0 0 / .22), inset 0 1px 0 rgb(255 255 255 / .12); backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); }
+.context-menu button { display: flex; align-items: center; min-height: 28px; gap: 8px; padding: 5px 8px; border-radius: 7px; text-align: left; background: transparent; font-size: 12px; }
 .context-menu button:hover, .context-menu button:focus-visible { background: rgb(var(--border-rgb) / .09); }
 .context-menu button:disabled { opacity: .4; cursor: default; }
 .context-menu .danger { color: var(--color-danger); }
-.context-menu__group { margin-block: 4px; padding-block: 4px; border-block: 1px solid var(--color-border); }
-.context-menu__group + .context-menu__group { margin-top: -5px; border-top: 0; }
-.context-menu__group > span { display: block; padding: 4px 9px; color: var(--color-text-secondary); font-size: 10px; font-weight: 650; text-transform: uppercase; letter-spacing: .06em; }
+.context-menu__group { margin-block: 3px; padding-block: 3px; border-block: 1px solid var(--color-border); }
+.context-menu__group + .context-menu__group { margin-top: -4px; border-top: 0; }
+.context-menu__group > span { display: block; padding: 3px 8px; color: var(--color-text-secondary); font-size: 9px; font-weight: 650; text-transform: uppercase; letter-spacing: .06em; }
 .context-menu__group button i, .context-menu__group button svg { width: 14px; flex: 0 0 14px; }
 .drag-overlay { max-width: 260px; padding: 10px 13px; overflow: hidden; border: 1px solid rgb(255 255 255 / .18); border-radius: 13px; color: #fff; background: #24262a; box-shadow: 0 12px 28px rgb(0 0 0 / .26); text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 
@@ -172,34 +170,23 @@ kbd { padding: 5px 8px; border: 1px solid var(--color-border); border-radius: 7p
 .toast { display: flex; min-width: 260px; max-width: 410px; align-items: center; gap: 9px; padding: 9px 10px; border: 1px solid var(--color-border); border-radius: 13px; background: rgb(var(--surface-rgb) / .92); box-shadow: var(--shadow-panel); backdrop-filter: blur(20px); font-size: 12px; }
 
 /* The fallback is intentionally plain: it keeps text and actions responsive on old or integrated GPUs. */
-.performance-reduced .wallpaper { filter: none; transform: none; }
-.performance-reduced .wallpaper::after { display: none; }
-.performance-reduced .board,
-.performance-reduced .modal,
-.performance-reduced .launcher-menu,
-.performance-reduced .context-menu,
-.performance-reduced .empty-state,
-.performance-reduced .bulk-toolbar,
-.performance-reduced .toast,
-.canvas--dragging .board { background: var(--color-surface-solid); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: 0 8px 22px rgb(0 0 0 / .14); }
-.performance-reduced .board { background: var(--color-surface-solid); box-shadow: 0 7px 18px rgb(0 0 0 / .10); transition: border-color 120ms ease; }
-.performance-reduced .board:hover { box-shadow: 0 7px 18px rgb(0 0 0 / .10); }
-.performance-reduced .bookmark-card,
-.performance-reduced .favicon,
-.performance-reduced .launcher-trigger,
-.performance-reduced .launcher-trigger span,
-.performance-reduced .button,
-.performance-reduced .icon-button { transition: none; }
-.performance-reduced .bookmark-card:hover,
-.performance-reduced .bookmark-card:focus-within { transform: none; }
-.performance-reduced .bookmark-card:hover .favicon,
-.performance-reduced .bookmark-card:focus-within .favicon { transform: none; }
-.performance-reduced .launcher-trigger,
-.performance-reduced .app-launcher:hover .launcher-trigger,
-.performance-reduced .launcher-trigger:focus-visible,
-.performance-reduced .app-launcher.is-open .launcher-trigger { backdrop-filter: none; }
-.performance-reduced .private-content { filter: none; color: transparent; text-shadow: none; }
-.performance-reduced *, .performance-reduced *::before, .performance-reduced *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+.low-power-mode .wallpaper { filter: none; transform: none; }
+.low-power-mode .wallpaper::after { display: none; }
+.low-power-mode .board,
+.low-power-mode .modal,
+.low-power-mode .launcher-menu,
+.low-power-mode .context-menu,
+.low-power-mode .empty-state,
+.low-power-mode .bulk-toolbar,
+.low-power-mode .toast { background: var(--color-surface-solid); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: 0 8px 22px rgb(0 0 0 / .14); }
+.low-power-mode ~ .context-menu, body:has(.low-power-mode) .context-menu { background: var(--color-surface-solid); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: 0 8px 22px rgb(0 0 0 / .14); }
+.low-power-mode .board { box-shadow: 0 7px 18px rgb(0 0 0 / .10); }
+.low-power-mode .private-content { filter: none; color: transparent; text-shadow: none; }
+.motion-disabled *, .motion-disabled *::before, .motion-disabled *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+.motion-hover-disabled .bookmark-card, .motion-hover-disabled .favicon { transition: none; }
+.motion-hover-disabled .bookmark-card:hover, .motion-hover-disabled .bookmark-card:focus-within, .motion-hover-disabled .bookmark-card:hover .favicon, .motion-hover-disabled .bookmark-card:focus-within .favicon { transform: none; }
+.motion-menu-disabled .launcher-menu, .motion-menu-disabled .modal, .motion-menu-disabled .modal-backdrop { animation: none; }
+.motion-drag-disabled .board, .motion-drag-disabled .bookmark-card { transition: none !important; }
 .toast > span { flex: 1; }
 .toast--error > svg { color: var(--color-danger); }
 .toast--success > svg { color: var(--color-success); }

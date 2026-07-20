@@ -4,7 +4,7 @@ import { getThemePreset } from "../domain/themes";
 import { createId, nowIso } from "../utils/ids";
 
 const V2_DB_SCHEMA_VERSION = 2;
-export const CURRENT_DB_SCHEMA_VERSION = 3;
+export const CURRENT_DB_SCHEMA_VERSION = 4;
 
 export const V1_STORES = {
   pages: "id, userId, position, updatedAt, deletedAt, isDefault",
@@ -25,6 +25,7 @@ export const V2_STORES = {
 } as const;
 
 export const V3_STORES = { ...V2_STORES } as const;
+export const V4_STORES = { ...V3_STORES } as const;
 
 type LegacySettings = Partial<AppSettings> & Pick<AppSettings, "id">;
 
@@ -105,5 +106,26 @@ export async function migrateToV3(transaction: Transaction): Promise<void> {
     board.gridRow ??= 0;
     board.gridSpan ??= board.layout === "grid" ? 4 : 3;
     board.updatedAt = timestamp;
+  });
+}
+
+export async function migrateToV4(transaction: Transaction): Promise<void> {
+  const settingsTable = transaction.table<V2Settings, string>("settings");
+  const current = await settingsTable.get("app");
+  if (!current) return;
+  const fallbackTheme = getThemePreset(current.theme?.preset ?? "frost-light");
+  await settingsTable.put({
+    ...current,
+    id: "app",
+    schemaVersion: CURRENT_DB_SCHEMA_VERSION,
+    theme: {
+      ...fallbackTheme,
+      ...current.theme,
+      lowPowerMode: current.theme?.lowPowerMode === true,
+      bookmarkHoverMotion: current.theme?.bookmarkHoverMotion !== false,
+      menuMotion: current.theme?.menuMotion !== false,
+      dragMotion: current.theme?.dragMotion !== false,
+    },
+    updatedAt: nowIso(),
   });
 }

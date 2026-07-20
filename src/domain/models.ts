@@ -93,6 +93,10 @@ export interface ThemeConfig {
   showDescription: boolean;
   faviconSize: number;
   motion: boolean;
+  lowPowerMode: boolean;
+  bookmarkHoverMotion: boolean;
+  menuMotion: boolean;
+  dragMotion: boolean;
   wallpaperId: string | null;
   wallpaperDim: number;
   wallpaperBlur: number;

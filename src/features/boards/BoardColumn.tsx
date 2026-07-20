@@ -4,6 +4,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Check, Copy, MoveRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { memo, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
 import type { Board, Bookmark } from "../../domain/models";
+import { FloatingContextMenu, type ContextMenuPoint } from "../../components/FloatingContextMenu";
 import { useI18n } from "../../i18n";
 import { BookmarkCard } from "../bookmarks/BookmarkCard";
 import type { BoardPlacement } from "./layout";
@@ -33,7 +34,7 @@ interface BoardColumnProps {
 
 export const BoardColumn = memo(function BoardColumn(props: BoardColumnProps) {
   const { t } = useI18n();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPoint, setMenuPoint] = useState<ContextMenuPoint | null>(null);
   const rootRef = useRef<HTMLElement>(null);
   const sortable = useSortable({ id: `board:${props.board.id}`, data: { type: "board", boardId: props.board.id } });
   const drop = useDroppable({ id: `board-drop:${props.board.id}`, data: { type: "board-drop", boardId: props.board.id } });
@@ -51,19 +52,24 @@ export const BoardColumn = memo(function BoardColumn(props: BoardColumnProps) {
 
   useEffect(() => {
     const close = (event: PointerEvent): void => {
-      if (!rootRef.current?.contains(event.target as Node)) setMenuOpen(false);
+      if (!rootRef.current?.contains(event.target as Node)) setMenuPoint(null);
     };
     document.addEventListener("pointerdown", close);
     return () => document.removeEventListener("pointerdown", close);
   }, []);
 
-  const openContext = (event: MouseEvent | KeyboardEvent): void => {
+  const openContext = (event: MouseEvent): void => {
     event.preventDefault();
-    setMenuOpen(true);
+    setMenuPoint({ x: event.clientX, y: event.clientY });
+  };
+  const openKeyboardContext = (event: KeyboardEvent): void => {
+    event.preventDefault();
+    const rect = event.currentTarget.getBoundingClientRect();
+    setMenuPoint({ x: rect.right, y: rect.bottom });
   };
   const action = (callback: () => void): void => {
     callback();
-    setMenuOpen(false);
+    setMenuPoint(null);
   };
 
   return (
@@ -73,7 +79,7 @@ export const BoardColumn = memo(function BoardColumn(props: BoardColumnProps) {
       className={`board ${drop.isOver ? "is-over" : ""} ${sortable.isDragging ? "is-dragging" : ""}`}
       data-board-id={props.board.id}
       onContextMenu={openContext}
-      onKeyDown={(event) => { if (event.shiftKey && event.key === "F10") openContext(event); }}
+      onKeyDown={(event) => { if (event.shiftKey && event.key === "F10") openKeyboardContext(event); }}
     >
       <header className="board__header">
         <button
@@ -113,14 +119,14 @@ export const BoardColumn = memo(function BoardColumn(props: BoardColumnProps) {
         </SortableContext>
         {props.bookmarks.length === 0 ? <button className="board__empty" onClick={() => props.onAddBookmark(props.board)}>{t("board.empty")}</button> : null}
       </div>
-      {menuOpen ? <div className="context-menu board-context" role="menu" aria-label={t("board.actions", { name: props.board.title })}>
+      {menuPoint ? <FloatingContextMenu label={t("board.actions", { name: props.board.title })} point={menuPoint} onClose={() => setMenuPoint(null)}>
         <button onClick={() => action(() => props.onEditBoard(props.board))}><Pencil size={15} />{t("generic.rename")}</button>
         <div className="context-menu__group"><span>{t("board.columns")}</span>{(["auto", 1, 2] as const).map((value) => <button key={value} onClick={() => action(() => props.onPatchBoard(props.board, { bookmarkColumns: value }))}>{props.board.bookmarkColumns === value ? <Check size={14} /> : <i />}{t(value === "auto" ? "board.columnsAuto" : value === 1 ? "board.columnsOne" : "board.columnsTwo")}</button>)}</div>
         <div className="context-menu__group"><span>{t("board.size")}</span>{([2, 4, 6] as const).map((value) => <button key={value} onClick={() => action(() => props.onPatchBoard(props.board, { gridSpan: value }))}>{props.board.gridSpan === value ? <Check size={14} /> : <i />}{t(value === 2 ? "board.sizeSmall" : value === 4 ? "board.sizeMedium" : "board.sizeLarge")}</button>)}</div>
         <button onClick={() => action(() => props.onMoveBoard(props.board))}><MoveRight size={15} />{t("board.movePage")}</button>
         <button onClick={() => action(() => props.onDuplicateBoard(props.board))}><Copy size={15} />{t("generic.duplicate")}</button>
         <button className="danger" onClick={() => action(() => props.onDeleteBoard(props.board))}><Trash2 size={15} />{t("bookmark.moveTrash")}</button>
-      </div> : null}
+      </FloatingContextMenu> : null}
     </section>
   );
 });

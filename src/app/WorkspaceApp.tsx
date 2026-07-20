@@ -27,7 +27,6 @@ import { NameDialog } from "../components/NameDialog";
 import { useToasts } from "../components/ToastRegion";
 import { BoardCanvas } from "../features/boards/BoardCanvas";
 import { useThemeRuntime } from "../features/appearance/useThemeRuntime";
-import { usePerformanceTier } from "../features/appearance/performance";
 import { I18nProvider, useI18n } from "../i18n";
 import { AppLauncher } from "./AppLauncher";
 import { useWorkspace } from "./useWorkspace";
@@ -67,7 +66,6 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   const [sessionPrivacy, setSessionPrivacy] = useState(false);
   const initialSettingsSeen = useRef(false);
   const appStyle = useThemeRuntime(workspace.settings.theme);
-  const performanceTier = usePerformanceTier();
 
   useEffect(() => {
     if (initialSettingsSeen.current) return;
@@ -194,7 +192,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   };
 
   return (
-    <div className={`app-shell performance-${performanceTier} ${privacy ? "privacy-mode" : ""} ${workspace.settings.theme.motion ? "" : "reduce-motion"}`} style={appStyle}>
+    <div className={`app-shell ${workspace.settings.theme.lowPowerMode ? "low-power-mode" : ""} ${privacy ? "privacy-mode" : ""} ${workspace.settings.theme.motion ? "" : "motion-disabled"} ${workspace.settings.theme.bookmarkHoverMotion ? "" : "motion-hover-disabled"} ${workspace.settings.theme.menuMotion ? "" : "motion-menu-disabled"} ${workspace.settings.theme.dragMotion ? "" : "motion-drag-disabled"}`} style={appStyle}>
       <div className="wallpaper" aria-hidden="true" />
       <BoardCanvas
         boards={boards}

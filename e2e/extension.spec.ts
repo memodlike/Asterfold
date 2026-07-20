@@ -79,10 +79,6 @@ test.describe.serial("Asterfold MV3 release", () => {
       headless: true,
       args: ["--no-sandbox", "--disable-crash-reporter", "--disable-features=DisableLoadExtensionCommandLineSwitch", `--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
     });
-    await context.addInitScript(() => {
-      Object.defineProperty(navigator, "hardwareConcurrency", { configurable: true, get: () => 2 });
-      Object.defineProperty(navigator, "deviceMemory", { configurable: true, get: () => 2 });
-    });
     worker = await extensionWorker(context);
     extensionId = new URL(worker.url()).hostname;
     await expect.poll(() => worker.evaluate(() => Boolean(globalThis.chrome?.runtime?.id)), { timeout: 15_000 }).toBe(true);
@@ -107,8 +103,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/newtab.html`);
     await expect(page).toHaveTitle("Новая вкладка");
-    await expect(page.locator(".app-shell")).toHaveClass(/performance-reduced/u);
-    await expect(page.locator(".wallpaper")).toHaveCSS("filter", "none");
+    await expect(page.locator(".app-shell")).not.toHaveClass(/low-power-mode/u);
     await expect(page.getByRole("button", { name: "Открыть меню Asterfold" })).toBeVisible();
 
     await openLauncher(page);
@@ -143,6 +138,18 @@ test.describe.serial("Asterfold MV3 release", () => {
     await expect.poll(async () => page.locator(".board__title").allTextContents()).not.toEqual(boardOrderBefore);
     await expect(page.locator(".drag-overlay")).toHaveCount(0);
     await source.click({ button: "right" });
+    const sourceMenu = page.locator(".context-menu");
+    await expect(sourceMenu).toBeVisible();
+    const sourceMenuBounds = await sourceMenu.evaluate((menu) => {
+      const rect = menu.getBoundingClientRect();
+      const target = document.elementFromPoint(rect.left + 4, rect.top + 4);
+      return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, isTopmost: target === menu || menu.contains(target) };
+    });
+    expect(sourceMenuBounds).toMatchObject({ isTopmost: true });
+    expect(sourceMenuBounds.left).toBeGreaterThanOrEqual(8);
+    expect(sourceMenuBounds.top).toBeGreaterThanOrEqual(8);
+    expect(sourceMenuBounds.right).toBeLessThanOrEqual(1440 - 8);
+    expect(sourceMenuBounds.bottom).toBeLessThanOrEqual(900 - 8);
     await page.getByRole("button", { name: "Переместить", exact: true }).click();
     dialog = page.getByRole("dialog");
     await dialog.getByLabel("Назначение").selectOption({ label: "Later" });
@@ -166,6 +173,12 @@ test.describe.serial("Asterfold MV3 release", () => {
     await openLauncher(page);
     await page.getByRole("menuitem", { name: "Настройки" }).click();
     dialog = page.getByRole("dialog");
+    const lowPowerToggle = dialog.locator('label.switch:has(input[aria-label="Режим для слабых ПК"])');
+    await expect(lowPowerToggle).toHaveCount(1);
+    await lowPowerToggle.click();
+    await expect(page.locator(".app-shell")).toHaveClass(/low-power-mode/u);
+    await lowPowerToggle.click();
+    await expect(page.locator(".app-shell")).not.toHaveClass(/low-power-mode/u);
     await dialog.getByRole("button", { name: "Язык" }).click();
     await dialog.getByRole("button", { name: "Қазақша" }).click();
     await expect(page).toHaveTitle("Жаңа қойынды");
@@ -191,6 +204,20 @@ test.describe.serial("Asterfold MV3 release", () => {
     await page.reload();
     await expect(page.locator(".bookmark-card")).toHaveCount(100);
     expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true);
+    const boardCount = await page.locator(".board").count();
+    const bottomBoard = page.locator(".board").nth(boardCount - 1);
+    await bottomBoard.click({ button: "right", position: { x: 8, y: 8 } });
+    const cornerMenuBounds = await page.locator(".context-menu").evaluate((menu) => {
+      const rect = menu.getBoundingClientRect();
+      const target = document.elementFromPoint(rect.left + 4, rect.top + 4);
+      return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, isTopmost: target === menu || menu.contains(target) };
+    });
+    expect(cornerMenuBounds).toMatchObject({ isTopmost: true });
+    expect(cornerMenuBounds.left).toBeGreaterThanOrEqual(8);
+    expect(cornerMenuBounds.top).toBeGreaterThanOrEqual(8);
+    expect(cornerMenuBounds.right).toBeLessThanOrEqual(1280 - 8);
+    expect(cornerMenuBounds.bottom).toBeLessThanOrEqual(720 - 8);
+    await page.keyboard.press("Escape");
     if (captureScreenshots) await page.screenshot({ path: join(screenshotPath, "scale-1280x720.png") });
     await page.setViewportSize({ width: 1672, height: 941 });
     expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true);

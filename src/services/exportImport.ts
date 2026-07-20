@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { AsterfoldDatabase } from "../db/database";
 import { db } from "../db/database";
 import { createSnapshot, ensureStarterWorkspace } from "../db/repository";
+import { CURRENT_DB_SCHEMA_VERSION } from "../db/migrations";
 import type { Board, Bookmark, Page, ThemeConfig } from "../domain/models";
 import { ImportError, ValidationError } from "../domain/errors";
 import { evenlySpacedRanks } from "../domain/ordering";
@@ -72,6 +73,10 @@ export const themeSchema: z.ZodType<ThemeConfig> = z.object({
   showDescription: z.boolean(),
   faviconSize: z.number(),
   motion: z.boolean(),
+  lowPowerMode: z.boolean().default(false),
+  bookmarkHoverMotion: z.boolean().default(true),
+  menuMotion: z.boolean().default(true),
+  dragMotion: z.boolean().default(true),
   wallpaperId: z.string().nullable(),
   wallpaperDim: z.number(),
   wallpaperBlur: z.number(),
@@ -184,7 +189,7 @@ export async function createBackup(
     schemaVersion: 2,
     exportVersion: 2,
     exportedAt: nowIso(),
-    appVersion: "2.0.2",
+    appVersion: "2.0.3",
     scope,
     entities: { pages, boards, bookmarks },
     ...(scope === "full" ? { settings, theme: settings.theme } : {}),
@@ -213,7 +218,7 @@ export function parseBackup(text: string): AsterfoldBackup {
     ...result.data,
     schemaVersion: 2,
     exportVersion: 2,
-    ...(result.data.settings ? { settings: { ...result.data.settings, schemaVersion: 3 } } : {}),
+    ...(result.data.settings ? { settings: { ...result.data.settings, schemaVersion: CURRENT_DB_SCHEMA_VERSION } } : {}),
   };
 }
 

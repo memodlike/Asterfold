@@ -68,8 +68,8 @@ describe("database migrations", () => {
     await upgraded.open();
     const settings = await upgraded.settings.get("app");
     const board = await upgraded.boards.get("board");
-    expect(settings).toMatchObject({ schemaVersion: 3, locale: "auto", workspaceLayoutMode: "auto", workspaceRows: 2, workspaceAlignment: "center" });
-    expect(settings?.theme).toMatchObject({ glassVariant: "regular", backgroundMode: "auto" });
+    expect(settings).toMatchObject({ schemaVersion: 4, locale: "auto", workspaceLayoutMode: "auto", workspaceRows: 2, workspaceAlignment: "center" });
+    expect(settings?.theme).toMatchObject({ glassVariant: "regular", backgroundMode: "auto", lowPowerMode: false, bookmarkHoverMotion: true, menuMotion: true, dragMotion: true });
     expect(board).toMatchObject({ title: "Kept", bookmarkColumns: 2, gridColumn: 1, gridRow: 0, gridSpan: 4 });
     upgraded.close();
   });
