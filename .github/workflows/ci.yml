@@ -53,8 +53,7 @@ jobs:
         with:
           name: asterfold-release
           path: |
-            release/chrome-unpacked.zip
+            release/Asterfold-Chrome.zip
             release/extension-source.zip
             release/checksums.txt
           if-no-files-found: error
-

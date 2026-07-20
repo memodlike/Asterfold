@@ -8,4 +8,4 @@ Asterfold uses the simple `MAJOR.MINOR.PATCH` format.
 
 The first number changes only for a genuinely large product step. The second changes when a new capability appears. The third changes for fixes.
 
-The current redesign is **2.0.0** because it replaced the main workspace, settings, visual system, release structure, and verification suite.
+The redesign is **2.0.0** because it replaced the main workspace, settings, visual system, release structure, and verification suite. The current **2.0.1** is a patch release that fixes the Chrome installation archive.

@@ -5,6 +5,7 @@ import { chromium, expect, test, type BrowserContext, type Page, type Worker } f
 
 const extensionPath = resolve(process.env.ASTERFOLD_EXTENSION_PATH ?? ".output/chrome-mv3");
 const screenshotPath = resolve("docs/images");
+const captureScreenshots = process.env.ASTERFOLD_CAPTURE_SCREENSHOTS === "1";
 const knownBrowserPaths = [
   process.env.ASTERFOLD_CHROMIUM_PATH,
   "/tmp/asterfold-playwright/chromium-1194/chrome-mac/Chromium.app/Contents/MacOS/Chromium",
@@ -72,7 +73,7 @@ test.describe.serial("Asterfold MV3 release", () => {
 
   test.beforeAll(async () => {
     expect(existsSync(join(extensionPath, "manifest.json"))).toBe(true);
-    mkdirSync(screenshotPath, { recursive: true });
+    if (captureScreenshots) mkdirSync(screenshotPath, { recursive: true });
     context = await chromium.launchPersistentContext(join(tmpdir(), `asterfold-e2e-${Date.now()}`), {
       executablePath: browserPath(),
       headless: true,
@@ -184,12 +185,12 @@ test.describe.serial("Asterfold MV3 release", () => {
     await page.reload();
     await expect(page.locator(".bookmark-card")).toHaveCount(100);
     expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true);
-    await page.screenshot({ path: join(screenshotPath, "scale-1280x720.png") });
+    if (captureScreenshots) await page.screenshot({ path: join(screenshotPath, "scale-1280x720.png") });
     await page.setViewportSize({ width: 1672, height: 941 });
     expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true);
     await page.setViewportSize({ width: 1920, height: 1080 });
     expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true);
-    await page.screenshot({ path: join(screenshotPath, "scale-1920x1080.png") });
+    if (captureScreenshots) await page.screenshot({ path: join(screenshotPath, "scale-1920x1080.png") });
     expect(runtimeErrors).toEqual([]);
     await page.close();
   });

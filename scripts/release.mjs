@@ -67,6 +67,16 @@ try {
 await rm(release, { recursive: true, force: true });
 await mkdir(release, { recursive: true });
 await cp(output, unpacked, { recursive: true, force: true });
+await writeFile(join(unpacked, "HOW-TO-INSTALL.txt"), [
+  "ASTERFOLD — INSTALL IN CHROME",
+  "",
+  "1. Open chrome://extensions",
+  "2. Turn on Developer mode",
+  "3. Click Load unpacked",
+  "4. Select THIS folder (the one containing manifest.json)",
+  "",
+  "Do not select a ZIP file or GitHub's Source code archive.",
+].join("\n"), "utf8");
 
 for (const [source, outputName] of [
   ["docs/release/install.md", "INSTALL.md"],
@@ -79,12 +89,13 @@ for (const [source, outputName] of [
 
 await validateUnpacked();
 await run("zip", ["-q", "-r", "chrome-unpacked.zip", "chrome-unpacked"], release);
+await run("zip", ["-q", "-r", join(release, "Asterfold-Chrome.zip"), "."], unpacked);
 await run("zip", [
   "-q", "-r", join(release, "extension-source.zip"), ".",
   "-x", ".git/*", "node_modules/*", ".output/*", ".wxt/*", "release/*", "coverage/*",
   "test-results/*", "playwright-report/*", ".env", ".env.local", ".env.production", "*.log",
 ], root);
 
-const archives = [join(release, "extension-source.zip"), join(release, "chrome-unpacked.zip")];
+const archives = [join(release, "Asterfold-Chrome.zip"), join(release, "extension-source.zip")];
 await writeFile(join(release, "checksums.txt"), `${(await Promise.all(archives.map(checksum))).join("\n")}\n`, "utf8");
 console.log(`Release ready: ${release}`);
