@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { browser } from "wxt/browser";
 import { AlertTriangle, Check, ExternalLink, FolderPlus, Settings, Sparkles } from "lucide-react";
 import { createBoard, createBookmark, findDuplicate, updateSettings } from "../../src/db/repository";
@@ -17,7 +17,7 @@ interface ActiveTabData {
 
 export function PopupApp() {
   const workspace = useWorkspace();
-  const t = (key: MessageKey): string => translate(workspace?.settings.locale ?? "auto", key);
+  const t = useCallback((key: MessageKey): string => translate(workspace?.settings.locale ?? "auto", key), [workspace?.settings.locale]);
   const [tab, setTab] = useState<ActiveTabData | null>(null);
   const [pageId, setPageId] = useState("");
   const [boardId, setBoardId] = useState("");
@@ -39,12 +39,12 @@ export function PopupApp() {
     ]).then(([tabs, commands]) => {
       const active = tabs[0];
       const url = active?.url ?? "";
-      const titleValue = active?.title?.trim() || (url ? new URL(url).hostname : "Untitled page");
+      const titleValue = active?.title?.trim() || (url ? new URL(url).hostname : t("popup.untitledPage"));
       setTab({ title: titleValue, url, faviconUrl: active?.favIconUrl ?? null });
       setTitle(titleValue);
       setShortcut(commands.find((command) => command.name === "quick-save")?.shortcut ?? "");
-    }).catch(() => setError("Chrome did not provide the active tab."));
-  }, []);
+    }).catch(() => setError(t("popup.activeTabUnavailable")));
+  }, [t]);
 
   useEffect(() => {
     if (!workspace || pageId) return;
@@ -84,7 +84,7 @@ export function PopupApp() {
       window.setTimeout(() => { void browser.action.setBadgeText({ text: "" }); }, 1600);
     } catch (caught) {
       if (caught instanceof DuplicateError) setDuplicate(await findDuplicate(boardId, tab.url));
-      else setError(caught instanceof Error ? caught.message : "Unable to save this page");
+      else setError(t("popup.saveFailed"));
     } finally { setSaving(false); }
   };
 
@@ -93,7 +93,7 @@ export function PopupApp() {
     try {
       const board = await createBoard(pageId, newBoardName);
       setBoardId(board.id); setNewBoardName(""); setShowNewBoard(false);
-    } catch (caught) { setError(caught instanceof Error ? caught.message : "Unable to create Board"); }
+    } catch { setError(t("popup.createBoardFailed")); }
   };
 
   if (!workspace || !tab) return <div className="popup-loading"><Sparkles size={20} />{t("popup.preparing")}</div>;

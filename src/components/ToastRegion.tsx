@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2, X } from "lucide-react";
 import { Button } from "./Button";
 import { IconButton } from "./IconButton";
+import { useI18n } from "../i18n";
 
 export interface ToastInput {
   message: string;
@@ -20,6 +21,7 @@ export interface ToastController {
 }
 
 export function useToasts(): ToastController {
+  const { t } = useI18n();
   const [toasts, setToasts] = useState<Toast[]>([]);
   const idRef = useRef(0);
   const timers = useRef(new Map<number, number>());
@@ -44,7 +46,7 @@ export function useToasts(): ToastController {
   return {
     push,
     region: (
-      <div className="toast-region" role="region" aria-label="Notifications">
+      <div className="toast-region" role="region" aria-label={t("generic.notifications")}>
         {toasts.map((toast) => (
           <div className={`toast toast--${toast.tone ?? "neutral"}`} key={toast.id} role="status">
             <CheckCircle2 size={18} aria-hidden="true" />
@@ -52,7 +54,7 @@ export function useToasts(): ToastController {
             {toast.actionLabel && toast.onAction ? (
               <Button variant="ghost" size="small" onClick={() => { void Promise.resolve(toast.onAction?.()).finally(() => remove(toast.id)); }}>{toast.actionLabel}</Button>
             ) : null}
-            <IconButton label="Dismiss" onClick={() => remove(toast.id)}><X size={16} /></IconButton>
+            <IconButton label={t("generic.dismiss")} onClick={() => remove(toast.id)}><X size={16} /></IconButton>
           </div>
         ))}
       </div>

@@ -36,7 +36,7 @@ export function getSupabaseClient(): SupabaseClient | null {
       storage: authStorage,
       storageKey: "asterfold-cloud-session",
     },
-    global: { headers: { "X-Client-Info": "asterfold-extension/2.1.2" } },
+    global: { headers: { "X-Client-Info": "asterfold-extension/2.1.3" } },
   });
   return singleton;
 }

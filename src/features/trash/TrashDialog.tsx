@@ -35,14 +35,14 @@ export function TrashDialog(props: TrashDialogProps) {
       else if (type === "board") await restoreBoard(id);
       else await restoreBookmark(id);
       props.onChanged(t("trash.restored"));
-    } catch (error) { props.onError(error instanceof Error ? error.message : "Restore failed"); }
+    } catch { props.onError(t("error.restoreFailed")); }
   };
   const remove = async (type: typeof items[number]["type"], id: string): Promise<void> => {
     if (!window.confirm(t("trash.confirmItem"))) return;
-    try { await permanentlyDelete(type, id); props.onChanged(t("trash.deleted")); } catch (error) { props.onError(error instanceof Error ? error.message : "Delete failed"); }
+    try { await permanentlyDelete(type, id); props.onChanged(t("trash.deleted")); } catch { props.onError(t("error.deletePermanentFailed")); }
   };
   return (
-    <Modal open={props.open} size="large" className="modal--trash" title={t("trash.title")} description={t("trash.description")} onClose={props.onClose} footer={totalItems > 0 ? <Button variant="danger" icon={<Trash2 size={15} />} onClick={() => { if (window.confirm(t("trash.permanent"))) void emptyTrash().then((count) => props.onChanged(t("trash.items", { count }))).catch((error: unknown) => props.onError(error instanceof Error ? error.message : "Unable to empty Trash")); }}>{t("trash.emptyAction")}</Button> : undefined}>
+    <Modal open={props.open} size="large" className="modal--trash" title={t("trash.title")} description={t("trash.description")} onClose={props.onClose} footer={totalItems > 0 ? <Button variant="danger" icon={<Trash2 size={15} />} onClick={() => { if (window.confirm(t("trash.permanent"))) void emptyTrash().then((count) => props.onChanged(t("trash.items", { count }))).catch(() => props.onError(t("error.emptyTrashFailed"))); }}>{t("trash.emptyAction")}</Button> : undefined}>
       <div className="trash-dialog">
         <div className="trash-toolbar">
           <div className="segmented" role="tablist" aria-label={t("trash.title")}>{(["all", "page", "board", "bookmark"] as const).map((item) => <button role="tab" aria-selected={filter === item} className={filter === item ? "is-active" : ""} key={item} onClick={() => setFilter(item)}>{item === "all" ? <Trash2 size={14} /> : typeMeta(item).icon}<span>{t(item === "all" ? "trash.all" : item === "page" ? "trash.pages" : item === "board" ? "trash.boards" : "trash.bookmarks")}</span></button>)}</div>

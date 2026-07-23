@@ -79,7 +79,7 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
       if (error instanceof DuplicateError) {
         setDuplicate(await findDuplicate(boardId, url));
       } else {
-        props.onError(error instanceof Error ? error.message : "Unable to save bookmark");
+        props.onError(t("error.saveBookmarkFailed"));
       }
     } finally {
       setSaving(false);
@@ -102,7 +102,7 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
           <div><strong>{title || t("bookmark.untitled")}</strong><small>{url}</small></div>
         </div>
         <label>{t("generic.title")}<input autoFocus value={title} maxLength={240} onChange={(event) => setTitle(event.target.value)} placeholder={t("bookmark.untitled")} /></label>
-        <label>{t("bookmark.url")}<input type="url" required value={url} maxLength={8192} onChange={(event) => setUrl(event.target.value)} placeholder="https://example.com" /></label>
+        <label>{t("bookmark.url")}<input type="url" required value={url} maxLength={8192} onChange={(event) => setUrl(event.target.value)} placeholder={t("bookmark.urlPlaceholder")} /></label>
         <label>{t("generic.description")}<textarea value={description} maxLength={2000} rows={4} onChange={(event) => setDescription(event.target.value)} placeholder={t("bookmark.optionalNote")} /></label>
         <label>{t("generic.destination")}<select required value={boardId} onChange={(event) => setBoardId(event.target.value)}>
           {boardOptions.map(({ page, boards }) => (

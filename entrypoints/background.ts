@@ -4,6 +4,7 @@ import { createBookmark, ensureStarterWorkspace, getWorkspaceData, purgeTrash } 
 import { DuplicateError } from "../src/domain/errors";
 import { isSafeOpenUrl } from "../src/domain/urls";
 import { parseExtensionMessage, type ExtensionResponse } from "../src/browser/messages";
+import { translate, type MessageKey } from "../src/i18n";
 
 const MENU_SAVE_PAGE = "asterfold-save-page";
 const MENU_SAVE_LINK = "asterfold-save-link";
@@ -12,10 +13,12 @@ const TRASH_ALARM = "asterfold-trash-cleanup";
 const CLOUD_ENABLED = import.meta.env.WXT_ENABLE_CLOUD_SYNC === "true";
 
 async function ensureMenus(): Promise<void> {
+  const workspace = await getWorkspaceData();
+  const t = (key: MessageKey): string => translate(workspace.settings.locale, key);
   await browser.contextMenus.removeAll();
-  browser.contextMenus.create({ id: MENU_SAVE_PAGE, title: "Save page to Asterfold", contexts: ["page"], documentUrlPatterns: ["http://*/*", "https://*/*"] });
-  browser.contextMenus.create({ id: MENU_SAVE_LINK, title: "Save link to Asterfold", contexts: ["link"], targetUrlPatterns: ["http://*/*", "https://*/*", "mailto:*"], documentUrlPatterns: ["http://*/*", "https://*/*"] });
-  browser.contextMenus.create({ id: MENU_OPEN, title: "Open Asterfold workspace", contexts: ["page", "action"] });
+  browser.contextMenus.create({ id: MENU_SAVE_PAGE, title: t("context.savePage"), contexts: ["page"], documentUrlPatterns: ["http://*/*", "https://*/*"] });
+  browser.contextMenus.create({ id: MENU_SAVE_LINK, title: t("context.saveLink"), contexts: ["link"], targetUrlPatterns: ["http://*/*", "https://*/*", "mailto:*"], documentUrlPatterns: ["http://*/*", "https://*/*"] });
+  browser.contextMenus.create({ id: MENU_OPEN, title: t("context.openWorkspace"), contexts: ["page", "action"] });
 }
 
 async function setBadge(text: string, color: string): Promise<void> {
@@ -83,7 +86,10 @@ async function handleRuntimeMessage(raw: unknown): Promise<ExtensionResponse> {
       const result = await runSync();
       return { ok: result.status === "idle", message: result.message, data: result };
     }
-    case "DATA_CHANGED": return { ok: true };
+    case "DATA_CHANGED": {
+      if (message.entity === "settings") await ensureMenus();
+      return { ok: true };
+    }
     default: return { ok: false, message: "Unsupported message" };
   }
 }

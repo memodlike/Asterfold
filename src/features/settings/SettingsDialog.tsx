@@ -63,7 +63,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
   const [importSource, setImportSource] = useState("");
   const [importBusy, setImportBusy] = useState(false);
   const [duplicateStrategy, setDuplicateStrategy] = useState<"skip" | "allow">("skip");
-  const [importPageTitle, setImportPageTitle] = useState("Imported bookmarks");
+  const [importPageTitle, setImportPageTitle] = useState(t("settings.importedBookmarks"));
   const importInputRef = useRef<HTMLInputElement>(null);
   const wallpaperInputRef = useRef<HTMLInputElement>(null);
   const settings = props.workspace.settings;
@@ -79,17 +79,18 @@ export function SettingsDialog(props: SettingsDialogProps) {
   useEffect(() => {
     if (!props.open) return;
     setSection(props.initialSection ?? "appearance");
+    if (!importRecordsPreview.length && !backupPreview) setImportPageTitle(t("settings.importedBookmarks"));
     if (browser.commands?.getAll) void browser.commands.getAll().then((commands) => setShortcut(commands.find((command) => command.name === "quick-save")?.shortcut || "—")).catch(() => setShortcut("—"));
     if (navigator.storage?.estimate) void navigator.storage.estimate().then(setStorage).catch(() => setStorage(undefined));
     void auditInvariants().then(setInvariants);
-  }, [props.initialSection, props.open]);
+  }, [backupPreview, importRecordsPreview.length, props.initialSection, props.open, t]);
 
   const patchSettings = async (patch: Partial<Omit<AppSettings, "id" | "schemaVersion">>, message = t("generic.save")): Promise<void> => {
     try {
       await updateSettings(patch);
       props.onUpdated(message);
-    } catch (error) {
-      props.onError(error instanceof Error ? error.message : "Unable to update settings");
+    } catch {
+      props.onError(t("error.updateSettings"));
     }
   };
   const patchTheme = (patch: Partial<ThemeConfig>): void => {
@@ -102,12 +103,12 @@ export function SettingsDialog(props: SettingsDialogProps) {
       if (format === "html") downloadText("asterfold-bookmarks.html", toNetscapeHtml(backup), "text/html");
       if (format === "markdown") downloadText("asterfold-bookmarks.md", toMarkdown(backup), "text/markdown");
       props.onUpdated(`${format.toUpperCase()} ✓`);
-    } catch (error) {
-      props.onError(error instanceof Error ? error.message : "Export failed");
+    } catch {
+      props.onError(t("error.exportFailed"));
     }
   };
   const readImportFile = async (file: File): Promise<void> => {
-    if (file.size > 25 * 1024 * 1024) { props.onError("Import file must be 25 MB or smaller"); return; }
+    if (file.size > 25 * 1024 * 1024) { props.onError(t("error.importTooLarge")); return; }
     try {
       const text = await file.text();
       if (file.name.toLowerCase().endsWith(".json")) {
@@ -118,8 +119,8 @@ export function SettingsDialog(props: SettingsDialogProps) {
         setBackupPreview(null);
       }
       setImportSource(file.name);
-    } catch (error) {
-      props.onError(error instanceof Error ? error.message : "Import preview failed");
+    } catch {
+      props.onError(t("error.importPreviewFailed"));
     }
   };
   const requestChromeImport = async (): Promise<void> => {
@@ -128,38 +129,38 @@ export function SettingsDialog(props: SettingsDialogProps) {
       if (!granted) return;
       setImportRecordsPreview(flattenChromeBookmarks(await browser.bookmarks.getTree()));
       setBackupPreview(null);
-      setImportSource("Chrome bookmarks");
-    } catch (error) {
-      props.onError(error instanceof Error ? error.message : "Unable to read Chrome bookmarks");
+      setImportSource(t("settings.chromeBookmarks"));
+    } catch {
+      props.onError(t("error.chromeBookmarksUnavailable"));
     }
   };
   const commitRecordImport = async (): Promise<void> => {
     setImportBusy(true);
     try {
       const summary = await importRecords(importRecordsPreview, { pageTitle: importPageTitle }, duplicateStrategy);
-      props.onUpdated(`Imported ${summary.imported}`);
+      props.onUpdated(t("settings.imported", { count: summary.imported }));
       setImportRecordsPreview([]);
       setImportSource("");
-    } catch (error) { props.onError(error instanceof Error ? error.message : "Import failed"); }
+    } catch { props.onError(t("error.importFailed")); }
     finally { setImportBusy(false); }
   };
   const commitBackupRestore = async (strategy: "merge" | "replace"): Promise<void> => {
     if (!backupPreview) return;
-    if (strategy === "replace" && !window.confirm("Replace local workspace? A safety snapshot will be created first.")) return;
+    if (strategy === "replace" && !window.confirm(t("settings.restoreConfirmation"))) return;
     setImportBusy(true);
     try {
       await restoreBackup(backupPreview, strategy);
-      props.onUpdated("Backup restored");
+      props.onUpdated(t("settings.backupRestored"));
       setBackupPreview(null);
       setImportSource("");
-    } catch (error) { props.onError(error instanceof Error ? error.message : "Restore failed"); }
+    } catch { props.onError(t("error.restoreFailed")); }
     finally { setImportBusy(false); }
   };
   const saveUploadedWallpaper = async (file: File): Promise<void> => {
     try {
       const wallpaper = await saveWallpaper(file, file.name);
       patchTheme({ wallpaperId: wallpaper.id, backgroundMode: "wallpaper" });
-    } catch (error) { props.onError(error instanceof Error ? error.message : "Wallpaper could not be saved"); }
+    } catch { props.onError(t("error.wallpaperSaveFailed")); }
   };
 
   return (
@@ -216,10 +217,10 @@ export function SettingsDialog(props: SettingsDialogProps) {
           </SettingsSection> : null}
 
           {section === "data-privacy" ? <SettingsSection title={t("settings.dataPrivacy")} description={t("settings.dataDescription")}>
-            <div className="action-grid"><button onClick={() => void exportAll("json")}><FileJson /><strong>{t("settings.exportJson")}</strong><span>{t("settings.backupVersion")}</span></button><button onClick={() => void exportAll("html")}><Download /><strong>{t("settings.exportHtml")}</strong><span>Netscape</span></button><button onClick={() => void exportAll("markdown")}><FileText /><strong>{t("settings.exportMarkdown")}</strong><span>.md</span></button><button onClick={() => importInputRef.current?.click()}><Upload /><strong>{t("settings.importFile")}</strong><span>JSON / HTML</span></button><button onClick={() => void requestChromeImport()}><Download /><strong>{t("settings.importChrome")}</strong><span>{t("settings.permissionOnDemand")}</span></button><button onClick={() => void createSnapshot("manual").then(() => props.onUpdated(t("settings.snapshotCreated")))}><Archive /><strong>{t("settings.snapshot")}</strong><span>IndexedDB</span></button></div>
+            <div className="action-grid"><button onClick={() => void exportAll("json")}><FileJson /><strong>{t("settings.exportJson")}</strong><span>{t("settings.backupVersion")}</span></button><button onClick={() => void exportAll("html")}><Download /><strong>{t("settings.exportHtml")}</strong><span>{t("settings.exportHtmlHint")}</span></button><button onClick={() => void exportAll("markdown")}><FileText /><strong>{t("settings.exportMarkdown")}</strong><span>.md</span></button><button onClick={() => importInputRef.current?.click()}><Upload /><strong>{t("settings.importFile")}</strong><span>{t("settings.importFileHint")}</span></button><button onClick={() => void requestChromeImport()}><Download /><strong>{t("settings.importChrome")}</strong><span>{t("settings.permissionOnDemand")}</span></button><button onClick={() => void createSnapshot("manual").then(() => props.onUpdated(t("settings.snapshotCreated")))}><Archive /><strong>{t("settings.snapshot")}</strong><span>{t("settings.snapshotHint")}</span></button></div>
             <input ref={importInputRef} hidden type="file" accept="application/json,text/html,.json,.html,.htm" onChange={(event) => { const file = event.target.files?.[0]; if (file) void readImportFile(file); event.currentTarget.value = ""; }} />
             {importRecordsPreview.length > 0 ? <div className="import-preview"><h3>{importSource}</h3><p>{t("settings.importPreview", { count: importRecordsPreview.length })}</p><div className="form-row"><label>{t("settings.defaultPage")}<input value={importPageTitle} onChange={(event) => setImportPageTitle(event.target.value)} /></label><label>{t("settings.duplicates")}<select value={duplicateStrategy} onChange={(event) => setDuplicateStrategy(event.target.value as "skip" | "allow")}><option value="skip">{t("settings.skip")}</option><option value="allow">{t("settings.allow")}</option></select></label></div><div className="button-row"><Button onClick={() => setImportRecordsPreview([])}>{t("generic.cancel")}</Button><Button variant="primary" disabled={importBusy} onClick={() => void commitRecordImport()}>{t("generic.create")}</Button></div></div> : null}
-            {backupPreview ? <div className="import-preview"><h3>{importSource}</h3><p>v{backupPreview.exportVersion} · {backupPreview.entities.pages.length} / {backupPreview.entities.boards.length} / {backupPreview.entities.bookmarks.length}</p><div className="button-row"><Button onClick={() => setBackupPreview(null)}>{t("generic.cancel")}</Button><Button disabled={importBusy} onClick={() => void commitBackupRestore("merge")}>{t("settings.merge")}</Button><Button variant="danger" disabled={importBusy} onClick={() => void commitBackupRestore("replace")}>{t("settings.replace")}</Button></div></div> : null}
+            {backupPreview ? <div className="import-preview"><h3>{importSource}</h3><p>{t("settings.backupSummary", { version: backupPreview.exportVersion, pages: backupPreview.entities.pages.length, boards: backupPreview.entities.boards.length, bookmarks: backupPreview.entities.bookmarks.length })}</p><div className="button-row"><Button onClick={() => setBackupPreview(null)}>{t("generic.cancel")}</Button><Button disabled={importBusy} onClick={() => void commitBackupRestore("merge")}>{t("settings.merge")}</Button><Button variant="danger" disabled={importBusy} onClick={() => void commitBackupRestore("replace")}>{t("settings.replace")}</Button></div></div> : null}
             <SettingRow label={t("settings.privacyPersist")}><label className="switch"><input type="checkbox" checked={settings.privacyPersist} onChange={(event) => void patchSettings({ privacyPersist: event.target.checked, ...(event.target.checked ? {} : { privacyEnabled: false }) })} /><span /></label></SettingRow>
             <SettingRow label={t("settings.retention")}><select value={settings.trashRetentionDays ?? "never"} onChange={(event) => void patchSettings({ trashRetentionDays: event.target.value === "never" ? null : Number(event.target.value) as 7 | 30 | 90 })}><option value="7">{t("settings.days", { count: 7 })}</option><option value="30">{t("settings.days", { count: 30 })}</option><option value="90">{t("settings.days", { count: 90 })}</option><option value="never">{t("settings.never")}</option></select></SettingRow>
             <div className="data-footer"><Button icon={<Trash2 size={16} />} onClick={props.onOpenTrash}>{t("settings.openTrash")}</Button><div className="diagnostic-summary"><Database size={17} /><span>{counts.pages} / {counts.boards} / {counts.bookmarks}</span><span>{formatBytes(storage?.usage)}</span><strong className={invariants.length ? "is-warning" : "is-healthy"}>{invariants.length ? t("settings.issues", { count: invariants.length }) : t("settings.healthy")}</strong></div><Button icon={<CheckCircle2 size={16} />} onClick={() => void ensureStarterWorkspace().then(() => auditInvariants()).then((issues) => { setInvariants(issues); props.onUpdated(t("settings.repair")); })}>{t("settings.repair")}</Button></div>
