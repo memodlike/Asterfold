@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .tab { fill: #747981; }
+    @media (prefers-color-scheme: dark) { .tab { fill: #b5bbc4; } }
+  </style>
+  <path class="tab" d="M8.4 5A3.4 3.4 0 0 0 5 8.4v15.2A3.4 3.4 0 0 0 8.4 27h15.2a3.4 3.4 0 0 0 3.4-3.4V11.2A3.4 3.4 0 0 0 23.6 7.8h-7.2L13.9 5H8.4Zm.1 3h4.2l2.5 2.8h8.3c.2 0 .4.2.4.4v12.4c0 .2-.2.4-.4.4H8.4a.4.4 0 0 1-.4-.4V8.4c0-.2.2-.4.5-.4Z"/>
+</svg>

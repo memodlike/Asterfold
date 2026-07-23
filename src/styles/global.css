@@ -44,7 +44,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .favicon > span { font-size: 8px; font-weight: 700; }
 .private-content { filter: blur(7px); user-select: none; }
 
-.context-menu { position: fixed; z-index: 220; display: grid; width: min(202px, calc(100vw - 16px)); max-height: calc(100vh - 16px); padding: 4px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: 12px; background: rgb(var(--surface-rgb) / .96); box-shadow: 0 16px 42px rgb(0 0 0 / .22), inset 0 1px 0 rgb(255 255 255 / .12); backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); }
+.context-menu { position: fixed; z-index: 2147483647; isolation: isolate; display: grid; width: min(216px, calc(100vw - 16px)); max-height: calc(100dvh - 16px); padding: 4px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid rgb(var(--border-rgb) / .28); border-radius: 12px; color: var(--color-text); background: var(--color-surface-solid); box-shadow: 0 16px 42px rgb(0 0 0 / .28), inset 0 1px 0 var(--glass-highlight); backdrop-filter: blur(22px) saturate(1.08); -webkit-backdrop-filter: blur(22px) saturate(1.08); }
 .context-menu button { display: flex; align-items: center; min-height: 28px; gap: 8px; padding: 5px 8px; border-radius: 7px; text-align: left; background: transparent; font-size: 12px; }
 .context-menu button:hover, .context-menu button:focus-visible { background: rgb(var(--border-rgb) / .09); }
 .context-menu button:disabled { opacity: .4; cursor: default; }

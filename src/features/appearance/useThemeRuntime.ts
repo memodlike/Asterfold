@@ -44,5 +44,20 @@ export function useThemeRuntime(theme: ThemeConfig | undefined) {
     document.documentElement.style.colorScheme = dark ? "dark" : "light";
   }, [systemDark, theme]);
 
-  return useMemo(() => theme ? themeStyle(theme, wallpaper, wallpaperUrl, theme.mode === "dark" || (theme.mode === "system" && systemDark)) : undefined, [systemDark, theme, wallpaper, wallpaperUrl]);
+  const style = useMemo(
+    () => theme ? themeStyle(theme, wallpaper, wallpaperUrl, theme.mode === "dark" || (theme.mode === "system" && systemDark)) : undefined,
+    [systemDark, theme, wallpaper, wallpaperUrl],
+  );
+
+  useEffect(() => {
+    if (!style) return;
+    const root = document.documentElement;
+    const variables = Object.entries(style).filter(([name, value]) => name.startsWith("--") && value !== undefined);
+    for (const [name, value] of variables) root.style.setProperty(name, String(value));
+    return () => {
+      for (const [name] of variables) root.style.removeProperty(name);
+    };
+  }, [style]);
+
+  return style;
 }

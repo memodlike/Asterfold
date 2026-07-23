@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 import { chromium, expect, test, type BrowserContext, type Page, type Worker } from "@playwright/test";
 
 const extensionPath = resolve(process.env.ASTERFOLD_EXTENSION_PATH ?? ".output/chrome-mv3");
-const screenshotPath = resolve("docs/images");
+const screenshotPath = resolve(process.env.ASTERFOLD_SCREENSHOT_PATH ?? "docs/images");
 const captureScreenshots = process.env.ASTERFOLD_CAPTURE_SCREENSHOTS === "1";
 const knownBrowserPaths = [
   process.env.ASTERFOLD_CHROMIUM_PATH,
@@ -52,6 +52,29 @@ async function setWorkspaceLocale(page: Page, locale: string): Promise<void> {
     });
     database.close();
   }, locale);
+}
+
+async function setWorkspaceThemeMode(page: Page, mode: "light" | "dark"): Promise<void> {
+  await page.evaluate(async (nextMode) => {
+    const request = indexedDB.open("asterfold");
+    const database = await new Promise<IDBDatabase>((resolvePromise, reject) => {
+      request.onsuccess = () => resolvePromise(request.result);
+      request.onerror = () => reject(request.error ?? new Error("Unable to open IndexedDB"));
+    });
+    const transaction = database.transaction("settings", "readwrite");
+    const settingsStore = transaction.objectStore("settings");
+    const settings = await new Promise<{ theme: Record<string, unknown> }>((resolvePromise, reject) => {
+      const get = settingsStore.get("app");
+      get.onsuccess = () => resolvePromise(get.result as { theme: Record<string, unknown> });
+      get.onerror = () => reject(get.error ?? new Error("Unable to read settings"));
+    });
+    settingsStore.put({ ...settings, theme: { ...settings.theme, mode: nextMode }, updatedAt: new Date().toISOString() });
+    await new Promise<void>((resolvePromise, reject) => {
+      transaction.oncomplete = () => resolvePromise();
+      transaction.onerror = () => reject(transaction.error ?? new Error("Unable to write settings"));
+    });
+    database.close();
+  }, mode);
 }
 
 async function seedScaleFixture(page: Page): Promise<void> {
@@ -126,6 +149,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/newtab.html`);
     await expect(page).toHaveTitle("New Tab");
+    await expect(page.locator('link[rel="icon"]')).toHaveAttribute("href", "/icons/new-tab.svg");
     await setWorkspaceLocale(page, "ru");
     await page.reload();
     await expect(page).toHaveTitle("Новая вкладка");
@@ -169,13 +193,15 @@ test.describe.serial("Asterfold MV3 release", () => {
     const sourceMenuBounds = await sourceMenu.evaluate((menu) => {
       const rect = menu.getBoundingClientRect();
       const target = document.elementFromPoint(rect.left + 4, rect.top + 4);
-      return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, isTopmost: target === menu || menu.contains(target) };
+      const style = getComputedStyle(menu);
+      return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, isTopmost: target === menu || menu.contains(target), background: style.backgroundColor, color: style.color, zIndex: style.zIndex };
     });
-    expect(sourceMenuBounds).toMatchObject({ isTopmost: true });
+    expect(sourceMenuBounds).toMatchObject({ isTopmost: true, background: "rgb(251, 251, 252)", color: "rgb(25, 26, 29)", zIndex: "2147483647" });
     expect(sourceMenuBounds.left).toBeGreaterThanOrEqual(8);
     expect(sourceMenuBounds.top).toBeGreaterThanOrEqual(8);
     expect(sourceMenuBounds.right).toBeLessThanOrEqual(1440 - 8);
     expect(sourceMenuBounds.bottom).toBeLessThanOrEqual(900 - 8);
+    if (captureScreenshots) await page.screenshot({ path: join(screenshotPath, "context-menu-light.png") });
     await page.getByRole("button", { name: "Переместить", exact: true }).click();
     dialog = page.getByRole("dialog");
     await dialog.getByLabel("Назначение").selectOption({ label: "Later" });
@@ -224,6 +250,13 @@ test.describe.serial("Asterfold MV3 release", () => {
     await dialog.getByRole("button", { name: "Восстановить" }).click();
     await dialog.getByRole("button", { name: "Закрыть" }).click();
     await expect(page.getByText("Playwright docs", { exact: true })).toBeVisible();
+
+    await setWorkspaceThemeMode(page, "dark");
+    await page.reload();
+    await page.getByRole("button", { name: "Playwright docs" }).click({ button: "right" });
+    await expect(page.locator(".context-menu")).toHaveCSS("background-color", "rgb(37, 39, 43)");
+    await expect(page.locator(".context-menu")).toHaveCSS("color", "rgb(245, 245, 246)");
+    await page.keyboard.press("Escape");
 
     await page.getByRole("button", { name: "Playwright docs" }).click();
     await expect(page).toHaveURL("https://playwright.dev/docs/chrome-extensions");
