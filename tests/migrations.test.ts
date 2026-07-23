@@ -1,7 +1,7 @@
 import Dexie from "dexie";
 import { afterEach, describe, expect, it } from "vitest";
 import { AsterfoldDatabase } from "../src/db/database";
-import { CURRENT_DB_SCHEMA_VERSION, V1_STORES, V2_STORES } from "../src/db/migrations";
+import { CURRENT_DB_SCHEMA_VERSION, V1_STORES, V2_STORES, V4_STORES } from "../src/db/migrations";
 
 describe("database migrations", () => {
   const names: string[] = [];
@@ -68,9 +68,30 @@ describe("database migrations", () => {
     await upgraded.open();
     const settings = await upgraded.settings.get("app");
     const board = await upgraded.boards.get("board");
-    expect(settings).toMatchObject({ schemaVersion: 4, locale: "auto", workspaceLayoutMode: "auto", workspaceRows: 2, workspaceAlignment: "center" });
+    expect(settings).toMatchObject({ schemaVersion: 5, locale: "auto", workspaceLayoutMode: "auto", workspaceRows: 2, workspaceAlignment: "center" });
     expect(settings?.theme).toMatchObject({ glassVariant: "regular", backgroundMode: "auto", lowPowerMode: false, bookmarkHoverMotion: true, menuMotion: true, dragMotion: true });
     expect(board).toMatchObject({ title: "Kept", bookmarkColumns: 2, gridColumn: 1, gridRow: 0, gridSpan: 4 });
+    upgraded.close();
+  });
+
+  it("upgrades the former default new-tab links to the current tab", async () => {
+    const name = `asterfold-migration-v4-${crypto.randomUUID()}`;
+    names.push(name);
+    const legacy = new Dexie(name);
+    legacy.version(4).stores(V4_STORES);
+    await legacy.open();
+    const timestamp = "2024-01-01T00:00:00.000Z";
+    await legacy.table("settings").put({ id: "app", schemaVersion: 4, updatedAt: timestamp });
+    await legacy.table("bookmarks").put({
+      id: "bookmark", userId: null, boardId: "board", title: "Kept", url: "https://example.com", normalizedUrl: "https://example.com/", hostname: "example.com", description: null, faviconUrl: null, customIcon: null, position: "hzz", openMode: "new-tab", pinned: false,
+      createdAt: timestamp, updatedAt: timestamp, deletedAt: null, deletedBatchId: null, version: 1,
+    });
+    legacy.close();
+
+    const upgraded = new AsterfoldDatabase(name);
+    await upgraded.open();
+    expect(await upgraded.bookmarks.get("bookmark")).toMatchObject({ openMode: "current", version: 2 });
+    expect((await upgraded.settings.get("app"))?.schemaVersion).toBe(CURRENT_DB_SCHEMA_VERSION);
     upgraded.close();
   });
 });

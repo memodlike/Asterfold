@@ -169,6 +169,17 @@ const ru = {
   "settings.diagnostics": "Диагностика",
   "settings.healthy": "Данные в порядке",
   "settings.repair": "Безопасное восстановление",
+  "settings.backupVersion": "Резервная копия v2",
+  "settings.permissionOnDemand": "Разрешение по запросу",
+  "settings.snapshotCreated": "Снимок создан ✓",
+  "settings.importPreview": "Закладок: {count}. Пока ничего не изменено.",
+  "settings.duplicates": "Дубликаты",
+  "settings.skip": "Пропустить",
+  "settings.allow": "Разрешить",
+  "settings.merge": "Объединить",
+  "settings.replace": "Заменить",
+  "settings.days": "{count} дней",
+  "settings.issues": "Проблем: {count}",
   "trash.title": "Корзина",
   "trash.description": "Удалённые элементы можно восстановить до автоматической очистки.",
   "trash.empty": "Корзина пуста",
@@ -368,6 +379,17 @@ const kk: Record<MessageKey, string> = {
   "settings.diagnostics": "Диагностика",
   "settings.healthy": "Деректер қалыпты",
   "settings.repair": "Қауіпсіз қалпына келтіру",
+  "settings.backupVersion": "v2 сақтық көшірмесі",
+  "settings.permissionOnDemand": "Сұраныс бойынша рұқсат",
+  "settings.snapshotCreated": "Снимок жасалды ✓",
+  "settings.importPreview": "Бетбелгілер: {count}. Әзірге ештеңе өзгертілмеді.",
+  "settings.duplicates": "Көшірмелер",
+  "settings.skip": "Өткізіп жіберу",
+  "settings.allow": "Рұқсат ету",
+  "settings.merge": "Біріктіру",
+  "settings.replace": "Ауыстыру",
+  "settings.days": "{count} күн",
+  "settings.issues": "Мәселелер: {count}",
   "trash.title": "Себет",
   "trash.description": "Жойылған элементтерді автоматты тазалауға дейін қалпына келтіруге болады.",
   "trash.empty": "Себет бос",
@@ -396,12 +418,51 @@ const kk: Record<MessageKey, string> = {
   "popup.copyReady": "Тағы бір көшірме сақталады",
 };
 
-export type AppLocale = "ru" | "kk";
+const en: Record<MessageKey, string> = {
+  "tab.title": "New Tab", "loading.opening": "Opening your new tab…", "loading.repairing": "Restoring your workspace…",
+  "generic.close": "Close", "generic.cancel": "Cancel", "generic.save": "Save", "generic.create": "Create", "generic.move": "Move", "generic.delete": "Delete", "generic.rename": "Rename", "generic.duplicate": "Duplicate", "generic.settings": "Settings", "generic.search": "Search", "generic.trash": "Trash", "generic.page": "Page", "generic.board": "Board", "generic.bookmark": "Bookmark", "generic.title": "Title", "generic.description": "Description", "generic.destination": "Destination", "generic.open": "Open", "generic.undo": "Undo",
+  "launcher.label": "Open Asterfold menu", "launcher.newBoard": "New board", "launcher.pages": "Pages", "launcher.privacyOn": "Turn privacy off", "launcher.privacyOff": "Turn privacy on", "launcher.settings": "Settings", "launcher.pageCurrent": "Current page",
+  "board.add": "Add a bookmark to {name}", "board.actions": "Actions for {name}", "board.columns": "Bookmark columns", "board.columnsAuto": "Automatic", "board.columnsOne": "One column", "board.columnsTwo": "Two columns", "board.size": "Board size", "board.sizeSmall": "Compact", "board.sizeMedium": "Medium", "board.sizeLarge": "Wide", "board.movePage": "Move to page", "board.empty": "Drop a link here or press +", "board.createFirst": "Create your first board", "board.createFirstDescription": "Group bookmarks by project and context.",
+  "bookmark.open": "Open {name}", "bookmark.actions": "Actions for {name}", "bookmark.edit": "Edit", "bookmark.copyUrl": "Copy URL", "bookmark.copyMarkdown": "Copy Markdown", "bookmark.moveTrash": "Move to trash", "bookmark.add": "Add bookmark", "bookmark.editTitle": "Edit bookmark", "bookmark.addDescription": "Save a link directly to the selected board.", "bookmark.editDescription": "Update the link and its destination.", "bookmark.untitled": "Untitled bookmark", "bookmark.url": "URL", "bookmark.optionalNote": "Optional note", "bookmark.openMode": "Open in", "bookmark.currentTab": "Current tab", "bookmark.newTab": "New tab", "bookmark.newWindow": "New window", "bookmark.incognito": "Incognito window", "bookmark.pin": "Pin bookmark", "bookmark.duplicateWarning": "This link is already saved in this board", "bookmark.saveCopy": "Save another copy", "bookmark.copyWillSave": "A copy will be saved", "bookmark.saved": "Bookmark saved locally",
+  "name.newBoard": "Create board", "name.renameBoard": "Rename board", "name.newPage": "Create page", "name.renamePage": "Rename page", "move.board": "Move board", "move.bookmarks": "Move bookmarks",
+  "privacy.on": "Privacy mode on", "privacy.off": "Privacy mode off", "privacy.clipboard": "Clipboard is protected in privacy mode",
+  "search.title": "Search and commands", "search.placeholder": "Title, URL, description, page or board…", "search.protected": "Search is hidden while privacy mode is on", "search.allFields": "All fields", "search.titleOnly": "Title only", "search.urlOnly": "URL only", "search.all": "Everywhere", "search.thisPage": "This page", "search.privateTitle": "Search content is protected", "search.privateBody": "Turn privacy mode off to search saved text.", "search.noMatches": "No matches. Try a shorter query.", "search.start": "Start typing to search.", "search.reveal": "Reveal", "search.mode": "Search mode", "search.fuzzy": "Fuzzy", "search.prefix": "Prefix", "search.exact": "Exact", "search.results": "Search results", "search.navigate": "Navigate",
+  "settings.title": "Settings", "settings.appearance": "Appearance", "settings.layout": "Layout", "settings.language": "Language", "settings.quickSave": "Quick Save", "settings.dataPrivacy": "Data & privacy", "settings.appearanceDescription": "Background and glass material with a live preview.", "settings.themeMode": "Theme mode", "settings.auto": "Auto", "settings.light": "Light", "settings.dark": "Dark", "settings.background": "Background", "settings.backgroundAuto": "Neutral auto", "settings.backgroundSolid": "Solid color", "settings.backgroundWallpaper": "Wallpaper", "settings.solidColor": "Background color", "settings.glassStyle": "Glass style", "settings.glassRegular": "Regular", "settings.glassClear": "Clear", "settings.transparency": "Glass transparency", "settings.blur": "Blur", "settings.wallpaperDim": "Wallpaper dimming", "settings.wallpaperBlur": "Wallpaper blur", "settings.wallpaperSaturation": "Wallpaper saturation", "settings.performance": "Performance", "settings.lowPower": "Low-power mode", "settings.lowPowerDescription": "Turns off glass, blur and heavy effects only when you choose it.", "settings.animations": "Animations", "settings.animationsDescription": "Adjust movement separately without changing wallpaper or transparency.", "settings.motionAll": "All animations", "settings.motionHover": "Bookmark hover", "settings.motionMenus": "Menus and dialogs", "settings.motionDrag": "Board rearranging", "settings.noWallpaper": "No wallpaper", "settings.uploadWallpaper": "Upload image", "settings.layoutDescription": "Order, rows and alignment of boards.", "settings.layoutMode": "Grid mode", "settings.layoutAuto": "Auto grid", "settings.layoutFree": "Free grid", "settings.rows": "Board rows", "settings.oneRow": "One row", "settings.twoRows": "Two rows", "settings.alignment": "Alignment", "settings.left": "Left", "settings.center": "Center", "settings.right": "Right", "settings.languageDescription": "Language for the new tab and Quick Save.", "settings.languageAuto": "Auto (Chrome language)", "settings.russian": "Russian", "settings.kazakh": "Kazakh", "settings.quickSaveDescription": "Save the current tab without reading page content.", "settings.saveBehavior": "Save behavior", "settings.askDestination": "Ask for destination", "settings.instantSave": "Save immediately", "settings.defaultPage": "Default page", "settings.defaultBoard": "Default board", "settings.shortcut": "Keyboard shortcut", "settings.configure": "Configure", "settings.dataDescription": "Local backups, imports and data protection.", "settings.exportJson": "JSON backup", "settings.exportHtml": "HTML bookmarks", "settings.exportMarkdown": "Markdown", "settings.importFile": "Import file", "settings.importChrome": "Import from Chrome", "settings.snapshot": "Create snapshot", "settings.openTrash": "Open trash", "settings.privacyPersist": "Remember privacy mode", "settings.retention": "Keep deleted items", "settings.never": "Never remove automatically", "settings.diagnostics": "Diagnostics", "settings.healthy": "Your data is healthy", "settings.repair": "Safe repair",
+  "settings.backupVersion": "Backup v2", "settings.permissionOnDemand": "Permission on demand", "settings.snapshotCreated": "Snapshot created ✓", "settings.importPreview": "Bookmarks: {count}. No changes written yet.", "settings.duplicates": "Duplicates", "settings.skip": "Skip", "settings.allow": "Allow", "settings.merge": "Merge", "settings.replace": "Replace", "settings.days": "{count} days", "settings.issues": "Issues: {count}",
+  "trash.title": "Trash", "trash.description": "Deleted items can be restored before automatic cleanup.", "trash.empty": "Trash is empty", "trash.emptyBody": "Deleted pages, boards and bookmarks will appear here.", "trash.restore": "Restore", "trash.emptyAction": "Empty trash", "trash.all": "All", "trash.pages": "Pages", "trash.boards": "Boards", "trash.bookmarks": "Bookmarks", "trash.items": "Items: {count}", "trash.restored": "Restored from trash", "trash.permanent": "Delete permanently",
+  "popup.preparing": "Preparing Quick Save…", "popup.title": "Quick Save", "popup.openWorkspace": "Open workspace", "popup.createBoard": "Create board", "popup.boardName": "Board name", "popup.unsupported": "Chrome internal pages cannot be saved.", "popup.saved": "Saved locally", "popup.save": "Save bookmark", "popup.saving": "Saving…", "popup.localOnly": "Local only", "popup.duplicate": "Already saved in this board", "popup.saveCopy": "Save another copy", "popup.copyReady": "Another copy will be saved",
+};
+
+type LocaleOverrides = Partial<Record<MessageKey, string>>;
+
+function withEnglish(overrides: LocaleOverrides): Record<MessageKey, string> {
+  return { ...en, ...overrides };
+}
+
+const europeanLocales: Record<Exclude<AppLocale, "ru" | "kk" | "en">, Record<MessageKey, string>> = {
+  es: withEnglish({ "tab.title": "Nueva pestaña", "generic.close": "Cerrar", "generic.cancel": "Cancelar", "generic.save": "Guardar", "generic.create": "Crear", "generic.move": "Mover", "generic.delete": "Eliminar", "generic.rename": "Renombrar", "generic.settings": "Configuración", "generic.search": "Buscar", "generic.trash": "Papelera", "settings.title": "Configuración", "settings.appearance": "Apariencia", "settings.layout": "Diseño", "settings.language": "Idioma", "settings.dataPrivacy": "Datos y privacidad", "settings.languageAuto": "Automático (idioma de Chrome)", "settings.lowPower": "Modo de bajo consumo", "settings.animations": "Animaciones", "settings.background": "Fondo", "settings.themeMode": "Modo de tema", "settings.light": "Claro", "settings.dark": "Oscuro", "bookmark.currentTab": "Pestaña actual", "bookmark.newTab": "Nueva pestaña", "trash.title": "Papelera" }),
+  de: withEnglish({ "tab.title": "Neuer Tab", "generic.close": "Schließen", "generic.cancel": "Abbrechen", "generic.save": "Speichern", "generic.create": "Erstellen", "generic.move": "Verschieben", "generic.delete": "Löschen", "generic.rename": "Umbenennen", "generic.settings": "Einstellungen", "generic.search": "Suchen", "generic.trash": "Papierkorb", "settings.title": "Einstellungen", "settings.appearance": "Darstellung", "settings.layout": "Layout", "settings.language": "Sprache", "settings.dataPrivacy": "Daten & Datenschutz", "settings.languageAuto": "Automatisch (Chrome-Sprache)", "settings.lowPower": "Energiesparmodus", "settings.animations": "Animationen", "settings.background": "Hintergrund", "settings.themeMode": "Darstellung", "bookmark.currentTab": "Aktueller Tab", "bookmark.newTab": "Neuer Tab", "trash.title": "Papierkorb" }),
+  fr: withEnglish({ "tab.title": "Nouvel onglet", "generic.close": "Fermer", "generic.cancel": "Annuler", "generic.save": "Enregistrer", "generic.create": "Créer", "generic.move": "Déplacer", "generic.delete": "Supprimer", "generic.rename": "Renommer", "generic.settings": "Réglages", "generic.search": "Rechercher", "generic.trash": "Corbeille", "settings.title": "Réglages", "settings.appearance": "Apparence", "settings.layout": "Disposition", "settings.language": "Langue", "settings.dataPrivacy": "Données et confidentialité", "settings.languageAuto": "Auto (langue de Chrome)", "settings.lowPower": "Mode économie d’énergie", "settings.animations": "Animations", "settings.background": "Arrière-plan", "bookmark.currentTab": "Onglet actuel", "bookmark.newTab": "Nouvel onglet", "trash.title": "Corbeille" }),
+  it: withEnglish({ "tab.title": "Nuova scheda", "generic.close": "Chiudi", "generic.cancel": "Annulla", "generic.save": "Salva", "generic.create": "Crea", "generic.move": "Sposta", "generic.delete": "Elimina", "generic.rename": "Rinomina", "generic.settings": "Impostazioni", "generic.search": "Cerca", "generic.trash": "Cestino", "settings.title": "Impostazioni", "settings.appearance": "Aspetto", "settings.layout": "Layout", "settings.language": "Lingua", "settings.dataPrivacy": "Dati e privacy", "settings.languageAuto": "Auto (lingua di Chrome)", "settings.lowPower": "Modalità risparmio energia", "settings.animations": "Animazioni", "settings.background": "Sfondo", "bookmark.currentTab": "Scheda corrente", "bookmark.newTab": "Nuova scheda", "trash.title": "Cestino" }),
+  pt: withEnglish({ "tab.title": "Novo separador", "generic.close": "Fechar", "generic.cancel": "Cancelar", "generic.save": "Guardar", "generic.create": "Criar", "generic.move": "Mover", "generic.delete": "Eliminar", "generic.rename": "Mudar nome", "generic.settings": "Definições", "generic.search": "Pesquisar", "generic.trash": "Lixo", "settings.title": "Definições", "settings.appearance": "Aspeto", "settings.layout": "Disposição", "settings.language": "Idioma", "settings.dataPrivacy": "Dados e privacidade", "settings.languageAuto": "Auto (idioma do Chrome)", "settings.lowPower": "Modo de baixo consumo", "settings.animations": "Animações", "settings.background": "Fundo", "bookmark.currentTab": "Separador atual", "bookmark.newTab": "Novo separador", "trash.title": "Lixo" }),
+  pl: withEnglish({ "tab.title": "Nowa karta", "generic.close": "Zamknij", "generic.cancel": "Anuluj", "generic.save": "Zapisz", "generic.create": "Utwórz", "generic.move": "Przenieś", "generic.delete": "Usuń", "generic.rename": "Zmień nazwę", "generic.settings": "Ustawienia", "generic.search": "Szukaj", "generic.trash": "Kosz", "settings.title": "Ustawienia", "settings.appearance": "Wygląd", "settings.layout": "Układ", "settings.language": "Język", "settings.dataPrivacy": "Dane i prywatność", "settings.languageAuto": "Auto (język Chrome)", "settings.lowPower": "Tryb niskiego zużycia energii", "settings.animations": "Animacje", "settings.background": "Tło", "bookmark.currentTab": "Bieżąca karta", "bookmark.newTab": "Nowa karta", "trash.title": "Kosz" }),
+  uk: withEnglish({ "tab.title": "Нова вкладка", "generic.close": "Закрити", "generic.cancel": "Скасувати", "generic.save": "Зберегти", "generic.create": "Створити", "generic.move": "Перемістити", "generic.delete": "Видалити", "generic.rename": "Перейменувати", "generic.settings": "Налаштування", "generic.search": "Пошук", "generic.trash": "Кошик", "settings.title": "Налаштування", "settings.appearance": "Вигляд", "settings.layout": "Компонування", "settings.language": "Мова", "settings.dataPrivacy": "Дані та приватність", "settings.languageAuto": "Авто (мова Chrome)", "settings.lowPower": "Режим низького енергоспоживання", "settings.animations": "Анімації", "settings.background": "Тло", "bookmark.currentTab": "Поточна вкладка", "bookmark.newTab": "Нова вкладка", "trash.title": "Кошик" }),
+  tr: withEnglish({ "tab.title": "Yeni sekme", "generic.close": "Kapat", "generic.cancel": "İptal", "generic.save": "Kaydet", "generic.create": "Oluştur", "generic.move": "Taşı", "generic.delete": "Sil", "generic.rename": "Yeniden adlandır", "generic.settings": "Ayarlar", "generic.search": "Ara", "generic.trash": "Çöp Kutusu", "settings.title": "Ayarlar", "settings.appearance": "Görünüm", "settings.layout": "Düzen", "settings.language": "Dil", "settings.dataPrivacy": "Veriler ve gizlilik", "settings.languageAuto": "Otomatik (Chrome dili)", "settings.lowPower": "Düşük güç modu", "settings.animations": "Animasyonlar", "settings.background": "Arka plan", "bookmark.currentTab": "Geçerli sekme", "bookmark.newTab": "Yeni sekme", "trash.title": "Çöp Kutusu" }),
+  nl: withEnglish({ "tab.title": "Nieuw tabblad", "generic.close": "Sluiten", "generic.cancel": "Annuleren", "generic.save": "Opslaan", "generic.create": "Maken", "generic.move": "Verplaatsen", "generic.delete": "Verwijderen", "generic.rename": "Hernoemen", "generic.settings": "Instellingen", "generic.search": "Zoeken", "generic.trash": "Prullenbak", "settings.title": "Instellingen", "settings.appearance": "Weergave", "settings.layout": "Indeling", "settings.language": "Taal", "settings.dataPrivacy": "Gegevens en privacy", "settings.languageAuto": "Automatisch (Chrome-taal)", "settings.lowPower": "Energiebesparende modus", "settings.animations": "Animaties", "settings.background": "Achtergrond", "bookmark.currentTab": "Huidig tabblad", "bookmark.newTab": "Nieuw tabblad", "trash.title": "Prullenbak" }),
+};
+
+export type AppLocale = Exclude<LocalePreference, "auto">;
+
+export const localeOptions: ReadonlyArray<{ value: LocalePreference; label: string }> = [
+  { value: "auto", label: "Auto (Chrome language)" }, { value: "ru", label: "Русский" }, { value: "kk", label: "Қазақша" }, { value: "en", label: "English" }, { value: "es", label: "Español" }, { value: "de", label: "Deutsch" }, { value: "fr", label: "Français" }, { value: "it", label: "Italiano" }, { value: "pt", label: "Português" }, { value: "pl", label: "Polski" }, { value: "uk", label: "Українська" }, { value: "tr", label: "Türkçe" }, { value: "nl", label: "Nederlands" },
+];
+
+const dictionaries: Record<AppLocale, Record<MessageKey, string>> = { ru, kk, en, ...europeanLocales };
 
 function detectLocale(): AppLocale {
   const chromeLocale = typeof chrome !== "undefined" && chrome.i18n?.getUILanguage ? chrome.i18n.getUILanguage() : "";
-  const locale = chromeLocale || (typeof navigator !== "undefined" ? navigator.language : "ru");
-  return locale.toLowerCase().startsWith("kk") ? "kk" : "ru";
+  const language = (chromeLocale || (typeof navigator !== "undefined" ? navigator.language : "en")).toLowerCase().split("-")[0] ?? "en";
+  return language in dictionaries ? language as AppLocale : "en";
 }
 
 export function resolveLocale(preference: LocalePreference): AppLocale {
@@ -418,13 +479,13 @@ interface I18nValue {
   t: (key: MessageKey, values?: Record<string, string | number>) => string;
 }
 
-const I18nContext = createContext<I18nValue>({ locale: "ru", t: (key, values) => formatMessage(ru[key], values) });
+const I18nContext = createContext<I18nValue>({ locale: "en", t: (key, values) => formatMessage(en[key], values) });
 
 export function I18nProvider({ preference, children, documentTitle }: { preference: LocalePreference; children: ReactNode; documentTitle?: MessageKey }) {
   const locale = resolveLocale(preference);
   const value = useMemo<I18nValue>(() => ({
     locale,
-    t: (key, values) => formatMessage((locale === "kk" ? kk : ru)[key], values),
+    t: (key, values) => formatMessage(dictionaries[locale][key], values),
   }), [locale]);
 
   useEffect(() => {
@@ -441,5 +502,5 @@ export function useI18n(): I18nValue {
 
 export function translate(preference: LocalePreference, key: MessageKey, values?: Record<string, string | number>): string {
   const locale = resolveLocale(preference);
-  return formatMessage((locale === "kk" ? kk : ru)[key], values);
+  return formatMessage(dictionaries[locale][key], values);
 }

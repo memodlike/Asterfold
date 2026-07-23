@@ -27,7 +27,7 @@ import { NameDialog } from "../components/NameDialog";
 import { useToasts } from "../components/ToastRegion";
 import { BoardCanvas } from "../features/boards/BoardCanvas";
 import { useThemeRuntime } from "../features/appearance/useThemeRuntime";
-import { I18nProvider, useI18n } from "../i18n";
+import { I18nProvider, translate, useI18n } from "../i18n";
 import { AppLauncher } from "./AppLauncher";
 import { useWorkspace } from "./useWorkspace";
 
@@ -47,7 +47,7 @@ interface EditorIntent { bookmark: Bookmark | null; boardId: string }
 
 export function WorkspaceApp() {
   const workspace = useWorkspace();
-  if (!workspace) return <div className="app-loading"><Sparkles size={22} /><span>Открываем новую вкладку…</span></div>;
+  if (!workspace) return <div className="app-loading"><Sparkles size={22} /><span>{translate("auto", "loading.opening")}</span></div>;
   return <I18nProvider preference={workspace.settings.locale} documentTitle="tab.title"><WorkspaceScreen workspace={workspace} /></I18nProvider>;
 }
 

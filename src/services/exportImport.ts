@@ -92,7 +92,7 @@ export const settingsSchema = z.object({
   schemaVersion: z.number().int().positive(),
   activePageId: z.string().nullable(),
   navigationMode: z.enum(["rail", "expanded"]),
-  locale: z.enum(["auto", "ru", "kk"]).default("auto"),
+  locale: z.enum(["auto", "ru", "kk", "en", "es", "de", "fr", "it", "pt", "pl", "uk", "tr", "nl"]).default("auto"),
   workspaceLayoutMode: z.enum(["auto", "free"]).default("auto"),
   workspaceRows: z.union([z.literal(1), z.literal(2)]).default(2),
   workspaceAlignment: z.enum(["left", "center", "right"]).default("center"),
@@ -189,7 +189,7 @@ export async function createBackup(
     schemaVersion: 2,
     exportVersion: 2,
     exportedAt: nowIso(),
-    appVersion: "2.0.3",
+    appVersion: "2.1.0",
     scope,
     entities: { pages, boards, bookmarks },
     ...(scope === "full" ? { settings, theme: settings.theme } : {}),
@@ -218,6 +218,12 @@ export function parseBackup(text: string): AsterfoldBackup {
     ...result.data,
     schemaVersion: 2,
     exportVersion: 2,
+    entities: {
+      ...result.data.entities,
+      // Before 2.1, the default was a new tab. Preserve explicit windows,
+      // while making ordinary imported bookmark clicks match the new default.
+      bookmarks: result.data.entities.bookmarks.map((bookmark) => ({ ...bookmark, openMode: bookmark.openMode === "new-tab" ? "current" as const : bookmark.openMode })),
+    },
     ...(result.data.settings ? { settings: { ...result.data.settings, schemaVersion: CURRENT_DB_SCHEMA_VERSION } } : {}),
   };
 }
@@ -422,7 +428,7 @@ export async function importRecords(
         await database.bookmarks.bulkAdd(accepted.map((record, index) => ({
           id: createId(), userId: null, boardId: board.id, title: record.title.slice(0, 240), url: record.url,
           normalizedUrl: record.normalizedUrl, hostname: record.hostname, description: record.description?.slice(0, 2000) ?? null,
-          faviconUrl: null, customIcon: null, position: ranks[index]!, openMode: "new-tab" as const, pinned: false,
+          faviconUrl: null, customIcon: null, position: ranks[index]!, openMode: "current" as const, pinned: false,
           createdAt: timestamp, updatedAt: timestamp, deletedAt: null, deletedBatchId: null, version: 1,
         })));
       }

@@ -86,9 +86,17 @@ describe("safe import and lossless export", () => {
     delete legacy.theme.dragMotion;
     const normalized = parseBackup(JSON.stringify(legacy));
     expect(normalized).toMatchObject({ schemaVersion: 2, exportVersion: 2 });
-    expect(normalized.settings).toMatchObject({ schemaVersion: 4, locale: "auto", workspaceLayoutMode: "auto", workspaceRows: 2, workspaceAlignment: "center" });
+    expect(normalized.settings).toMatchObject({ schemaVersion: 5, locale: "auto", workspaceLayoutMode: "auto", workspaceRows: 2, workspaceAlignment: "center" });
     expect(normalized.settings?.theme).toMatchObject({ lowPowerMode: false, bookmarkHoverMotion: true, menuMotion: true, dragMotion: true });
     expect(normalized.entities.boards[0]).toMatchObject({ bookmarkColumns: "auto", gridColumn: 1, gridRow: 0, gridSpan: 3 });
+  });
+
+  it("normalizes former default new-tab backup links to the current tab", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    await createBookmark({ boardId: workspace.boards[0]!.id, title: "Example", url: "https://example.com" }, {}, database);
+    const backup = await createBackup({}, database);
+    backup.entities.bookmarks[0]!.openMode = "new-tab";
+    expect(parseBackup(serializeBackup(backup)).entities.bookmarks[0]?.openMode).toBe("current");
   });
 
   it("reports invalid rows and skips normalized duplicates", async () => {

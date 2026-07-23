@@ -28,7 +28,7 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
   const [url, setUrl] = useState("");
   const [description, setDescription] = useState("");
   const [boardId, setBoardId] = useState("");
-  const [openMode, setOpenMode] = useState<BookmarkOpenMode>("new-tab");
+  const [openMode, setOpenMode] = useState<BookmarkOpenMode>("current");
   const [pinned, setPinned] = useState(false);
   const [duplicate, setDuplicate] = useState<Bookmark | null>(null);
   const [allowDuplicate, setAllowDuplicate] = useState(false);
@@ -40,7 +40,7 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
     setUrl(props.bookmark?.url ?? props.initialUrl ?? "https://");
     setDescription(props.bookmark?.description ?? props.initialDescription ?? "");
     setBoardId(props.bookmark?.boardId ?? props.initialBoardId);
-    setOpenMode(props.bookmark?.openMode ?? "new-tab");
+    setOpenMode(props.bookmark?.openMode ?? "current");
     setPinned(props.bookmark?.pinned ?? false);
     setAllowDuplicate(false);
     setDuplicate(null);

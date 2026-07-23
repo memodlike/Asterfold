@@ -1,10 +1,10 @@
 import type { Transaction } from "dexie";
-import type { AppSettings, Board, SyncState } from "../domain/models";
+import type { AppSettings, Board, Bookmark, SyncState } from "../domain/models";
 import { getThemePreset } from "../domain/themes";
 import { createId, nowIso } from "../utils/ids";
 
 const V2_DB_SCHEMA_VERSION = 2;
-export const CURRENT_DB_SCHEMA_VERSION = 4;
+export const CURRENT_DB_SCHEMA_VERSION = 5;
 
 export const V1_STORES = {
   pages: "id, userId, position, updatedAt, deletedAt, isDefault",
@@ -26,6 +26,7 @@ export const V2_STORES = {
 
 export const V3_STORES = { ...V2_STORES } as const;
 export const V4_STORES = { ...V3_STORES } as const;
+export const V5_STORES = { ...V4_STORES } as const;
 
 type LegacySettings = Partial<AppSettings> & Pick<AppSettings, "id">;
 
@@ -127,5 +128,20 @@ export async function migrateToV4(transaction: Transaction): Promise<void> {
       dragMotion: current.theme?.dragMotion !== false,
     },
     updatedAt: nowIso(),
+  });
+}
+
+export async function migrateToV5(transaction: Transaction): Promise<void> {
+  const timestamp = nowIso();
+  const settingsTable = transaction.table<V2Settings, string>("settings");
+  const current = await settingsTable.get("app");
+  if (current) await settingsTable.put({ ...current, id: "app", schemaVersion: CURRENT_DB_SCHEMA_VERSION, updatedAt: timestamp });
+
+  const bookmarksTable = transaction.table<Bookmark, string>("bookmarks");
+  await bookmarksTable.toCollection().modify((bookmark) => {
+    if (bookmark.openMode !== "new-tab") return;
+    bookmark.openMode = "current";
+    bookmark.updatedAt = timestamp;
+    bookmark.version += 1;
   });
 }

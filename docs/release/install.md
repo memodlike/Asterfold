@@ -1,4 +1,4 @@
-# Install Asterfold 2.0.3
+# Install Asterfold 2.1.0
 
 ## Requirements
 
@@ -32,7 +32,7 @@ The extension works offline. Importing the existing Chrome bookmark tree asks fo
 2. Keep the same absolute `chrome-unpacked` folder path. For an unpacked build without a published key, changing the path can produce another extension ID and therefore another IndexedDB namespace.
 3. Replace the folder contents with the new release contents.
 4. Open `chrome://extensions` and click **Reload** on Asterfold.
-5. Open a new tab and verify the version and Diagnostics. Schema migrations run transactionally; the current release upgrades schema 1 to schema 3 without clearing existing data.
+5. Open a new tab and verify the version and Diagnostics. Schema migrations run transactionally; the current release upgrades schema 1 to schema 5 without clearing existing data.
 
 No private signing key is distributed or required.
 

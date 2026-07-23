@@ -42,6 +42,7 @@ describe("Dexie workspace repository", () => {
     const first = await createBookmark({ boardId: board.id, title: "Dexie", url: "https://dexie.org/?utm_source=test" }, {}, database);
     const second = await createBookmark({ boardId: board.id, title: "WXT", url: "https://wxt.dev/" }, {}, database);
     expect(first.normalizedUrl).toBe("https://dexie.org/");
+    expect(first.openMode).toBe("current");
     await expect(createBookmark({ boardId: board.id, title: "Again", url: "https://dexie.org/" }, {}, database)).rejects.toBeInstanceOf(DuplicateError);
 
     await moveBookmarkToIndex(second.id, board.id, 0, database);

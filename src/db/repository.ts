@@ -600,7 +600,7 @@ export async function createBookmark(
       faviconUrl: input.faviconUrl ?? null,
       customIcon: null,
       position,
-      openMode: input.openMode ?? "new-tab",
+      openMode: input.openMode ?? "current",
       pinned: input.pinned ?? false,
       createdAt: timestamp,
       updatedAt: timestamp,

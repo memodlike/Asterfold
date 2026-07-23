@@ -31,6 +31,29 @@ async function openLauncher(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Открыть меню Asterfold" }).click();
 }
 
+async function setWorkspaceLocale(page: Page, locale: string): Promise<void> {
+  await page.evaluate(async (nextLocale) => {
+    const request = indexedDB.open("asterfold");
+    const database = await new Promise<IDBDatabase>((resolvePromise, reject) => {
+      request.onsuccess = () => resolvePromise(request.result);
+      request.onerror = () => reject(request.error ?? new Error("Unable to open IndexedDB"));
+    });
+    const transaction = database.transaction("settings", "readwrite");
+    const settingsStore = transaction.objectStore("settings");
+    const settings = await new Promise<Record<string, unknown>>((resolvePromise, reject) => {
+      const get = settingsStore.get("app");
+      get.onsuccess = () => resolvePromise(get.result as Record<string, unknown>);
+      get.onerror = () => reject(get.error ?? new Error("Unable to read settings"));
+    });
+    settingsStore.put({ ...settings, locale: nextLocale, updatedAt: new Date().toISOString() });
+    await new Promise<void>((resolvePromise, reject) => {
+      transaction.oncomplete = () => resolvePromise();
+      transaction.onerror = () => reject(transaction.error ?? new Error("Unable to write settings"));
+    });
+    database.close();
+  }, locale);
+}
+
 async function seedScaleFixture(page: Page): Promise<void> {
   await page.evaluate(async () => {
     const request = indexedDB.open("asterfold");
@@ -102,6 +125,9 @@ test.describe.serial("Asterfold MV3 release", () => {
     page.on("pageerror", (error) => runtimeErrors.push(`newtab: ${error.message}`));
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/newtab.html`);
+    await expect(page).toHaveTitle("New Tab");
+    await setWorkspaceLocale(page, "ru");
+    await page.reload();
     await expect(page).toHaveTitle("Новая вкладка");
     await expect(page.locator(".app-shell")).not.toHaveClass(/low-power-mode/u);
     await expect(page.getByRole("button", { name: "Открыть меню Asterfold" })).toBeVisible();
@@ -197,6 +223,11 @@ test.describe.serial("Asterfold MV3 release", () => {
     dialog = page.getByRole("dialog");
     await dialog.getByRole("button", { name: "Восстановить" }).click();
     await dialog.getByRole("button", { name: "Закрыть" }).click();
+    await expect(page.getByText("Playwright docs", { exact: true })).toBeVisible();
+
+    await page.getByRole("button", { name: "Playwright docs" }).click();
+    await expect(page).toHaveURL("https://playwright.dev/docs/chrome-extensions");
+    await page.goto(`chrome-extension://${extensionId}/newtab.html`);
     await expect(page.getByText("Playwright docs", { exact: true })).toBeVisible();
 
     await seedScaleFixture(page);

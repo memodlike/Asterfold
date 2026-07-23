@@ -73,7 +73,20 @@ export type Density = "compact" | "comfortable" | "spacious";
 export type CardVariant = "minimal" | "standard" | "visual";
 export type GlassVariant = "regular" | "clear";
 export type BackgroundMode = "auto" | "solid" | "wallpaper";
-export type LocalePreference = "auto" | "ru" | "kk";
+export type LocalePreference =
+  | "auto"
+  | "ru"
+  | "kk"
+  | "en"
+  | "es"
+  | "de"
+  | "fr"
+  | "it"
+  | "pt"
+  | "pl"
+  | "uk"
+  | "tr"
+  | "nl";
 export type WorkspaceLayoutMode = "auto" | "free";
 export type WorkspaceAlignment = "left" | "center" | "right";
 
