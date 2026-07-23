@@ -1,6 +1,6 @@
 # Permission rationale
 
-Asterfold 2.1.1 uses Manifest V3, no wildcard host access, no content scripts, and no remote code. Permissions are deliberately narrow.
+Asterfold 2.1.2 uses Manifest V3, no wildcard host access, no content scripts, and no remote code. Permissions are deliberately narrow.
 
 ## Required permissions
 

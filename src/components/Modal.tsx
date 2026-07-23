@@ -12,11 +12,12 @@ interface ModalProps {
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
+  className?: string;
 }
 
 const FOCUSABLE = "button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex='-1'])";
 
-export function Modal({ open, title, description, size = "medium", side = false, onClose, children, footer }: ModalProps) {
+export function Modal({ open, title, description, size = "medium", side = false, onClose, children, footer, className = "" }: ModalProps) {
   const { t } = useI18n();
   const titleId = useId();
   const descriptionId = useId();
@@ -58,7 +59,7 @@ export function Modal({ open, title, description, size = "medium", side = false,
     <div className={`modal-backdrop ${side ? "modal-backdrop--side" : ""}`} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <div
         ref={panelRef}
-        className={`modal modal--${size} ${side ? "modal--side" : ""}`}
+        className={`modal modal--${size} ${side ? "modal--side" : ""} ${className}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

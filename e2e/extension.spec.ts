@@ -212,6 +212,9 @@ test.describe.serial("Asterfold MV3 release", () => {
 
     await page.keyboard.press("Control+K");
     dialog = page.getByRole("dialog");
+    await expect(dialog.locator(".search-palette__input")).toHaveCSS("border-radius", "15px");
+    await expect(dialog.locator(".search-state")).toHaveCSS("border-radius", "17px");
+    if (captureScreenshots) { await page.waitForTimeout(220); await page.screenshot({ path: join(screenshotPath, "search-empty.png") }); }
     await dialog.getByPlaceholder(/Название, URL/u).fill("playwrite");
     await expect(dialog.getByRole("option", { name: /Playwright docs/u })).toBeVisible();
     await page.keyboard.press("Escape");
@@ -247,9 +250,18 @@ test.describe.serial("Asterfold MV3 release", () => {
     await openLauncher(page);
     await page.getByRole("menuitem", { name: "Корзина" }).click();
     dialog = page.getByRole("dialog");
+    await expect(dialog.locator(".trash-row")).toHaveCSS("border-radius", "14px");
+    if (captureScreenshots) { await page.waitForTimeout(220); await page.screenshot({ path: join(screenshotPath, "trash-item.png") }); }
     await dialog.getByRole("button", { name: "Восстановить" }).click();
     await dialog.getByRole("button", { name: "Закрыть" }).click();
     await expect(page.getByText("Playwright docs", { exact: true })).toBeVisible();
+
+    await openLauncher(page);
+    await page.getByRole("menuitem", { name: "Корзина" }).click();
+    dialog = page.getByRole("dialog");
+    await expect(dialog.locator(".trash-empty")).toHaveCSS("border-radius", "18px");
+    if (captureScreenshots) { await page.waitForTimeout(220); await page.screenshot({ path: join(screenshotPath, "trash-empty.png") }); }
+    await dialog.getByRole("button", { name: "Закрыть" }).click();
 
     await setWorkspaceThemeMode(page, "dark");
     await page.reload();
