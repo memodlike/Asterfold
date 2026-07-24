@@ -3,7 +3,7 @@ import { browser } from "wxt/browser";
 import { Archive, Brush, Check, CheckCircle2, Database, Download, FileJson, FileText, Grid2X2, Languages, Shield, Trash2, Upload, Zap } from "lucide-react";
 import type { AppSettings, ThemeConfig, Wallpaper, WorkspaceData } from "../../domain/models";
 import { validateTheme } from "../../domain/themes";
-import { auditInvariants, createSnapshot, ensureStarterWorkspace, getWallpaper, saveWallpaper, updateSettings } from "../../db/repository";
+import { auditInvariants, createSnapshot, getWallpaper, saveWallpaper, updateSettings } from "../../db/repository";
 import {
   createBackup,
   downloadText,
@@ -69,6 +69,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
   const importInputRef = useRef<HTMLInputElement>(null);
   const wallpaperInputRef = useRef<HTMLInputElement>(null);
   const themeCommitRef = useRef<number | null>(null);
+  const pendingThemeRef = useRef<ThemeConfig | null>(null);
   const counts = useMemo(() => ({ pages: props.workspace.pages.length, boards: props.workspace.boards.length, bookmarks: props.workspace.bookmarks.length }), [props.workspace]);
   const sections: Array<{ id: SettingsSection; label: string; icon: typeof Brush }> = [
     { id: "appearance", label: t("settings.appearance"), icon: Brush },
@@ -108,11 +109,21 @@ export function SettingsDialog(props: SettingsDialogProps) {
   const patchTheme = (patch: Partial<ThemeConfig>): void => {
     const next = validateTheme({ ...themeDraft, ...patch });
     setThemeDraft(next);
+    pendingThemeRef.current = next;
     if (themeCommitRef.current !== null) window.clearTimeout(themeCommitRef.current);
     themeCommitRef.current = window.setTimeout(() => {
       themeCommitRef.current = null;
+      pendingThemeRef.current = null;
       void updateSettings({ theme: next }).catch(() => props.onError(t("error.updateSettings")));
     }, 200);
+  };
+  const closeSettings = (): void => {
+    if (themeCommitRef.current !== null) window.clearTimeout(themeCommitRef.current);
+    themeCommitRef.current = null;
+    const pending = pendingThemeRef.current;
+    pendingThemeRef.current = null;
+    if (pending) void updateSettings({ theme: pending }).catch(() => props.onError(t("error.updateSettings")));
+    props.onClose();
   };
   const exportAll = async (format: "json" | "html" | "markdown"): Promise<void> => {
     try {
@@ -120,7 +131,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
       if (format === "json") downloadText(`asterfold-backup-v2-${new Date().toISOString().slice(0, 10)}.json`, serializeBackup(backup), "application/json");
       if (format === "html") downloadText("asterfold-bookmarks.html", toNetscapeHtml(backup), "text/html");
       if (format === "markdown") downloadText("asterfold-bookmarks.md", toMarkdown(backup), "text/markdown");
-      props.onUpdated(`${format.toUpperCase()} ✓`);
+      props.onUpdated(t("settings.exported", { format: format.toUpperCase() }));
     } catch {
       props.onError(t("error.exportFailed"));
     }
@@ -182,7 +193,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
   };
 
   return (
-    <Modal open={props.open} size="fullscreen" title={t("settings.title")} onClose={props.onClose}>
+    <Modal open={props.open} size="fullscreen" title={t("settings.title")} onClose={closeSettings}>
       <div className="settings-layout">
         <nav className="settings-nav" aria-label={t("settings.title")}>{sections.map((item) => <button key={item.id} className={section === item.id ? "is-active" : ""} onClick={() => setSection(item.id)}><item.icon size={17} />{item.label}</button>)}</nav>
         <div className="settings-content">
@@ -198,7 +209,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
               <Range label={t("settings.wallpaperBlur")} min={0} max={20} value={themeDraft.wallpaperBlur} suffix="px" onChange={(value) => patchTheme({ wallpaperBlur: value })} />
               <Range label={t("settings.wallpaperSaturation")} min={0} max={180} value={Math.round(themeDraft.wallpaperSaturation * 100)} suffix="%" onChange={(value) => patchTheme({ wallpaperSaturation: value / 100 })} />
             </div>
-            <div className="wallpaper-grid"><button className={!themeDraft.wallpaperId ? "is-active" : ""} onClick={() => patchTheme({ wallpaperId: null, backgroundMode: "auto" })}><span className="wallpaper-none" />{t("settings.noWallpaper")}</button>{BUILTIN_WALLPAPERS.map((item) => <button key={item.id} className={themeDraft.wallpaperId === item.id ? "is-active" : ""} onClick={() => patchTheme({ wallpaperId: item.id, backgroundMode: "wallpaper" })}><span style={{ background: item.value }} />{item.name}</button>)}<button onClick={() => wallpaperInputRef.current?.click()}><span className="wallpaper-upload"><Upload size={19} /></span>{t("settings.uploadWallpaper")}</button></div>
+            <div className="wallpaper-grid"><button className={!themeDraft.wallpaperId ? "is-active" : ""} onClick={() => patchTheme({ wallpaperId: null, backgroundMode: "auto" })}><span className="wallpaper-none" />{t("settings.noWallpaper")}</button>{BUILTIN_WALLPAPERS.map((item) => <button key={item.id} className={themeDraft.wallpaperId === item.id ? "is-active" : ""} onClick={() => patchTheme({ wallpaperId: item.id, backgroundMode: "wallpaper" })}><span style={{ background: item.value }} />{t(item.labelKey)}</button>)}<button onClick={() => wallpaperInputRef.current?.click()}><span className="wallpaper-upload"><Upload size={19} /></span>{t("settings.uploadWallpaper")}</button></div>
             {wallpaperInfo?.width && wallpaperInfo.height ? <p>{wallpaperInfo.width} × {wallpaperInfo.height} · {formatBytes(wallpaperInfo.storedBytes)}</p> : null}
             <input ref={wallpaperInputRef} hidden type="file" accept="image/png,image/jpeg,image/webp,image/avif" onChange={(event) => { const file = event.target.files?.[0]; if (file) void saveUploadedWallpaper(file); event.currentTarget.value = ""; }} />
             <div className="settings-control-group">
@@ -229,9 +240,8 @@ export function SettingsDialog(props: SettingsDialogProps) {
           </SettingsSection> : null}
 
           {section === "quick-save" ? <SettingsSection title={t("settings.quickSave")} description={t("settings.quickSaveDescription")}>
-            <SettingRow label={t("settings.saveBehavior")}><select value={settings.quickSaveMode} onChange={(event) => void patchSettings({ quickSaveMode: event.target.value as AppSettings["quickSaveMode"] })}><option value="ask">{t("settings.askDestination")}</option><option value="instant">{t("settings.instantSave")}</option></select></SettingRow>
             <SettingRow label={t("settings.defaultPage")}><select value={settings.quickSaveDefaultPageId ?? ""} onChange={(event) => { const pageId = event.target.value; const board = props.workspace.boards.find((item) => item.pageId === pageId); void patchSettings({ quickSaveDefaultPageId: pageId, quickSaveDefaultBoardId: board?.id ?? null }); }}>{props.workspace.pages.map((page) => <option key={page.id} value={page.id}>{page.title}</option>)}</select></SettingRow>
-            <SettingRow label={t("settings.defaultBoard")}><select value={settings.quickSaveDefaultBoardId ?? ""} onChange={(event) => void patchSettings({ quickSaveDefaultBoardId: event.target.value })}>{props.workspace.pages.map((page) => <optgroup key={page.id} label={page.title}>{props.workspace.boards.filter((board) => board.pageId === page.id).map((board) => <option key={board.id} value={board.id}>{board.title}</option>)}</optgroup>)}</select></SettingRow>
+            <SettingRow label={t("settings.defaultBoard")}><select value={settings.quickSaveDefaultBoardId ?? ""} onChange={(event) => void patchSettings({ quickSaveDefaultBoardId: event.target.value })}>{props.workspace.boards.filter((board) => board.pageId === settings.quickSaveDefaultPageId).map((board) => <option key={board.id} value={board.id}>{board.title}</option>)}</select></SettingRow>
             <SettingRow label={t("settings.shortcut")}><div className="shortcut-value"><kbd>{shortcut}</kbd><Button onClick={() => void browser.tabs.create({ url: "chrome://extensions/shortcuts" })}>{t("settings.configure")}</Button></div></SettingRow>
           </SettingsSection> : null}
 
@@ -242,7 +252,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
             {backupPreview ? <div className="import-preview"><h3>{importSource}</h3><p>{t("settings.backupSummary", { version: backupPreview.exportVersion, pages: backupPreview.entities.pages.length, boards: backupPreview.entities.boards.length, bookmarks: backupPreview.entities.bookmarks.length })}</p><div className="button-row"><Button onClick={() => setBackupPreview(null)}>{t("generic.cancel")}</Button><Button disabled={importBusy} onClick={() => void commitBackupRestore("merge")}>{t("settings.merge")}</Button><Button variant="danger" disabled={importBusy} onClick={() => void commitBackupRestore("replace")}>{t("settings.replace")}</Button></div></div> : null}
             <SettingRow label={t("settings.privacyPersist")}><label className="switch"><input type="checkbox" checked={settings.privacyPersist} onChange={(event) => void patchSettings({ privacyPersist: event.target.checked, ...(event.target.checked ? {} : { privacyEnabled: false }) })} /><span /></label></SettingRow>
             <SettingRow label={t("settings.retention")}><select value={settings.trashRetentionDays ?? "never"} onChange={(event) => void patchSettings({ trashRetentionDays: event.target.value === "never" ? null : Number(event.target.value) as 7 | 30 | 90 })}><option value="7">{t("settings.days", { count: 7 })}</option><option value="30">{t("settings.days", { count: 30 })}</option><option value="90">{t("settings.days", { count: 90 })}</option><option value="never">{t("settings.never")}</option></select></SettingRow>
-            <div className="data-footer"><Button icon={<Trash2 size={16} />} onClick={props.onOpenTrash}>{t("settings.openTrash")}</Button><div className="diagnostic-summary"><Database size={17} /><span>{counts.pages} / {counts.boards} / {counts.bookmarks}</span><span>{formatBytes(storage?.usage)}</span><strong className={invariants.length ? "is-warning" : "is-healthy"}>{invariants.length ? t("settings.issues", { count: invariants.length }) : t("settings.healthy")}</strong></div><Button icon={<CheckCircle2 size={16} />} onClick={() => void ensureStarterWorkspace().then(() => auditInvariants()).then((issues) => { setInvariants(issues); props.onUpdated(t("settings.repair")); })}>{t("settings.repair")}</Button></div>
+            <div className="data-footer"><Button icon={<Trash2 size={16} />} onClick={props.onOpenTrash}>{t("settings.openTrash")}</Button><div className="diagnostic-summary"><Database size={17} /><span>{counts.pages} / {counts.boards} / {counts.bookmarks}</span><span>{formatBytes(storage?.usage)}</span><strong className={invariants.length ? "is-warning" : "is-healthy"}>{invariants.length ? t("settings.issues", { count: invariants.length }) : t("settings.healthy")}</strong></div><Button icon={<CheckCircle2 size={16} />} onClick={() => void auditInvariants().then((issues) => { setInvariants(issues); props.onUpdated(t("settings.diagnosticsRepeated")); })}>{t("settings.repeatDiagnostics")}</Button></div>
           </SettingsSection> : null}
         </div>
       </div>

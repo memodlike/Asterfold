@@ -99,7 +99,7 @@ export function PopupApp() {
   const unsupported = !/^https?:\/\//i.test(tab.url) && !/^mailto:/i.test(tab.url);
   return (
     <main className="popup" onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter") { event.preventDefault(); void save(); } }}>
-      <header className="popup__header"><Logo /><button title={t("generic.settings")} aria-label={t("generic.settings")} onClick={() => void browser.runtime.openOptionsPage().catch(() => openWorkspace())}><Settings size={17} /></button></header>
+      <header className="popup__header"><Logo /><button title={t("generic.settings")} aria-label={t("generic.settings")} onClick={() => void openWorkspace()}><Settings size={17} /></button></header>
       <section className="popup__content">
         <div className="popup__title"><h1>{t("popup.title")}</h1>{shortcut ? <kbd>{shortcut}</kbd> : null}</div>
         <div className="tab-preview"><span className="tab-preview__icon">{faviconUrl(tab.url, 40) ? <img src={faviconUrl(tab.url, 40)} alt="" /> : tab.title[0]?.toUpperCase()}</span><div><strong>{tab.title}</strong><small>{tab.url}</small></div></div>

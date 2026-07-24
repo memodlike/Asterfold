@@ -15,7 +15,8 @@ interface TrashDialogProps {
 }
 
 export function TrashDialog(props: TrashDialogProps) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
+  const dateTime = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
   const trash = useLiveQuery(() => listTrash(db), [props.open], { pages: [], boards: [], bookmarks: [] });
   const [filter, setFilter] = useState<"all" | "page" | "board" | "bookmark">("all");
   const items = [
@@ -53,7 +54,7 @@ export function TrashDialog(props: TrashDialogProps) {
             const meta = typeMeta(item.type);
             return <article className="trash-row" key={`${item.type}:${item.id}`}>
               <span className="trash-row__icon" aria-hidden="true">{meta.icon}</span>
-              <div className="trash-row__content"><strong>{item.title}</strong><span>{meta.label}{item.deletedAt ? ` · ${new Date(item.deletedAt).toLocaleString()}` : ""}</span></div>
+              <div className="trash-row__content"><strong>{item.title}</strong><span>{meta.label}{item.deletedAt ? ` · ${dateTime.format(new Date(item.deletedAt))}` : ""}</span></div>
               <div className="trash-row__actions"><Button size="small" icon={<ArchiveRestore size={14} />} onClick={() => void restore(item.type, item.id)}>{t("trash.restore")}</Button><Button size="small" variant="ghost" aria-label={t("generic.delete")} icon={<Trash2 size={14} />} onClick={() => void remove(item.type, item.id)} /></div>
             </article>;
           })}</div>

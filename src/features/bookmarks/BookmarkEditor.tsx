@@ -47,19 +47,19 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
   }, [props.bookmark, props.initialBoardId, props.initialDescription, props.initialTitle, props.initialUrl, props.open]);
 
   useEffect(() => {
-    if (!props.open || props.bookmark || !boardId || !url.startsWith("http")) {
+    if (!props.open || !boardId || !url.startsWith("http")) {
       setDuplicate(null);
       return;
     }
     let active = true;
     const timer = window.setTimeout(() => {
-      void findDuplicate(boardId, url).then((match) => { if (active) setDuplicate(match); }).catch(() => { if (active) setDuplicate(null); });
+      void findDuplicate(boardId, url, undefined, props.bookmark?.id).then((match) => { if (active) setDuplicate(match); }).catch(() => { if (active) setDuplicate(null); });
     }, 250);
     return () => {
       active = false;
       window.clearTimeout(timer);
     };
-  }, [boardId, props.bookmark, props.open, url]);
+  }, [boardId, props.bookmark?.id, props.open, url]);
 
   const boardOptions = useMemo(() => props.pages.map((page) => ({ page, boards: props.boards.filter((board) => board.pageId === page.id) })), [props.boards, props.pages]);
   const icon = url.startsWith("http") ? faviconUrl(url, 48) : "";
@@ -112,7 +112,6 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
         <label>{t("bookmark.openMode")}<select value={openMode} onChange={(event) => setOpenMode(event.target.value as BookmarkOpenMode)}>
           <option value="current">{t("bookmark.currentTab")}</option><option value="new-tab">{t("bookmark.newTab")}</option><option value="new-window">{t("bookmark.newWindow")}</option><option value="incognito">{t("bookmark.incognito")}</option>
         </select></label>
-        <label className="checkbox-row"><input type="checkbox" checked={pinned} onChange={(event) => setPinned(event.target.checked)} />{t("bookmark.pin")}</label>
         {duplicate ? (
           <div className="inline-warning"><AlertTriangle size={18} /><div><strong>{t("bookmark.duplicateWarning")}</strong><span>{duplicate.title}</span>{!props.bookmark ? <button type="button" onClick={() => setAllowDuplicate(true)}>{t(allowDuplicate ? "bookmark.copyWillSave" : "bookmark.saveCopy")}</button> : null}</div><ExternalLink size={15} /></div>
         ) : null}

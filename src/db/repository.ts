@@ -601,12 +601,13 @@ export async function findDuplicate(
   boardId: string,
   url: string,
   database: AsterfoldDatabase = db,
+  excludeBookmarkId?: string,
 ): Promise<Bookmark | null> {
   const normalized = normalizeUrl(url).normalizedUrl;
   const match = await database.bookmarks
     .where("[boardId+normalizedUrl]")
     .equals([boardId, normalized])
-    .filter((bookmark) => bookmark.deletedAt === null)
+    .filter((bookmark) => bookmark.deletedAt === null && bookmark.id !== excludeBookmarkId)
     .first();
   return match ?? null;
 }

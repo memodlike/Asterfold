@@ -10,6 +10,7 @@ import {
   listTrash,
   bulkMoveBookmarks,
   emptyTrash,
+  findDuplicate,
   permanentlyDelete,
   moveBookmarkToIndex,
   purgeTrash,
@@ -49,6 +50,8 @@ describe("Dexie workspace repository", () => {
     expect(first.openMode).toBe("current");
     await expect(createBookmark({ boardId: board.id, title: "Again", url: "https://dexie.org/" }, {}, database)).rejects.toBeInstanceOf(DuplicateError);
     await expect(updateBookmark(second.id, { url: "https://dexie.org/" }, database)).rejects.toBeInstanceOf(DuplicateError);
+    expect(await findDuplicate(board.id, first.url, database, first.id)).toBeNull();
+    expect((await findDuplicate(board.id, first.url, database, second.id))?.id).toBe(first.id);
 
     await moveBookmarkToIndex(second.id, board.id, 0, database);
     const workspace = await getWorkspaceData(database);
