@@ -58,6 +58,30 @@ exit 1; 0.99 s; browser exited with SIGABRT before extension startup
 
 The same uninitialized-context teardown error followed. Selecting installed Chrome therefore did not bypass the managed process restriction.
 
+## Phase 1 URL and navigation evidence
+
+Environment access changed from managed filesystem restrictions to unrestricted local execution. Before any Phase 1 source change, the unchanged Phase 0 commit reran `npm run test:e2e` successfully: exit `0`, 2/2 tests, 16.9 s. This confirms that the earlier Crashpad result was a runner restriction, not an extension pass or failure.
+
+Phase 1 command evidence:
+
+| Test ID | Command | Exit | Key output |
+| --- | --- | ---: | --- |
+| AF-SEC-T001 | `npm test -- --run tests/domain.test.ts` | 0 | 19/19: credentials, encoded credentials, controls, mixed-case scheme, Unicode/punycode, length, schemes and explicit mail flow |
+| AF-SEC-T002 | `npm test -- --run tests/browserApi.test.ts` | 0 | Four `openMode` values are routed to the background; poisoned stored URL is rejected before messaging |
+| AF-SEC-T003 | `npm test` | 0 | 10 files, 54/54; strict message bounds and poisoned import coverage |
+| AF-SEC-E001 | `npm run test:e2e` | 0 | 3/3 in 16.7 s; poisoned IndexedDB plus background executable/credential URL rejection, and new-tab, new-window, incognito-unavailable and current-tab flows |
+| AF-SEC-B001 | `npm run build` | 0 | Chrome MV3 build, 945.97 kB |
+| AF-SEC-S001 | `npm run typecheck && npm run lint` | 0 | TypeScript and ESLint completed without findings |
+
+Implementation evidence:
+
+- `SafeNavigationUrl` accepts only HTTP/HTTPS by default and `mailto:` only through an explicit option.
+- Raw controls, credentials (including percent-encoded username), missing hosts, unsupported schemes and values over 8,192 characters are rejected.
+- `openUrl` no longer uses `window.location.assign` or direct tab/window APIs. Every bookmark mode is sent to the service worker.
+- The service worker reparses the URL immediately before `tabs.update`, `tabs.create`, or `windows.create`.
+- Runtime message objects are strict, strings and IDs are bounded, `tabId` is a positive safe integer, and user-facing failures are stable codes.
+- Incognito denial returns `INCOGNITO_UNAVAILABLE`; raw Chrome errors are not exposed.
+
 ## Production bundle baseline
 
 | Asset | Bytes |

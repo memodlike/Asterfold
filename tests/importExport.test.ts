@@ -52,7 +52,7 @@ describe("safe import and lossless export", () => {
 
   it("rejects prototype pollution keys and unsafe imported URLs", () => {
     expect(() => parseBackup('{"__proto__":{"polluted":true}}')).toThrow(/unsafe object key/u);
-    const records = parseNetscapeHtml('<DL><p><DT><A HREF="javascript:alert(1)">Bad</A><DT><A HREF="https://safe.example">Safe</A></DL><p>');
+    const records = parseNetscapeHtml('<DL><p><DT><A HREF="javascript:alert(1)">Bad</A><DT><A HREF="https://%75ser@example.com/private">Credentials</A><DT><A HREF="https://safe.example">Safe</A></DL><p>');
     expect(records).toHaveLength(1);
     expect(records[0]?.url).toBe("https://safe.example");
   });

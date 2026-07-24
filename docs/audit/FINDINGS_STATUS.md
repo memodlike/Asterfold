@@ -5,8 +5,8 @@ Statuses are limited to `OPEN`, `IN_PROGRESS`, `FIXED`, `ACCEPTED_RISK`, and `NO
 | ID | Status | Commit | Tests | Evidence | Residual risk |
 | --- | --- | --- | --- | --- | --- |
 | AF-BASE-001 | IN_PROGRESS | Phase 0 commit containing this document | `tests/auditFixtures.test.ts` | Versioned fixtures and golden backups under `tests/fixtures/audit/` | Fixtures are not yet exercised through every Dexie upgrade path |
-| AF-SEC-001 | OPEN | Observed at `eeb0fe52804c6da9431260390837cd4c4302093f` | Phase 1 pending | URL/navigation review required | Unsafe or poisoned stored URLs may reach navigation paths |
-| AF-SEC-002 | OPEN | Base audit commit | Phase 1 pending | Runtime message schemas require strict bounds and typed results | Malformed extension messages may cross trust boundaries |
+| AF-SEC-001 | FIXED | Phase 1 commit | AF-SEC-T001, AF-SEC-T002, AF-SEC-E001 | Strict branded parser runs in the UI client and again immediately before Chrome navigation APIs | An OS handler controls an explicitly allowed `mailto:` after validation |
+| AF-SEC-002 | FIXED | Phase 1 commit | AF-SEC-T003, AF-SEC-E001 | All runtime message objects are strict and bounded; responses use `{ok,data}` or `{ok,code,params}` | Internal extension contexts remain trusted senders and are still schema-validated |
 | AF-PRIV-001 | OPEN | Base audit commit | Phase 2 pending | Fixture contains a remote `faviconUrl` for interception coverage | Remote favicon rendering could disclose visited bookmark hosts |
 | AF-PRIV-002 | OPEN | Base audit commit | Phase 2 pending | Privacy contract matrix pending | Titles may remain observable through DOM, accessibility, menus, index, or clipboard |
 | AF-DATA-001 | OPEN | Base audit commit | Golden backups preserve all four `openMode` values | `migrateToV5` and `parseBackup` currently convert `new-tab` to `current` | User navigation behavior is changed during migration/restore |
@@ -25,6 +25,6 @@ Statuses are limited to `OPEN`, `IN_PROGRESS`, `FIXED`, `ACCEPTED_RISK`, and `NO
 | AF-CI-001 | OPEN | Base audit commit | `npm ci` warning | npm reported four install scripts outside `allowScripts` coverage | Supply-chain execution policy is not explicit |
 | AF-CI-003 | OPEN | Base audit commit | macOS release exit `0`; Windows smoke pending | `scripts/release.mjs` shells out to external `zip` | Release is not portable to a clean Windows runner |
 | AF-CI-004 | OPEN | Base audit commit | Two-build comparison pending | Archive timestamps/order/permissions are not normalized | Byte-for-byte reproducibility is unproven |
-| AF-CI-005 | OPEN | Base audit commit | `npm run test:e2e` exit `1` | Crashpad permission failure and unsafe teardown in `EVIDENCE.md` | Real MV3 behavior has not executed on this baseline |
+| AF-CI-005 | FIXED | Phase 1 environment rerun | `npm run test:e2e` exit `0`, 3/3 | The unchanged baseline passed after the managed filesystem restriction was removed; Phase 1 MV3 E2E also passed | CI portability and teardown hardening remain Phase 13 work |
 | AF-CI-006 | OPEN | Base audit commit | `npm audit --json` exit `1` | Registry DNS failure in `EVIDENCE.md` | Dependency advisories are unknown, not zero |
 | AF-DOC-001 | OPEN | Base audit commit | Phase 14 pending | Current docs have not been revalidated against hardening evidence | Public claims may describe older behavior |

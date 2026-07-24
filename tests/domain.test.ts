@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { evenlySpacedRanks, isValidRank, rankBetween } from "../src/domain/ordering";
 import { getThemePreset, validateTheme } from "../src/domain/themes";
-import { isSafeOpenUrl, normalizeUrl } from "../src/domain/urls";
+import { isSafeOpenUrl, normalizeUrl, parseSafeNavigationUrl } from "../src/domain/urls";
 import { parseExtensionMessage } from "../src/browser/messages";
 
 describe("position keys", () => {
@@ -41,6 +41,41 @@ describe("URL safety", () => {
   it("allows explicit mail links without treating them as web origins", () => {
     expect(normalizeUrl("mailto:hello@example.com").hostname).toBe("Email");
   });
+
+  it.each([
+    "https://user@example.com/private",
+    "https://user:password@example.com/private",
+    "https://%75ser@example.com/private",
+    "https://example.com/\nnext",
+    "https://example.com/\u0000next",
+  ])("rejects credentials and control characters: %s", (url) => {
+    expect(() => parseSafeNavigationUrl(url)).toThrow();
+  });
+
+  it("canonicalizes mixed-case and Unicode origins without changing path or query", () => {
+    const parsed = parseSafeNavigationUrl("HTTPS://BÜCHER.example:443/A%2Fb?q=%2F#part");
+    expect(parsed).toBe("https://xn--bcher-kva.example/A%2Fb?q=%2F#part");
+  });
+
+  it("rejects oversized URLs and all privileged or executable schemes", () => {
+    expect(() => parseSafeNavigationUrl(`https://example.com/${"a".repeat(8_200)}`)).toThrow();
+    for (const url of [
+      "javascript:alert(1)",
+      "data:text/html,hello",
+      "file:///tmp/a",
+      "chrome://settings",
+      "chrome-extension://id/page.html",
+      "blob:https://example.com/id",
+      "about:blank",
+    ]) {
+      expect(() => parseSafeNavigationUrl(url)).toThrow();
+    }
+  });
+
+  it("allows mailto only when the caller opts into the mail flow", () => {
+    expect(() => parseSafeNavigationUrl("mailto:hello@example.com")).toThrow();
+    expect(parseSafeNavigationUrl("MAILTO:hello@example.com", { allowMailto: true })).toBe("mailto:hello@example.com");
+  });
 });
 
 describe("themes and runtime messages", () => {
@@ -78,5 +113,10 @@ describe("themes and runtime messages", () => {
     });
     expect(parseExtensionMessage({ type: "DELETE_DATABASE" })).toBeNull();
     expect(parseExtensionMessage({ type: "OPEN_URL", url: "https://example.com", mode: "eval" })).toBeNull();
+    expect(parseExtensionMessage({ type: "OPEN_URL", url: "https://example.com", mode: "current", extra: true })).toBeNull();
+    expect(parseExtensionMessage({ type: "QUICK_SAVE", tabId: 0 })).toBeNull();
+    expect(parseExtensionMessage({ type: "QUICK_SAVE", tabId: Number.MAX_SAFE_INTEGER + 1 })).toBeNull();
+    expect(parseExtensionMessage({ type: "OPEN_WORKSPACE", pageId: "" })).toBeNull();
+    expect(parseExtensionMessage({ type: "INSTANT_SAVE", url: "https://example.com", title: "x".repeat(241) })).toBeNull();
   });
 });

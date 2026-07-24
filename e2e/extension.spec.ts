@@ -143,6 +143,54 @@ test.describe.serial("Asterfold MV3 release", () => {
     expect(probe.manifest.host_permissions ?? []).toEqual([]);
   });
 
+  test("revalidates navigation messages in the background", async () => {
+    const page = await context.newPage();
+    await page.goto(`chrome-extension://${extensionId}/newtab.html`);
+    for (const url of [
+      "javascript:alert(1)",
+      "data:text/html,unsafe",
+      "https://user@example.com/private",
+      "https://%75ser@example.com/private",
+    ]) {
+      const response = JSON.parse(await page.evaluate(async (unsafeUrl) => JSON.stringify(await chrome.runtime.sendMessage({
+        type: "OPEN_URL",
+        url: unsafeUrl,
+        mode: "new-tab",
+      })), url)) as unknown;
+      expect(response).toEqual({ ok: false, code: "UNSAFE_URL" });
+    }
+
+    const newTabPromise = context.waitForEvent("page");
+    const success = JSON.parse(await page.evaluate(async () => JSON.stringify(await chrome.runtime.sendMessage({
+      type: "OPEN_URL",
+      url: "https://example.com/#asterfold-new-tab",
+      mode: "new-tab",
+    })))) as unknown;
+    expect(success).toEqual({ ok: true });
+    const opened = await newTabPromise;
+    await expect(opened).toHaveURL(/https:\/\/example\.com\/#asterfold-new-tab/u);
+    await opened.close();
+
+    const newWindowPagePromise = context.waitForEvent("page");
+    const newWindow = JSON.parse(await page.evaluate(async () => JSON.stringify(await chrome.runtime.sendMessage({
+      type: "OPEN_URL",
+      url: "https://example.com/#asterfold-new-window",
+      mode: "new-window",
+    })))) as unknown;
+    expect(newWindow).toEqual({ ok: true });
+    const openedWindowPage = await newWindowPagePromise;
+    await expect(openedWindowPage).toHaveURL(/https:\/\/example\.com\/#asterfold-new-window/u);
+    await openedWindowPage.close();
+
+    const incognito = JSON.parse(await page.evaluate(async () => JSON.stringify(await chrome.runtime.sendMessage({
+      type: "OPEN_URL",
+      url: "https://example.com/",
+      mode: "incognito",
+    })))) as unknown;
+    expect(incognito).toEqual({ ok: false, code: "INCOGNITO_UNAVAILABLE" });
+    await page.close();
+  });
+
   test("persists core flows and fits 100 bookmarks without desktop scroll", async () => {
     const page = await context.newPage();
     page.on("pageerror", (error) => runtimeErrors.push(`newtab: ${error.message}`));
@@ -174,6 +222,54 @@ test.describe.serial("Asterfold MV3 release", () => {
     await dialog.getByLabel("Описание").fill("Extension testing reference");
     await dialog.getByRole("button", { name: "Сохранить" }).click();
     await expect(page.getByText("Playwright docs", { exact: true })).toBeVisible();
+
+    await page.evaluate(async () => {
+      const request = indexedDB.open("asterfold");
+      const database = await new Promise<IDBDatabase>((resolvePromise, reject) => {
+        request.onsuccess = () => resolvePromise(request.result);
+        request.onerror = () => reject(request.error ?? new Error("Unable to open IndexedDB"));
+      });
+      const transaction = database.transaction("bookmarks", "readwrite");
+      const store = transaction.objectStore("bookmarks");
+      const bookmarks = await new Promise<Array<Record<string, unknown>>>((resolvePromise, reject) => {
+        const getAll = store.getAll();
+        getAll.onsuccess = () => resolvePromise(getAll.result as Array<Record<string, unknown>>);
+        getAll.onerror = () => reject(getAll.error ?? new Error("Unable to read bookmarks"));
+      });
+      const bookmark = bookmarks.find((item) => item.title === "Playwright docs");
+      if (!bookmark) throw new Error("Seed bookmark is missing");
+      store.put({ ...bookmark, url: "javascript:alert(1)", normalizedUrl: "javascript:alert(1)" });
+      await new Promise<void>((resolvePromise, reject) => {
+        transaction.oncomplete = () => resolvePromise();
+        transaction.onerror = () => reject(transaction.error ?? new Error("Unable to poison bookmark fixture"));
+      });
+      database.close();
+    });
+    await page.getByRole("button", { name: "Playwright docs" }).click();
+    await expect(page).toHaveURL(new RegExp(`^chrome-extension://${extensionId}/newtab\\.html`, "u"));
+    await expect(page.getByText("Небезопасная ссылка заблокирована", { exact: true })).toBeVisible();
+    await page.evaluate(async () => {
+      const request = indexedDB.open("asterfold");
+      const database = await new Promise<IDBDatabase>((resolvePromise, reject) => {
+        request.onsuccess = () => resolvePromise(request.result);
+        request.onerror = () => reject(request.error ?? new Error("Unable to open IndexedDB"));
+      });
+      const transaction = database.transaction("bookmarks", "readwrite");
+      const store = transaction.objectStore("bookmarks");
+      const bookmarks = await new Promise<Array<Record<string, unknown>>>((resolvePromise, reject) => {
+        const getAll = store.getAll();
+        getAll.onsuccess = () => resolvePromise(getAll.result as Array<Record<string, unknown>>);
+        getAll.onerror = () => reject(getAll.error ?? new Error("Unable to read bookmarks"));
+      });
+      const bookmark = bookmarks.find((item) => item.title === "Playwright docs");
+      if (!bookmark) throw new Error("Seed bookmark is missing");
+      store.put({ ...bookmark, url: "https://playwright.dev/docs/chrome-extensions", normalizedUrl: "https://playwright.dev/docs/chrome-extensions" });
+      await new Promise<void>((resolvePromise, reject) => {
+        transaction.oncomplete = () => resolvePromise();
+        transaction.onerror = () => reject(transaction.error ?? new Error("Unable to restore bookmark fixture"));
+      });
+      database.close();
+    });
 
     await openLauncher(page);
     await page.getByRole("menuitem", { name: "Новый блок" }).click();
