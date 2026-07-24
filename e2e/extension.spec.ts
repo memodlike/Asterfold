@@ -193,6 +193,10 @@ test.describe.serial("Asterfold MV3 release", () => {
 
   test("persists core flows and fits 100 bookmarks without desktop scroll", async () => {
     const page = await context.newPage();
+    const unexpectedFaviconRequests: string[] = [];
+    page.on("request", (request) => {
+      if (request.url().includes("tracker.invalid")) unexpectedFaviconRequests.push(request.url());
+    });
     page.on("pageerror", (error) => runtimeErrors.push(`newtab: ${error.message}`));
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/newtab.html`);
@@ -238,13 +242,16 @@ test.describe.serial("Asterfold MV3 release", () => {
       });
       const bookmark = bookmarks.find((item) => item.title === "Playwright docs");
       if (!bookmark) throw new Error("Seed bookmark is missing");
-      store.put({ ...bookmark, url: "javascript:alert(1)", normalizedUrl: "javascript:alert(1)" });
+      store.put({ ...bookmark, url: "javascript:alert(1)", normalizedUrl: "javascript:alert(1)", faviconUrl: "https://tracker.invalid/favicon.ico", customIcon: "https://tracker.invalid/custom.svg" });
       await new Promise<void>((resolvePromise, reject) => {
         transaction.oncomplete = () => resolvePromise();
         transaction.onerror = () => reject(transaction.error ?? new Error("Unable to poison bookmark fixture"));
       });
       database.close();
     });
+    await page.reload();
+    await expect(page.getByText("Playwright docs", { exact: true })).toBeVisible();
+    expect(unexpectedFaviconRequests).toEqual([]);
     await page.getByRole("button", { name: "Playwright docs" }).click();
     await expect(page).toHaveURL(new RegExp(`^chrome-extension://${extensionId}/newtab\\.html`, "u"));
     await expect(page.getByText("Небезопасная ссылка заблокирована", { exact: true })).toBeVisible();
@@ -318,6 +325,15 @@ test.describe.serial("Asterfold MV3 release", () => {
     await openLauncher(page);
     await page.getByRole("menuitem", { name: "Включить приватность" }).click();
     await expect(page.locator(".app-shell")).toHaveClass(/privacy-mode/u);
+    await expect(page.getByText("Playwright docs", { exact: true })).toHaveCount(0);
+    await expect(page.locator('[title*="Playwright docs"]')).toHaveCount(0);
+    const privateBookmark = page.getByRole("button", { name: "Открыть скрытую закладку" }).first();
+    await expect(privateBookmark).toBeVisible();
+    await privateBookmark.click({ button: "right" });
+    await expect(page.getByRole("menu", { name: "Действия скрытой закладки" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Копировать URL" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Копировать Markdown" })).toBeDisabled();
+    await page.keyboard.press("Escape");
     await openLauncher(page);
     await page.getByRole("menuitem", { name: "Выключить приватность" }).click();
 

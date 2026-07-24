@@ -82,6 +82,18 @@ Implementation evidence:
 - Runtime message objects are strict, strings and IDs are bounded, `tabId` is a positive safe integer, and user-facing failures are stable codes.
 - Incognito denial returns `INCOGNITO_UNAVAILABLE`; raw Chrome errors are not exposed.
 
+## Phase 2 favicon and privacy evidence
+
+| Test ID | Command | Exit | Key output |
+| --- | --- | ---: | --- |
+| AF-PRIV-T001 | `npm test -- --run tests/privacy.test.ts` | 0 | Bounded PNG/JPEG/WebP data policy; remote URL/SVG/oversize rejection; remote legacy favicon not rendered |
+| AF-PRIV-T002 | `npm test -- --run tests/privacySearch.test.ts` | 0 | Privacy mode constructs neither search documents nor MiniSearch engine |
+| AF-PRIV-U001 | `npm test` | 0 | 12 files, 58/58 |
+| AF-PRIV-E001 | `npm run test:e2e` | 0 | 3/3 in 17.9 s; zero requests to injected `tracker.invalid`, neutral private DOM/a11y/context labels and disabled clipboard actions |
+| AF-PRIV-B001 | `npm run build` | 0 | Chrome MV3 build, 948.74 kB |
+
+Existing `faviconUrl` and `customIcon` fields remain in the data model so old backups restore without data loss. They are not trusted as render sources: remote favicon values are ignored and custom icons must pass the local bounded raster-data policy. Privacy Mode does not encrypt IndexedDB; this is documented as residual behavior rather than presented as a security guarantee.
+
 ## Production bundle baseline
 
 | Asset | Bytes |

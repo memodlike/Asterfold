@@ -12,7 +12,6 @@ import { translate, type MessageKey } from "../../src/i18n";
 interface ActiveTabData {
   title: string;
   url: string;
-  faviconUrl: string | null;
 }
 
 export function PopupApp() {
@@ -40,7 +39,7 @@ export function PopupApp() {
       const active = tabs[0];
       const url = active?.url ?? "";
       const titleValue = active?.title?.trim() || (url ? new URL(url).hostname : t("popup.untitledPage"));
-      setTab({ title: titleValue, url, faviconUrl: active?.favIconUrl ?? null });
+      setTab({ title: titleValue, url });
       setTitle(titleValue);
       setShortcut(commands.find((command) => command.name === "quick-save")?.shortcut ?? "");
     }).catch(() => setError(t("popup.activeTabUnavailable")));
@@ -76,7 +75,7 @@ export function PopupApp() {
     if (!tab?.url || !boardId) return;
     setSaving(true); setError(null);
     try {
-      await createBookmark({ boardId, title, url: tab.url, description, faviconUrl: tab.faviconUrl }, { allowDuplicate });
+      await createBookmark({ boardId, title, url: tab.url, description }, { allowDuplicate });
       await updateSettings({ quickSaveLastPageId: pageId, quickSaveLastBoardId: boardId });
       setStatus(t("popup.saved"));
       await browser.action.setBadgeBackgroundColor({ color: "#079455" });

@@ -27,7 +27,7 @@ async function setBadge(text: string, color: string): Promise<void> {
   setTimeout(() => { void browser.action.setBadgeText({ text: "" }); }, 1_800);
 }
 
-async function saveUrl(url: string, title: string, faviconUrl: string | null): Promise<ExtensionResponse> {
+async function saveUrl(url: string, title: string): Promise<ExtensionResponse> {
   let safeUrl: string;
   try {
     safeUrl = parseSafeNavigationUrl(url, { allowMailto: true });
@@ -41,7 +41,7 @@ async function saveUrl(url: string, title: string, faviconUrl: string | null): P
   if (!boardId) return { ok: false, code: "BOARD_REQUIRED" };
   try {
     const fallbackTitle = safeUrl.startsWith("mailto:") ? "Email" : new URL(safeUrl).hostname;
-    await createBookmark({ boardId, title: title || fallbackTitle, url: safeUrl, faviconUrl }, { allowDuplicate: workspace.settings.duplicateStrategy === "allow" });
+    await createBookmark({ boardId, title: title || fallbackTitle, url: safeUrl }, { allowDuplicate: workspace.settings.duplicateStrategy === "allow" });
     await setBadge("✓", "#079455");
     return { ok: true, data: { status: "saved" } };
   } catch (error) {
@@ -58,7 +58,7 @@ async function saveActiveTab(tabId?: number): Promise<ExtensionResponse> {
   const tabs = tabId === undefined ? await browser.tabs.query({ active: true, currentWindow: true }) : [await browser.tabs.get(tabId)];
   const tab = tabs[0];
   if (!tab?.url) return { ok: false, code: "ACTIVE_TAB_UNAVAILABLE" };
-  return saveUrl(tab.url, tab.title ?? "Untitled page", tab.favIconUrl ?? null);
+  return saveUrl(tab.url, tab.title ?? "Untitled page");
 }
 
 async function openWorkspace(pageId?: string): Promise<void> {
@@ -71,7 +71,7 @@ async function handleRuntimeMessage(raw: unknown, sender: chrome.runtime.Message
   if (!message) return { ok: false, code: "INVALID_MESSAGE" };
   switch (message.type) {
     case "QUICK_SAVE": return saveActiveTab(message.tabId);
-    case "INSTANT_SAVE": return saveUrl(message.url, message.title, message.faviconUrl ?? null);
+    case "INSTANT_SAVE": return saveUrl(message.url, message.title);
     case "OPEN_WORKSPACE": await openWorkspace(message.pageId); return { ok: true };
     case "OPEN_URL": {
       let safeUrl: string;
@@ -152,12 +152,12 @@ export default defineBackground(() => {
       } catch {
         return;
       }
-      void saveUrl(info.linkUrl, title, null);
+      void saveUrl(info.linkUrl, title);
       return;
     }
     if (info.menuItemId === MENU_SAVE_PAGE) {
       const url = tab?.url ?? info.pageUrl;
-      if (url) void saveUrl(url, tab?.title ?? new URL(url).hostname, tab?.favIconUrl ?? null);
+      if (url) void saveUrl(url, tab?.title ?? new URL(url).hostname);
     }
   });
 

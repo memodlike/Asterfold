@@ -29,8 +29,8 @@ export function SearchPalette(props: SearchPaletteProps) {
   const [scope, setScope] = useState<"all" | "page">("all");
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const engine = useMemo(() => new BookmarkSearchEngine(createSearchDocuments(props.pages, props.boards, props.bookmarks)), [props.boards, props.bookmarks, props.pages]);
-  const results = useMemo(() => props.privacy ? [] : engine.search(query, { mode, field, ...(scope === "page" ? { pageId: props.activePageId } : {}), limit: 40 }), [engine, field, mode, props.activePageId, props.privacy, query, scope]);
+  const engine = useMemo(() => props.privacy ? null : new BookmarkSearchEngine(createSearchDocuments(props.pages, props.boards, props.bookmarks)), [props.boards, props.bookmarks, props.pages, props.privacy]);
+  const results = useMemo(() => engine?.search(query, { mode, field, ...(scope === "page" ? { pageId: props.activePageId } : {}), limit: 40 }) ?? [], [engine, field, mode, props.activePageId, query, scope]);
   const bookmarkById = useMemo(() => new Map(props.bookmarks.map((bookmark) => [bookmark.id, bookmark])), [props.bookmarks]);
 
   useEffect(() => {

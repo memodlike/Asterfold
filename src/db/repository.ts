@@ -597,7 +597,7 @@ export async function createBookmark(
       normalizedUrl: normalized.normalizedUrl,
       hostname: normalized.hostname,
       description: cleanDescription(input.description),
-      faviconUrl: input.faviconUrl ?? null,
+      faviconUrl: null,
       customIcon: null,
       position,
       openMode: input.openMode ?? "current",
@@ -674,7 +674,6 @@ export async function duplicateBookmark(id: string, database: AsterfoldDatabase 
     title: `${source.title} copy`,
     url: source.url,
     description: source.description,
-    faviconUrl: source.faviconUrl,
     openMode: source.openMode,
     pinned: source.pinned,
   }, { allowDuplicate: true }, database);

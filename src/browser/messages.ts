@@ -6,7 +6,7 @@ const titleSchema = z.string().max(240);
 
 export const extensionMessageSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("QUICK_SAVE"), tabId: z.number().int().positive().safe().optional() }).strict(),
-  z.object({ type: z.literal("INSTANT_SAVE"), url: urlSchema, title: titleSchema, faviconUrl: z.string().max(8_192).nullable().optional() }).strict(),
+  z.object({ type: z.literal("INSTANT_SAVE"), url: urlSchema, title: titleSchema }).strict(),
   z.object({ type: z.literal("OPEN_WORKSPACE"), pageId: entityIdSchema.optional() }).strict(),
   z.object({ type: z.literal("OPEN_URL"), url: urlSchema, mode: z.enum(["current", "new-tab", "new-window", "incognito"]) }).strict(),
   z.object({ type: z.literal("SYNC_NOW") }).strict(),

@@ -210,7 +210,6 @@ export interface NewBookmarkInput {
   title: string;
   url: string;
   description?: string | null;
-  faviconUrl?: string | null;
   openMode?: BookmarkOpenMode;
   pinned?: boolean;
 }
