@@ -32,12 +32,19 @@ export function FloatingContextMenu({ label, point, children, onClose }: Floatin
   }, [placement, point]);
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => { if (event.key === "Escape") onClose(); };
-    const onResize = (): void => onClose();
+    const close = (): void => onClose();
+    const onOutsidePointer = (event: PointerEvent): void => {
+      if (!menuRef.current?.contains(event.target as Node)) onClose();
+    };
     document.addEventListener("keydown", onKeyDown);
-    window.addEventListener("resize", onResize);
+    document.addEventListener("pointerdown", onOutsidePointer);
+    window.addEventListener("resize", close);
+    window.addEventListener("scroll", close, true);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("resize", onResize);
+      document.removeEventListener("pointerdown", onOutsidePointer);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("scroll", close, true);
     };
   }, [onClose]);
 

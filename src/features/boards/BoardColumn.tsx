@@ -2,7 +2,7 @@ import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Check, Copy, MoveRight, Pencil, Plus, Trash2 } from "lucide-react";
-import { memo, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
+import { memo, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
 import type { Board, Bookmark } from "../../domain/models";
 import { FloatingContextMenu, type ContextMenuPoint } from "../../components/FloatingContextMenu";
 import { useI18n } from "../../i18n";
@@ -35,7 +35,6 @@ interface BoardColumnProps {
 export const BoardColumn = memo(function BoardColumn(props: BoardColumnProps) {
   const { t } = useI18n();
   const [menuPoint, setMenuPoint] = useState<ContextMenuPoint | null>(null);
-  const rootRef = useRef<HTMLElement>(null);
   const sortable = useSortable({ id: `board:${props.board.id}`, data: { type: "board", boardId: props.board.id } });
   const drop = useDroppable({ id: `board-drop:${props.board.id}`, data: { type: "board-drop", boardId: props.board.id } });
   const columns = props.board.bookmarkColumns === "auto" ? ((props.placement?.span ?? 3) >= 4 || props.bookmarks.length >= 12 ? 2 : 1) : props.board.bookmarkColumns;
@@ -46,17 +45,8 @@ export const BoardColumn = memo(function BoardColumn(props: BoardColumnProps) {
     gridRow: `${(props.placement?.row ?? 0) + 1}`,
   } as CSSProperties;
   const setRefs = (node: HTMLElement | null): void => {
-    rootRef.current = node;
     sortable.setNodeRef(node);
   };
-
-  useEffect(() => {
-    const close = (event: PointerEvent): void => {
-      if (!rootRef.current?.contains(event.target as Node)) setMenuPoint(null);
-    };
-    document.addEventListener("pointerdown", close);
-    return () => document.removeEventListener("pointerdown", close);
-  }, []);
 
   const openContext = (event: MouseEvent): void => {
     event.preventDefault();

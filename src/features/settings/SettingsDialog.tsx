@@ -53,10 +53,12 @@ function formatBytes(value: number | undefined): string {
 
 export function SettingsDialog(props: SettingsDialogProps) {
   const { t } = useI18n();
+  const settings = props.workspace.settings;
   const [section, setSection] = useState<SettingsSection>(props.initialSection ?? "appearance");
   const [shortcut, setShortcut] = useState("—");
   const [storage, setStorage] = useState<StorageEstimate>();
   const [wallpaperInfo, setWallpaperInfo] = useState<Wallpaper | null>(null);
+  const [themeDraft, setThemeDraft] = useState(settings.theme);
   const [invariants, setInvariants] = useState<string[]>([]);
   const [importRecordsPreview, setImportRecordsPreview] = useState<ImportRecord[]>([]);
   const [backupPreview, setBackupPreview] = useState<AsterfoldBackup | null>(null);
@@ -66,7 +68,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
   const [importPageTitle, setImportPageTitle] = useState(t("settings.importedBookmarks"));
   const importInputRef = useRef<HTMLInputElement>(null);
   const wallpaperInputRef = useRef<HTMLInputElement>(null);
-  const settings = props.workspace.settings;
+  const themeCommitRef = useRef<number | null>(null);
   const counts = useMemo(() => ({ pages: props.workspace.pages.length, boards: props.workspace.boards.length, bookmarks: props.workspace.bookmarks.length }), [props.workspace]);
   const sections: Array<{ id: SettingsSection; label: string; icon: typeof Brush }> = [
     { id: "appearance", label: t("settings.appearance"), icon: Brush },
@@ -85,9 +87,15 @@ export function SettingsDialog(props: SettingsDialogProps) {
     void auditInvariants().then(setInvariants);
   }, [backupPreview, importRecordsPreview.length, props.initialSection, props.open, t]);
   useEffect(() => {
-    if (!props.open || !settings.theme.wallpaperId) { setWallpaperInfo(null); return; }
-    void getWallpaper(settings.theme.wallpaperId).then(setWallpaperInfo).catch(() => setWallpaperInfo(null));
-  }, [props.open, settings.theme.wallpaperId]);
+    if (!props.open || !themeDraft.wallpaperId) { setWallpaperInfo(null); return; }
+    void getWallpaper(themeDraft.wallpaperId).then(setWallpaperInfo).catch(() => setWallpaperInfo(null));
+  }, [props.open, themeDraft.wallpaperId]);
+  useEffect(() => {
+    setThemeDraft(settings.theme);
+  }, [settings.theme]);
+  useEffect(() => () => {
+    if (themeCommitRef.current !== null) window.clearTimeout(themeCommitRef.current);
+  }, []);
 
   const patchSettings = async (patch: Partial<Omit<AppSettings, "id" | "schemaVersion">>, message = t("generic.save")): Promise<void> => {
     try {
@@ -98,7 +106,13 @@ export function SettingsDialog(props: SettingsDialogProps) {
     }
   };
   const patchTheme = (patch: Partial<ThemeConfig>): void => {
-    void patchSettings({ theme: validateTheme({ ...settings.theme, ...patch }) });
+    const next = validateTheme({ ...themeDraft, ...patch });
+    setThemeDraft(next);
+    if (themeCommitRef.current !== null) window.clearTimeout(themeCommitRef.current);
+    themeCommitRef.current = window.setTimeout(() => {
+      themeCommitRef.current = null;
+      void updateSettings({ theme: next }).catch(() => props.onError(t("error.updateSettings")));
+    }, 200);
   };
   const exportAll = async (format: "json" | "html" | "markdown"): Promise<void> => {
     try {
@@ -173,32 +187,32 @@ export function SettingsDialog(props: SettingsDialogProps) {
         <nav className="settings-nav" aria-label={t("settings.title")}>{sections.map((item) => <button key={item.id} className={section === item.id ? "is-active" : ""} onClick={() => setSection(item.id)}><item.icon size={17} />{item.label}</button>)}</nav>
         <div className="settings-content">
           {section === "appearance" ? <SettingsSection title={t("settings.appearance")} description={t("settings.appearanceDescription")}>
-            <SettingRow label={t("settings.themeMode")}><Segmented value={settings.theme.mode} items={[{ value: "system", label: t("settings.auto") }, { value: "light", label: t("settings.light") }, { value: "dark", label: t("settings.dark") }]} onChange={(value) => patchTheme({ mode: value as ThemeConfig["mode"] })} /></SettingRow>
-            <SettingRow label={t("settings.background")}><Segmented value={settings.theme.backgroundMode} items={[{ value: "auto", label: t("settings.backgroundAuto") }, { value: "solid", label: t("settings.backgroundSolid") }, { value: "wallpaper", label: t("settings.backgroundWallpaper") }]} onChange={(value) => patchTheme({ backgroundMode: value as ThemeConfig["backgroundMode"] })} /></SettingRow>
-            {settings.theme.backgroundMode === "solid" ? <SettingRow label={t("settings.solidColor")}><input type="color" value={settings.theme.canvas} onChange={(event) => patchTheme({ canvas: event.target.value })} /></SettingRow> : null}
-            <SettingRow label={t("settings.glassStyle")}><Segmented value={settings.theme.glassVariant} items={[{ value: "regular", label: t("settings.glassRegular") }, { value: "clear", label: t("settings.glassClear") }]} onChange={(value) => patchTheme({ glassVariant: value as ThemeConfig["glassVariant"], surfaceOpacity: value === "clear" ? 0.34 : 0.62 })} /></SettingRow>
+            <SettingRow label={t("settings.themeMode")}><Segmented value={themeDraft.mode} items={[{ value: "system", label: t("settings.auto") }, { value: "light", label: t("settings.light") }, { value: "dark", label: t("settings.dark") }]} onChange={(value) => patchTheme({ mode: value as ThemeConfig["mode"] })} /></SettingRow>
+            <SettingRow label={t("settings.background")}><Segmented value={themeDraft.backgroundMode} items={[{ value: "auto", label: t("settings.backgroundAuto") }, { value: "solid", label: t("settings.backgroundSolid") }, { value: "wallpaper", label: t("settings.backgroundWallpaper") }]} onChange={(value) => patchTheme({ backgroundMode: value as ThemeConfig["backgroundMode"] })} /></SettingRow>
+            {themeDraft.backgroundMode === "solid" ? <SettingRow label={t("settings.solidColor")}><input type="color" value={themeDraft.canvas} onChange={(event) => patchTheme({ canvas: event.target.value })} /></SettingRow> : null}
+            <SettingRow label={t("settings.glassStyle")}><Segmented value={themeDraft.glassVariant} items={[{ value: "regular", label: t("settings.glassRegular") }, { value: "clear", label: t("settings.glassClear") }]} onChange={(value) => patchTheme({ glassVariant: value as ThemeConfig["glassVariant"], surfaceOpacity: value === "clear" ? 0.34 : 0.62 })} /></SettingRow>
             <div className="settings-range-grid">
-              <Range label={t("settings.transparency")} min={4} max={80} value={Math.round((1 - settings.theme.surfaceOpacity) * 100)} suffix="%" onChange={(value) => patchTheme({ surfaceOpacity: 1 - value / 100 })} />
-              <Range label={t("settings.blur")} min={0} max={32} value={settings.theme.blur} suffix="px" onChange={(value) => patchTheme({ blur: value })} />
-              <Range label={t("settings.wallpaperDim")} min={0} max={80} value={Math.round(settings.theme.wallpaperDim * 100)} suffix="%" onChange={(value) => patchTheme({ wallpaperDim: value / 100 })} />
-              <Range label={t("settings.wallpaperBlur")} min={0} max={20} value={settings.theme.wallpaperBlur} suffix="px" onChange={(value) => patchTheme({ wallpaperBlur: value })} />
-              <Range label={t("settings.wallpaperSaturation")} min={0} max={180} value={Math.round(settings.theme.wallpaperSaturation * 100)} suffix="%" onChange={(value) => patchTheme({ wallpaperSaturation: value / 100 })} />
+              <Range label={t("settings.transparency")} min={4} max={80} value={Math.round((1 - themeDraft.surfaceOpacity) * 100)} suffix="%" onChange={(value) => patchTheme({ surfaceOpacity: 1 - value / 100 })} />
+              <Range label={t("settings.blur")} min={0} max={32} value={themeDraft.blur} suffix="px" onChange={(value) => patchTheme({ blur: value })} />
+              <Range label={t("settings.wallpaperDim")} min={0} max={80} value={Math.round(themeDraft.wallpaperDim * 100)} suffix="%" onChange={(value) => patchTheme({ wallpaperDim: value / 100 })} />
+              <Range label={t("settings.wallpaperBlur")} min={0} max={20} value={themeDraft.wallpaperBlur} suffix="px" onChange={(value) => patchTheme({ wallpaperBlur: value })} />
+              <Range label={t("settings.wallpaperSaturation")} min={0} max={180} value={Math.round(themeDraft.wallpaperSaturation * 100)} suffix="%" onChange={(value) => patchTheme({ wallpaperSaturation: value / 100 })} />
             </div>
-            <div className="wallpaper-grid"><button className={!settings.theme.wallpaperId ? "is-active" : ""} onClick={() => patchTheme({ wallpaperId: null, backgroundMode: "auto" })}><span className="wallpaper-none" />{t("settings.noWallpaper")}</button>{BUILTIN_WALLPAPERS.map((item) => <button key={item.id} className={settings.theme.wallpaperId === item.id ? "is-active" : ""} onClick={() => patchTheme({ wallpaperId: item.id, backgroundMode: "wallpaper" })}><span style={{ background: item.value }} />{item.name}</button>)}<button onClick={() => wallpaperInputRef.current?.click()}><span className="wallpaper-upload"><Upload size={19} /></span>{t("settings.uploadWallpaper")}</button></div>
+            <div className="wallpaper-grid"><button className={!themeDraft.wallpaperId ? "is-active" : ""} onClick={() => patchTheme({ wallpaperId: null, backgroundMode: "auto" })}><span className="wallpaper-none" />{t("settings.noWallpaper")}</button>{BUILTIN_WALLPAPERS.map((item) => <button key={item.id} className={themeDraft.wallpaperId === item.id ? "is-active" : ""} onClick={() => patchTheme({ wallpaperId: item.id, backgroundMode: "wallpaper" })}><span style={{ background: item.value }} />{item.name}</button>)}<button onClick={() => wallpaperInputRef.current?.click()}><span className="wallpaper-upload"><Upload size={19} /></span>{t("settings.uploadWallpaper")}</button></div>
             {wallpaperInfo?.width && wallpaperInfo.height ? <p>{wallpaperInfo.width} × {wallpaperInfo.height} · {formatBytes(wallpaperInfo.storedBytes)}</p> : null}
             <input ref={wallpaperInputRef} hidden type="file" accept="image/png,image/jpeg,image/webp,image/avif" onChange={(event) => { const file = event.target.files?.[0]; if (file) void saveUploadedWallpaper(file); event.currentTarget.value = ""; }} />
             <div className="settings-control-group">
               <h3>{t("settings.performance")}</h3>
-              <SettingRow label={t("settings.lowPower")}><Switch label={t("settings.lowPower")} checked={settings.theme.lowPowerMode} onChange={(lowPowerMode) => patchTheme({ lowPowerMode })} /></SettingRow>
+              <SettingRow label={t("settings.lowPower")}><Switch label={t("settings.lowPower")} checked={themeDraft.lowPowerMode} onChange={(lowPowerMode) => patchTheme({ lowPowerMode })} /></SettingRow>
               <p>{t("settings.lowPowerDescription")}</p>
             </div>
             <div className="settings-control-group">
               <h3>{t("settings.animations")}</h3>
-              <SettingRow label={t("settings.motionAll")}><Switch label={t("settings.motionAll")} checked={settings.theme.motion} onChange={(motion) => patchTheme({ motion })} /></SettingRow>
-              {settings.theme.motion ? <>
-                <SettingRow label={t("settings.motionHover")}><Switch label={t("settings.motionHover")} checked={settings.theme.bookmarkHoverMotion} onChange={(bookmarkHoverMotion) => patchTheme({ bookmarkHoverMotion })} /></SettingRow>
-                <SettingRow label={t("settings.motionMenus")}><Switch label={t("settings.motionMenus")} checked={settings.theme.menuMotion} onChange={(menuMotion) => patchTheme({ menuMotion })} /></SettingRow>
-                <SettingRow label={t("settings.motionDrag")}><Switch label={t("settings.motionDrag")} checked={settings.theme.dragMotion} onChange={(dragMotion) => patchTheme({ dragMotion })} /></SettingRow>
+              <SettingRow label={t("settings.motionAll")}><Switch label={t("settings.motionAll")} checked={themeDraft.motion} onChange={(motion) => patchTheme({ motion })} /></SettingRow>
+              {themeDraft.motion ? <>
+                <SettingRow label={t("settings.motionHover")}><Switch label={t("settings.motionHover")} checked={themeDraft.bookmarkHoverMotion} onChange={(bookmarkHoverMotion) => patchTheme({ bookmarkHoverMotion })} /></SettingRow>
+                <SettingRow label={t("settings.motionMenus")}><Switch label={t("settings.motionMenus")} checked={themeDraft.menuMotion} onChange={(menuMotion) => patchTheme({ menuMotion })} /></SettingRow>
+                <SettingRow label={t("settings.motionDrag")}><Switch label={t("settings.motionDrag")} checked={themeDraft.dragMotion} onChange={(dragMotion) => patchTheme({ dragMotion })} /></SettingRow>
               </> : null}
               <p>{t("settings.animationsDescription")}</p>
             </div>

@@ -39,6 +39,14 @@ describe("bookmark search", () => {
     expect(engine.search("launch.example", { mode: "prefix", field: "url", boardId: "b2" }).map((item) => item.id)).toEqual(["two"]);
   });
 
+  it("normalizes Unicode, bounds query length, and caps the result count", () => {
+    const engine = new BookmarkSearchEngine(Array.from({ length: 200 }, (_, index) => document(String(index), {
+      title: `Café reference ${index}`,
+    })));
+    expect(engine.search("Cafe\u0301", { mode: "exact", field: "title", limit: 500 })).toHaveLength(100);
+    expect(engine.search("x".repeat(257), { mode: "fuzzy", field: "all" })).toEqual([]);
+  });
+
   it("queries a 10,000-bookmark index within the interaction budget", () => {
     const documents = Array.from({ length: 10_000 }, (_, index) => document(String(index), {
       title: index === 9_721 ? "Unique Kazakhstan research atlas" : `Reference item ${index}`,

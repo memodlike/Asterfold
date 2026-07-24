@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Copy, ExternalLink, Link2, MoveRight, Pencil, Trash2 } from "lucide-react";
-import { memo, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
+import { memo, useEffect, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
 import type { Bookmark } from "../../domain/models";
 import { FloatingContextMenu, type ContextMenuPoint } from "../../components/FloatingContextMenu";
 import { faviconUrl } from "../../browser/api";
@@ -27,7 +27,6 @@ export const BookmarkCard = memo(function BookmarkCard(props: BookmarkCardProps)
   const sortable = useSortable({ id: `bookmark:${props.bookmark.id}`, data: { type: "bookmark", bookmarkId: props.bookmark.id, boardId: props.bookmark.boardId } });
   const [iconFailed, setIconFailed] = useState(false);
   const [menuPoint, setMenuPoint] = useState<ContextMenuPoint | null>(null);
-  const rootRef = useRef<HTMLElement>(null);
   const source = safeCustomIconUrl(props.bookmark.customIcon) || faviconUrl(props.bookmark.url, 20);
   const displayTitle = props.privacy ? t("privacy.hiddenBookmark") : props.bookmark.title;
   const openLabel = props.privacy ? t("privacy.openHiddenBookmark") : t("bookmark.open", { name: props.bookmark.title });
@@ -38,14 +37,6 @@ export const BookmarkCard = memo(function BookmarkCard(props: BookmarkCardProps)
   useEffect(() => {
     setIconFailed(false);
   }, [source]);
-
-  useEffect(() => {
-    const close = (event: PointerEvent): void => {
-      if (!rootRef.current?.contains(event.target as Node)) setMenuPoint(null);
-    };
-    document.addEventListener("pointerdown", close);
-    return () => document.removeEventListener("pointerdown", close);
-  }, []);
 
   const openContext = (event: MouseEvent): void => {
     event.preventDefault();
@@ -65,7 +56,7 @@ export const BookmarkCard = memo(function BookmarkCard(props: BookmarkCardProps)
 
   return (
     <article
-      ref={(node) => { rootRef.current = node; sortable.setNodeRef(node); }}
+      ref={sortable.setNodeRef}
       style={style}
       className={`bookmark-card ${props.selected ? "is-selected" : ""} ${sortable.isDragging ? "is-dragging" : ""}`}
       data-bookmark-id={props.bookmark.id}

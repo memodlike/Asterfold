@@ -162,6 +162,19 @@ The repository now repairs Page/Board destination pairs in the same Dexie transa
 
 Uploaded wallpaper input is limited to 8 MB and validated by raster signature, declared MIME, animation marker, browser decode, dimensions, and total pixels. The stored asset is a bounded WebP (maximum side 3,840 px) plus a 480 px thumbnail. Storage quota is checked before the transaction, decoded bitmaps are closed on success and failure, and changing the selected wallpaper removes unreferenced uploaded assets without touching built-ins or active data.
 
+## Phase 8 performance evidence
+
+| Test ID | Command | Exit | Key output |
+| --- | --- | ---: | --- |
+| AF-PERF-T001 | `npm test -- --run tests/performance.test.ts tests/search.test.ts` | 0 | No per-item document listeners, no Board backdrop filter, Unicode/query/result bounds |
+| AF-PERF-T002 | `npm test -- --run tests/search.test.ts --reporter verbose` | 0 | 10k index 79.08 ms; query 2.41 ms |
+| AF-PERF-U001 | `npm test` | 0 | 15 files, 87/87 in 2.55 s |
+| AF-PERF-E001 | `npm run test:e2e` | 0 | 3/3 in 18.1 s |
+| AF-PERF-B001 | `npm run build` | 0 | 1.13 MB in 2.08 s |
+| AF-PERF-R001 | `npm run release` | 0 | Release completed |
+
+At the 100-bookmark/4-board acceptance dataset, the previous source registered one permanent document pointer listener for every Bookmark and Board (104 total). Those listeners are now absent; the portalled menu owns one outside-pointer listener only while the menu exists and also closes on scroll/resize. Balanced rendering removes `backdrop-filter` from every Board, while Low Power and `prefers-reduced-transparency` force solid surfaces. Settings theme changes use a local draft and a 200 ms persistence debounce. GPU/raster and heap values remain unavailable, so no numerical claim is made for those metrics.
+
 ## Production bundle baseline
 
 | Asset | Bytes |
