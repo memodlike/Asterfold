@@ -1,6 +1,6 @@
 {
   "name": "asterfold",
-  "version": "2.1.3",
+  "version": "2.2.0",
   "private": true,
   "type": "module",
   "description": "A premium local-first visual bookmark workspace for Chrome.",

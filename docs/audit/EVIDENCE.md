@@ -224,3 +224,24 @@ These are baseline artifacts and are not release candidates:
 138561dcf3351a3d8d25aa0ecc85bd71e40a0f625f3aaa2865f92ba77745e847  chrome-unpacked.zip
 8383da9f7d2efea00b9a0bd3ce1bc059f7fa5161d137128267cb3ff6f1f37932  extension-source.zip
 ```
+
+## Phase 10–14 evidence
+
+| Test ID | Command | Exit | Key output |
+| --- | --- | ---: | --- |
+| AF-UX-T001 | `npm run typecheck && npm run lint && npm test -- --run tests/repository.test.ts tests/i18n.test.ts && npm run build` | 0 | 12/12 targeted tests; settings matrix, Page-scoped Quick Save Board, edit duplicate exclusion and theme draft flush |
+| AF-SYNC-T001 | `npm run typecheck && npm run lint && npm test && npm run build` plus manifest assertion | 0 | 85/85; `host_permissions: []`; optional permissions only `bookmarks`; Supabase dependency/runtime absent |
+| AF-BRAND-T001 | `npm test -- --run tests/brand.test.ts` | 0 | 13/13 SVG/PNG dimension and remote/filter asset tests |
+| AF-CI-T003 | `npm run audit:production && npm run release:repro` | 0 | Production advisories 0; pure Node release completed |
+| AF-CI-T004 | `npm run release:repro` | 0 | Two consecutive archives produced identical SHA-256 |
+| AF-DOC-T001 | `rg` claim audit plus full Phase 15 gate | Pending Phase 15 | Narrative documents distinguish measured, unavailable and residual evidence |
+
+Phase 13 reproducible archive hashes before the 2.2.0 version bump:
+
+```text
+ee197abe635dda5f89e77e2a8507b01a70a0de19d5deb8a1d7f6a5b083b6969c  Asterfold-Chrome.zip
+7ec60cd8a149d6b430d9fc49884edf0f2928fc64b3d2da397f990e3f244b8437  chrome-unpacked.zip
+20ce0076b032d1227c418324757cd4443ca2a1546d8dbc1e9fcb22bb69c32c26  extension-source.zip
+```
+
+`@axe-core/playwright` 4.12.1 is test-only under MPL-2.0. It adds zero bytes to the extension bundle; the alternative was a hand-written subset of accessibility checks that would not provide the same rule coverage.

@@ -8,7 +8,7 @@ export default defineConfig({
     name: "Asterfold",
     short_name: "Asterfold",
     description: "A private, local-first visual bookmark workspace.",
-    version: "2.1.3",
+    version: "2.2.0",
     minimum_chrome_version: "120",
     permissions: ["storage", "activeTab", "favicon", "alarms", "contextMenus"],
     optional_permissions: ["bookmarks"],
