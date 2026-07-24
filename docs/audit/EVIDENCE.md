@@ -265,13 +265,16 @@ WXT 0.20.27, TypeScript 5.9.2. Validation started from commit
 | AF-FINAL-R001 | `npm run release:repro` | 0 | Two clean release generations produced byte-identical archives |
 | AF-FINAL-A001 | `npm run audit:production` | 0 | 0 production vulnerabilities |
 | AF-FINAL-A002 | `npm audit --json` | 1 | 7 high advisories in the WXT/web-ext development toolchain; 0 critical |
+| AF-FINAL-CI001 | GitHub Actions run `30067013398` | 0 | `validate`, dependency review and Windows reproducible-release smoke passed |
+| AF-FINAL-CI002 | CodeQL run `30067013394` | 0 | JavaScript/TypeScript analysis passed |
 
 The combined clean command therefore exited `1` only at the final full
 development audit. This is recorded as a residual dependency risk and is not
 reported as a passing full audit. The in-app browser cannot load an unpacked
 MV3 extension, so the actual extension gate used Playwright Chromium. A manual
-Windows Chrome smoke, 200% zoom inspection, and low-end GPU trace remain
-unavailable and are not claimed as completed.
+Manual Windows Chrome interaction, 200% zoom inspection, and a low-end GPU
+trace remain unavailable and are not claimed as completed. The deterministic
+release pipeline itself passed on GitHub's Windows runner.
 
 ### Final release hashes
 
