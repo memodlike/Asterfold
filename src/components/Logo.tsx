@@ -7,16 +7,12 @@ export function Logo({ compact = false }: LogoProps) {
     <div className="brand" aria-label="Asterfold">
       <svg className="brand__mark" viewBox="0 0 64 64" aria-hidden="true">
         <g fill="currentColor">
-          <path d="M32 3 39 24.5 32 29l-7-4.5Z" />
-          <path d="m61 32-21.5 7L35 32l4.5-7Z" />
-          <path d="m32 61-7-21.5 7-4.5 7 4.5Z" />
-          <path d="M3 32 24.5 25l4.5 7-4.5 7Z" />
-          <path d="m52 12-7 21-10-2 2-10Z" opacity=".72" />
-          <path d="m52 52-21-7 2-10 10 2Z" opacity=".72" />
-          <path d="M12 52 19 31l10 2-2 10Z" opacity=".72" />
-          <path d="m12 12 21 7-2 10-10-2Z" opacity=".72" />
+          <path d="M32 3 41 24 35 29 28 24Z" />
+          <path d="m61 32-21 9-5-6 5-7Z" />
+          <path d="m32 61-9-21 6-5 7 5Z" />
+          <path d="M3 32 24 23l5 6-5 7Z" />
         </g>
-        <circle cx="32" cy="32" r="4" fill="currentColor" />
+        <path d="m32 28 4 4-4 4-4-4Z" fill="var(--color-canvas, Canvas)" />
       </svg>
       {!compact ? <span>Asterfold</span> : null}
     </div>
