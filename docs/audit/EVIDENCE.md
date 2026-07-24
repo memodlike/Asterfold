@@ -122,6 +122,19 @@ The database schema version and backup format version are separate constants. Mi
 
 Rank comparison is byte-stable ASCII rather than locale-sensitive. The rank pattern is allocated once. `allocateAtEnd`, `allocateBetween`, `moveMany`, `rebalance`, and `validateScope` share the same bounded 12-character rank format. Exhausted, invalid, or duplicate positions are rebalanced within the current Page/Board scope before retry. Repository page, board, bookmark, bulk-move, duplicate, and board-change paths use the shared allocator inside Dexie write transactions.
 
+## Phase 5 repository integrity evidence
+
+| Test ID | Command | Exit | Key output |
+| --- | --- | ---: | --- |
+| AF-REPO-T001 | `npm test -- --run tests/repository.test.ts` | 0 | Default/active/Quick Save repair, hierarchy purge with mismatched timestamps, duplicate-on-edit, atomic bulk rollback, repeated permanent delete/empty Trash |
+| AF-REPO-U001 | `npm test` | 0 | 13 files, 75/75 in 2.44 s |
+| AF-REPO-E001 | `npm run test:e2e` | 0 | 3/3 in 17.05 s |
+| AF-REPO-B001 | `npm run build` | 0 | Chrome MV3 build, 954.70 kB in 2.31 s |
+| AF-REPO-S001 | `npm run typecheck` | 0 | `tsc --noEmit`, 1.90 s |
+| AF-REPO-S002 | `npm run lint` | 0 | ESLint completed without findings, 4.84 s |
+
+The repository now repairs Page/Board destination pairs in the same Dexie transaction as delete, restore, purge, permanent delete, and empty Trash. One active Page is always selected as the sole default, and active/default/last Quick Save references either point to a consistent active pair or to `null` where no Board exists. Root Page purge cascades through all descendants regardless of child deletion timestamps. Compound `[boardId+normalizedUrl]` lookup is used for create and edit duplicate checks. Repeated destructive submissions are idempotent and do not create empty snapshots.
+
 ## Production bundle baseline
 
 | Asset | Bytes |

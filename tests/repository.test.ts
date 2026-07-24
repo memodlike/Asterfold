@@ -9,6 +9,8 @@ import {
   getWorkspaceData,
   listTrash,
   bulkMoveBookmarks,
+  emptyTrash,
+  permanentlyDelete,
   moveBookmarkToIndex,
   purgeTrash,
   restoreBoard,
@@ -17,6 +19,7 @@ import {
   softDeleteBookmark,
   softDeletePage,
   updateBoard,
+  updateBookmark,
   updateSettings,
 } from "../src/db/repository";
 import { DuplicateError } from "../src/domain/errors";
@@ -45,6 +48,7 @@ describe("Dexie workspace repository", () => {
     expect(first.normalizedUrl).toBe("https://dexie.org/");
     expect(first.openMode).toBe("current");
     await expect(createBookmark({ boardId: board.id, title: "Again", url: "https://dexie.org/" }, {}, database)).rejects.toBeInstanceOf(DuplicateError);
+    await expect(updateBookmark(second.id, { url: "https://dexie.org/" }, database)).rejects.toBeInstanceOf(DuplicateError);
 
     await moveBookmarkToIndex(second.id, board.id, 0, database);
     const workspace = await getWorkspaceData(database);
@@ -121,5 +125,56 @@ describe("Dexie workspace repository", () => {
     const bookmarks = await database.bookmarks.where("boardId").equals(board.id).toArray();
     expect(bookmarks).toHaveLength(40);
     expect(new Set(bookmarks.map((bookmark) => bookmark.position)).size).toBe(40);
+  });
+
+  it("repairs default, active, and Quick Save references after deleting destinations", async () => {
+    const initial = await ensureStarterWorkspace(database);
+    const originalPage = initial.pages[0]!;
+    const originalBoard = initial.boards[0]!;
+    const replacementPage = await createPage("Replacement", {}, database);
+    const replacementBoard = await createBoard(replacementPage.id, "Replacement board", database);
+    await updateSettings({
+      activePageId: originalPage.id,
+      quickSaveDefaultPageId: originalPage.id,
+      quickSaveDefaultBoardId: originalBoard.id,
+      quickSaveLastPageId: originalPage.id,
+      quickSaveLastBoardId: originalBoard.id,
+    }, database);
+
+    await softDeletePage(originalPage.id, database);
+    const settings = await database.settings.get("app");
+    expect(settings).toMatchObject({
+      activePageId: replacementPage.id,
+      quickSaveDefaultPageId: replacementPage.id,
+      quickSaveDefaultBoardId: replacementBoard.id,
+      quickSaveLastPageId: replacementPage.id,
+      quickSaveLastBoardId: replacementBoard.id,
+    });
+    const defaults = (await database.pages.toArray()).filter((page) => page.deletedAt === null && page.isDefault);
+    expect(defaults.map((page) => page.id)).toEqual([replacementPage.id]);
+    expect(await auditInvariants(database)).toEqual([]);
+  });
+
+  it("purges a deleted hierarchy from its root and tolerates repeated destructive submissions", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const page = workspace.pages[0]!;
+    const board = workspace.boards[0]!;
+    const bookmark = await createBookmark({ boardId: board.id, title: "Child", url: "https://child.example" }, {}, database);
+    await softDeletePage(page.id, database);
+    await database.pages.update(page.id, { deletedAt: "2020-01-01T00:00:00.000Z" });
+    await database.boards.update(board.id, { deletedAt: "2030-01-01T00:00:00.000Z" });
+    await database.bookmarks.update(bookmark.id, { deletedAt: "2030-01-01T00:00:00.000Z" });
+
+    expect(await purgeTrash(30, database)).toBe(3);
+    expect(await database.pages.get(page.id)).toBeUndefined();
+    expect(await database.boards.get(board.id)).toBeUndefined();
+    expect(await database.bookmarks.get(bookmark.id)).toBeUndefined();
+
+    const replacement = (await getWorkspaceData(database)).pages[0]!;
+    await softDeletePage(replacement.id, database);
+    await permanentlyDelete("page", replacement.id, database);
+    await expect(permanentlyDelete("page", replacement.id, database)).resolves.toBeUndefined();
+    expect(await emptyTrash(database)).toBeGreaterThanOrEqual(0);
+    expect(await emptyTrash(database)).toBe(0);
   });
 });
