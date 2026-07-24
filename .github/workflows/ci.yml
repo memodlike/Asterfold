@@ -8,52 +8,73 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
+    timeout-minutes: 30
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
-
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Test
-        run: npm test
-
-      - name: Build Manifest V3 extension
-        run: npm run build
-
-      - name: Create validated release artifacts
-        run: npm run release
-
-      - name: Upload unpacked extension
-        uses: actions/upload-artifact@v4
+      - run: npm ci
+      - name: Production dependency audit
+        run: npm run audit:production
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run release:repro
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Real MV3, accessibility and visual E2E
+        run: npm run test:e2e
+      - name: Upload failure evidence
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: asterfold-chrome-unpacked
-          path: release/chrome-unpacked
-          if-no-files-found: error
-
-      - name: Upload release archives
-        uses: actions/upload-artifact@v4
+          name: failure-evidence
+          path: |
+            test-results
+            playwright-report
+          if-no-files-found: ignore
+      - name: Upload release
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: asterfold-release
           path: |
             release/Asterfold-Chrome.zip
+            release/chrome-unpacked.zip
             release/extension-source.zip
             release/checksums.txt
           if-no-files-found: error
+
+  windows-release:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run release:repro
+
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/dependency-review-action@1e966ba708e4b64bb0c9bfb7abb5a232840be16a
+        with:
+          fail-on-severity: high
