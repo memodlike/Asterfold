@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { browser } from "wxt/browser";
 import { Archive, Brush, Check, CheckCircle2, Database, Download, FileJson, FileText, Grid2X2, Languages, Shield, Trash2, Upload, Zap } from "lucide-react";
-import type { AppSettings, ThemeConfig, WorkspaceData } from "../../domain/models";
+import type { AppSettings, ThemeConfig, Wallpaper, WorkspaceData } from "../../domain/models";
 import { validateTheme } from "../../domain/themes";
-import { auditInvariants, createSnapshot, ensureStarterWorkspace, saveWallpaper, updateSettings } from "../../db/repository";
+import { auditInvariants, createSnapshot, ensureStarterWorkspace, getWallpaper, saveWallpaper, updateSettings } from "../../db/repository";
 import {
   createBackup,
   downloadText,
@@ -56,6 +56,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
   const [section, setSection] = useState<SettingsSection>(props.initialSection ?? "appearance");
   const [shortcut, setShortcut] = useState("—");
   const [storage, setStorage] = useState<StorageEstimate>();
+  const [wallpaperInfo, setWallpaperInfo] = useState<Wallpaper | null>(null);
   const [invariants, setInvariants] = useState<string[]>([]);
   const [importRecordsPreview, setImportRecordsPreview] = useState<ImportRecord[]>([]);
   const [backupPreview, setBackupPreview] = useState<AsterfoldBackup | null>(null);
@@ -83,6 +84,10 @@ export function SettingsDialog(props: SettingsDialogProps) {
     if (navigator.storage?.estimate) void navigator.storage.estimate().then(setStorage).catch(() => setStorage(undefined));
     void auditInvariants().then(setInvariants);
   }, [backupPreview, importRecordsPreview.length, props.initialSection, props.open, t]);
+  useEffect(() => {
+    if (!props.open || !settings.theme.wallpaperId) { setWallpaperInfo(null); return; }
+    void getWallpaper(settings.theme.wallpaperId).then(setWallpaperInfo).catch(() => setWallpaperInfo(null));
+  }, [props.open, settings.theme.wallpaperId]);
 
   const patchSettings = async (patch: Partial<Omit<AppSettings, "id" | "schemaVersion">>, message = t("generic.save")): Promise<void> => {
     try {
@@ -180,6 +185,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
               <Range label={t("settings.wallpaperSaturation")} min={0} max={180} value={Math.round(settings.theme.wallpaperSaturation * 100)} suffix="%" onChange={(value) => patchTheme({ wallpaperSaturation: value / 100 })} />
             </div>
             <div className="wallpaper-grid"><button className={!settings.theme.wallpaperId ? "is-active" : ""} onClick={() => patchTheme({ wallpaperId: null, backgroundMode: "auto" })}><span className="wallpaper-none" />{t("settings.noWallpaper")}</button>{BUILTIN_WALLPAPERS.map((item) => <button key={item.id} className={settings.theme.wallpaperId === item.id ? "is-active" : ""} onClick={() => patchTheme({ wallpaperId: item.id, backgroundMode: "wallpaper" })}><span style={{ background: item.value }} />{item.name}</button>)}<button onClick={() => wallpaperInputRef.current?.click()}><span className="wallpaper-upload"><Upload size={19} /></span>{t("settings.uploadWallpaper")}</button></div>
+            {wallpaperInfo?.width && wallpaperInfo.height ? <p>{wallpaperInfo.width} × {wallpaperInfo.height} · {formatBytes(wallpaperInfo.storedBytes)}</p> : null}
             <input ref={wallpaperInputRef} hidden type="file" accept="image/png,image/jpeg,image/webp,image/avif" onChange={(event) => { const file = event.target.files?.[0]; if (file) void saveUploadedWallpaper(file); event.currentTarget.value = ""; }} />
             <div className="settings-control-group">
               <h3>{t("settings.performance")}</h3>

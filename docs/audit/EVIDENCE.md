@@ -148,6 +148,20 @@ The repository now repairs Page/Board destination pairs in the same Dexie transa
 
 `src/domain/schemas.ts` is the single dependency-direction-safe schema source for entities, settings, themes, wallpapers, snapshots, sync operations, and backups. Backup validation is strict, bounded, finite-number-only, and cross-validates IDs, parents, ranks, deletion hierarchy, one default Page, and settings references. JSON and Netscape HTML preview parsing run in the built WXT unlisted worker. External merge remaps Page/Board/Bookmark IDs and parent references; replace is the explicit trusted restore path. Snapshot creation and data writes share one Dexie transaction.
 
+## Phase 7 wallpaper evidence
+
+| Test ID | Command | Exit | Key output |
+| --- | --- | ---: | --- |
+| AF-WALL-T001 | `npm test -- --run tests/wallpaper.test.ts tests/repository.test.ts` | 0 | 15/15: MIME spoof, animation, decode failure, decoded caps, WebP/downscale/thumbnail, bitmap cleanup, repository GC |
+| AF-WALL-T002 | `npm test` | 0 | 14 files, 84/84 in 2.55 s |
+| AF-WALL-E001 | `npm run test:e2e` | 0 | 3/3 in 16.5 s |
+| AF-WALL-B001 | `npm run build` | 0 | Chrome MV3 build, 1.13 MB in 2.07 s |
+| AF-WALL-R001 | `npm run release` | 0 | Release build and local artifacts completed |
+| AF-WALL-S001 | `npm run typecheck` | 0 | `tsc --noEmit` |
+| AF-WALL-S002 | `npm run lint` | 0 | ESLint completed without findings |
+
+Uploaded wallpaper input is limited to 8 MB and validated by raster signature, declared MIME, animation marker, browser decode, dimensions, and total pixels. The stored asset is a bounded WebP (maximum side 3,840 px) plus a 480 px thumbnail. Storage quota is checked before the transaction, decoded bitmaps are closed on success and failure, and changing the selected wallpaper removes unreferenced uploaded assets without touching built-ins or active data.
+
 ## Production bundle baseline
 
 | Asset | Bytes |

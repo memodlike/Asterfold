@@ -15,6 +15,7 @@ import { allocateAtEnd, compareRanks, evenlySpacedRanks, moveMany } from "../dom
 import { normalizeUrl } from "../domain/urls";
 import { validateTheme } from "../domain/themes";
 import { createId, nowIso } from "../utils/ids";
+import { processWallpaper } from "../services/wallpaper";
 import { createDefaultSettings } from "./defaults";
 import { db, type AsterfoldDatabase } from "./database";
 
@@ -232,6 +233,7 @@ export async function updateSettings(
     updatedAt: nowIso(),
   };
   await database.settings.put(next);
+  if (patch.theme) await garbageCollectWallpapers(database, next.theme.wallpaperId);
   return next;
 }
 
@@ -895,23 +897,40 @@ export async function saveWallpaper(
   name: string,
   database: AsterfoldDatabase = db,
 ): Promise<Wallpaper> {
-  const allowed = new Set(["image/png", "image/jpeg", "image/webp", "image/avif"]);
-  if (!allowed.has(file.type)) throw new ValidationError("Use a PNG, JPEG, WebP, or AVIF image");
-  if (file.size > 10 * 1024 * 1024) throw new ValidationError("Wallpaper must be 10 MB or smaller");
+  const processed = await processWallpaper(file);
+  const estimate = await navigator.storage?.estimate?.();
+  if (estimate?.quota !== undefined && estimate.usage !== undefined && estimate.quota - estimate.usage < processed.storedBytes * 1.25) {
+    throw new PersistenceError("There is not enough local storage for this wallpaper");
+  }
   const timestamp = nowIso();
   const wallpaper: Wallpaper = {
     id: createId(),
     kind: "upload",
     name: cleanTitle(name, "Custom wallpaper"),
-    mimeType: file.type,
-    blob: file,
-    thumbnail: null,
+    mimeType: processed.mimeType,
+    blob: processed.blob,
+    thumbnail: processed.thumbnail,
     value: null,
+    width: processed.width,
+    height: processed.height,
+    sourceBytes: processed.sourceBytes,
+    storedBytes: processed.storedBytes,
     createdAt: timestamp,
     updatedAt: timestamp,
   };
   await database.wallpapers.add(wallpaper);
   return wallpaper;
+}
+
+export async function getWallpaper(id: string, database: AsterfoldDatabase = db): Promise<Wallpaper | null> {
+  return await database.wallpapers.get(id) ?? null;
+}
+
+export async function garbageCollectWallpapers(database: AsterfoldDatabase = db, activeId?: string | null): Promise<number> {
+  const referencedId = activeId === undefined ? (await database.settings.get("app"))?.theme.wallpaperId ?? null : activeId;
+  const orphanIds = (await database.wallpapers.filter((wallpaper) => wallpaper.kind === "upload" && wallpaper.id !== referencedId).primaryKeys()) as string[];
+  if (orphanIds.length > 0) await database.wallpapers.bulkDelete(orphanIds);
+  return orphanIds.length;
 }
 
 export async function auditInvariants(database: AsterfoldDatabase = db): Promise<string[]> {

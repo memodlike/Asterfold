@@ -177,4 +177,15 @@ describe("Dexie workspace repository", () => {
     expect(await emptyTrash(database)).toBeGreaterThanOrEqual(0);
     expect(await emptyTrash(database)).toBe(0);
   });
+
+  it("garbage-collects uploaded wallpapers after replacing the active reference", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const timestamp = new Date().toISOString();
+    await database.wallpapers.bulkAdd(["old", "current"].map((id) => ({
+      id, kind: "upload" as const, name: id, mimeType: "image/webp", blob: new Blob(["x"]),
+      thumbnail: null, value: null, createdAt: timestamp, updatedAt: timestamp,
+    })));
+    await updateSettings({ theme: { ...workspace.settings.theme, wallpaperId: "current", backgroundMode: "wallpaper" } }, database);
+    expect((await database.wallpapers.toArray()).map((wallpaper) => wallpaper.id)).toEqual(["current"]);
+  });
 });
