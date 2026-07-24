@@ -4,14 +4,14 @@ Statuses are limited to `OPEN`, `IN_PROGRESS`, `FIXED`, `ACCEPTED_RISK`, and `NO
 
 | ID | Status | Commit | Tests | Evidence | Residual risk |
 | --- | --- | --- | --- | --- | --- |
-| AF-BASE-001 | IN_PROGRESS | Phase 0 commit containing this document | `tests/auditFixtures.test.ts` | Versioned fixtures and golden backups under `tests/fixtures/audit/` | Fixtures are not yet exercised through every Dexie upgrade path |
+| AF-BASE-001 | FIXED | Phase 3 commit | AF-DATA-T001, AF-DATA-T002 | Versioned fixtures are exercised through their real Dexie schemas; golden backups are parsed/restored | Corrupt ordering and stale references are intentionally deferred to Phases 4–6 |
 | AF-SEC-001 | FIXED | Phase 1 commit | AF-SEC-T001, AF-SEC-T002, AF-SEC-E001 | Strict branded parser runs in the UI client and again immediately before Chrome navigation APIs | An OS handler controls an explicitly allowed `mailto:` after validation |
 | AF-SEC-002 | FIXED | Phase 1 commit | AF-SEC-T003, AF-SEC-E001 | All runtime message objects are strict and bounded; responses use `{ok,data}` or `{ok,code,params}` | Internal extension contexts remain trusted senders and are still schema-validated |
 | AF-PRIV-001 | FIXED | Phase 2 commit | AF-PRIV-T001, AF-PRIV-E001 | New saves store no remote favicon; legacy remote values are ignored; Chrome `_favicon` and bounded local raster data are the only render sources | Chrome itself resolves `_favicon`; this is a browser trust dependency |
 | AF-PRIV-002 | FIXED | Phase 2 commit | AF-PRIV-T002, AF-PRIV-E001 | Private title absent from DOM/title/a11y/context label; clipboard disabled; search documents/index not constructed | IndexedDB is intentionally not encrypted and remains visible to the local browser profile |
-| AF-DATA-001 | OPEN | Base audit commit | Golden backups preserve all four `openMode` values | `migrateToV5` and `parseBackup` currently convert `new-tab` to `current` | User navigation behavior is changed during migration/restore |
-| AF-DATA-002 | OPEN | Base audit commit | v1–v5 fixtures created | v3/v4 migrations write `CURRENT_DB_SCHEMA_VERSION` rather than their own version | Interrupted or partial upgrades are difficult to reason about |
-| AF-DATA-003 | OPEN | Base audit commit | Golden backup v1/v2 created | DB schema and backup format versions are coupled in current parser | Restore semantics may drift across application versions |
+| AF-DATA-001 | FIXED | Phase 3 commit | AF-DATA-T001, AF-DATA-T002 | DB upgrades and backup parsing preserve `current`, `new-tab`, `new-window`, and `incognito` exactly | Chrome may still reject incognito at runtime; Phase 1 returns a stable localized error |
+| AF-DATA-002 | FIXED | Phase 3 commit | AF-DATA-T001 | v1–v5 real-schema upgrades, close/reopen idempotency, and injected-transaction rollback pass | Automatic downgrade is unsupported and documented |
+| AF-DATA-003 | FIXED | Phase 3 commit | AF-DATA-T002 | `CURRENT_BACKUP_FORMAT_VERSION` is separate from DB schema; explicit v1→v2 migrator and round trip pass | Future backup formats must add explicit migrators before acceptance |
 | AF-ORDER-001 | OPEN | Base audit commit | Phase 4 pending | Current comparator uses `localeCompare`; rank regex is reallocated | Ordering may differ by locale or exhaust dense positions |
 | AF-REPO-001 | OPEN | Base audit commit | Phase 5 pending | v5 fixture includes stale Quick Save refs and deleted hierarchy | Mutations may leave inconsistent destination/default relationships |
 | AF-IMPORT-001 | OPEN | Base audit commit | Phase 6 pending | Existing Zod objects are not consistently strict or semantically cross-validated | Unknown fields, orphans, duplicates, or oversized inputs may be accepted |

@@ -9,6 +9,7 @@ import { evenlySpacedRanks } from "../domain/ordering";
 import { normalizeUrl } from "../domain/urls";
 import { createId, nowIso } from "../utils/ids";
 
+export const CURRENT_BACKUP_FORMAT_VERSION = 2;
 const isoDate = z.string().datetime({ offset: true });
 const nullableString = z.string().nullable();
 const baseEntitySchema = z.object({
@@ -214,17 +215,20 @@ export function parseBackup(text: string): AsterfoldBackup {
     throw new ImportError(`Backup validation failed: ${result.error.issues[0]?.message ?? "unknown schema error"}`);
   }
   for (const bookmark of result.data.entities.bookmarks) normalizeUrl(bookmark.url, false);
+  const migrated = result.data.exportVersion === 1
+    ? migrateBackupV1ToV2(result.data)
+    : result.data;
   return {
-    ...result.data,
-    schemaVersion: 2,
-    exportVersion: 2,
-    entities: {
-      ...result.data.entities,
-      // Before 2.1, the default was a new tab. Preserve explicit windows,
-      // while making ordinary imported bookmark clicks match the new default.
-      bookmarks: result.data.entities.bookmarks.map((bookmark) => ({ ...bookmark, openMode: bookmark.openMode === "new-tab" ? "current" as const : bookmark.openMode })),
-    },
-    ...(result.data.settings ? { settings: { ...result.data.settings, schemaVersion: CURRENT_DB_SCHEMA_VERSION } } : {}),
+    ...migrated,
+    ...(migrated.settings ? { settings: { ...migrated.settings, schemaVersion: CURRENT_DB_SCHEMA_VERSION } } : {}),
+  };
+}
+
+function migrateBackupV1ToV2(backup: AsterfoldBackup): AsterfoldBackup {
+  return {
+    ...backup,
+    schemaVersion: CURRENT_BACKUP_FORMAT_VERSION,
+    exportVersion: CURRENT_BACKUP_FORMAT_VERSION,
   };
 }
 

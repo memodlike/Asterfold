@@ -48,6 +48,9 @@ describe("safe import and lossless export", () => {
     expect(restored.boards).toHaveLength(1);
     expect(restored.bookmarks).toHaveLength(1);
     expect(restored.bookmarks[0]?.title).toBe("<script>alert('x')</script>");
+    const reexported = await createBackup({}, database);
+    expect(reexported.entities).toEqual(parsed.entities);
+    expect(reexported.settings).toEqual(parsed.settings);
   });
 
   it("rejects prototype pollution keys and unsafe imported URLs", () => {
@@ -55,6 +58,12 @@ describe("safe import and lossless export", () => {
     const records = parseNetscapeHtml('<DL><p><DT><A HREF="javascript:alert(1)">Bad</A><DT><A HREF="https://%75ser@example.com/private">Credentials</A><DT><A HREF="https://safe.example">Safe</A></DL><p>');
     expect(records).toHaveLength(1);
     expect(records[0]?.url).toBe("https://safe.example");
+  });
+
+  it("rejects unknown backup format versions without attempting repair", async () => {
+    const backup = await createBackup({}, database);
+    const malformed = { ...backup, schemaVersion: 99, exportVersion: 99 };
+    expect(() => parseBackup(JSON.stringify(malformed))).toThrow(/validation failed/iu);
   });
 
   it("normalizes a backup v1 payload to backup v2 defaults", async () => {
@@ -91,12 +100,26 @@ describe("safe import and lossless export", () => {
     expect(normalized.entities.boards[0]).toMatchObject({ bookmarkColumns: "auto", gridColumn: 1, gridRow: 0, gridSpan: 3 });
   });
 
-  it("normalizes former default new-tab backup links to the current tab", async () => {
+  it("preserves every explicit open mode through export and parse", async () => {
     const workspace = await ensureStarterWorkspace(database);
-    await createBookmark({ boardId: workspace.boards[0]!.id, title: "Example", url: "https://example.com" }, {}, database);
+    const modes = ["current", "new-tab", "new-window", "incognito"] as const;
+    for (const [index, openMode] of modes.entries()) {
+      await createBookmark({
+        boardId: workspace.boards[0]!.id,
+        title: `Example ${openMode}`,
+        url: `https://example.com/${index}`,
+        openMode,
+      }, {}, database);
+    }
     const backup = await createBackup({}, database);
-    backup.entities.bookmarks[0]!.openMode = "new-tab";
-    expect(parseBackup(serializeBackup(backup)).entities.bookmarks[0]?.openMode).toBe("current");
+    const parsed = parseBackup(serializeBackup(backup));
+    expect(Object.fromEntries(parsed.entities.bookmarks.map((bookmark) => [bookmark.title, bookmark.openMode]))).toEqual({
+      "Example current": "current",
+      "Example new-tab": "new-tab",
+      "Example new-window": "new-window",
+      "Example incognito": "incognito",
+    });
+    expect(parseBackup(serializeBackup(parsed))).toEqual(parsed);
   });
 
   it("reports invalid rows and skips normalized duplicates", async () => {

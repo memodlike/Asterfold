@@ -94,6 +94,20 @@ Implementation evidence:
 
 Existing `faviconUrl` and `customIcon` fields remain in the data model so old backups restore without data loss. They are not trusted as render sources: remote favicon values are ignored and custom icons must pass the local bounded raster-data policy. Privacy Mode does not encrypt IndexedDB; this is documented as residual behavior rather than presented as a security guarantee.
 
+## Phase 3 migration and backup evidence
+
+| Test ID | Command | Exit | Key output |
+| --- | --- | ---: | --- |
+| AF-DATA-T001 | `npm test -- --run tests/migrations.test.ts` | 0 | Golden DB v1–v5 real-schema upgrades, close/reopen idempotency, all four `openMode` values, and injected rollback |
+| AF-DATA-T002 | `npm test -- --run tests/importExport.test.ts` | 0 | Backup v1→v2, unknown-version rejection, all `openMode` values, repeat parse, and export→restore→export equality |
+| AF-DATA-U001 | `npm test` | 0 | 12 files, 65/65 in 2.40 s |
+| AF-DATA-E001 | `npm run test:e2e` | 0 | 3/3 in 18.58 s |
+| AF-DATA-B001 | `npm run build` | 0 | Chrome MV3 build, 948.77 kB in 1.91 s |
+| AF-DATA-S001 | `npm run typecheck` | 0 | `tsc --noEmit`, 2.50 s |
+| AF-DATA-S002 | `npm run lint` | 0 | ESLint completed without findings, 4.90 s |
+
+The database schema version and backup format version are separate constants. Migrations v3 and v4 write their own schema version, and v5 no longer changes `new-tab` bookmarks or their timestamps/version. Backup v1 has an explicit v1→v2 migrator; unsupported future formats fail validation rather than being guessed or wiped. Automatic downgrade remains unsupported and is documented in the installation guide.
+
 ## Production bundle baseline
 
 | Asset | Bytes |
