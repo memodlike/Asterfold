@@ -9,8 +9,6 @@ export const extensionMessageSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("INSTANT_SAVE"), url: urlSchema, title: titleSchema }).strict(),
   z.object({ type: z.literal("OPEN_WORKSPACE"), pageId: entityIdSchema.optional() }).strict(),
   z.object({ type: z.literal("OPEN_URL"), url: urlSchema, mode: z.enum(["current", "new-tab", "new-window", "incognito"]) }).strict(),
-  z.object({ type: z.literal("SYNC_NOW") }).strict(),
-  z.object({ type: z.literal("GET_SYNC_STATUS") }).strict(),
   z.object({ type: z.literal("DATA_CHANGED"), entity: z.enum(["page", "board", "bookmark", "settings", "trash"]) }).strict(),
 ]);
 
@@ -18,7 +16,6 @@ export type ExtensionMessage = z.infer<typeof extensionMessageSchema>;
 export type ExtensionErrorCode =
   | "ACTIVE_TAB_UNAVAILABLE"
   | "BOARD_REQUIRED"
-  | "CLOUD_DISABLED"
   | "DUPLICATE_BOOKMARK"
   | "EXTERNAL_SENDER_REJECTED"
   | "INCOGNITO_UNAVAILABLE"

@@ -10,7 +10,6 @@ const MENU_SAVE_PAGE = "asterfold-save-page";
 const MENU_SAVE_LINK = "asterfold-save-link";
 const MENU_OPEN = "asterfold-open";
 const TRASH_ALARM = "asterfold-trash-cleanup";
-const CLOUD_ENABLED = import.meta.env.WXT_ENABLE_CLOUD_SYNC === "true";
 
 async function ensureMenus(): Promise<void> {
   const workspace = await getWorkspaceData();
@@ -92,17 +91,6 @@ async function handleRuntimeMessage(raw: unknown, sender: chrome.runtime.Message
       } else if (sender.tab?.id !== undefined) await browser.tabs.update(sender.tab.id, { url: safeUrl });
       else await browser.tabs.update({ url: safeUrl });
       return { ok: true };
-    }
-    case "GET_SYNC_STATUS": {
-      if (!CLOUD_ENABLED) return { ok: true, data: { status: "disabled", pending: 0 } };
-      const { getSyncStatus } = await import("../src/sync/engine");
-      return { ok: true, data: await getSyncStatus() };
-    }
-    case "SYNC_NOW": {
-      if (!CLOUD_ENABLED) return { ok: false, code: "CLOUD_DISABLED" };
-      const { runSync } = await import("../src/sync/engine");
-      const result = await runSync();
-      return result.status === "idle" ? { ok: true, data: result } : { ok: false, code: "MESSAGE_FAILED" };
     }
     case "DATA_CHANGED": {
       if (message.entity === "settings") await ensureMenus();
