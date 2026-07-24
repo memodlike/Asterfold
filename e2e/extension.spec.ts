@@ -2,6 +2,7 @@ import { existsSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { chromium, expect, test, type BrowserContext, type Page, type Worker } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 const extensionPath = resolve(process.env.ASTERFOLD_EXTENSION_PATH ?? ".output/chrome-mv3");
 const screenshotPath = resolve(process.env.ASTERFOLD_SCREENSHOT_PATH ?? "docs/images");
@@ -143,6 +144,18 @@ test.describe.serial("Asterfold MV3 release", () => {
     expect(probe.manifest.host_permissions ?? []).toEqual([]);
   });
 
+  test("has no serious accessibility violations and honors reduced motion", async () => {
+    const page = await context.newPage();
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(`chrome-extension://${extensionId}/newtab.html`);
+    await expect(page.locator(".app-shell")).toBeVisible();
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations.filter((violation) => violation.impact === "serious" || violation.impact === "critical")).toEqual([]);
+    const reducedDuration = await page.locator(".board").first().evaluate((board) => Number.parseFloat(getComputedStyle(board).transitionDuration));
+    expect(reducedDuration).toBeLessThanOrEqual(0.00001);
+    await page.close();
+  });
+
   test("revalidates navigation messages in the background", async () => {
     const page = await context.newPage();
     await page.goto(`chrome-extension://${extensionId}/newtab.html`);
@@ -210,7 +223,7 @@ test.describe.serial("Asterfold MV3 release", () => {
 
     await openLauncher(page);
     await page.getByRole("menuitem", { name: "Страницы" }).click();
-    await page.getByRole("button", { name: "Создать страницу" }).click();
+    await page.getByRole("menuitem", { name: "Создать страницу" }).click();
     let dialog = page.getByRole("dialog");
     await dialog.getByLabel("Название").fill("Research");
     await dialog.getByRole("button", { name: "Создать" }).click();
@@ -305,7 +318,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     expect(sourceMenuBounds.right).toBeLessThanOrEqual(1440 - 8);
     expect(sourceMenuBounds.bottom).toBeLessThanOrEqual(900 - 8);
     if (captureScreenshots) await page.screenshot({ path: join(screenshotPath, "context-menu-light.png") });
-    await page.getByRole("button", { name: "Переместить", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Переместить", exact: true }).click();
     dialog = page.getByRole("dialog");
     await dialog.getByLabel("Назначение").selectOption({ label: "Later" });
     await dialog.getByRole("button", { name: "Переместить", exact: true }).click();
@@ -319,7 +332,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await expect(dialog.locator(".search-state")).toHaveCSS("border-radius", "17px");
     if (captureScreenshots) { await page.waitForTimeout(220); await page.screenshot({ path: join(screenshotPath, "search-empty.png") }); }
     await dialog.getByPlaceholder(/Название, URL/u).fill("playwrite");
-    await expect(dialog.getByRole("option", { name: /Playwright docs/u })).toBeVisible();
+    await expect(dialog.getByRole("button", { name: /Playwright docs/u })).toBeVisible();
     await page.keyboard.press("Escape");
 
     await openLauncher(page);
@@ -331,8 +344,8 @@ test.describe.serial("Asterfold MV3 release", () => {
     await expect(privateBookmark).toBeVisible();
     await privateBookmark.click({ button: "right" });
     await expect(page.getByRole("menu", { name: "Действия скрытой закладки" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Копировать URL" })).toBeDisabled();
-    await expect(page.getByRole("button", { name: "Копировать Markdown" })).toBeDisabled();
+    await expect(page.getByRole("menuitem", { name: "Копировать URL" })).toBeDisabled();
+    await expect(page.getByRole("menuitem", { name: "Копировать Markdown" })).toBeDisabled();
     await page.keyboard.press("Escape");
     await openLauncher(page);
     await page.getByRole("menuitem", { name: "Выключить приватность" }).click();
@@ -358,7 +371,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await dialog.getByRole("button", { name: "Закрыть" }).click();
 
     await page.getByRole("button", { name: "Playwright docs" }).click({ button: "right" });
-    await page.getByRole("button", { name: "В корзину" }).click();
+    await page.getByRole("menuitem", { name: "В корзину" }).click();
     await openLauncher(page);
     await page.getByRole("menuitem", { name: "Корзина" }).click();
     dialog = page.getByRole("dialog");

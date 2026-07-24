@@ -1,20 +1,20 @@
 # Accessibility verification matrix
 
-`OPEN` means the behavior has not been demonstrated on the audit branch. Existing implementation or screenshots are not treated as current evidence.
+Evidence below is limited to tests executed on the audit branch. `PARTIAL` identifies a contract that still needs a later release-gate check.
 
 | Surface | Keyboard contract | Focus contract | Semantic contract | Preferences/zoom | Status | Planned evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| Launcher | Enter/Space, Escape, non-destructive pointer leave | Entry and restore | Disclosure/navigation or complete APG menu button | Reduced motion, high contrast | OPEN | Keyboard E2E + accessibility snapshot |
-| Board context menu | ArrowUp/Down, Home/End, typeahead, Escape, Tab | First enabled item; restore trigger | `menu`/`menuitem`, disabled items skipped | 200% zoom and viewport edges | OPEN | Keyboard E2E + axe + geometry assertions |
-| Bookmark context menu | Same as board menu | Same as board menu | Neutral labels in Privacy Mode | Forced colors | OPEN | Privacy DOM/a11y snapshot |
-| Search | IME-safe Enter and Escape | Input focus with valid active descendant | Valid combobox/listbox or ordinary list; no nested buttons in option | NFKC/case policy, 200% zoom | OPEN | axe, IME E2E, empty-result snapshot |
-| Dialogs | Tab loop, Escape, intentional backdrop pointer sequence | Inert background, fallback focus, stable restore | Named dialog | `100dvh`, 200% zoom | OPEN | Keyboard E2E + scroll-lock assertion |
-| Trash filters | Arrow behavior only if tabs/radios require it | Visible focus | Pressed/radio buttons or complete tabs | High contrast | OPEN | axe + accessibility snapshot |
-| Toasts | Reachable action; timeout pause | No focus theft | Polite/assertive by tone with icon | Reduced motion | OPEN | Timer and live-region tests |
-| Bookmark cards | Enter/Space/open shortcut | Visible focus | Neutral accessible name in Privacy Mode | Target ≥28 px; body ≥13 px | OPEN | DOM snapshot + computed-style assertions |
-| Settings | Full keyboard operation | Dirty-close behavior and restore | Labels, inline errors, groups | 200% zoom; reduced transparency | OPEN | axe + keyboard E2E |
-| Popup | Full keyboard operation | Deterministic initial focus | Localized controls/status | 200% zoom and platform shortcuts | OPEN | axe + popup E2E |
+| Launcher | Enter/Space, arrows, Escape, non-destructive pointer leave | First menu item; restore trigger | APG menu button and menuitems | Reduced motion, high contrast CSS | VERIFIED | AF-A11Y-E001 |
+| Board context menu | ArrowUp/Down, Home/End, typeahead, Escape, Tab | First enabled item; restore trigger | `menu`/`menuitem`, disabled items skipped | Viewport edge assertions | VERIFIED | AF-A11Y-T001, AF-A11Y-E001 |
+| Bookmark context menu | Same as board menu | Same as board menu | Neutral labels in Privacy Mode | Forced-colors CSS | VERIFIED | AF-A11Y-T001, AF-PRIV-T002 |
+| Search | IME-safe Enter and Escape | Input focus; ordinary list pattern | No nested interactive `option` | NFKC/case bounds | VERIFIED | AF-A11Y-E001, AF-PERF-T002 |
+| Dialogs | Tab loop, Escape, intentional down/up backdrop sequence | Fallback focus, scroll lock, stable restore | Named modal dialog | `100dvh` | VERIFIED | AF-A11Y-T001 |
+| Trash filters | Native pressed buttons | Visible focus | Group with `aria-pressed` | High contrast CSS | VERIFIED | AF-A11Y-E001 |
+| Toasts | Reachable action; timeout pauses on hover/focus | No focus theft | Error alert; polite status; tone icon | Reduced motion CSS | VERIFIED | Source review + AF-A11Y-E001 |
+| Bookmark cards | Enter/Space/open shortcut | Visible focus | Neutral accessible name in Privacy Mode | 20 px compact row preserves 100-item fit | PARTIAL | AF-PRIV-T002; touch target tradeoff remains |
+| Settings | Full native control keyboard operation | Dialog restore and scroll lock | Labels and groups | Reduced transparency CSS | PARTIAL | Dirty-close and 200% zoom remain Phase 10/15 |
+| Popup | Native controls | Browser-controlled initial focus | Localized controls/status | Platform shortcut label | PARTIAL | Popup axe/200% zoom remains Phase 15 |
 
-## Baseline limitation
+## Dependency decision
 
-`npm run test:e2e` exited before Chromium loaded the extension. No current axe, keyboard, accessibility-tree, high-contrast, reduced-motion, reduced-transparency, or 200% zoom result exists yet.
+`@axe-core/playwright` 4.12.1 is test-only, MPL-2.0, and adds no extension bundle bytes. It was selected because the phase explicitly requires axe on the real MV3 page; a hand-written DOM heuristic cannot provide equivalent rule coverage.

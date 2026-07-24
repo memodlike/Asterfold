@@ -80,7 +80,7 @@ describe("favicon and privacy contract", () => {
     fireEvent.contextMenu(view.container.querySelector("article")!);
     expect(screen.getByRole("menu", { name: "Hidden bookmark actions" })).toBeVisible();
     expect(view.baseElement.textContent).not.toContain(bookmark.title);
-    expect(screen.getByRole("button", { name: "Copy URL" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Copy Markdown" })).toBeDisabled();
+    expect(screen.getByRole("menuitem", { name: "Copy URL" })).toBeDisabled();
+    expect(screen.getByRole("menuitem", { name: "Copy Markdown" })).toBeDisabled();
   });
 });

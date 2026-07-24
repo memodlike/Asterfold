@@ -175,6 +175,17 @@ Uploaded wallpaper input is limited to 8 MB and validated by raster signature, d
 
 At the 100-bookmark/4-board acceptance dataset, the previous source registered one permanent document pointer listener for every Bookmark and Board (104 total). Those listeners are now absent; the portalled menu owns one outside-pointer listener only while the menu exists and also closes on scroll/resize. Balanced rendering removes `backdrop-filter` from every Board, while Low Power and `prefers-reduced-transparency` force solid surfaces. Settings theme changes use a local draft and a 200 ms persistence debounce. GPU/raster and heap values remain unavailable, so no numerical claim is made for those metrics.
 
+## Phase 9 accessibility evidence
+
+| Test ID | Command | Exit | Key output |
+| --- | --- | ---: | --- |
+| AF-A11Y-T001 | `npm test -- --run tests/accessibility.test.ts tests/privacy.test.ts` | 0 | 5/5: menu focus/arrows/Home/Escape, modal scroll lock, neutral Privacy DOM |
+| AF-A11Y-U001 | `npm test` | 0 | 16 files, 89/89 |
+| AF-A11Y-E001 | `npm run test:e2e` | 0 | 4/4; axe has zero serious/critical violations; reduced motion and full core keyboard flow pass |
+| AF-A11Y-S001 | `npm run typecheck && npm run lint` | 0 | TypeScript and ESLint completed without findings |
+
+Context menus expose menuitems, skip disabled actions, support arrows/Home/End/typeahead/Escape/Tab and restore focus. Launcher pointer leave no longer closes keyboard focus. Search uses an ordinary list without nested buttons inside options and ignores composing Enter. Modals use an intentional pointer down/up backdrop sequence, fallback focus, focus restoration, body scroll lock and `100dvh`. Trash filters are pressed buttons. Toast urgency and icon match tone and timers pause while hovered or focused.
+
 ## Production bundle baseline
 
 | Asset | Bytes |
