@@ -213,7 +213,10 @@ These screenshots predate the hardening branch. They are visual baselines only, 
 
 ## Network evidence
 
-No default-build application network log was captured because Chromium exited before the extension loaded. The value is `unavailable`, not zero. Phase 2 and Phase 15 must capture browser-level requests with remote favicon blocking and cloud disabled.
+Phase 15 loaded the production unpacked MV3 extension once for every selectable
+locale and intercepted browser-level HTTP/HTTPS requests. The application made
+zero external requests in all 12 runs. Chrome's internal `_favicon` endpoint is
+an extension resource and is not a remote application request.
 
 ## Baseline release hashes
 
@@ -234,7 +237,7 @@ These are baseline artifacts and are not release candidates:
 | AF-BRAND-T001 | `npm test -- --run tests/brand.test.ts` | 0 | 13/13 SVG/PNG dimension and remote/filter asset tests |
 | AF-CI-T003 | `npm run audit:production && npm run release:repro` | 0 | Production advisories 0; pure Node release completed |
 | AF-CI-T004 | `npm run release:repro` | 0 | Two consecutive archives produced identical SHA-256 |
-| AF-DOC-T001 | `rg` claim audit plus full Phase 15 gate | Pending Phase 15 | Narrative documents distinguish measured, unavailable and residual evidence |
+| AF-DOC-T001 | `rg` claim audit plus full Phase 15 gate | 0 except documented full dev audit | Narrative documents distinguish measured, unavailable and residual evidence |
 
 Phase 13 reproducible archive hashes before the 2.2.0 version bump:
 
@@ -245,3 +248,41 @@ ee197abe635dda5f89e77e2a8507b01a70a0de19d5deb8a1d7f6a5b083b6969c  Asterfold-Chro
 ```
 
 `@axe-core/playwright` 4.12.1 is test-only under MPL-2.0. It adds zero bytes to the extension bundle; the alternative was a hand-written subset of accessibility checks that would not provide the same rule coverage.
+
+## Phase 15 clean validation
+
+Environment: macOS, Node 26.5.0, npm 11.17.0, Chromium supplied by Playwright,
+WXT 0.20.27, TypeScript 5.9.2. Validation started from commit
+`8728b586d3ea8d8fa26c4b67ff43b99fe03cf606` on 2026-07-24.
+
+| Test ID | Command | Exit | Key output |
+| --- | --- | ---: | --- |
+| AF-FINAL-I001 | `npm ci` | 0 | Lockfile install completed; four dev-tool install scripts were reported by npm |
+| AF-FINAL-S001 | `npm run typecheck && npm run lint` | 0 | TypeScript and ESLint completed without findings |
+| AF-FINAL-U001 | `npm test` | 0 | 16 files, 98/98 tests |
+| AF-FINAL-B001 | `npm run build && npm run release` | 0 | Chrome MV3 output built; deterministic release archives created |
+| AF-FINAL-E001 | `npm run test:e2e` | 0 | 5/5 in 17.9 s: worker/manifest, axe/reduced motion, 12 locales/network, background URL validation, persistence/100 bookmarks |
+| AF-FINAL-R001 | `npm run release:repro` | 0 | Two clean release generations produced byte-identical archives |
+| AF-FINAL-A001 | `npm run audit:production` | 0 | 0 production vulnerabilities |
+| AF-FINAL-A002 | `npm audit --json` | 1 | 7 high advisories in the WXT/web-ext development toolchain; 0 critical |
+
+The combined clean command therefore exited `1` only at the final full
+development audit. This is recorded as a residual dependency risk and is not
+reported as a passing full audit. The in-app browser cannot load an unpacked
+MV3 extension, so the actual extension gate used Playwright Chromium. A manual
+Windows Chrome smoke, 200% zoom inspection, and low-end GPU trace remain
+unavailable and are not claimed as completed.
+
+### Final release hashes
+
+```text
+ab5c4d9d1875741db5c52803bf462c69e085f1ee92eb90215bc559345b56e20c  Asterfold-Chrome.zip
+da27136f9234757309b50a386af5cd957e1913cfed5afb1247dc833f6d33cb24  chrome-unpacked.zip
+1d94e689be48ca8b54f3a881021cc013d6b6d4cb2d373f46cb6942c319e908d5  extension-source.zip
+```
+
+The recognizable Pages → Boards → Bookmarks composition, lower-left launcher,
+Frost Light, Graphite Dark, and glass aesthetic remain intact. Migration and
+backup tests preserve bookmark data, order, `openMode`, settings, wallpapers,
+deleted hierarchy, and stale Quick Save references. Cloud runtime and claims
+are absent from the default release.

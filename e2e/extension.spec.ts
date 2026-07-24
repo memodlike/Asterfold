@@ -156,6 +156,29 @@ test.describe.serial("Asterfold MV3 release", () => {
     await page.close();
   });
 
+  test("loads all selectable locales without application network requests", async () => {
+    const page = await context.newPage();
+    const externalRequests: string[] = [];
+    page.on("request", (request) => {
+      if (/^https?:/iu.test(request.url())) externalRequests.push(request.url());
+    });
+    await page.goto(`chrome-extension://${extensionId}/newtab.html`);
+    const expectedTitles = {
+      de: "Neuer Tab", en: "New Tab", es: "Nueva pestaña", fr: "Nouvel onglet", it: "Nuova scheda",
+      kk: "Жаңа қойынды", nl: "Nieuw tabblad", pl: "Nowa karta", pt: "Novo separador", ru: "Новая вкладка",
+      tr: "Yeni sekme", uk: "Нова вкладка",
+    } as const;
+    for (const [locale, title] of Object.entries(expectedTitles)) {
+      await setWorkspaceLocale(page, locale);
+      await page.reload();
+      await expect(page).toHaveTitle(title);
+      await expect(page.locator(".app-shell")).toBeVisible();
+    }
+    expect(externalRequests).toEqual([]);
+    await setWorkspaceLocale(page, "en");
+    await page.close();
+  });
+
   test("revalidates navigation messages in the background", async () => {
     const page = await context.newPage();
     await page.goto(`chrome-extension://${extensionId}/newtab.html`);
