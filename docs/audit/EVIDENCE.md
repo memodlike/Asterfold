@@ -108,6 +108,20 @@ Existing `faviconUrl` and `customIcon` fields remain in the data model so old ba
 
 The database schema version and backup format version are separate constants. Migrations v3 and v4 write their own schema version, and v5 no longer changes `new-tab` bookmarks or their timestamps/version. Backup v1 has an explicit v1→v2 migrator; unsupported future formats fail validation rather than being guessed or wiped. Automatic downgrade remains unsupported and is documented in the installation guide.
 
+## Phase 4 ordering evidence
+
+| Test ID | Command | Exit | Key output |
+| --- | --- | ---: | --- |
+| AF-ORDER-T001 | `npm test -- --run tests/ordering.test.ts` | 0 | 1,000 sequential appends, 10,000 deterministic moves, dense ranks, duplicates, corruption diagnostics and repair |
+| AF-ORDER-T002 | `npm test -- --run tests/repository.test.ts` | 0 | Atomic deduplicated bulk move, injected failure rollback, and 40 concurrent appends without duplicate positions |
+| AF-ORDER-U001 | `npm test` | 0 | 13 files, 73/73 in 2.37 s |
+| AF-ORDER-E001 | `npm run test:e2e` | 0 | 3/3 in 17.68 s |
+| AF-ORDER-B001 | `npm run build` | 0 | Chrome MV3 build, 951.09 kB in 2.30 s |
+| AF-ORDER-S001 | `npm run typecheck` | 0 | `tsc --noEmit`, 1.87 s |
+| AF-ORDER-S002 | `npm run lint` | 0 | ESLint completed without findings, 4.62 s |
+
+Rank comparison is byte-stable ASCII rather than locale-sensitive. The rank pattern is allocated once. `allocateAtEnd`, `allocateBetween`, `moveMany`, `rebalance`, and `validateScope` share the same bounded 12-character rank format. Exhausted, invalid, or duplicate positions are rebalanced within the current Page/Board scope before retry. Repository page, board, bookmark, bulk-move, duplicate, and board-change paths use the shared allocator inside Dexie write transactions.
+
 ## Production bundle baseline
 
 | Asset | Bytes |

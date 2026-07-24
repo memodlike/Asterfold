@@ -8,6 +8,7 @@ import {
   ensureStarterWorkspace,
   getWorkspaceData,
   listTrash,
+  bulkMoveBookmarks,
   moveBookmarkToIndex,
   purgeTrash,
   restoreBoard,
@@ -91,5 +92,34 @@ describe("Dexie workspace repository", () => {
     await database.open();
     expect(await database.boards.get(board.id)).toMatchObject({ gridColumn: 7, gridRow: 1, gridSpan: 6, bookmarkColumns: 2 });
     expect(await database.settings.get("app")).toMatchObject({ workspaceLayoutMode: "free", workspaceRows: 1, workspaceAlignment: "right" });
+  });
+
+  it("moves a deduplicated bookmark selection in one transaction and rolls back on failure", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const source = workspace.boards[0]!;
+    const target = await createBoard(workspace.pages[0]!.id, "Target", database);
+    const first = await createBookmark({ boardId: source.id, title: "First", url: "https://first.example" }, {}, database);
+    const second = await createBookmark({ boardId: source.id, title: "Second", url: "https://second.example" }, {}, database);
+    const third = await createBookmark({ boardId: source.id, title: "Third", url: "https://third.example" }, {}, database);
+
+    await bulkMoveBookmarks([third.id, first.id, third.id], target.id, database);
+    expect((await database.bookmarks.where("boardId").equals(target.id).sortBy("position")).map((item) => item.id)).toEqual([first.id, third.id]);
+
+    const before = await database.bookmarks.toArray();
+    await expect(bulkMoveBookmarks([second.id, "missing"], target.id, database)).rejects.toThrow();
+    expect(await database.bookmarks.toArray()).toEqual(before);
+  });
+
+  it("serializes concurrent appends without duplicate positions", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const board = workspace.boards[0]!;
+    await Promise.all(Array.from({ length: 40 }, (_, index) => createBookmark({
+      boardId: board.id,
+      title: `Concurrent ${index}`,
+      url: `https://concurrent.example/${index}`,
+    }, {}, database)));
+    const bookmarks = await database.bookmarks.where("boardId").equals(board.id).toArray();
+    expect(bookmarks).toHaveLength(40);
+    expect(new Set(bookmarks.map((bookmark) => bookmark.position)).size).toBe(40);
   });
 });

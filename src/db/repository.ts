@@ -11,7 +11,7 @@ import type {
   WorkspaceData,
 } from "../domain/models";
 import { DuplicateError, PersistenceError, ValidationError } from "../domain/errors";
-import { compareRanks, evenlySpacedRanks, rankBetween } from "../domain/ordering";
+import { allocateAtEnd, compareRanks, evenlySpacedRanks, moveMany } from "../domain/ordering";
 import { normalizeUrl } from "../domain/urls";
 import { validateTheme } from "../domain/themes";
 import { createId, nowIso } from "../utils/ids";
@@ -68,11 +68,6 @@ async function activeBookmarks(database: AsterfoldDatabase, boardId?: string): P
     ? await database.bookmarks.toArray()
     : await database.bookmarks.where("boardId").equals(boardId).toArray();
   return sortByPosition(bookmarks.filter((bookmark) => bookmark.deletedAt === null));
-}
-
-async function lastRank<T extends { position: string }>(items: Promise<T[]>): Promise<string | null> {
-  const resolved = await items;
-  return resolved.at(-1)?.position ?? null;
 }
 
 async function captureSnapshotPayload(database: AsterfoldDatabase): Promise<unknown> {
@@ -210,8 +205,12 @@ export async function createPage(
   return database.transaction("rw", database.pages, database.settings, async () => {
     const pages = await activePages(database);
     const timestamp = nowIso();
-    const position = rankBetween(pages.at(-1)?.position ?? null, null);
-    if (!position) throw new PersistenceError("Page positions require rebalancing");
+    const allocation = allocateAtEnd(pages);
+    const rebalanced = allocation.scope
+      .filter((page, index) => page.position !== pages[index]?.position)
+      .map((page) => ({ ...page, updatedAt: timestamp, version: page.version + 1 }));
+    if (rebalanced.length > 0) await database.pages.bulkPut(rebalanced);
+    const position = allocation.position;
     const page: Page = {
       id: createId(),
       userId: null,
@@ -253,20 +252,14 @@ export async function setDefaultPage(id: string, database: AsterfoldDatabase = d
 
 export async function movePageToIndex(id: string, targetIndex: number, database: AsterfoldDatabase = db): Promise<void> {
   await database.transaction("rw", database.pages, async () => {
-    const pages = (await activePages(database)).filter((page) => page.id !== id);
-    const index = Math.max(0, Math.min(targetIndex, pages.length));
-    const previous = pages[index - 1]?.position ?? null;
-    const next = pages[index]?.position ?? null;
-    const position = rankBetween(previous, next);
     const current = await database.pages.get(id);
     if (!current || current.deletedAt !== null) throw new ValidationError("Page not found");
-    if (position) {
-      await database.pages.update(id, { position, updatedAt: nowIso(), version: current.version + 1 });
-      return;
-    }
-    pages.splice(index, 0, current);
-    const ranks = evenlySpacedRanks(pages.length);
-    await database.pages.bulkPut(pages.map((page, pageIndex) => ({ ...page, position: ranks[pageIndex] ?? page.position, updatedAt: nowIso(), version: page.version + 1 })));
+    const pages = await activePages(database);
+    const moved = moveMany(pages, [id], targetIndex);
+    const timestamp = nowIso();
+    await database.pages.bulkPut(moved.map((page) => page.position === pages.find((candidate) => candidate.id === page.id)?.position
+      ? page
+      : { ...page, updatedAt: timestamp, version: page.version + 1 }));
   });
 }
 
@@ -277,11 +270,17 @@ export async function duplicatePage(id: string, database: AsterfoldDatabase = db
     if (!source || source.deletedAt !== null) throw new ValidationError("Page not found");
     const timestamp = nowIso();
     const pageId = createId();
+    const pages = await activePages(database);
+    const allocation = allocateAtEnd(pages);
+    const rebalanced = allocation.scope
+      .filter((page, index) => page.position !== pages[index]?.position)
+      .map((page) => ({ ...page, updatedAt: timestamp, version: page.version + 1 }));
+    if (rebalanced.length > 0) await database.pages.bulkPut(rebalanced);
     const page: Page = {
       ...source,
       id: pageId,
       title: cleanTitle(`${source.title} copy`, source.title),
-      position: rankBetween(await lastRank(activePages(database)), null) ?? evenlySpacedRanks(2)[1]!,
+      position: allocation.position,
       isDefault: false,
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -423,8 +422,12 @@ export async function createBoard(
     if (!page || page.deletedAt !== null) throw new ValidationError("Page not found");
     const boards = await activeBoards(database, pageId);
     const timestamp = nowIso();
-    const position = rankBetween(boards.at(-1)?.position ?? null, null);
-    if (!position) throw new PersistenceError("Board positions require rebalancing");
+    const allocation = allocateAtEnd(boards);
+    const rebalanced = allocation.scope
+      .filter((board, index) => board.position !== boards[index]?.position)
+      .map((board) => ({ ...board, updatedAt: timestamp, version: board.version + 1 }));
+    if (rebalanced.length > 0) await database.boards.bulkPut(rebalanced);
+    const position = allocation.position;
     const board: Board = {
       id: createId(),
       userId: null,
@@ -478,17 +481,15 @@ export async function moveBoardToIndex(
     const page = await database.pages.get(targetPageId);
     const current = await database.boards.get(id);
     if (!page || page.deletedAt !== null || !current || current.deletedAt !== null) throw new ValidationError("Board or target page not found");
-    const boards = (await activeBoards(database, targetPageId)).filter((board) => board.id !== id);
-    const index = Math.max(0, Math.min(targetIndex, boards.length));
-    const position = rankBetween(boards[index - 1]?.position ?? null, boards[index]?.position ?? null);
-    if (position) {
-      await database.boards.update(id, { pageId: targetPageId, position, updatedAt: nowIso(), version: current.version + 1 });
-      return;
-    }
-    const moved = { ...current, pageId: targetPageId };
-    boards.splice(index, 0, moved);
-    const ranks = evenlySpacedRanks(boards.length);
-    await database.boards.bulkPut(boards.map((board, boardIndex) => ({ ...board, position: ranks[boardIndex] ?? board.position, updatedAt: nowIso(), version: board.version + 1 })));
+    const targetBoards = (await activeBoards(database, targetPageId)).filter((board) => board.id !== id);
+    const moved = moveMany([...targetBoards, { ...current, pageId: targetPageId }], [id], targetIndex);
+    const timestamp = nowIso();
+    await database.boards.bulkPut(moved.map((board) => {
+      const original = board.id === id ? current : targetBoards.find((candidate) => candidate.id === board.id);
+      return original?.position === board.position && original.pageId === board.pageId
+        ? board
+        : { ...board, updatedAt: timestamp, version: board.version + 1 };
+    }));
   });
 }
 
@@ -498,11 +499,16 @@ export async function duplicateBoard(id: string, database: AsterfoldDatabase = d
     if (!source || source.deletedAt !== null) throw new ValidationError("Board not found");
     const siblings = await activeBoards(database, source.pageId);
     const timestamp = nowIso();
+    const allocation = allocateAtEnd(siblings);
+    const rebalanced = allocation.scope
+      .filter((board, index) => board.position !== siblings[index]?.position)
+      .map((board) => ({ ...board, updatedAt: timestamp, version: board.version + 1 }));
+    if (rebalanced.length > 0) await database.boards.bulkPut(rebalanced);
     const copy: Board = {
       ...source,
       id: createId(),
       title: cleanTitle(`${source.title} copy`, source.title),
-      position: rankBetween(siblings.at(-1)?.position ?? null, null) ?? evenlySpacedRanks(siblings.length + 1).at(-1)!,
+      position: allocation.position,
       createdAt: timestamp,
       updatedAt: timestamp,
       version: 1,
@@ -585,9 +591,13 @@ export async function createBookmark(
       if (duplicate) throw new DuplicateError("This bookmark already exists in the selected board", duplicate.id);
     }
     const siblings = await activeBookmarks(database, input.boardId);
-    const position = rankBetween(siblings.at(-1)?.position ?? null, null);
-    if (!position) throw new PersistenceError("Bookmark positions require rebalancing");
     const timestamp = nowIso();
+    const allocation = allocateAtEnd(siblings);
+    const rebalanced = allocation.scope
+      .filter((bookmark, index) => bookmark.position !== siblings[index]?.position)
+      .map((bookmark) => ({ ...bookmark, updatedAt: timestamp, version: bookmark.version + 1 }));
+    if (rebalanced.length > 0) await database.bookmarks.bulkPut(rebalanced);
+    const position = allocation.position;
     const bookmark: Bookmark = {
       id: createId(),
       userId: null,
@@ -625,10 +635,22 @@ export async function updateBookmark(
     const board = await database.boards.get(targetBoardId);
     if (!board || board.deletedAt !== null) throw new ValidationError("Target board not found");
     const normalized = patch.url === undefined ? null : normalizeUrl(patch.url);
+    let position = current.position;
+    if (targetBoardId !== current.boardId) {
+      const siblings = await activeBookmarks(database, targetBoardId);
+      const allocation = allocateAtEnd(siblings);
+      const timestamp = nowIso();
+      const rebalanced = allocation.scope
+        .filter((bookmark, index) => bookmark.position !== siblings[index]?.position)
+        .map((bookmark) => ({ ...bookmark, updatedAt: timestamp, version: bookmark.version + 1 }));
+      if (rebalanced.length > 0) await database.bookmarks.bulkPut(rebalanced);
+      position = allocation.position;
+    }
     const updated: Bookmark = {
       ...current,
       ...patch,
       boardId: targetBoardId,
+      position,
       title: patch.title === undefined ? current.title : cleanTitle(patch.title, current.title),
       description: patch.description === undefined ? current.description : cleanDescription(patch.description),
       url: normalized?.url ?? current.url,
@@ -652,17 +674,15 @@ export async function moveBookmarkToIndex(
     const board = await database.boards.get(targetBoardId);
     const current = await database.bookmarks.get(id);
     if (!board || board.deletedAt !== null || !current || current.deletedAt !== null) throw new ValidationError("Bookmark or target board not found");
-    const items = (await activeBookmarks(database, targetBoardId)).filter((bookmark) => bookmark.id !== id);
-    const index = Math.max(0, Math.min(targetIndex, items.length));
-    const position = rankBetween(items[index - 1]?.position ?? null, items[index]?.position ?? null);
-    if (position) {
-      await database.bookmarks.update(id, { boardId: targetBoardId, position, updatedAt: nowIso(), version: current.version + 1 });
-      return;
-    }
-    const moved = { ...current, boardId: targetBoardId };
-    items.splice(index, 0, moved);
-    const ranks = evenlySpacedRanks(items.length);
-    await database.bookmarks.bulkPut(items.map((bookmark, bookmarkIndex) => ({ ...bookmark, position: ranks[bookmarkIndex] ?? bookmark.position, updatedAt: nowIso(), version: bookmark.version + 1 })));
+    const targetItems = (await activeBookmarks(database, targetBoardId)).filter((bookmark) => bookmark.id !== id);
+    const moved = moveMany([...targetItems, { ...current, boardId: targetBoardId }], [id], targetIndex);
+    const timestamp = nowIso();
+    await database.bookmarks.bulkPut(moved.map((bookmark) => {
+      const original = bookmark.id === id ? current : targetItems.find((candidate) => candidate.id === bookmark.id);
+      return original?.position === bookmark.position && original.boardId === bookmark.boardId
+        ? bookmark
+        : { ...bookmark, updatedAt: timestamp, version: bookmark.version + 1 };
+    }));
   });
 }
 
@@ -696,9 +716,26 @@ export async function restoreBookmark(id: string, database: AsterfoldDatabase = 
 
 export async function bulkMoveBookmarks(ids: string[], boardId: string, database: AsterfoldDatabase = db): Promise<void> {
   const uniqueIds = [...new Set(ids)];
-  for (let index = 0; index < uniqueIds.length; index += 1) {
-    await moveBookmarkToIndex(uniqueIds[index]!, boardId, Number.MAX_SAFE_INTEGER, database);
-  }
+  if (uniqueIds.length === 0) return;
+  await database.transaction("rw", database.boards, database.bookmarks, async () => {
+    const board = await database.boards.get(boardId);
+    if (!board || board.deletedAt !== null) throw new ValidationError("Target board not found");
+    const selected = await database.bookmarks.where("id").anyOf(uniqueIds).toArray();
+    if (selected.length !== uniqueIds.length || selected.some((bookmark) => bookmark.deletedAt !== null)) {
+      throw new ValidationError("One or more bookmarks were not found");
+    }
+    const selectedIds = new Set(uniqueIds);
+    const targetItems = (await activeBookmarks(database, boardId)).filter((bookmark) => !selectedIds.has(bookmark.id));
+    const orderedSelection = sortByPosition(selected);
+    const moved = moveMany([...targetItems, ...orderedSelection], orderedSelection.map((bookmark) => bookmark.id), targetItems.length);
+    const timestamp = nowIso();
+    await database.bookmarks.bulkPut(moved.map((bookmark) => ({
+      ...bookmark,
+      boardId: selectedIds.has(bookmark.id) ? boardId : bookmark.boardId,
+      updatedAt: selectedIds.has(bookmark.id) ? timestamp : bookmark.updatedAt,
+      version: selectedIds.has(bookmark.id) ? bookmark.version + 1 : bookmark.version,
+    })));
+  });
 }
 
 export async function bulkDeleteBookmarks(ids: string[], database: AsterfoldDatabase = db): Promise<void> {
