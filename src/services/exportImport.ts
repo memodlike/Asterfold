@@ -1,133 +1,16 @@
-import { z } from "zod";
 import type { AsterfoldDatabase } from "../db/database";
 import { db } from "../db/database";
 import { createSnapshot, ensureStarterWorkspace } from "../db/repository";
 import { CURRENT_DB_SCHEMA_VERSION } from "../db/migrations";
-import type { Board, Bookmark, Page, ThemeConfig } from "../domain/models";
+import type { Board, Bookmark, Page } from "../domain/models";
 import { ImportError, ValidationError } from "../domain/errors";
 import { evenlySpacedRanks } from "../domain/ordering";
+import { backupSchema, type AsterfoldBackup } from "../domain/schemas";
 import { normalizeUrl } from "../domain/urls";
 import { createId, nowIso } from "../utils/ids";
 
 export const CURRENT_BACKUP_FORMAT_VERSION = 2;
-const isoDate = z.string().datetime({ offset: true });
-const nullableString = z.string().nullable();
-const baseEntitySchema = z.object({
-  id: z.string().min(1),
-  userId: nullableString,
-  createdAt: isoDate,
-  updatedAt: isoDate,
-  deletedAt: isoDate.nullable(),
-  deletedBatchId: nullableString,
-  version: z.number().int().positive(),
-});
-
-export const pageSchema = baseEntitySchema.extend({
-  title: z.string().max(240),
-  icon: nullableString,
-  accent: nullableString,
-  position: z.string(),
-  isDefault: z.boolean(),
-});
-
-export const boardSchema = baseEntitySchema.extend({
-  pageId: z.string().min(1),
-  title: z.string().max(240),
-  icon: nullableString,
-  accent: nullableString,
-  position: z.string(),
-  collapsed: z.boolean(),
-  layout: z.enum(["list", "grid"]),
-  bookmarkColumns: z.union([z.literal("auto"), z.literal(1), z.literal(2)]).default("auto"),
-  gridColumn: z.number().int().min(1).max(12).default(1),
-  gridRow: z.union([z.literal(0), z.literal(1)]).default(0),
-  gridSpan: z.number().int().min(2).max(6).default(3),
-});
-
-export const bookmarkSchema = baseEntitySchema.extend({
-  boardId: z.string().min(1),
-  title: z.string().max(240),
-  url: z.string().max(8192),
-  normalizedUrl: z.string().max(8192),
-  hostname: z.string().max(512),
-  description: z.string().max(2000).nullable(),
-  faviconUrl: nullableString,
-  customIcon: nullableString,
-  position: z.string(),
-  openMode: z.enum(["current", "new-tab", "new-window", "incognito"]),
-  pinned: z.boolean(),
-});
-
-export const themeSchema: z.ZodType<ThemeConfig> = z.object({
-  preset: z.enum(["frost-light", "graphite-dark", "midnight", "aurora", "warm-paper", "high-contrast"]),
-  mode: z.enum(["system", "light", "dark"]),
-  accent: z.string(),
-  canvas: z.string(),
-  surfaceOpacity: z.number(),
-  blur: z.number(),
-  radius: z.number(),
-  density: z.enum(["compact", "comfortable", "spacious"]),
-  fontScale: z.number(),
-  boardWidth: z.number(),
-  cardVariant: z.enum(["minimal", "standard", "visual"]),
-  showHostname: z.boolean(),
-  showDescription: z.boolean(),
-  faviconSize: z.number(),
-  motion: z.boolean(),
-  lowPowerMode: z.boolean().default(false),
-  bookmarkHoverMotion: z.boolean().default(true),
-  menuMotion: z.boolean().default(true),
-  dragMotion: z.boolean().default(true),
-  wallpaperId: z.string().nullable(),
-  wallpaperDim: z.number(),
-  wallpaperBlur: z.number(),
-  wallpaperSaturation: z.number(),
-  wallpaperPosition: z.string(),
-  wallpaperZoom: z.number(),
-  glassVariant: z.enum(["regular", "clear"]).default("regular"),
-  backgroundMode: z.enum(["auto", "solid", "wallpaper"]).default("auto"),
-});
-
-export const settingsSchema = z.object({
-  id: z.literal("app"),
-  schemaVersion: z.number().int().positive(),
-  activePageId: z.string().nullable(),
-  navigationMode: z.enum(["rail", "expanded"]),
-  locale: z.enum(["auto", "ru", "kk", "en", "es", "de", "fr", "it", "pt", "pl", "uk", "tr", "nl"]).default("auto"),
-  workspaceLayoutMode: z.enum(["auto", "free"]).default("auto"),
-  workspaceRows: z.union([z.literal(1), z.literal(2)]).default(2),
-  workspaceAlignment: z.enum(["left", "center", "right"]).default("center"),
-  theme: themeSchema,
-  privacyPersist: z.boolean(),
-  privacyEnabled: z.boolean(),
-  quickSaveMode: z.enum(["ask", "instant"]),
-  quickSaveDefaultPageId: z.string().nullable(),
-  quickSaveDefaultBoardId: z.string().nullable(),
-  quickSaveLastPageId: z.string().nullable(),
-  quickSaveLastBoardId: z.string().nullable(),
-  duplicateStrategy: z.enum(["warn", "skip", "allow"]),
-  trashRetentionDays: z.union([z.literal(7), z.literal(30), z.literal(90), z.null()]),
-  recentQueries: z.array(z.string()).max(20),
-  onboardingComplete: z.boolean(),
-  updatedAt: isoDate,
-});
-
-export const backupSchema = z.object({
-  schemaVersion: z.union([z.literal(1), z.literal(2)]),
-  exportVersion: z.union([z.literal(1), z.literal(2)]),
-  exportedAt: isoDate,
-  appVersion: z.string(),
-  scope: z.enum(["full", "page", "board"]),
-  entities: z.object({
-    pages: z.array(pageSchema),
-    boards: z.array(boardSchema),
-    bookmarks: z.array(bookmarkSchema),
-  }),
-  settings: settingsSchema.optional(),
-  theme: themeSchema.optional(),
-});
-
-export type AsterfoldBackup = z.infer<typeof backupSchema>;
+export { backupSchema, type AsterfoldBackup } from "../domain/schemas";
 
 export interface ImportRecord {
   title: string;
@@ -140,6 +23,15 @@ export interface ImportSummary {
   imported: number;
   skippedDuplicates: number;
   invalid: Array<{ row: number; reason: string }>;
+}
+
+export interface BackupImportPreview {
+  valid: { pages: number; boards: number; bookmarks: number };
+  invalid: number;
+  skipped: number;
+  conflicts: number;
+  destructiveScope: "none" | "workspace";
+  estimatedBytes: number;
 }
 
 function assertNoPrototypeKeys(value: unknown): void {
@@ -224,6 +116,25 @@ export function parseBackup(text: string): AsterfoldBackup {
   };
 }
 
+export function previewBackup(text: string, strategy: "merge" | "replace"): { backup: AsterfoldBackup; preview: BackupImportPreview } {
+  const backup = parseBackup(text);
+  return {
+    backup,
+    preview: {
+      valid: {
+        pages: backup.entities.pages.length,
+        boards: backup.entities.boards.length,
+        bookmarks: backup.entities.bookmarks.length,
+      },
+      invalid: 0,
+      skipped: 0,
+      conflicts: 0,
+      destructiveScope: strategy === "replace" ? "workspace" : "none",
+      estimatedBytes: new Blob([text]).size,
+    },
+  };
+}
+
 function migrateBackupV1ToV2(backup: AsterfoldBackup): AsterfoldBackup {
   return {
     ...backup,
@@ -238,25 +149,41 @@ export async function restoreBackup(
   database: AsterfoldDatabase = db,
 ): Promise<void> {
   backupSchema.parse(backup);
-  await createSnapshot(`before-${strategy}-restore`, database);
-  await database.transaction("rw", database.pages, database.boards, database.bookmarks, database.settings, async () => {
+  await database.transaction("rw", [database.pages, database.boards, database.bookmarks, database.settings, database.wallpapers, database.snapshots], async () => {
+    await createSnapshot(`before-${strategy}-restore`, database);
     if (strategy === "replace") {
       await Promise.all([database.bookmarks.clear(), database.boards.clear(), database.pages.clear()]);
     }
-    const mergeNewest = <T extends { id: string; updatedAt: string }>(incoming: T[], current: T[]): T[] => {
-      const map = new Map(current.map((item) => [item.id, item]));
-      for (const item of incoming) {
-        const existing = map.get(item.id);
-        if (!existing || item.updatedAt >= existing.updatedAt) map.set(item.id, item);
-      }
-      return [...map.values()];
-    };
     const [currentPages, currentBoards, currentBookmarks] = strategy === "merge"
       ? await Promise.all([database.pages.toArray(), database.boards.toArray(), database.bookmarks.toArray()])
       : [[], [], []];
-    await database.pages.bulkPut(mergeNewest(backup.entities.pages as Page[], currentPages));
-    await database.boards.bulkPut(mergeNewest(backup.entities.boards as Board[], currentBoards));
-    await database.bookmarks.bulkPut(mergeNewest(backup.entities.bookmarks as Bookmark[], currentBookmarks));
+    let incomingPages = backup.entities.pages as Page[];
+    let incomingBoards = backup.entities.boards as Board[];
+    let incomingBookmarks = backup.entities.bookmarks as Bookmark[];
+    if (strategy === "merge") {
+      const pageIds = new Map(incomingPages.map((page) => [page.id, createId()]));
+      const boardIds = new Map(incomingBoards.map((board) => [board.id, createId()]));
+      const pageRanks = evenlySpacedRanks(currentPages.length + incomingPages.length).slice(currentPages.length);
+      incomingPages = incomingPages.map((page, index) => ({
+        ...page,
+        id: pageIds.get(page.id)!,
+        position: pageRanks[index]!,
+        isDefault: false,
+      }));
+      incomingBoards = incomingBoards.map((board) => ({
+        ...board,
+        id: boardIds.get(board.id)!,
+        pageId: pageIds.get(board.pageId)!,
+      }));
+      incomingBookmarks = incomingBookmarks.map((bookmark) => ({
+        ...bookmark,
+        id: createId(),
+        boardId: boardIds.get(bookmark.boardId)!,
+      }));
+    }
+    await database.pages.bulkPut([...currentPages, ...incomingPages]);
+    await database.boards.bulkPut([...currentBoards, ...incomingBoards]);
+    await database.bookmarks.bulkPut([...currentBookmarks, ...incomingBookmarks]);
     if (backup.settings && strategy === "replace") await database.settings.put(backup.settings);
   });
   await ensureStarterWorkspace(database);
@@ -319,29 +246,46 @@ export function downloadText(filename: string, content: string, mimeType: string
 
 export function parseNetscapeHtml(text: string): ImportRecord[] {
   if (new Blob([text]).size > 25 * 1024 * 1024) throw new ImportError("Bookmark file must be 25 MB or smaller");
-  const documentNode = new DOMParser().parseFromString(text, "text/html");
   const records: ImportRecord[] = [];
-  for (const anchor of documentNode.querySelectorAll("a[href]")) {
-    const href = anchor.getAttribute("href") ?? "";
-    try {
-      const normalized = normalizeUrl(href, false);
-      const folderPath: string[] = [];
-      let node: Element | null = anchor.parentElement;
-      while (node) {
-        if (node.tagName === "DL") {
-          const header = node.previousElementSibling?.querySelector("h3") ?? (node.previousElementSibling?.tagName === "H3" ? node.previousElementSibling : null);
-          if (header?.textContent) folderPath.unshift(header.textContent.trim());
-        }
-        node = node.parentElement;
-      }
-      records.push({
-        title: anchor.textContent?.trim() || normalized.hostname,
-        url: normalized.url,
-        description: anchor.parentElement?.nextElementSibling?.tagName === "DD" ? anchor.parentElement.nextElementSibling.textContent?.trim() ?? null : null,
-        folderPath,
-      });
-    } catch {
-      // Invalid URLs are excluded from the preview and reported by count in the caller.
+  const folders: string[] = [];
+  let pendingFolder: string | null = null;
+  let capture: "folder" | "anchor" | "description" | null = null;
+  let buffer = "";
+  let href = "";
+  let lastRecord: ImportRecord | undefined;
+  const decode = (value: string): string => value
+    .replace(/&#(\d+);/gu, (_, code: string) => String.fromCodePoint(Number(code)))
+    .replace(/&#x([\da-f]+);/giu, (_, code: string) => String.fromCodePoint(Number.parseInt(code, 16)))
+    .replaceAll("&quot;", "\"").replaceAll("&apos;", "'").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&amp;", "&");
+  for (const match of text.matchAll(/<\/?(?:dl|h3|a|dd)\b[^>]*>|[^<]+/giu)) {
+    const token = match[0];
+    if (!token.startsWith("<")) {
+      if (capture) buffer += token;
+      continue;
+    }
+    const closing = token.startsWith("</");
+    const tag = /^<\/?([a-z0-9]+)/iu.exec(token)?.[1]?.toLowerCase();
+    if (tag === "h3" && !closing) { capture = "folder"; buffer = ""; }
+    else if (tag === "h3" && closing && capture === "folder") { pendingFolder = decode(buffer).trim().slice(0, 240) || null; capture = null; }
+    else if (tag === "dl" && !closing) {
+      if (pendingFolder) folders.push(pendingFolder);
+      pendingFolder = null;
+      if (folders.length > 100) throw new ImportError("Bookmark folder nesting is too deep");
+    } else if (tag === "dl" && closing) { folders.pop(); }
+    else if (tag === "a" && !closing) {
+      href = decode(/\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/iu.exec(token)?.slice(1).find(Boolean) ?? "");
+      capture = "anchor"; buffer = "";
+    } else if (tag === "a" && closing && capture === "anchor") {
+      try {
+        const normalized = normalizeUrl(href, false);
+        lastRecord = { title: decode(buffer).trim().slice(0, 240) || normalized.hostname, url: normalized.url, description: null, folderPath: [...folders] };
+        records.push(lastRecord);
+      } catch { lastRecord = undefined; }
+      capture = null;
+    } else if (tag === "dd" && !closing) { capture = "description"; buffer = ""; }
+    else if (tag === "dd" && closing && capture === "description") {
+      if (lastRecord) lastRecord.description = decode(buffer).trim().slice(0, 2_000) || null;
+      capture = null;
     }
   }
   return records;
@@ -366,9 +310,8 @@ export async function importRecords(
     }
   }
   if (valid.length === 0 && records.length > 0) throw new ImportError("No valid bookmarks were found");
-  await createSnapshot("before-bookmark-import", database);
-
-  return database.transaction("rw", database.pages, database.boards, database.bookmarks, async () => {
+  return database.transaction("rw", [database.pages, database.boards, database.bookmarks, database.settings, database.wallpapers, database.snapshots], async () => {
+    await createSnapshot("before-bookmark-import", database);
     let pageId = destination.pageId;
     if (pageId) {
       const page = await database.pages.get(pageId);

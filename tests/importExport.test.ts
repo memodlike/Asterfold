@@ -6,6 +6,7 @@ import {
   importRecords,
   parseBackup,
   parseNetscapeHtml,
+  previewBackup,
   restoreBackup,
   serializeBackup,
   toMarkdown,
@@ -66,6 +67,23 @@ describe("safe import and lossless export", () => {
     expect(() => parseBackup(JSON.stringify(malformed))).toThrow(/validation failed/iu);
   });
 
+  it("rejects unknown fields, duplicate IDs, orphaned children, and invalid ranks", async () => {
+    const backup = await createBackup({}, database);
+    expect(() => parseBackup(JSON.stringify({ ...backup, unexpected: true }))).toThrow(/validation failed/iu);
+
+    const duplicate = structuredClone(backup);
+    duplicate.entities.pages.push(structuredClone(duplicate.entities.pages[0]!));
+    expect(() => parseBackup(JSON.stringify(duplicate))).toThrow(/duplicate/iu);
+
+    const orphan = structuredClone(backup);
+    orphan.entities.boards[0]!.pageId = "missing-page";
+    expect(() => parseBackup(JSON.stringify(orphan))).toThrow(/parent/iu);
+
+    const invalidRank = structuredClone(backup);
+    invalidRank.entities.boards[0]!.position = "broken";
+    expect(() => parseBackup(JSON.stringify(invalidRank))).toThrow(/rank/iu);
+  });
+
   it("normalizes a backup v1 payload to backup v2 defaults", async () => {
     const backup = await createBackup({}, database);
     const legacy = JSON.parse(serializeBackup(backup)) as Record<string, unknown> & { entities: { boards: Array<Record<string, unknown>> }; settings: Record<string, unknown>; theme: Record<string, unknown> };
@@ -120,6 +138,22 @@ describe("safe import and lossless export", () => {
       "Example incognito": "incognito",
     });
     expect(parseBackup(serializeBackup(parsed))).toEqual(parsed);
+  });
+
+  it("previews destructive scope and remaps external merge identities", async () => {
+    const original = await createBackup({}, database);
+    const { backup, preview } = previewBackup(serializeBackup(original), "replace");
+    expect(preview).toMatchObject({
+      valid: { pages: 1, boards: 1, bookmarks: 0 },
+      invalid: 0,
+      destructiveScope: "workspace",
+    });
+    await restoreBackup(backup, "merge", database);
+    const merged = await getWorkspaceData(database);
+    expect(merged.pages).toHaveLength(2);
+    expect(new Set(merged.pages.map((page) => page.id)).size).toBe(2);
+    expect(merged.boards).toHaveLength(2);
+    expect(new Set(merged.boards.map((board) => board.id)).size).toBe(2);
   });
 
   it("reports invalid rows and skips normalized duplicates", async () => {

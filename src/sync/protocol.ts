@@ -1,22 +1,22 @@
 import { z } from "zod";
 import type { SyncOperation } from "../domain/models";
-import { bookmarkSchema, boardSchema, pageSchema, settingsSchema, themeSchema } from "../services/exportImport";
+import { appSettingsSchema, bookmarkSchema, boardSchema, pageSchema, themeSchema } from "../domain/schemas";
 
 const remoteBase = z.object({
   user_id: z.string().uuid(),
-  entity_id: z.string().min(1),
-  entity_version: z.number().int().positive(),
-  server_version: z.number().int().nonnegative(),
+  entity_id: z.string().min(1).max(128),
+  entity_version: z.number().finite().int().positive(),
+  server_version: z.number().finite().int().nonnegative(),
   operation_id: z.string().uuid(),
   deleted_at: z.string().datetime({ offset: true }).nullable(),
   updated_at: z.string().datetime({ offset: true }),
-});
+}).strict();
 
 export const remoteEntitySchema = z.discriminatedUnion("entity_type", [
   remoteBase.extend({ entity_type: z.literal("page"), payload: pageSchema }),
   remoteBase.extend({ entity_type: z.literal("board"), payload: boardSchema }),
   remoteBase.extend({ entity_type: z.literal("bookmark"), payload: bookmarkSchema }),
-  remoteBase.extend({ entity_type: z.literal("settings"), payload: settingsSchema }),
+  remoteBase.extend({ entity_type: z.literal("settings"), payload: appSettingsSchema }),
   remoteBase.extend({ entity_type: z.literal("theme"), payload: themeSchema }),
 ]);
 

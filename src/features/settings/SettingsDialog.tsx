@@ -8,8 +8,6 @@ import {
   createBackup,
   downloadText,
   importRecords,
-  parseBackup,
-  parseNetscapeHtml,
   restoreBackup,
   serializeBackup,
   toMarkdown,
@@ -17,6 +15,7 @@ import {
   type AsterfoldBackup,
   type ImportRecord,
 } from "../../services/exportImport";
+import { parseBackupOffThread, parseHtmlOffThread } from "../../services/importWorker";
 import { Button } from "../../components/Button";
 import { Modal } from "../../components/Modal";
 import { localeOptions, useI18n } from "../../i18n";
@@ -112,10 +111,10 @@ export function SettingsDialog(props: SettingsDialogProps) {
     try {
       const text = await file.text();
       if (file.name.toLowerCase().endsWith(".json")) {
-        setBackupPreview(parseBackup(text));
+        setBackupPreview(await parseBackupOffThread(text));
         setImportRecordsPreview([]);
       } else {
-        setImportRecordsPreview(parseNetscapeHtml(text));
+        setImportRecordsPreview(await parseHtmlOffThread(text));
         setBackupPreview(null);
       }
       setImportSource(file.name);

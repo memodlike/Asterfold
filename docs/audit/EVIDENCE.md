@@ -135,6 +135,19 @@ Rank comparison is byte-stable ASCII rather than locale-sensitive. The rank patt
 
 The repository now repairs Page/Board destination pairs in the same Dexie transaction as delete, restore, purge, permanent delete, and empty Trash. One active Page is always selected as the sole default, and active/default/last Quick Save references either point to a consistent active pair or to `null` where no Board exists. Root Page purge cascades through all descendants regardless of child deletion timestamps. Compound `[boardId+normalizedUrl]` lookup is used for create and edit duplicate checks. Repeated destructive submissions are idempotent and do not create empty snapshots.
 
+## Phase 6 schema and import evidence
+
+| Test ID | Command | Exit | Key output |
+| --- | --- | ---: | --- |
+| AF-IMPORT-T001 | `npm test -- --run tests/importExport.test.ts` | 0 | Strict unknown-field rejection, duplicate IDs/ranks, orphan parents, unsafe URLs/keys, v1 migration, identity-remapped merge, 10k import |
+| AF-IMPORT-U001 | `npm test` | 0 | 13 files, 77/77 in 2.37 s |
+| AF-IMPORT-E001 | `npm run test:e2e` | 0 | 3/3 in 16.13 s |
+| AF-IMPORT-B001 | `npm run build` | 0 | Chrome MV3 build includes `import-worker.js`; 1.12 MB total in 2.54 s |
+| AF-IMPORT-S001 | `npm run typecheck` | 0 | `tsc --noEmit`, 1.90 s |
+| AF-IMPORT-S002 | `npm run lint` | 0 | ESLint completed without findings, 4.66 s |
+
+`src/domain/schemas.ts` is the single dependency-direction-safe schema source for entities, settings, themes, wallpapers, snapshots, sync operations, and backups. Backup validation is strict, bounded, finite-number-only, and cross-validates IDs, parents, ranks, deletion hierarchy, one default Page, and settings references. JSON and Netscape HTML preview parsing run in the built WXT unlisted worker. External merge remaps Page/Board/Bookmark IDs and parent references; replace is the explicit trusted restore path. Snapshot creation and data writes share one Dexie transaction.
+
 ## Production bundle baseline
 
 | Asset | Bytes |
