@@ -1,8 +1,5 @@
 import { defineConfig } from "wxt";
 
-const supabaseUrl = process.env.WXT_SUPABASE_URL;
-const cloudOrigin = supabaseUrl ? new URL(supabaseUrl).origin : null;
-
 export default defineConfig({
   modules: ["@wxt-dev/module-react"],
   srcDir: ".",
@@ -11,11 +8,11 @@ export default defineConfig({
     name: "Asterfold",
     short_name: "Asterfold",
     description: "A private, local-first visual bookmark workspace.",
-    version: "2.1.3",
+    version: "2.2.0",
     minimum_chrome_version: "120",
     permissions: ["storage", "activeTab", "favicon", "alarms", "contextMenus"],
-    optional_permissions: ["bookmarks", "identity"],
-    host_permissions: cloudOrigin ? [`${cloudOrigin}/*`] : [],
+    optional_permissions: ["bookmarks"],
+    host_permissions: [],
     action: {
       default_title: "Quick Save to Asterfold",
       default_icon: {

@@ -152,6 +152,10 @@ export interface Wallpaper {
   blob: Blob | null;
   thumbnail: Blob | null;
   value: string | null;
+  width?: number;
+  height?: number;
+  sourceBytes?: number;
+  storedBytes?: number;
   createdAt: ISODate;
   updatedAt: ISODate;
 }
@@ -210,7 +214,6 @@ export interface NewBookmarkInput {
   title: string;
   url: string;
   description?: string | null;
-  faviconUrl?: string | null;
   openMode?: BookmarkOpenMode;
   pinned?: boolean;
 }

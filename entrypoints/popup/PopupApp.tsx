@@ -12,7 +12,6 @@ import { translate, type MessageKey } from "../../src/i18n";
 interface ActiveTabData {
   title: string;
   url: string;
-  faviconUrl: string | null;
 }
 
 export function PopupApp() {
@@ -40,7 +39,7 @@ export function PopupApp() {
       const active = tabs[0];
       const url = active?.url ?? "";
       const titleValue = active?.title?.trim() || (url ? new URL(url).hostname : t("popup.untitledPage"));
-      setTab({ title: titleValue, url, faviconUrl: active?.favIconUrl ?? null });
+      setTab({ title: titleValue, url });
       setTitle(titleValue);
       setShortcut(commands.find((command) => command.name === "quick-save")?.shortcut ?? "");
     }).catch(() => setError(t("popup.activeTabUnavailable")));
@@ -76,7 +75,7 @@ export function PopupApp() {
     if (!tab?.url || !boardId) return;
     setSaving(true); setError(null);
     try {
-      await createBookmark({ boardId, title, url: tab.url, description, faviconUrl: tab.faviconUrl }, { allowDuplicate });
+      await createBookmark({ boardId, title, url: tab.url, description }, { allowDuplicate });
       await updateSettings({ quickSaveLastPageId: pageId, quickSaveLastBoardId: boardId });
       setStatus(t("popup.saved"));
       await browser.action.setBadgeBackgroundColor({ color: "#079455" });
@@ -100,7 +99,7 @@ export function PopupApp() {
   const unsupported = !/^https?:\/\//i.test(tab.url) && !/^mailto:/i.test(tab.url);
   return (
     <main className="popup" onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter") { event.preventDefault(); void save(); } }}>
-      <header className="popup__header"><Logo /><button title={t("generic.settings")} aria-label={t("generic.settings")} onClick={() => void browser.runtime.openOptionsPage().catch(() => openWorkspace())}><Settings size={17} /></button></header>
+      <header className="popup__header"><Logo /><button title={t("generic.settings")} aria-label={t("generic.settings")} onClick={() => void openWorkspace()}><Settings size={17} /></button></header>
       <section className="popup__content">
         <div className="popup__title"><h1>{t("popup.title")}</h1>{shortcut ? <kbd>{shortcut}</kbd> : null}</div>
         <div className="tab-preview"><span className="tab-preview__icon">{faviconUrl(tab.url, 40) ? <img src={faviconUrl(tab.url, 40)} alt="" /> : tab.title[0]?.toUpperCase()}</span><div><strong>{tab.title}</strong><small>{tab.url}</small></div></div>

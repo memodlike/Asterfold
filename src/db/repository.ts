@@ -11,10 +11,11 @@ import type {
   WorkspaceData,
 } from "../domain/models";
 import { DuplicateError, PersistenceError, ValidationError } from "../domain/errors";
-import { compareRanks, evenlySpacedRanks, rankBetween } from "../domain/ordering";
+import { allocateAtEnd, compareRanks, evenlySpacedRanks, moveMany } from "../domain/ordering";
 import { normalizeUrl } from "../domain/urls";
 import { validateTheme } from "../domain/themes";
 import { createId, nowIso } from "../utils/ids";
+import { processWallpaper } from "../services/wallpaper";
 import { createDefaultSettings } from "./defaults";
 import { db, type AsterfoldDatabase } from "./database";
 
@@ -70,9 +71,42 @@ async function activeBookmarks(database: AsterfoldDatabase, boardId?: string): P
   return sortByPosition(bookmarks.filter((bookmark) => bookmark.deletedAt === null));
 }
 
-async function lastRank<T extends { position: string }>(items: Promise<T[]>): Promise<string | null> {
-  const resolved = await items;
-  return resolved.at(-1)?.position ?? null;
+async function repairWorkspaceInvariants(database: AsterfoldDatabase): Promise<void> {
+  const [pages, boards, settings] = await Promise.all([
+    activePages(database),
+    activeBoards(database),
+    database.settings.get("app"),
+  ]);
+  if (pages.length === 0 || !settings) return;
+
+  const pageIds = new Set(pages.map((page) => page.id));
+  const boardById = new Map(boards.map((board) => [board.id, board]));
+  const defaultPage = pages.find((page) => page.isDefault) ?? pages[0]!;
+  const timestamp = nowIso();
+  const pageRepairs = pages
+    .filter((page) => page.isDefault !== (page.id === defaultPage.id))
+    .map((page) => ({ ...page, isDefault: page.id === defaultPage.id, updatedAt: timestamp, version: page.version + 1 }));
+  if (pageRepairs.length > 0) await database.pages.bulkPut(pageRepairs);
+
+  const resolvePair = (pageId: string | null, boardId: string | null): [string, string | null] => {
+    const resolvedPageId = pageId && pageIds.has(pageId) ? pageId : defaultPage.id;
+    const board = boardId ? boardById.get(boardId) : undefined;
+    if (board?.pageId === resolvedPageId) return [resolvedPageId, board.id];
+    return [resolvedPageId, boards.find((candidate) => candidate.pageId === resolvedPageId)?.id ?? null];
+  };
+  const [defaultPageId, defaultBoardId] = resolvePair(settings.quickSaveDefaultPageId, settings.quickSaveDefaultBoardId);
+  const [lastPageId, lastBoardId] = resolvePair(settings.quickSaveLastPageId, settings.quickSaveLastBoardId);
+  const activePageId = settings.activePageId && pageIds.has(settings.activePageId) ? settings.activePageId : defaultPage.id;
+  const patch = {
+    activePageId,
+    quickSaveDefaultPageId: defaultPageId,
+    quickSaveDefaultBoardId: defaultBoardId,
+    quickSaveLastPageId: lastPageId,
+    quickSaveLastBoardId: lastBoardId,
+  };
+  if (Object.entries(patch).some(([key, value]) => settings[key as keyof typeof patch] !== value)) {
+    await database.settings.update("app", { ...patch, updatedAt: timestamp });
+  }
 }
 
 async function captureSnapshotPayload(database: AsterfoldDatabase): Promise<unknown> {
@@ -165,6 +199,7 @@ export async function ensureStarterWorkspace(database: AsterfoldDatabase = db): 
     } else if (!pages.some((page) => page.id === settings.activePageId)) {
       await database.settings.update("app", { activePageId: pages[0]?.id ?? null, updatedAt: nowIso() });
     }
+    await repairWorkspaceInvariants(database);
   });
 
   return getWorkspaceData(database, false);
@@ -198,6 +233,7 @@ export async function updateSettings(
     updatedAt: nowIso(),
   };
   await database.settings.put(next);
+  if (patch.theme) await garbageCollectWallpapers(database, next.theme.wallpaperId);
   return next;
 }
 
@@ -210,8 +246,12 @@ export async function createPage(
   return database.transaction("rw", database.pages, database.settings, async () => {
     const pages = await activePages(database);
     const timestamp = nowIso();
-    const position = rankBetween(pages.at(-1)?.position ?? null, null);
-    if (!position) throw new PersistenceError("Page positions require rebalancing");
+    const allocation = allocateAtEnd(pages);
+    const rebalanced = allocation.scope
+      .filter((page, index) => page.position !== pages[index]?.position)
+      .map((page) => ({ ...page, updatedAt: timestamp, version: page.version + 1 }));
+    if (rebalanced.length > 0) await database.pages.bulkPut(rebalanced);
+    const position = allocation.position;
     const page: Page = {
       id: createId(),
       userId: null,
@@ -253,20 +293,14 @@ export async function setDefaultPage(id: string, database: AsterfoldDatabase = d
 
 export async function movePageToIndex(id: string, targetIndex: number, database: AsterfoldDatabase = db): Promise<void> {
   await database.transaction("rw", database.pages, async () => {
-    const pages = (await activePages(database)).filter((page) => page.id !== id);
-    const index = Math.max(0, Math.min(targetIndex, pages.length));
-    const previous = pages[index - 1]?.position ?? null;
-    const next = pages[index]?.position ?? null;
-    const position = rankBetween(previous, next);
     const current = await database.pages.get(id);
     if (!current || current.deletedAt !== null) throw new ValidationError("Page not found");
-    if (position) {
-      await database.pages.update(id, { position, updatedAt: nowIso(), version: current.version + 1 });
-      return;
-    }
-    pages.splice(index, 0, current);
-    const ranks = evenlySpacedRanks(pages.length);
-    await database.pages.bulkPut(pages.map((page, pageIndex) => ({ ...page, position: ranks[pageIndex] ?? page.position, updatedAt: nowIso(), version: page.version + 1 })));
+    const pages = await activePages(database);
+    const moved = moveMany(pages, [id], targetIndex);
+    const timestamp = nowIso();
+    await database.pages.bulkPut(moved.map((page) => page.position === pages.find((candidate) => candidate.id === page.id)?.position
+      ? page
+      : { ...page, updatedAt: timestamp, version: page.version + 1 }));
   });
 }
 
@@ -277,11 +311,17 @@ export async function duplicatePage(id: string, database: AsterfoldDatabase = db
     if (!source || source.deletedAt !== null) throw new ValidationError("Page not found");
     const timestamp = nowIso();
     const pageId = createId();
+    const pages = await activePages(database);
+    const allocation = allocateAtEnd(pages);
+    const rebalanced = allocation.scope
+      .filter((page, index) => page.position !== pages[index]?.position)
+      .map((page) => ({ ...page, updatedAt: timestamp, version: page.version + 1 }));
+    if (rebalanced.length > 0) await database.pages.bulkPut(rebalanced);
     const page: Page = {
       ...source,
       id: pageId,
       title: cleanTitle(`${source.title} copy`, source.title),
-      position: rankBetween(await lastRank(activePages(database)), null) ?? evenlySpacedRanks(2)[1]!,
+      position: allocation.position,
       isDefault: false,
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -334,14 +374,8 @@ export async function softDeletePage(id: string, database: AsterfoldDatabase = d
     const remaining = (await activePages(database)).filter((candidate) => candidate.id !== id);
     const next = remaining[0];
     const settings = await database.settings.get("app");
-    if (settings?.activePageId === id || page.isDefault) {
-      await database.settings.update("app", {
-        activePageId: next?.id ?? null,
-        quickSaveDefaultPageId: page.isDefault ? next?.id ?? null : settings?.quickSaveDefaultPageId ?? null,
-        updatedAt: timestamp,
-      });
-      if (page.isDefault && next) await database.pages.update(next.id, { isDefault: true });
-    }
+    if (settings?.activePageId === id) await database.settings.update("app", { activePageId: next?.id ?? null, updatedAt: timestamp });
+    await repairWorkspaceInvariants(database);
     return batchId;
   });
 }
@@ -410,6 +444,7 @@ export async function restorePage(id: string, database: AsterfoldDatabase = db):
       });
     }
     await database.settings.update("app", { activePageId: id, updatedAt: timestamp });
+    await repairWorkspaceInvariants(database);
   });
 }
 
@@ -423,8 +458,12 @@ export async function createBoard(
     if (!page || page.deletedAt !== null) throw new ValidationError("Page not found");
     const boards = await activeBoards(database, pageId);
     const timestamp = nowIso();
-    const position = rankBetween(boards.at(-1)?.position ?? null, null);
-    if (!position) throw new PersistenceError("Board positions require rebalancing");
+    const allocation = allocateAtEnd(boards);
+    const rebalanced = allocation.scope
+      .filter((board, index) => board.position !== boards[index]?.position)
+      .map((board) => ({ ...board, updatedAt: timestamp, version: board.version + 1 }));
+    if (rebalanced.length > 0) await database.boards.bulkPut(rebalanced);
+    const position = allocation.position;
     const board: Board = {
       id: createId(),
       userId: null,
@@ -478,17 +517,15 @@ export async function moveBoardToIndex(
     const page = await database.pages.get(targetPageId);
     const current = await database.boards.get(id);
     if (!page || page.deletedAt !== null || !current || current.deletedAt !== null) throw new ValidationError("Board or target page not found");
-    const boards = (await activeBoards(database, targetPageId)).filter((board) => board.id !== id);
-    const index = Math.max(0, Math.min(targetIndex, boards.length));
-    const position = rankBetween(boards[index - 1]?.position ?? null, boards[index]?.position ?? null);
-    if (position) {
-      await database.boards.update(id, { pageId: targetPageId, position, updatedAt: nowIso(), version: current.version + 1 });
-      return;
-    }
-    const moved = { ...current, pageId: targetPageId };
-    boards.splice(index, 0, moved);
-    const ranks = evenlySpacedRanks(boards.length);
-    await database.boards.bulkPut(boards.map((board, boardIndex) => ({ ...board, position: ranks[boardIndex] ?? board.position, updatedAt: nowIso(), version: board.version + 1 })));
+    const targetBoards = (await activeBoards(database, targetPageId)).filter((board) => board.id !== id);
+    const moved = moveMany([...targetBoards, { ...current, pageId: targetPageId }], [id], targetIndex);
+    const timestamp = nowIso();
+    await database.boards.bulkPut(moved.map((board) => {
+      const original = board.id === id ? current : targetBoards.find((candidate) => candidate.id === board.id);
+      return original?.position === board.position && original.pageId === board.pageId
+        ? board
+        : { ...board, updatedAt: timestamp, version: board.version + 1 };
+    }));
   });
 }
 
@@ -498,11 +535,16 @@ export async function duplicateBoard(id: string, database: AsterfoldDatabase = d
     if (!source || source.deletedAt !== null) throw new ValidationError("Board not found");
     const siblings = await activeBoards(database, source.pageId);
     const timestamp = nowIso();
+    const allocation = allocateAtEnd(siblings);
+    const rebalanced = allocation.scope
+      .filter((board, index) => board.position !== siblings[index]?.position)
+      .map((board) => ({ ...board, updatedAt: timestamp, version: board.version + 1 }));
+    if (rebalanced.length > 0) await database.boards.bulkPut(rebalanced);
     const copy: Board = {
       ...source,
       id: createId(),
       title: cleanTitle(`${source.title} copy`, source.title),
-      position: rankBetween(siblings.at(-1)?.position ?? null, null) ?? evenlySpacedRanks(siblings.length + 1).at(-1)!,
+      position: allocation.position,
       createdAt: timestamp,
       updatedAt: timestamp,
       version: 1,
@@ -517,7 +559,7 @@ export async function duplicateBoard(id: string, database: AsterfoldDatabase = d
 }
 
 export async function softDeleteBoard(id: string, database: AsterfoldDatabase = db): Promise<string> {
-  return database.transaction("rw", database.boards, database.bookmarks, async () => {
+  return database.transaction("rw", database.pages, database.boards, database.bookmarks, database.settings, async () => {
     const board = await database.boards.get(id);
     if (!board || board.deletedAt !== null) throw new ValidationError("Board not found");
     const timestamp = nowIso();
@@ -529,12 +571,13 @@ export async function softDeleteBoard(id: string, database: AsterfoldDatabase = 
       bookmark.updatedAt = timestamp;
       bookmark.version += 1;
     });
+    await repairWorkspaceInvariants(database);
     return batchId;
   });
 }
 
 export async function restoreBoard(id: string, database: AsterfoldDatabase = db): Promise<void> {
-  await database.transaction("rw", database.pages, database.boards, database.bookmarks, async () => {
+  await database.transaction("rw", database.pages, database.boards, database.bookmarks, database.settings, async () => {
     const board = await database.boards.get(id);
     if (!board || board.deletedAt === null) throw new ValidationError("Deleted board not found");
     const parent = await database.pages.get(board.pageId);
@@ -550,6 +593,7 @@ export async function restoreBoard(id: string, database: AsterfoldDatabase = db)
         bookmark.version += 1;
       });
     }
+    await repairWorkspaceInvariants(database);
   });
 }
 
@@ -557,12 +601,13 @@ export async function findDuplicate(
   boardId: string,
   url: string,
   database: AsterfoldDatabase = db,
+  excludeBookmarkId?: string,
 ): Promise<Bookmark | null> {
   const normalized = normalizeUrl(url).normalizedUrl;
   const match = await database.bookmarks
-    .where("normalizedUrl")
-    .equals(normalized)
-    .filter((bookmark) => bookmark.boardId === boardId && bookmark.deletedAt === null)
+    .where("[boardId+normalizedUrl]")
+    .equals([boardId, normalized])
+    .filter((bookmark) => bookmark.deletedAt === null && bookmark.id !== excludeBookmarkId)
     .first();
   return match ?? null;
 }
@@ -578,16 +623,20 @@ export async function createBookmark(
     const normalized = normalizeUrl(input.url);
     if (!options.allowDuplicate) {
       const duplicate = await database.bookmarks
-        .where("normalizedUrl")
-        .equals(normalized.normalizedUrl)
-        .filter((bookmark) => bookmark.boardId === input.boardId && bookmark.deletedAt === null)
+        .where("[boardId+normalizedUrl]")
+        .equals([input.boardId, normalized.normalizedUrl])
+        .filter((bookmark) => bookmark.deletedAt === null)
         .first();
       if (duplicate) throw new DuplicateError("This bookmark already exists in the selected board", duplicate.id);
     }
     const siblings = await activeBookmarks(database, input.boardId);
-    const position = rankBetween(siblings.at(-1)?.position ?? null, null);
-    if (!position) throw new PersistenceError("Bookmark positions require rebalancing");
     const timestamp = nowIso();
+    const allocation = allocateAtEnd(siblings);
+    const rebalanced = allocation.scope
+      .filter((bookmark, index) => bookmark.position !== siblings[index]?.position)
+      .map((bookmark) => ({ ...bookmark, updatedAt: timestamp, version: bookmark.version + 1 }));
+    if (rebalanced.length > 0) await database.bookmarks.bulkPut(rebalanced);
+    const position = allocation.position;
     const bookmark: Bookmark = {
       id: createId(),
       userId: null,
@@ -597,7 +646,7 @@ export async function createBookmark(
       normalizedUrl: normalized.normalizedUrl,
       hostname: normalized.hostname,
       description: cleanDescription(input.description),
-      faviconUrl: input.faviconUrl ?? null,
+      faviconUrl: null,
       customIcon: null,
       position,
       openMode: input.openMode ?? "current",
@@ -625,10 +674,30 @@ export async function updateBookmark(
     const board = await database.boards.get(targetBoardId);
     if (!board || board.deletedAt !== null) throw new ValidationError("Target board not found");
     const normalized = patch.url === undefined ? null : normalizeUrl(patch.url);
+    if (patch.url !== undefined || patch.boardId !== undefined) {
+      const duplicate = await database.bookmarks
+        .where("[boardId+normalizedUrl]")
+        .equals([targetBoardId, normalized?.normalizedUrl ?? current.normalizedUrl])
+        .filter((bookmark) => bookmark.deletedAt === null && bookmark.id !== id)
+        .first();
+      if (duplicate) throw new DuplicateError("This bookmark already exists in the selected board", duplicate.id);
+    }
+    let position = current.position;
+    if (targetBoardId !== current.boardId) {
+      const siblings = await activeBookmarks(database, targetBoardId);
+      const allocation = allocateAtEnd(siblings);
+      const timestamp = nowIso();
+      const rebalanced = allocation.scope
+        .filter((bookmark, index) => bookmark.position !== siblings[index]?.position)
+        .map((bookmark) => ({ ...bookmark, updatedAt: timestamp, version: bookmark.version + 1 }));
+      if (rebalanced.length > 0) await database.bookmarks.bulkPut(rebalanced);
+      position = allocation.position;
+    }
     const updated: Bookmark = {
       ...current,
       ...patch,
       boardId: targetBoardId,
+      position,
       title: patch.title === undefined ? current.title : cleanTitle(patch.title, current.title),
       description: patch.description === undefined ? current.description : cleanDescription(patch.description),
       url: normalized?.url ?? current.url,
@@ -652,17 +721,15 @@ export async function moveBookmarkToIndex(
     const board = await database.boards.get(targetBoardId);
     const current = await database.bookmarks.get(id);
     if (!board || board.deletedAt !== null || !current || current.deletedAt !== null) throw new ValidationError("Bookmark or target board not found");
-    const items = (await activeBookmarks(database, targetBoardId)).filter((bookmark) => bookmark.id !== id);
-    const index = Math.max(0, Math.min(targetIndex, items.length));
-    const position = rankBetween(items[index - 1]?.position ?? null, items[index]?.position ?? null);
-    if (position) {
-      await database.bookmarks.update(id, { boardId: targetBoardId, position, updatedAt: nowIso(), version: current.version + 1 });
-      return;
-    }
-    const moved = { ...current, boardId: targetBoardId };
-    items.splice(index, 0, moved);
-    const ranks = evenlySpacedRanks(items.length);
-    await database.bookmarks.bulkPut(items.map((bookmark, bookmarkIndex) => ({ ...bookmark, position: ranks[bookmarkIndex] ?? bookmark.position, updatedAt: nowIso(), version: bookmark.version + 1 })));
+    const targetItems = (await activeBookmarks(database, targetBoardId)).filter((bookmark) => bookmark.id !== id);
+    const moved = moveMany([...targetItems, { ...current, boardId: targetBoardId }], [id], targetIndex);
+    const timestamp = nowIso();
+    await database.bookmarks.bulkPut(moved.map((bookmark) => {
+      const original = bookmark.id === id ? current : targetItems.find((candidate) => candidate.id === bookmark.id);
+      return original?.position === bookmark.position && original.boardId === bookmark.boardId
+        ? bookmark
+        : { ...bookmark, updatedAt: timestamp, version: bookmark.version + 1 };
+    }));
   });
 }
 
@@ -674,32 +741,52 @@ export async function duplicateBookmark(id: string, database: AsterfoldDatabase 
     title: `${source.title} copy`,
     url: source.url,
     description: source.description,
-    faviconUrl: source.faviconUrl,
     openMode: source.openMode,
     pinned: source.pinned,
   }, { allowDuplicate: true }, database);
 }
 
 export async function softDeleteBookmark(id: string, database: AsterfoldDatabase = db): Promise<void> {
-  const bookmark = await database.bookmarks.get(id);
-  if (!bookmark || bookmark.deletedAt !== null) throw new ValidationError("Bookmark not found");
-  const timestamp = nowIso();
-  await database.bookmarks.update(id, { deletedAt: timestamp, deletedBatchId: createId(), updatedAt: timestamp, version: bookmark.version + 1 });
+  await database.transaction("rw", database.bookmarks, async () => {
+    const bookmark = await database.bookmarks.get(id);
+    if (!bookmark || bookmark.deletedAt !== null) throw new ValidationError("Bookmark not found");
+    const timestamp = nowIso();
+    await database.bookmarks.update(id, { deletedAt: timestamp, deletedBatchId: createId(), updatedAt: timestamp, version: bookmark.version + 1 });
+  });
 }
 
 export async function restoreBookmark(id: string, database: AsterfoldDatabase = db): Promise<void> {
-  const bookmark = await database.bookmarks.get(id);
-  if (!bookmark || bookmark.deletedAt === null) throw new ValidationError("Deleted bookmark not found");
-  const board = await database.boards.get(bookmark.boardId);
-  if (!board || board.deletedAt !== null) throw new ValidationError("Restore the parent board first");
-  await database.bookmarks.update(id, { deletedAt: null, deletedBatchId: null, updatedAt: nowIso(), version: bookmark.version + 1 });
+  await database.transaction("rw", database.boards, database.bookmarks, async () => {
+    const bookmark = await database.bookmarks.get(id);
+    if (!bookmark || bookmark.deletedAt === null) throw new ValidationError("Deleted bookmark not found");
+    const board = await database.boards.get(bookmark.boardId);
+    if (!board || board.deletedAt !== null) throw new ValidationError("Restore the parent board first");
+    await database.bookmarks.update(id, { deletedAt: null, deletedBatchId: null, updatedAt: nowIso(), version: bookmark.version + 1 });
+  });
 }
 
 export async function bulkMoveBookmarks(ids: string[], boardId: string, database: AsterfoldDatabase = db): Promise<void> {
   const uniqueIds = [...new Set(ids)];
-  for (let index = 0; index < uniqueIds.length; index += 1) {
-    await moveBookmarkToIndex(uniqueIds[index]!, boardId, Number.MAX_SAFE_INTEGER, database);
-  }
+  if (uniqueIds.length === 0) return;
+  await database.transaction("rw", database.boards, database.bookmarks, async () => {
+    const board = await database.boards.get(boardId);
+    if (!board || board.deletedAt !== null) throw new ValidationError("Target board not found");
+    const selected = await database.bookmarks.where("id").anyOf(uniqueIds).toArray();
+    if (selected.length !== uniqueIds.length || selected.some((bookmark) => bookmark.deletedAt !== null)) {
+      throw new ValidationError("One or more bookmarks were not found");
+    }
+    const selectedIds = new Set(uniqueIds);
+    const targetItems = (await activeBookmarks(database, boardId)).filter((bookmark) => !selectedIds.has(bookmark.id));
+    const orderedSelection = sortByPosition(selected);
+    const moved = moveMany([...targetItems, ...orderedSelection], orderedSelection.map((bookmark) => bookmark.id), targetItems.length);
+    const timestamp = nowIso();
+    await database.bookmarks.bulkPut(moved.map((bookmark) => ({
+      ...bookmark,
+      boardId: selectedIds.has(bookmark.id) ? boardId : bookmark.boardId,
+      updatedAt: selectedIds.has(bookmark.id) ? timestamp : bookmark.updatedAt,
+      version: selectedIds.has(bookmark.id) ? bookmark.version + 1 : bookmark.version,
+    })));
+  });
 }
 
 export async function bulkDeleteBookmarks(ids: string[], database: AsterfoldDatabase = db): Promise<void> {
@@ -730,16 +817,23 @@ export async function purgeTrash(retentionDays?: number | null, database: Asterf
   const retention = retentionDays === undefined ? settings?.trashRetentionDays ?? 30 : retentionDays;
   if (retention === null) return 0;
   const cutoff = new Date(Date.now() - retention * 86_400_000).toISOString();
-  return database.transaction("rw", database.pages, database.boards, database.bookmarks, async () => {
+  return database.transaction("rw", database.pages, database.boards, database.bookmarks, database.settings, async () => {
     const pageIds = (await database.pages.filter((item) => item.deletedAt !== null && item.deletedAt < cutoff).primaryKeys()) as string[];
-    const boardIds = (await database.boards.filter((item) => item.deletedAt !== null && item.deletedAt < cutoff).primaryKeys()) as string[];
-    const bookmarkIds = (await database.bookmarks.filter((item) => item.deletedAt !== null && item.deletedAt < cutoff).primaryKeys()) as string[];
+    const boardIds = new Set(await database.boards.filter((item) => item.deletedAt !== null && item.deletedAt < cutoff).primaryKeys() as string[]);
+    if (pageIds.length > 0) {
+      for (const id of await database.boards.where("pageId").anyOf(pageIds).primaryKeys() as string[]) boardIds.add(id);
+    }
+    const bookmarkIds = new Set(await database.bookmarks.filter((item) => item.deletedAt !== null && item.deletedAt < cutoff).primaryKeys() as string[]);
+    if (boardIds.size > 0) {
+      for (const id of await database.bookmarks.where("boardId").anyOf([...boardIds]).primaryKeys() as string[]) bookmarkIds.add(id);
+    }
     await Promise.all([
       database.pages.bulkDelete(pageIds),
-      database.boards.bulkDelete(boardIds),
-      database.bookmarks.bulkDelete(bookmarkIds),
+      database.boards.bulkDelete([...boardIds]),
+      database.bookmarks.bulkDelete([...bookmarkIds]),
     ]);
-    return pageIds.length + boardIds.length + bookmarkIds.length;
+    await repairWorkspaceInvariants(database);
+    return pageIds.length + boardIds.size + bookmarkIds.size;
   });
 }
 
@@ -749,39 +843,48 @@ export async function permanentlyDelete(
   database: AsterfoldDatabase = db,
 ): Promise<void> {
   await database.transaction("rw", [database.pages, database.boards, database.bookmarks, database.snapshots, database.settings, database.wallpapers], async () => {
-    await addSnapshot(database, `permanent-delete-${type}`);
     if (type === "bookmark") {
       const item = await database.bookmarks.get(id);
-      if (!item || item.deletedAt === null) throw new ValidationError("Only Trash items can be permanently deleted");
+      if (!item) return;
+      if (item.deletedAt === null) throw new ValidationError("Only Trash items can be permanently deleted");
+      await addSnapshot(database, `permanent-delete-${type}`);
       await database.bookmarks.delete(id);
       return;
     }
     if (type === "board") {
       const item = await database.boards.get(id);
-      if (!item || item.deletedAt === null) throw new ValidationError("Only Trash items can be permanently deleted");
+      if (!item) return;
+      if (item.deletedAt === null) throw new ValidationError("Only Trash items can be permanently deleted");
+      await addSnapshot(database, `permanent-delete-${type}`);
       await database.bookmarks.where("boardId").equals(id).delete();
       await database.boards.delete(id);
+      await repairWorkspaceInvariants(database);
       return;
     }
     const item = await database.pages.get(id);
-    if (!item || item.deletedAt === null) throw new ValidationError("Only Trash items can be permanently deleted");
+    if (!item) return;
+    if (item.deletedAt === null) throw new ValidationError("Only Trash items can be permanently deleted");
+    await addSnapshot(database, `permanent-delete-${type}`);
     const boardIds = (await database.boards.where("pageId").equals(id).primaryKeys()) as string[];
     if (boardIds.length > 0) await database.bookmarks.where("boardId").anyOf(boardIds).delete();
     await database.boards.where("pageId").equals(id).delete();
     await database.pages.delete(id);
+    await repairWorkspaceInvariants(database);
   });
 }
 
 export async function emptyTrash(database: AsterfoldDatabase = db): Promise<number> {
   return database.transaction("rw", [database.pages, database.boards, database.bookmarks, database.snapshots, database.settings, database.wallpapers], async () => {
-    await addSnapshot(database, "empty-trash");
     const trash = await listTrash(database);
     const count = trash.pages.length + trash.boards.length + trash.bookmarks.length;
+    if (count === 0) return 0;
+    await addSnapshot(database, "empty-trash");
     await Promise.all([
       database.pages.bulkDelete(trash.pages.map((item) => item.id)),
       database.boards.bulkDelete(trash.boards.map((item) => item.id)),
       database.bookmarks.bulkDelete(trash.bookmarks.map((item) => item.id)),
     ]);
+    await repairWorkspaceInvariants(database);
     return count;
   });
 }
@@ -795,23 +898,40 @@ export async function saveWallpaper(
   name: string,
   database: AsterfoldDatabase = db,
 ): Promise<Wallpaper> {
-  const allowed = new Set(["image/png", "image/jpeg", "image/webp", "image/avif"]);
-  if (!allowed.has(file.type)) throw new ValidationError("Use a PNG, JPEG, WebP, or AVIF image");
-  if (file.size > 10 * 1024 * 1024) throw new ValidationError("Wallpaper must be 10 MB or smaller");
+  const processed = await processWallpaper(file);
+  const estimate = await navigator.storage?.estimate?.();
+  if (estimate?.quota !== undefined && estimate.usage !== undefined && estimate.quota - estimate.usage < processed.storedBytes * 1.25) {
+    throw new PersistenceError("There is not enough local storage for this wallpaper");
+  }
   const timestamp = nowIso();
   const wallpaper: Wallpaper = {
     id: createId(),
     kind: "upload",
     name: cleanTitle(name, "Custom wallpaper"),
-    mimeType: file.type,
-    blob: file,
-    thumbnail: null,
+    mimeType: processed.mimeType,
+    blob: processed.blob,
+    thumbnail: processed.thumbnail,
     value: null,
+    width: processed.width,
+    height: processed.height,
+    sourceBytes: processed.sourceBytes,
+    storedBytes: processed.storedBytes,
     createdAt: timestamp,
     updatedAt: timestamp,
   };
   await database.wallpapers.add(wallpaper);
   return wallpaper;
+}
+
+export async function getWallpaper(id: string, database: AsterfoldDatabase = db): Promise<Wallpaper | null> {
+  return await database.wallpapers.get(id) ?? null;
+}
+
+export async function garbageCollectWallpapers(database: AsterfoldDatabase = db, activeId?: string | null): Promise<number> {
+  const referencedId = activeId === undefined ? (await database.settings.get("app"))?.theme.wallpaperId ?? null : activeId;
+  const orphanIds = (await database.wallpapers.filter((wallpaper) => wallpaper.kind === "upload" && wallpaper.id !== referencedId).primaryKeys()) as string[];
+  if (orphanIds.length > 0) await database.wallpapers.bulkDelete(orphanIds);
+  return orphanIds.length;
 }
 
 export async function auditInvariants(database: AsterfoldDatabase = db): Promise<string[]> {
@@ -823,8 +943,11 @@ export async function auditInvariants(database: AsterfoldDatabase = db): Promise
   ]);
   const issues: string[] = [];
   const activePageIds = new Set(pages.filter((page) => page.deletedAt === null).map((page) => page.id));
-  const activeBoardIds = new Set(boards.filter((board) => board.deletedAt === null).map((board) => board.id));
+  const activePagesList = pages.filter((page) => page.deletedAt === null);
+  const activeBoardsList = boards.filter((board) => board.deletedAt === null);
+  const activeBoardIds = new Set(activeBoardsList.map((board) => board.id));
   if (activePageIds.size === 0) issues.push("No active Page exists");
+  if (activePagesList.filter((page) => page.isDefault).length !== 1) issues.push("Exactly one active default Page is required");
   if (settings?.activePageId && !activePageIds.has(settings.activePageId)) issues.push("Active Page setting points to a missing Page");
   for (const board of boards.filter((item) => item.deletedAt === null)) {
     if (!activePageIds.has(board.pageId)) issues.push(`Board ${board.id} has no active parent Page`);
@@ -836,6 +959,17 @@ export async function auditInvariants(database: AsterfoldDatabase = db): Promise
     } catch {
       issues.push(`Bookmark ${bookmark.id} contains an unsafe URL`);
     }
+  }
+  const checkPair = (label: string, pageId: string | null | undefined, boardId: string | null | undefined): void => {
+    if (!pageId || !activePageIds.has(pageId)) issues.push(`${label} Page points to a missing Page`);
+    if (boardId) {
+      const board = activeBoardsList.find((candidate) => candidate.id === boardId);
+      if (!board || board.pageId !== pageId) issues.push(`${label} Board is missing or belongs to another Page`);
+    }
+  };
+  if (settings) {
+    checkPair("Quick Save default", settings.quickSaveDefaultPageId, settings.quickSaveDefaultBoardId);
+    checkPair("Quick Save last", settings.quickSaveLastPageId, settings.quickSaveLastBoardId);
   }
   return issues;
 }

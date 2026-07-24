@@ -15,7 +15,8 @@ interface TrashDialogProps {
 }
 
 export function TrashDialog(props: TrashDialogProps) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
+  const dateTime = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
   const trash = useLiveQuery(() => listTrash(db), [props.open], { pages: [], boards: [], bookmarks: [] });
   const [filter, setFilter] = useState<"all" | "page" | "board" | "bookmark">("all");
   const items = [
@@ -45,7 +46,7 @@ export function TrashDialog(props: TrashDialogProps) {
     <Modal open={props.open} size="large" className="modal--trash" title={t("trash.title")} description={t("trash.description")} onClose={props.onClose} footer={totalItems > 0 ? <Button variant="danger" icon={<Trash2 size={15} />} onClick={() => { if (window.confirm(t("trash.permanent"))) void emptyTrash().then((count) => props.onChanged(t("trash.items", { count }))).catch(() => props.onError(t("error.emptyTrashFailed"))); }}>{t("trash.emptyAction")}</Button> : undefined}>
       <div className="trash-dialog">
         <div className="trash-toolbar">
-          <div className="segmented" role="tablist" aria-label={t("trash.title")}>{(["all", "page", "board", "bookmark"] as const).map((item) => <button role="tab" aria-selected={filter === item} className={filter === item ? "is-active" : ""} key={item} onClick={() => setFilter(item)}>{item === "all" ? <Trash2 size={14} /> : typeMeta(item).icon}<span>{t(item === "all" ? "trash.all" : item === "page" ? "trash.pages" : item === "board" ? "trash.boards" : "trash.bookmarks")}</span></button>)}</div>
+          <div className="segmented" role="group" aria-label={t("trash.title")}>{(["all", "page", "board", "bookmark"] as const).map((item) => <button aria-pressed={filter === item} className={filter === item ? "is-active" : ""} key={item} onClick={() => setFilter(item)}>{item === "all" ? <Trash2 size={14} /> : typeMeta(item).icon}<span>{t(item === "all" ? "trash.all" : item === "page" ? "trash.pages" : item === "board" ? "trash.boards" : "trash.bookmarks")}</span></button>)}</div>
           <span className="trash-toolbar__count">{t("trash.items", { count: items.length })}</span>
         </div>
         {items.length === 0 ? <div className="trash-empty"><span className="trash-empty__icon"><Trash2 size={24} /></span><div><strong>{t("trash.empty")}</strong><p>{t("trash.emptyBody")}</p></div></div> : (
@@ -53,7 +54,7 @@ export function TrashDialog(props: TrashDialogProps) {
             const meta = typeMeta(item.type);
             return <article className="trash-row" key={`${item.type}:${item.id}`}>
               <span className="trash-row__icon" aria-hidden="true">{meta.icon}</span>
-              <div className="trash-row__content"><strong>{item.title}</strong><span>{meta.label}{item.deletedAt ? ` · ${new Date(item.deletedAt).toLocaleString()}` : ""}</span></div>
+              <div className="trash-row__content"><strong>{item.title}</strong><span>{meta.label}{item.deletedAt ? ` · ${dateTime.format(new Date(item.deletedAt))}` : ""}</span></div>
               <div className="trash-row__actions"><Button size="small" icon={<ArchiveRestore size={14} />} onClick={() => void restore(item.type, item.id)}>{t("trash.restore")}</Button><Button size="small" variant="ghost" aria-label={t("generic.delete")} icon={<Trash2 size={14} />} onClick={() => void remove(item.type, item.id)} /></div>
             </article>;
           })}</div>

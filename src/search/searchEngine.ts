@@ -29,6 +29,13 @@ export interface BookmarkSearchResult extends SearchDocument {
   match: Record<string, string[]>;
 }
 
+const MAX_QUERY_LENGTH = 256;
+const MAX_RESULTS = 100;
+
+function normalizeSearchText(value: string): string {
+  return value.normalize("NFKC").toLocaleLowerCase();
+}
+
 export function createSearchDocuments(pages: Page[], boards: Board[], bookmarks: Bookmark[]): SearchDocument[] {
   const pageById = new Map(pages.map((page) => [page.id, page]));
   const boardById = new Map(boards.map((board) => [board.id, board]));
@@ -64,8 +71,8 @@ export class BookmarkSearchEngine {
       fuzzy: 0.35,
       combineWith: "AND",
     },
-    tokenize: (text) => text.toLocaleLowerCase().split(/[\s/._?&=#:-]+/u).filter(Boolean),
-    processTerm: (term) => term.toLocaleLowerCase(),
+    tokenize: (text) => normalizeSearchText(text).split(/[\s/._?&=#:-]+/u).filter(Boolean),
+    processTerm: normalizeSearchText,
   });
 
   public constructor(documents: SearchDocument[] = []) {
@@ -91,8 +98,8 @@ export class BookmarkSearchEngine {
   }
 
   public search(query: string, options: SearchQueryOptions): BookmarkSearchResult[] {
-    const normalized = query.trim().toLocaleLowerCase();
-    if (normalized.length === 0) return [];
+    const normalized = normalizeSearchText(query.trim());
+    if (normalized.length === 0 || normalized.length > MAX_QUERY_LENGTH) return [];
     const fieldNames = options.field === "title" ? ["title"] : options.field === "url" ? ["url", "hostname"] : undefined;
     const filter = (result: SearchResult): boolean => {
       const pageId = String(result.pageId ?? "");
@@ -109,7 +116,7 @@ export class BookmarkSearchEngine {
           ? ["url", "hostname"]
           : ["title", "url", "hostname", "description", "pageTitle", "boardTitle"];
       results = [...this.documents.values()]
-        .filter((document) => fields.some((field) => String(document[field as keyof SearchDocument]).toLocaleLowerCase().includes(normalized)))
+        .filter((document) => fields.some((field) => normalizeSearchText(String(document[field as keyof SearchDocument])).includes(normalized)))
         .map((document) => ({ ...document, score: 1, match: {}, terms: [], queryTerms: [] } as unknown as SearchResult))
         .filter(filter);
     } else {
@@ -122,7 +129,8 @@ export class BookmarkSearchEngine {
       });
     }
 
-    return results.slice(0, options.limit ?? 60).map((result) => ({
+    const limit = Math.min(MAX_RESULTS, Math.max(1, options.limit ?? 60));
+    return results.slice(0, limit).map((result) => ({
       id: result.id as string,
       title: String(result.title),
       url: String(result.url),

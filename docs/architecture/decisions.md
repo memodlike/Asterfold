@@ -78,7 +78,7 @@
 
 **Context:** Quick Save and import must work without browsing-history or page-content access.  
 **Options:** broad tabs/host permissions; narrow event-scoped access.  
-**Decision:** Required `activeTab`, `alarms`, `contextMenus`, `favicon`, `storage`; optional `bookmarks`, `identity`; no wildcard hosts/content scripts.  
+**Decision:** Required `activeTab`, `alarms`, `contextMenus`, `favicon`, `storage`; optional `bookmarks`; no `identity`, wildcard hosts or content scripts.
 **Security/privacy:** Reduces compromise impact and install warnings.  
 **References:** Chrome action, activeTab, permissions, favicon, commands, and contextMenus documentation.  
 **Validation:** manifest E2E and release permission scanner.
@@ -130,7 +130,7 @@
 ## ADR-012 — Cloud remains optional and local-first
 
 **Date:** 2026-07-17  
-**Status:** Accepted
+**Status:** Superseded by ADR-018
 
 **Context:** No Supabase credentials were supplied, but the specification calls for a real optional path.  
 **Options:** block local release; fake cloud UI; real disabled adapter.  
@@ -141,7 +141,7 @@
 ## ADR-013 — PKCE OAuth through `chrome.identity`
 
 **Date:** 2026-07-17  
-**Status:** Accepted
+**Status:** Superseded by ADR-018
 
 **Context:** An MV3 worker cannot safely keep a client secret.  
 **Options:** embedded secret; implicit redirect; Supabase PKCE browser flow.  
@@ -152,7 +152,7 @@
 ## ADR-014 — Idempotent outbox and monotonic conflicts
 
 **Date:** 2026-07-17  
-**Status:** Accepted
+**Status:** Superseded by ADR-018
 
 **Context:** Offline edits, retries, and duplicate delivery must converge.  
 **Options:** last request wins; timestamp wins; operation receipts plus versions/cursor.  
@@ -192,3 +192,12 @@
 **Decision:** Never ship a private key; instruct users to keep the same absolute release path. Validate/copy the production output, archive source/unpacked folders, and checksum both.  
 **Consequences:** Moving the unpacked folder may create a fresh extension identity.  
 **Validation:** E2E loads the final release copy and the release script scans manifest, assets, secrets, maps, and permissions.
+
+## ADR-018 — Cloud is not shipped in the default release
+
+**Date:** 2026-07-24
+**Status:** Accepted
+
+**Context:** The optional adapter lacked the complete live two-user/two-device release gate required for a production privacy claim.
+**Decision:** Remove the Supabase dependency, runtime, host/identity permission, messages, setup UI/docs and sync claims from 2.2.0. Retain legacy IndexedDB stores only so upgrades are lossless.
+**Consequences:** Default build has no application backend. A future cloud feature is a new reviewed product boundary, not a compile-time toggle.

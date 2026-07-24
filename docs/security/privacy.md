@@ -1,38 +1,31 @@
 # Privacy policy for Asterfold
 
-Version 2.1.2 — 23 July 2026
+Version 2.2.0 — 24 July 2026.
 
-Asterfold is a personal, local-first bookmark workspace. The default release has no account system, telemetry, analytics, advertising, affiliate tracking, payment code, or server endpoint.
+Asterfold is a local-first bookmark workspace. The default release has no account, cloud client, telemetry, analytics, advertising, affiliate tracking, payment code, application backend, content script, or host permission.
 
-## Data stored locally
+## Local data
 
-Asterfold stores only information needed for features the user invokes:
+IndexedDB stores Pages, Boards, bookmarks, order, settings, Trash timestamps, local snapshots and optional uploaded wallpaper assets. Legacy sync stores remain in the schema only to avoid deleting records during an update; no shipped code sends or processes them.
 
-- Pages, Boards, bookmarks, titles, saved URLs, descriptions, favicons references, and ordering;
-- appearance and behavior settings, recent local search queries, Trash timestamps, and bounded backup snapshots;
-- optional uploaded wallpaper blobs;
-- optional cloud identity/session and sync metadata only in a separately configured cloud build.
-
-Workspace records live in the extension's IndexedDB database. A cloud session, when enabled, uses isolated extension storage. Search runs in memory against local records.
-
-## Data not collected
-
-Asterfold does not collect or sell browsing history, page bodies, form contents, cookies, passwords, screenshots, clipboard history, advertising identifiers, usage analytics, or crash telemetry. It does not run on ordinary webpages.
+Search runs locally. JSON/HTML import preview runs in a local extension Worker. Export writes only the file explicitly requested by the user.
 
 ## Network behavior
 
-The default build has no host permission and no configured application backend. Opening a saved URL is an explicit browser navigation. Favicons are obtained through Chrome's own `_favicon` resource. Optional cloud code is disabled unless the owner supplies a Supabase HTTPS origin and publishable key and rebuilds the extension.
+The extension makes no application request in the default configuration. Chrome may fetch a destination when the user opens a bookmark and may resolve the browser-owned `_favicon` endpoint for a saved URL. Asterfold does not render or persist a remote favicon URL. Custom icons accept only bounded local raster data; SVG and remote URLs are rejected.
+
+AF-PRIV-E001 intercepts the extension context and asserts zero remote favicon requests. The final default-network capture is recorded separately in `docs/audit/EVIDENCE.md`; an unavailable capture is never described as zero.
+
+## Privacy Mode
+
+Privacy Mode removes real bookmark titles from rendered text, title/accessibility attributes and context labels, disables clipboard actions, and does not construct the local search index. It is visual shoulder-surfing protection, not encryption. IndexedDB remains readable to the local Chrome profile, operating system and anyone who controls them.
 
 ## User controls
 
-- Export a complete versioned JSON backup, Netscape bookmark HTML, or readable Markdown at any time.
-- Import is previewed before writes. Replace restore creates a safety snapshot first.
-- Delete records to recoverable Trash; restore or permanently delete them; configure 7/30/90-day or never-retain cleanup.
-- Privacy Mode masks saved titles/URLs/descriptions and disables search display. It is a shoulder-surfing protection, not database encryption.
-- Removing the extension and its site data deletes its local database. Export first if the records are needed.
+- Export a versioned JSON backup, Netscape HTML or Markdown.
+- Preview imports before writes; replace restore creates a local safety snapshot.
+- Restore from Trash or permanently delete records.
+- Configure bounded 7/30/90-day cleanup or never.
+- Remove extension site data to delete the local database. Export first if the records matter.
 
-## Optional cloud build
-
-The included Supabase adapter is opt-in and disabled in this release. When configured, its intended purpose is synchronization only. Row Level Security ties rows to the authenticated user, local IndexedDB remains the working source, and tombstones/outbox records support offline changes. The owner of that Supabase project controls its deployment and data-retention policy.
-
-Because this is a private local build, there is no operator receiving personal data and no support server to contact. The source and threat model are included for inspection.
+There is no cloud feature in version 2.2.0. Adding one later requires a separate threat model, live multi-user tests and an explicit privacy update.

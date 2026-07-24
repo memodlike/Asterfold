@@ -1,13 +1,11 @@
 # Asterfold versioning
 
-Asterfold uses the simple `MAJOR.MINOR.PATCH` format.
+Asterfold follows `MAJOR.MINOR.PATCH`.
 
-- **`2.0.0`** — a major redesign or a change that can affect the way people use the extension, data migration, or installation.
-- **`2.1.0`** — new useful features that do not break existing bookmarks or settings.
-- **`2.1.1`** — fixes that preserve existing bookmarks, settings, and workflows.
-- **`2.1.2`** — visual and usability fixes that preserve existing bookmarks, settings, and workflows.
-- **`2.1.3`** — localization and responsive-dialog fixes that preserve existing bookmarks, settings, and workflows.
+- `MAJOR`: incompatible product/data model step.
+- `MINOR`: compatible capability or substantial security/data hardening.
+- `PATCH`: compatible bug, visual or localization fix.
 
-The first number changes only for a genuinely large product step. The second changes when a new capability appears. The third changes for fixes.
+`2.2.0` is a minor release because it adds strict trust-boundary validation, lossless migration/backup guarantees, atomic self-rebalancing order, bounded wallpaper processing, renderer profiles, accessibility gates and deterministic release packaging while preserving Pages → Boards → Bookmarks, existing settings and all bookmark `openMode` values.
 
-The redesign is **2.0.0** because it replaced the main workspace, settings, visual system, release structure, and verification suite. Version **2.0.1** fixed the Chrome installation archive, **2.0.2** introduced the low-power renderer, and **2.0.3** fixed context-menu layering. Version **2.1.0** adds a multilingual interface and makes the standard bookmark click stay in the current tab. Version **2.1.1** makes context menus receive the active theme even though they render above the workspace, and replaces the blue extension fallback in the tab with a neutral Chrome-like document icon. Version **2.1.2** redesigns Search and Trash as responsive, theme-aware dialog surfaces. The current **2.1.3** routes every remaining dialog, fallback and accessibility label through the same language layer and makes settings controls accommodate long translated labels.
+Git tags and GitHub Releases use `v2.2.0`. Package and MV3 manifest use `2.2.0`.

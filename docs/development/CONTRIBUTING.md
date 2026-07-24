@@ -16,8 +16,8 @@ For installation and release work, also read `docs/release/install.md`, `docs/se
 
 - Asterfold is an original Chrome Manifest V3 extension, not a LumiList fork.
 - Keep the extension local-first and fully usable without an account, API key, or cloud service.
-- IndexedDB through Dexie is the source of truth. Chrome storage is reserved for optional auth state.
-- Optional Supabase sync must remain disabled unless explicitly configured.
+- IndexedDB through Dexie is the source of truth.
+- Cloud synchronization is not shipped in the default release.
 - Do not add remote code, analytics, wildcard host permissions, or broad browser permissions.
 - Preserve Pages → Boards → Bookmarks, Quick Save, search, drag-and-drop, import/export, Trash, Privacy Mode, and themes.
 - Never claim a feature is complete unless its real code path and validation exist.
@@ -30,7 +30,6 @@ For installation and release work, also read `docs/release/install.md`, `docs/se
 - `src/features/`: product workflows and UI components.
 - `src/search/`: local MiniSearch index and ranking.
 - `src/services/`: validated import/export formats.
-- `src/sync/` and `docs/optional-sync/`: optional, disabled cloud adapter and RLS migration.
 - `tests/`: unit/integration coverage using Vitest and fake IndexedDB.
 - `e2e/`: serial Chromium tests loading the actual unpacked extension.
 - `scripts/release.mjs`: deterministic release creation and manifest/security validation.

@@ -1,9 +1,11 @@
 import type { Transaction } from "dexie";
-import type { AppSettings, Board, Bookmark, SyncState } from "../domain/models";
+import type { AppSettings, Board, SyncState } from "../domain/models";
 import { getThemePreset } from "../domain/themes";
 import { createId, nowIso } from "../utils/ids";
 
 const V2_DB_SCHEMA_VERSION = 2;
+const V3_DB_SCHEMA_VERSION = 3;
+const V4_DB_SCHEMA_VERSION = 4;
 export const CURRENT_DB_SCHEMA_VERSION = 5;
 
 export const V1_STORES = {
@@ -85,7 +87,7 @@ export async function migrateToV3(transaction: Transaction): Promise<void> {
     await settingsTable.put({
       ...current,
       id: "app",
-      schemaVersion: CURRENT_DB_SCHEMA_VERSION,
+      schemaVersion: V3_DB_SCHEMA_VERSION,
       locale: current.locale ?? "auto",
       workspaceLayoutMode: current.workspaceLayoutMode ?? "auto",
       workspaceRows: current.workspaceRows === 1 ? 1 : 2,
@@ -102,11 +104,12 @@ export async function migrateToV3(transaction: Transaction): Promise<void> {
 
   const boardsTable = transaction.table<V2Board, string>("boards");
   await boardsTable.toCollection().modify((board) => {
-    board.bookmarkColumns ??= board.layout === "grid" ? 2 : "auto";
-    board.gridColumn ??= 1;
-    board.gridRow ??= 0;
-    board.gridSpan ??= board.layout === "grid" ? 4 : 3;
-    board.updatedAt = timestamp;
+    let changed = false;
+    if (board.bookmarkColumns === undefined) { board.bookmarkColumns = board.layout === "grid" ? 2 : "auto"; changed = true; }
+    if (board.gridColumn === undefined) { board.gridColumn = 1; changed = true; }
+    if (board.gridRow === undefined) { board.gridRow = 0; changed = true; }
+    if (board.gridSpan === undefined) { board.gridSpan = board.layout === "grid" ? 4 : 3; changed = true; }
+    if (changed) board.updatedAt = timestamp;
   });
 }
 
@@ -118,7 +121,7 @@ export async function migrateToV4(transaction: Transaction): Promise<void> {
   await settingsTable.put({
     ...current,
     id: "app",
-    schemaVersion: CURRENT_DB_SCHEMA_VERSION,
+    schemaVersion: V4_DB_SCHEMA_VERSION,
     theme: {
       ...fallbackTheme,
       ...current.theme,
@@ -132,16 +135,9 @@ export async function migrateToV4(transaction: Transaction): Promise<void> {
 }
 
 export async function migrateToV5(transaction: Transaction): Promise<void> {
-  const timestamp = nowIso();
   const settingsTable = transaction.table<V2Settings, string>("settings");
   const current = await settingsTable.get("app");
-  if (current) await settingsTable.put({ ...current, id: "app", schemaVersion: CURRENT_DB_SCHEMA_VERSION, updatedAt: timestamp });
-
-  const bookmarksTable = transaction.table<Bookmark, string>("bookmarks");
-  await bookmarksTable.toCollection().modify((bookmark) => {
-    if (bookmark.openMode !== "new-tab") return;
-    bookmark.openMode = "current";
-    bookmark.updatedAt = timestamp;
-    bookmark.version += 1;
-  });
+  if (current && current.schemaVersion !== CURRENT_DB_SCHEMA_VERSION) {
+    await settingsTable.put({ ...current, id: "app", schemaVersion: CURRENT_DB_SCHEMA_VERSION, updatedAt: nowIso() });
+  }
 }

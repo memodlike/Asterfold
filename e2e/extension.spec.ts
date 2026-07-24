@@ -2,6 +2,7 @@ import { existsSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { chromium, expect, test, type BrowserContext, type Page, type Worker } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 const extensionPath = resolve(process.env.ASTERFOLD_EXTENSION_PATH ?? ".output/chrome-mv3");
 const screenshotPath = resolve(process.env.ASTERFOLD_SCREENSHOT_PATH ?? "docs/images");
@@ -143,8 +144,95 @@ test.describe.serial("Asterfold MV3 release", () => {
     expect(probe.manifest.host_permissions ?? []).toEqual([]);
   });
 
+  test("has no serious accessibility violations and honors reduced motion", async () => {
+    const page = await context.newPage();
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(`chrome-extension://${extensionId}/newtab.html`);
+    await expect(page.locator(".app-shell")).toBeVisible();
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations.filter((violation) => violation.impact === "serious" || violation.impact === "critical")).toEqual([]);
+    const reducedDuration = await page.locator(".board").first().evaluate((board) => Number.parseFloat(getComputedStyle(board).transitionDuration));
+    expect(reducedDuration).toBeLessThanOrEqual(0.00001);
+    await page.close();
+  });
+
+  test("loads all selectable locales without application network requests", async () => {
+    const page = await context.newPage();
+    const externalRequests: string[] = [];
+    page.on("request", (request) => {
+      if (/^https?:/iu.test(request.url())) externalRequests.push(request.url());
+    });
+    await page.goto(`chrome-extension://${extensionId}/newtab.html`);
+    const expectedTitles = {
+      de: "Neuer Tab", en: "New Tab", es: "Nueva pestaña", fr: "Nouvel onglet", it: "Nuova scheda",
+      kk: "Жаңа қойынды", nl: "Nieuw tabblad", pl: "Nowa karta", pt: "Novo separador", ru: "Новая вкладка",
+      tr: "Yeni sekme", uk: "Нова вкладка",
+    } as const;
+    for (const [locale, title] of Object.entries(expectedTitles)) {
+      await setWorkspaceLocale(page, locale);
+      await page.reload();
+      await expect(page).toHaveTitle(title);
+      await expect(page.locator(".app-shell")).toBeVisible();
+    }
+    expect(externalRequests).toEqual([]);
+    await setWorkspaceLocale(page, "en");
+    await page.close();
+  });
+
+  test("revalidates navigation messages in the background", async () => {
+    const page = await context.newPage();
+    await page.goto(`chrome-extension://${extensionId}/newtab.html`);
+    for (const url of [
+      "javascript:alert(1)",
+      "data:text/html,unsafe",
+      "https://user@example.com/private",
+      "https://%75ser@example.com/private",
+    ]) {
+      const response = JSON.parse(await page.evaluate(async (unsafeUrl) => JSON.stringify(await chrome.runtime.sendMessage({
+        type: "OPEN_URL",
+        url: unsafeUrl,
+        mode: "new-tab",
+      })), url)) as unknown;
+      expect(response).toEqual({ ok: false, code: "UNSAFE_URL" });
+    }
+
+    const newTabPromise = context.waitForEvent("page");
+    const success = JSON.parse(await page.evaluate(async () => JSON.stringify(await chrome.runtime.sendMessage({
+      type: "OPEN_URL",
+      url: "https://example.com/#asterfold-new-tab",
+      mode: "new-tab",
+    })))) as unknown;
+    expect(success).toEqual({ ok: true });
+    const opened = await newTabPromise;
+    await expect(opened).toHaveURL(/https:\/\/example\.com\/#asterfold-new-tab/u);
+    await opened.close();
+
+    const newWindowPagePromise = context.waitForEvent("page");
+    const newWindow = JSON.parse(await page.evaluate(async () => JSON.stringify(await chrome.runtime.sendMessage({
+      type: "OPEN_URL",
+      url: "https://example.com/#asterfold-new-window",
+      mode: "new-window",
+    })))) as unknown;
+    expect(newWindow).toEqual({ ok: true });
+    const openedWindowPage = await newWindowPagePromise;
+    await expect(openedWindowPage).toHaveURL(/https:\/\/example\.com\/#asterfold-new-window/u);
+    await openedWindowPage.close();
+
+    const incognito = JSON.parse(await page.evaluate(async () => JSON.stringify(await chrome.runtime.sendMessage({
+      type: "OPEN_URL",
+      url: "https://example.com/",
+      mode: "incognito",
+    })))) as unknown;
+    expect(incognito).toEqual({ ok: false, code: "INCOGNITO_UNAVAILABLE" });
+    await page.close();
+  });
+
   test("persists core flows and fits 100 bookmarks without desktop scroll", async () => {
     const page = await context.newPage();
+    const unexpectedFaviconRequests: string[] = [];
+    page.on("request", (request) => {
+      if (request.url().includes("tracker.invalid")) unexpectedFaviconRequests.push(request.url());
+    });
     page.on("pageerror", (error) => runtimeErrors.push(`newtab: ${error.message}`));
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/newtab.html`);
@@ -158,7 +246,7 @@ test.describe.serial("Asterfold MV3 release", () => {
 
     await openLauncher(page);
     await page.getByRole("menuitem", { name: "Страницы" }).click();
-    await page.getByRole("button", { name: "Создать страницу" }).click();
+    await page.getByRole("menuitem", { name: "Создать страницу" }).click();
     let dialog = page.getByRole("dialog");
     await dialog.getByLabel("Название").fill("Research");
     await dialog.getByRole("button", { name: "Создать" }).click();
@@ -174,6 +262,57 @@ test.describe.serial("Asterfold MV3 release", () => {
     await dialog.getByLabel("Описание").fill("Extension testing reference");
     await dialog.getByRole("button", { name: "Сохранить" }).click();
     await expect(page.getByText("Playwright docs", { exact: true })).toBeVisible();
+
+    await page.evaluate(async () => {
+      const request = indexedDB.open("asterfold");
+      const database = await new Promise<IDBDatabase>((resolvePromise, reject) => {
+        request.onsuccess = () => resolvePromise(request.result);
+        request.onerror = () => reject(request.error ?? new Error("Unable to open IndexedDB"));
+      });
+      const transaction = database.transaction("bookmarks", "readwrite");
+      const store = transaction.objectStore("bookmarks");
+      const bookmarks = await new Promise<Array<Record<string, unknown>>>((resolvePromise, reject) => {
+        const getAll = store.getAll();
+        getAll.onsuccess = () => resolvePromise(getAll.result as Array<Record<string, unknown>>);
+        getAll.onerror = () => reject(getAll.error ?? new Error("Unable to read bookmarks"));
+      });
+      const bookmark = bookmarks.find((item) => item.title === "Playwright docs");
+      if (!bookmark) throw new Error("Seed bookmark is missing");
+      store.put({ ...bookmark, url: "javascript:alert(1)", normalizedUrl: "javascript:alert(1)", faviconUrl: "https://tracker.invalid/favicon.ico", customIcon: "https://tracker.invalid/custom.svg" });
+      await new Promise<void>((resolvePromise, reject) => {
+        transaction.oncomplete = () => resolvePromise();
+        transaction.onerror = () => reject(transaction.error ?? new Error("Unable to poison bookmark fixture"));
+      });
+      database.close();
+    });
+    await page.reload();
+    await expect(page.getByText("Playwright docs", { exact: true })).toBeVisible();
+    expect(unexpectedFaviconRequests).toEqual([]);
+    await page.getByRole("button", { name: "Playwright docs" }).click();
+    await expect(page).toHaveURL(new RegExp(`^chrome-extension://${extensionId}/newtab\\.html`, "u"));
+    await expect(page.getByText("Небезопасная ссылка заблокирована", { exact: true })).toBeVisible();
+    await page.evaluate(async () => {
+      const request = indexedDB.open("asterfold");
+      const database = await new Promise<IDBDatabase>((resolvePromise, reject) => {
+        request.onsuccess = () => resolvePromise(request.result);
+        request.onerror = () => reject(request.error ?? new Error("Unable to open IndexedDB"));
+      });
+      const transaction = database.transaction("bookmarks", "readwrite");
+      const store = transaction.objectStore("bookmarks");
+      const bookmarks = await new Promise<Array<Record<string, unknown>>>((resolvePromise, reject) => {
+        const getAll = store.getAll();
+        getAll.onsuccess = () => resolvePromise(getAll.result as Array<Record<string, unknown>>);
+        getAll.onerror = () => reject(getAll.error ?? new Error("Unable to read bookmarks"));
+      });
+      const bookmark = bookmarks.find((item) => item.title === "Playwright docs");
+      if (!bookmark) throw new Error("Seed bookmark is missing");
+      store.put({ ...bookmark, url: "https://playwright.dev/docs/chrome-extensions", normalizedUrl: "https://playwright.dev/docs/chrome-extensions" });
+      await new Promise<void>((resolvePromise, reject) => {
+        transaction.oncomplete = () => resolvePromise();
+        transaction.onerror = () => reject(transaction.error ?? new Error("Unable to restore bookmark fixture"));
+      });
+      database.close();
+    });
 
     await openLauncher(page);
     await page.getByRole("menuitem", { name: "Новый блок" }).click();
@@ -202,7 +341,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     expect(sourceMenuBounds.right).toBeLessThanOrEqual(1440 - 8);
     expect(sourceMenuBounds.bottom).toBeLessThanOrEqual(900 - 8);
     if (captureScreenshots) await page.screenshot({ path: join(screenshotPath, "context-menu-light.png") });
-    await page.getByRole("button", { name: "Переместить", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Переместить", exact: true }).click();
     dialog = page.getByRole("dialog");
     await dialog.getByLabel("Назначение").selectOption({ label: "Later" });
     await dialog.getByRole("button", { name: "Переместить", exact: true }).click();
@@ -216,12 +355,21 @@ test.describe.serial("Asterfold MV3 release", () => {
     await expect(dialog.locator(".search-state")).toHaveCSS("border-radius", "17px");
     if (captureScreenshots) { await page.waitForTimeout(220); await page.screenshot({ path: join(screenshotPath, "search-empty.png") }); }
     await dialog.getByPlaceholder(/Название, URL/u).fill("playwrite");
-    await expect(dialog.getByRole("option", { name: /Playwright docs/u })).toBeVisible();
+    await expect(dialog.getByRole("button", { name: /Playwright docs/u })).toBeVisible();
     await page.keyboard.press("Escape");
 
     await openLauncher(page);
     await page.getByRole("menuitem", { name: "Включить приватность" }).click();
     await expect(page.locator(".app-shell")).toHaveClass(/privacy-mode/u);
+    await expect(page.getByText("Playwright docs", { exact: true })).toHaveCount(0);
+    await expect(page.locator('[title*="Playwright docs"]')).toHaveCount(0);
+    const privateBookmark = page.getByRole("button", { name: "Открыть скрытую закладку" }).first();
+    await expect(privateBookmark).toBeVisible();
+    await privateBookmark.click({ button: "right" });
+    await expect(page.getByRole("menu", { name: "Действия скрытой закладки" })).toBeVisible();
+    await expect(page.getByRole("menuitem", { name: "Копировать URL" })).toBeDisabled();
+    await expect(page.getByRole("menuitem", { name: "Копировать Markdown" })).toBeDisabled();
+    await page.keyboard.press("Escape");
     await openLauncher(page);
     await page.getByRole("menuitem", { name: "Выключить приватность" }).click();
 
@@ -246,7 +394,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await dialog.getByRole("button", { name: "Закрыть" }).click();
 
     await page.getByRole("button", { name: "Playwright docs" }).click({ button: "right" });
-    await page.getByRole("button", { name: "В корзину" }).click();
+    await page.getByRole("menuitem", { name: "В корзину" }).click();
     await openLauncher(page);
     await page.getByRole("menuitem", { name: "Корзина" }).click();
     dialog = page.getByRole("dialog");

@@ -29,8 +29,8 @@ export function SearchPalette(props: SearchPaletteProps) {
   const [scope, setScope] = useState<"all" | "page">("all");
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const engine = useMemo(() => new BookmarkSearchEngine(createSearchDocuments(props.pages, props.boards, props.bookmarks)), [props.boards, props.bookmarks, props.pages]);
-  const results = useMemo(() => props.privacy ? [] : engine.search(query, { mode, field, ...(scope === "page" ? { pageId: props.activePageId } : {}), limit: 40 }), [engine, field, mode, props.activePageId, props.privacy, query, scope]);
+  const engine = useMemo(() => props.privacy ? null : new BookmarkSearchEngine(createSearchDocuments(props.pages, props.boards, props.bookmarks)), [props.boards, props.bookmarks, props.pages, props.privacy]);
+  const results = useMemo(() => engine?.search(query, { mode, field, ...(scope === "page" ? { pageId: props.activePageId } : {}), limit: 40 }) ?? [], [engine, field, mode, props.activePageId, query, scope]);
   const bookmarkById = useMemo(() => new Map(props.bookmarks.map((bookmark) => [bookmark.id, bookmark])), [props.bookmarks]);
 
   useEffect(() => {
@@ -57,7 +57,7 @@ export function SearchPalette(props: SearchPaletteProps) {
       <div className="search-palette" onKeyDown={(event) => {
         if (event.key === "ArrowDown") { event.preventDefault(); setActiveIndex((current) => Math.min(results.length - 1, current + 1)); }
         if (event.key === "ArrowUp") { event.preventDefault(); setActiveIndex((current) => Math.max(0, current - 1)); }
-        if (event.key === "Enter") { event.preventDefault(); activate(); }
+        if (event.key === "Enter" && !event.nativeEvent.isComposing) { event.preventDefault(); activate(); }
       }}>
         <div className="search-palette__input"><Search size={20} /><input ref={inputRef} disabled={props.privacy} value={props.privacy ? t("search.protected") : query} onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }} placeholder={t("search.placeholder")} /><kbd>⌘ K</kbd></div>
         <div className="search-palette__filters">
@@ -68,13 +68,13 @@ export function SearchPalette(props: SearchPaletteProps) {
         {props.privacy ? <div className="search-state search-private"><span className="search-state__icon"><ShieldCheck size={22} /></span><div><strong>{t("search.privateTitle")}</strong><span>{t("search.privateBody")}</span></div></div> : null}
         {!props.privacy && query && results.length === 0 ? <div className="search-state search-empty"><span className="search-state__icon"><Search size={22} /></span><div><strong>{t("search.noMatches")}</strong></div></div> : null}
         {!props.privacy && !query ? <div className="search-state search-empty"><span className="search-state__icon"><Search size={22} /></span><div><strong>{t("search.start")}</strong><span>{t("search.placeholder")}</span></div></div> : null}
-        <div className="search-results" role="listbox" aria-label={t("search.results")}>
+        <div className="search-results" role="list" aria-label={t("search.results")}>
           {results.map((result, index) => {
             const bookmark = bookmarkById.get(result.id);
             if (!bookmark) return null;
             return (
-              <div key={result.id} role="option" aria-selected={index === activeIndex} className={`search-result ${index === activeIndex ? "is-active" : ""}`} onMouseEnter={() => setActiveIndex(index)}>
-                <button className="search-result__main" onClick={() => { props.onOpen(bookmark); close(); }}><span className="result-monogram">{result.hostname[0]?.toUpperCase()}</span><span><strong>{result.title}</strong><small>{result.hostname} · {result.pageTitle} / {result.boardTitle}</small><em>{result.description}</em></span></button>
+              <div key={result.id} role="listitem" className={`search-result ${index === activeIndex ? "is-active" : ""}`} onMouseEnter={() => setActiveIndex(index)}>
+                <button aria-current={index === activeIndex ? "true" : undefined} className="search-result__main" onClick={() => { props.onOpen(bookmark); close(); }}><span className="result-monogram">{result.hostname[0]?.toUpperCase()}</span><span><strong>{result.title}</strong><small>{result.hostname} · {result.pageTitle} / {result.boardTitle}</small><em>{result.description}</em></span></button>
                 <div className="search-result__actions">
                   <button aria-label={t("search.reveal")} onClick={() => { props.onReveal(bookmark, result.pageId); close(); }}><ExternalLink size={14} /></button>
                   <button aria-label={t("bookmark.edit")} onClick={() => { props.onEdit(bookmark); close(); }}><Edit3 size={14} /></button>
