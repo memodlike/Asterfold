@@ -390,7 +390,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await dialog.getByRole("button", { name: "Данные и приватность" }).click();
     const downloadPromise = page.waitForEvent("download");
     await dialog.getByRole("button", { name: /Резервная копия JSON/u }).click();
-    expect((await downloadPromise).suggestedFilename()).toMatch(/^asterfold-backup-v2-\d{4}-\d{2}-\d{2}\.json$/u);
+    expect((await downloadPromise).suggestedFilename()).toMatch(/^asterfold-backup-v3-\d{4}-\d{2}-\d{2}\.json$/u);
     await dialog.getByRole("button", { name: "Закрыть" }).click();
 
     await page.getByRole("button", { name: "Playwright docs" }).click({ button: "right" });
