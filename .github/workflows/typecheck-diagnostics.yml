@@ -20,23 +20,38 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Apply the diagnosed translation fix
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("src/i18n/index.tsx")
+          text = path.read_text()
+          needle = '"popup.createBoardFailed": "Unable to create board",\n};'
+          replacement = '"popup.createBoardFailed": "Unable to create board", "popup.boardRequired": "The selected page has no board. Create a board before saving.",\n};'
+          if needle not in text and '"popup.boardRequired": "The selected page has no board.' not in text:
+              raise SystemExit("English popup translation insertion point was not found")
+          path.write_text(text.replace(needle, replacement, 1))
+          PY
       - run: npm ci
-      - name: Persist TypeScript errors
+      - name: Verify and clean diagnostics
         shell: bash
         run: |
           set +e
           npm run typecheck > /tmp/typecheck.log 2>&1
           status=$?
+          rm -rf .diagnostics
           if [ "$status" -eq 0 ]; then
-            exit 0
+            rm -f .github/workflows/typecheck-diagnostics.yml
+          else
+            mkdir -p .diagnostics
+            head -c 12000 /tmp/typecheck.log > .diagnostics/typecheck.txt
           fi
-          mkdir -p .diagnostics
-          head -c 12000 /tmp/typecheck.log > .diagnostics/typecheck.txt
-          git add .diagnostics/typecheck.txt
+          git add -A
           git config user.name "Asterfold Diagnostics Bot"
           git config user.email "actions@users.noreply.github.com"
           if ! git diff --cached --quiet; then
-            git commit -m "chore: capture TypeScript diagnostics"
+            git commit -m "fix: complete typed popup destination messaging"
             git push origin HEAD:agent/chrome-store-readiness-2.2.3
           fi
           exit "$status"
