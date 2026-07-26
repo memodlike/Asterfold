@@ -1,18 +1,18 @@
-# Asterfold 2.2.0
+# Asterfold 2.2.1 — Chrome Web Store readiness
 
-Production-hardening release для локальной новой вкладки Chrome. Дизайн и структура Pages → Boards → Bookmarks сохранены.
+Patch-релиз для подготовки local-first новой вкладки Chrome к отправке на проверку Chrome Web Store. Дизайн и структура Pages → Boards → Bookmarks сохранены.
 
 ## Что изменилось
 
-- 🔒 Ссылки и runtime messages проверяются до сохранения и повторно перед Chrome navigation.
-- 🧳 Миграции v1–v5 и backup v1/v2 сохраняют закладки, порядок, настройки и `openMode`.
-- ↕️ Порядок блоков/закладок атомарный и автоматически восстанавливает плотные/повреждённые ranks.
-- 🖼️ Обои проходят MIME/decode/pixel/size/quota limits, уменьшаются и очищаются без orphan blobs.
-- 🪶 Balanced и Low Power уменьшают GPU-стоимость без отключения функций.
-- ♿ Меню, launcher, поиск, диалоги, Trash и toast получили keyboard/focus/axe gates.
-- ☁️ Незавершённый cloud-клиент удалён из default release; данных наружу он не отправляет.
-- 📦 Архивы создаются без внешнего `zip`, с одинаковыми timestamp/order/permissions и SHA-256.
-- ✳️ Folded Asterisk унифицирован в manifest, popup, launcher и adaptive New Tab favicon.
+- 🔐 Удалено неиспользуемое разрешение `storage`; данные по-прежнему хранятся локально в IndexedDB.
+- 🧳 Версия приложения берётся из одного источника; backup v3 сохраняет активные пользовательские обои и продолжает принимать backup v1/v2.
+- 🖼️ Данные обоев в backup ограничены по типу и размеру и проверяются до атомарного восстановления.
+- 📄 Обновлены Privacy Policy, Privacy Practices, permission rationale и чек-лист отправки.
+- 🛍️ Добавлены реальные Store-скриншоты, иконка, promo tile, marquee и листинги EN/RU.
+- ✅ Добавлены автоматические проверки размеров Store assets, разрешений Manifest V3, версии, remote code и воспроизводимости архивов.
+- 📦 Store-материалы собираются отдельно и не попадают в ZIP расширения.
+
+**Ready for submission to Chrome Web Store.** Это не означает, что расширение уже отправлено, одобрено или опубликовано.
 
 ## Установка
 
@@ -27,3 +27,12 @@ Production-hardening release для локальной новой вкладки
 ## Проверка
 
 Текущие команды, окружение, test IDs, SHA-256 и оставшиеся риски публикуются в `docs/audit/EVIDENCE.md` и `docs/audit/FINDINGS_STATUS.md`. Не используйте GitHub **Source code (zip)** как установочный архив.
+
+## Chrome Web Store documentation
+
+The repository contains a privacy policy, Privacy Practices answers, localized listing copy and an owner submission checklist. These materials describe readiness work only; they do not claim that Chrome Web Store review or publication has occurred.
+
+- [Privacy policy](../security/privacy.md)
+- [Privacy Practices answers](../store/privacy-practices.md)
+- [Submission checklist](../store/submission-checklist.md)
+- [Store listing values](../../store-assets/listing/submission-values.md)

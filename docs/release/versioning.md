@@ -8,4 +8,6 @@ Asterfold follows `MAJOR.MINOR.PATCH`.
 
 `2.2.0` is a minor release because it adds strict trust-boundary validation, lossless migration/backup guarantees, atomic self-rebalancing order, bounded wallpaper processing, renderer profiles, accessibility gates and deterministic release packaging while preserving Pages → Boards → Bookmarks, existing settings and all bookmark `openMode` values.
 
-Git tags and GitHub Releases use `v2.2.0`. Package and MV3 manifest use `2.2.0`.
+`2.2.1` is a patch release because it preserves the 2.2 product and data model while removing one unused permission, completing wallpaper-aware backup v3, and adding Chrome Web Store submission materials and validation.
+
+Git tags and GitHub Releases use a `v` prefix, for example `v2.2.1`. Package and MV3 manifest use the numeric version, for example `2.2.1`.
