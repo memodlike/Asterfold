@@ -295,18 +295,19 @@ are absent from the default release.
 Environment: macOS 26.5.2 (25F84), Node 26.5.0, npm 11.17.0, Google Chrome
 150.0.7871.187, WXT 0.20.27, Vite 7.3.6 and TypeScript 5.9.3. The clean local
 gate ran on 26 July 2026 from branch `codex/final-hardening-v2.2.2` after commit
-`b5b8145`.
+`6df18da`.
 
 | Test ID | Command | Exit | Key output |
 | --- | --- | ---: | --- |
 | AF-222-I001 | `npm run clean && npm ci` | 0 | 642 packages installed from lockfile; WXT types generated; npm reported 19 high development-tool advisories |
 | AF-222-S001 | `npm run typecheck` | 0 | `tsc --noEmit` with `noUnusedLocals` and `noUnusedParameters` |
 | AF-222-S002 | `npm run lint` | 0 | ESLint completed with zero warnings, including `scripts/**/*.mjs` |
-| AF-222-U001 | `npm run test:coverage` | 0 | 19 files, 129/129 tests in 14.34 s |
+| AF-222-U001 | `npm run test:coverage` | 0 | 19 files, 129/129 tests in 31.07 s; resource-heavy suites run serially to remove coverage-run timeout flakes without changing assertions |
 | AF-222-COV001 | `npm run test:coverage` | 0 | Full source: 57.79% lines, 41.98% functions, 46.03% branches, 52.28% statements; stricter critical-module gates pass |
 | AF-222-B001 | `npm run build` | 0 | Chrome MV3 2.2.2, 1.18 MB reported by WXT |
 | AF-222-R001 | `npm run release:repro` | 0 | Store validation passed (14 files, 5 screenshots); two release generations were byte-identical |
-| AF-222-E001 | `npm run test:e2e` | 0 | 5/5 in 46.4 s: least privilege, axe/reduced motion, 12 locales/zero app network, privileged URL validation, persistence/core flows/100 bookmarks |
+| AF-222-E001 | `npm run test:e2e` | 0 | 5/5 in 25.4 s: least privilege, axe/reduced motion, 12 locales/zero app network, privileged URL validation, persistence/core flows/100 bookmarks |
+| AF-222-ALARM001 | `npx vitest run tests/manifestPolicy.test.ts` | 0 | Regression first failed on the 3-second alarm, then passed after the badge-clear schedule was raised to Chrome's 30-second minimum |
 | AF-222-A001 | `npm run audit:production` | 0 | 0 production vulnerabilities |
 | AF-222-A002 | `npm audit --json` | 1 | 19 high development-tool advisories, 0 critical; the full audit is not called clean |
 | AF-222-Z001 | `unzip -p release/Asterfold-Chrome.zip manifest.json` | 0 | MV3, version 2.2.2, exact permissions, no host permissions/content scripts |
