@@ -3,6 +3,7 @@ import { browser } from "wxt/browser";
 import { AlertTriangle, Check, ExternalLink, FolderPlus, Settings, Sparkles } from "lucide-react";
 import { createBoard, createBookmark, findDuplicate, updateSettings } from "../../src/db/repository";
 import type { Bookmark } from "../../src/domain/models";
+import { resolveQuickSaveDestination } from "../../src/domain/quickSave";
 import { DuplicateError } from "../../src/domain/errors";
 import { faviconUrl, openWorkspace } from "../../src/browser/api";
 import { Logo } from "../../src/components/Logo";
@@ -47,10 +48,9 @@ export function PopupApp() {
 
   useEffect(() => {
     if (!workspace || pageId) return;
-    const initialPage = workspace.settings.quickSaveLastPageId ?? workspace.settings.quickSaveDefaultPageId ?? workspace.pages[0]?.id ?? "";
-    const initialBoard = workspace.settings.quickSaveLastBoardId ?? workspace.settings.quickSaveDefaultBoardId ?? workspace.boards.find((board) => board.pageId === initialPage)?.id ?? "";
-    setPageId(initialPage);
-    setBoardId(initialBoard);
+    const destination = resolveQuickSaveDestination(workspace.settings, workspace.pages, workspace.boards, "last");
+    setPageId(destination?.pageId ?? "");
+    setBoardId(destination?.boardId ?? "");
   }, [pageId, workspace]);
 
   useEffect(() => {

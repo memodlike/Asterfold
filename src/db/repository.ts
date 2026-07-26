@@ -507,6 +507,39 @@ export async function updateBoard(
   });
 }
 
+export async function swapBoardGridPlacement(
+  firstId: string,
+  secondId: string,
+  database: AsterfoldDatabase = db,
+): Promise<void> {
+  if (firstId === secondId) return;
+  await database.transaction("rw", database.boards, async () => {
+    const [first, second] = await database.boards.bulkGet([firstId, secondId]);
+    if (!first || !second || first.deletedAt !== null || second.deletedAt !== null || first.pageId !== second.pageId) {
+      throw new ValidationError("Boards for grid swap were not found on the same Page");
+    }
+    const timestamp = nowIso();
+    await database.boards.bulkPut([
+      {
+        ...first,
+        gridColumn: second.gridColumn,
+        gridRow: second.gridRow,
+        gridSpan: second.gridSpan,
+        updatedAt: timestamp,
+        version: first.version + 1,
+      },
+      {
+        ...second,
+        gridColumn: first.gridColumn,
+        gridRow: first.gridRow,
+        gridSpan: first.gridSpan,
+        updatedAt: timestamp,
+        version: second.version + 1,
+      },
+    ]);
+  });
+}
+
 export async function moveBoardToIndex(
   id: string,
   targetPageId: string,
@@ -765,6 +798,30 @@ export async function restoreBookmark(id: string, database: AsterfoldDatabase = 
   });
 }
 
+export async function bulkRestoreBookmarks(ids: readonly string[], database: AsterfoldDatabase = db): Promise<void> {
+  const uniqueIds = [...new Set(ids)];
+  if (uniqueIds.length === 0) return;
+  await database.transaction("rw", database.boards, database.bookmarks, async () => {
+    const bookmarks = await database.bookmarks.where("id").anyOf(uniqueIds).toArray();
+    if (bookmarks.length !== uniqueIds.length || bookmarks.some((bookmark) => bookmark.deletedAt === null)) {
+      throw new ValidationError("One or more deleted bookmarks were not found");
+    }
+    const boardIds = [...new Set(bookmarks.map((bookmark) => bookmark.boardId))];
+    const boards = await database.boards.where("id").anyOf(boardIds).toArray();
+    if (boards.length !== boardIds.length || boards.some((board) => board.deletedAt !== null)) {
+      throw new ValidationError("Restore the parent Board first");
+    }
+    const timestamp = nowIso();
+    await database.bookmarks.bulkPut(bookmarks.map((bookmark) => ({
+      ...bookmark,
+      deletedAt: null,
+      deletedBatchId: null,
+      updatedAt: timestamp,
+      version: bookmark.version + 1,
+    })));
+  });
+}
+
 export async function bulkMoveBookmarks(ids: string[], boardId: string, database: AsterfoldDatabase = db): Promise<void> {
   const uniqueIds = [...new Set(ids)];
   if (uniqueIds.length === 0) return;
@@ -780,12 +837,18 @@ export async function bulkMoveBookmarks(ids: string[], boardId: string, database
     const orderedSelection = sortByPosition(selected);
     const moved = moveMany([...targetItems, ...orderedSelection], orderedSelection.map((bookmark) => bookmark.id), targetItems.length);
     const timestamp = nowIso();
-    await database.bookmarks.bulkPut(moved.map((bookmark) => ({
-      ...bookmark,
-      boardId: selectedIds.has(bookmark.id) ? boardId : bookmark.boardId,
-      updatedAt: selectedIds.has(bookmark.id) ? timestamp : bookmark.updatedAt,
-      version: selectedIds.has(bookmark.id) ? bookmark.version + 1 : bookmark.version,
-    })));
+    const originals = new Map([...targetItems, ...selected].map((bookmark) => [bookmark.id, bookmark]));
+    await database.bookmarks.bulkPut(moved.map((bookmark) => {
+      const original = originals.get(bookmark.id)!;
+      const nextBoardId = selectedIds.has(bookmark.id) ? boardId : bookmark.boardId;
+      const changed = original.position !== bookmark.position || original.boardId !== nextBoardId;
+      return {
+        ...bookmark,
+        boardId: nextBoardId,
+        updatedAt: changed ? timestamp : bookmark.updatedAt,
+        version: changed ? bookmark.version + 1 : bookmark.version,
+      };
+    }));
   });
 }
 

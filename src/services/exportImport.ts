@@ -143,6 +143,32 @@ export async function createBackup(
   });
 }
 
+export async function createSelectionBackup(
+  bookmarkIds: readonly string[],
+  database: AsterfoldDatabase = db,
+): Promise<AsterfoldBackup> {
+  await ensureStarterWorkspace(database);
+  const ids = [...new Set(bookmarkIds)];
+  if (ids.length === 0) throw new ImportError("Select at least one bookmark to export");
+  const bookmarks = await database.bookmarks.where("id").anyOf(ids).toArray();
+  if (bookmarks.length !== ids.length) throw new ImportError("One or more selected bookmarks are unavailable");
+  const boardIds = new Set(bookmarks.map((bookmark) => bookmark.boardId));
+  const boards = await database.boards.where("id").anyOf([...boardIds]).toArray();
+  if (boards.length !== boardIds.size) throw new ImportError("A selected bookmark has no parent Board");
+  const pageIds = new Set(boards.map((board) => board.pageId));
+  const pages = await database.pages.where("id").anyOf([...pageIds]).toArray();
+  if (pages.length !== pageIds.size) throw new ImportError("A selected Board has no parent Page");
+  return backupSchema.parse({
+    schemaVersion: CURRENT_BACKUP_FORMAT_VERSION,
+    exportVersion: CURRENT_BACKUP_FORMAT_VERSION,
+    exportedAt: nowIso(),
+    appVersion: packageVersion,
+    scope: "selection",
+    entities: { pages, boards, bookmarks },
+    assets: { wallpapers: [] },
+  });
+}
+
 export function serializeBackup(backup: AsterfoldBackup): string {
   return JSON.stringify(backup, null, 2);
 }
@@ -161,9 +187,20 @@ export function parseBackup(text: string): AsterfoldBackup {
     throw new ImportError(`Backup validation failed: ${result.error.issues[0]?.message ?? "unknown schema error"}`);
   }
   for (const bookmark of result.data.entities.bookmarks) normalizeUrl(bookmark.url, false);
+  const legacyTheme = result.data.exportVersion < 3 && result.data.settings?.theme.wallpaperId
+    && !result.data.settings.theme.wallpaperId.startsWith("builtin-")
+    ? { ...result.data.settings.theme, wallpaperId: null, backgroundMode: "auto" as const }
+    : result.data.settings?.theme;
   return {
     ...result.data,
-    ...(result.data.settings ? { settings: { ...result.data.settings, schemaVersion: CURRENT_DB_SCHEMA_VERSION } } : {}),
+    ...(result.data.settings ? {
+      settings: {
+        ...result.data.settings,
+        schemaVersion: CURRENT_DB_SCHEMA_VERSION,
+        ...(legacyTheme ? { theme: legacyTheme } : {}),
+      },
+      ...(legacyTheme ? { theme: legacyTheme } : {}),
+    } : {}),
   };
 }
 
@@ -235,31 +272,46 @@ export async function restoreBackup(
         if (wallpaperAssets.length > 0) await database.wallpapers.bulkPut(wallpaperAssets);
       }
     }
-    const [currentPages, currentBoards, currentBookmarks] = strategy === "merge"
+    const currentEntities = strategy === "merge"
       ? await Promise.all([database.pages.toArray(), database.boards.toArray(), database.bookmarks.toArray()])
       : [[], [], []];
+    let currentPages = currentEntities[0];
+    const currentBoards = currentEntities[1];
+    const currentBookmarks = currentEntities[2];
     let incomingPages = validated.entities.pages as Page[];
     let incomingBoards = validated.entities.boards as Board[];
     let incomingBookmarks = validated.entities.bookmarks as Bookmark[];
     if (strategy === "merge") {
       const pageIds = new Map(incomingPages.map((page) => [page.id, createId()]));
       const boardIds = new Map(incomingBoards.map((board) => [board.id, createId()]));
-      const pageRanks = evenlySpacedRanks(currentPages.length + incomingPages.length).slice(currentPages.length);
+      const deletedBatchIds = new Map(
+        [...incomingPages, ...incomingBoards, ...incomingBookmarks]
+          .map((entity) => entity.deletedBatchId)
+          .filter((id): id is string => id !== null)
+          .map((id) => [id, createId()]),
+      );
+      const pageRanks = evenlySpacedRanks(currentPages.length + incomingPages.length);
+      currentPages = currentPages
+        .sort((left, right) => left.position < right.position ? -1 : left.position > right.position ? 1 : 0)
+        .map((page, index) => ({ ...page, position: pageRanks[index]! }));
       incomingPages = incomingPages.map((page, index) => ({
         ...page,
         id: pageIds.get(page.id)!,
-        position: pageRanks[index]!,
+        position: pageRanks[currentPages.length + index]!,
         isDefault: false,
+        deletedBatchId: page.deletedBatchId ? deletedBatchIds.get(page.deletedBatchId)! : null,
       }));
       incomingBoards = incomingBoards.map((board) => ({
         ...board,
         id: boardIds.get(board.id)!,
         pageId: pageIds.get(board.pageId)!,
+        deletedBatchId: board.deletedBatchId ? deletedBatchIds.get(board.deletedBatchId)! : null,
       }));
       incomingBookmarks = incomingBookmarks.map((bookmark) => ({
         ...bookmark,
         id: createId(),
         boardId: boardIds.get(bookmark.boardId)!,
+        deletedBatchId: bookmark.deletedBatchId ? deletedBatchIds.get(bookmark.deletedBatchId)! : null,
       }));
     }
     await database.pages.bulkPut([...currentPages, ...incomingPages]);

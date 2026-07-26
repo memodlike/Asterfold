@@ -3,6 +3,7 @@ import { defineBackground } from "wxt/utils/define-background";
 import { createBookmark, ensureStarterWorkspace, getWorkspaceData, purgeTrash } from "../src/db/repository";
 import { DuplicateError } from "../src/domain/errors";
 import { parseSafeNavigationUrl } from "../src/domain/urls";
+import { resolveQuickSaveDestination } from "../src/domain/quickSave";
 import { parseExtensionMessage, type ExtensionResponse } from "../src/browser/messages";
 import { translate, type MessageKey } from "../src/i18n";
 
@@ -34,9 +35,12 @@ async function saveUrl(url: string, title: string): Promise<ExtensionResponse> {
     return { ok: false, code: "UNSAFE_URL" };
   }
   const workspace = await getWorkspaceData();
-  const boardId = workspace.settings.quickSaveDefaultBoardId
-    ?? workspace.settings.quickSaveLastBoardId
-    ?? workspace.boards[0]?.id;
+  const boardId = resolveQuickSaveDestination(
+    workspace.settings,
+    workspace.pages,
+    workspace.boards,
+    "default",
+  )?.boardId;
   if (!boardId) return { ok: false, code: "BOARD_REQUIRED" };
   try {
     const fallbackTitle = safeUrl.startsWith("mailto:") ? "Email" : new URL(safeUrl).hostname;

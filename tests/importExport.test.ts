@@ -5,6 +5,7 @@ import { AsterfoldDatabase } from "../src/db/database";
 import { createBookmark, ensureStarterWorkspace, getWorkspaceData, updateSettings } from "../src/db/repository";
 import {
   createBackup,
+  createSelectionBackup,
   importRecords,
   parseBackup,
   parseNetscapeHtml,
@@ -124,6 +125,28 @@ describe("safe import and lossless export", () => {
     const scoped = await createBackup({ pageId: workspace.pages[0]!.id }, database);
     expect(scoped.settings).toBeUndefined();
     expect(scoped.assets?.wallpapers).toEqual([]);
+  });
+
+  it("creates a valid selection backup with only the selected bookmarks and their ancestors", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const first = await createBookmark({
+      boardId: workspace.boards[0]!.id,
+      title: "Selected",
+      url: "https://selected.example",
+    }, {}, database);
+    await createBookmark({
+      boardId: workspace.boards[0]!.id,
+      title: "Not selected",
+      url: "https://not-selected.example",
+    }, {}, database);
+
+    const backup = await createSelectionBackup([first.id, first.id], database);
+    expect(backup.scope).toBe("selection");
+    expect(backup.entities.pages.map((page) => page.id)).toEqual([workspace.pages[0]!.id]);
+    expect(backup.entities.boards.map((board) => board.id)).toEqual([workspace.boards[0]!.id]);
+    expect(backup.entities.bookmarks.map((bookmark) => bookmark.id)).toEqual([first.id]);
+    expect(backup.settings).toBeUndefined();
+    expect(parseBackup(serializeBackup(backup))).toEqual(backup);
   });
 
   it("parses and atomically restores a v3 wallpaper backup", async () => {
@@ -347,6 +370,75 @@ describe("safe import and lossless export", () => {
     expect(new Set(merged.pages.map((page) => page.id)).size).toBe(2);
     expect(merged.boards).toHaveLength(2);
     expect(new Set(merged.boards.map((board) => board.id)).size).toBe(2);
+  });
+
+  it("remaps deleted batches and produces unique ranks when merging", async () => {
+    const destination = await ensureStarterWorkspace(database);
+    const destinationBookmark = await createBookmark({
+      boardId: destination.boards[0]!.id,
+      title: "Destination deleted",
+      url: "https://destination.example",
+    }, {}, database);
+    await database.bookmarks.update(destinationBookmark.id, {
+      deletedAt: "2026-07-26T00:00:00.000Z",
+      deletedBatchId: "shared-external-batch",
+    });
+
+    const source = new AsterfoldDatabase(`asterfold-merge-source-${crypto.randomUUID()}`);
+    await source.open();
+    try {
+      const sourceWorkspace = await ensureStarterWorkspace(source);
+      const sourceBookmark = await createBookmark({
+        boardId: sourceWorkspace.boards[0]!.id,
+        title: "Source deleted",
+        url: "https://source.example",
+      }, {}, source);
+      await source.transaction("rw", source.boards, source.bookmarks, async () => {
+        await source.boards.update(sourceWorkspace.boards[0]!.id, {
+          deletedAt: "2026-07-26T00:00:00.000Z",
+          deletedBatchId: "shared-external-batch",
+        });
+        await source.bookmarks.update(sourceBookmark.id, {
+          deletedAt: "2026-07-26T00:00:00.000Z",
+          deletedBatchId: "shared-external-batch",
+        });
+      });
+      const sourceBackup = await createBackup({}, source);
+      await restoreBackup(sourceBackup, "merge", database);
+
+      const importedPage = (await database.pages.toArray()).find((page) => page.id !== destination.pages[0]!.id)!;
+      const importedBoard = (await database.boards.toArray()).find((board) => board.pageId === importedPage.id)!;
+      const importedBookmark = (await database.bookmarks.toArray()).find((bookmark) => bookmark.boardId === importedBoard.id)!;
+      expect(importedBoard.deletedBatchId).toBeTruthy();
+      expect(importedBoard.deletedBatchId).not.toBe("shared-external-batch");
+      expect(importedBookmark.deletedBatchId).toBe(importedBoard.deletedBatchId);
+      expect((await database.bookmarks.get(destinationBookmark.id))?.deletedBatchId).toBe("shared-external-batch");
+
+      const pageRanks = (await database.pages.toArray()).map((page) => page.position);
+      expect(new Set(pageRanks).size).toBe(pageRanks.length);
+    } finally {
+      await source.delete();
+    }
+  });
+
+  it("clears dangling uploaded wallpaper references in legacy backups", async () => {
+    const backup = await createBackup({}, database);
+    const legacy = structuredClone(backup);
+    legacy.schemaVersion = 2;
+    legacy.exportVersion = 2;
+    delete (legacy as { assets?: unknown }).assets;
+    legacy.settings!.theme = {
+      ...legacy.settings!.theme,
+      wallpaperId: "missing-upload",
+      backgroundMode: "wallpaper",
+    };
+    legacy.theme = legacy.settings!.theme;
+
+    const parsed = parseBackup(JSON.stringify(legacy));
+    expect(parsed.settings?.theme).toMatchObject({
+      wallpaperId: null,
+      backgroundMode: "auto",
+    });
   });
 
   it("reports invalid rows and skips normalized duplicates", async () => {

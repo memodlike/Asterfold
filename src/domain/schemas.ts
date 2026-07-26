@@ -201,7 +201,7 @@ const backupCoreSchema = z.object({
   exportVersion: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   exportedAt: isoDate,
   appVersion: z.string().min(1).max(64),
-  scope: z.enum(["full", "page", "board"]),
+  scope: z.enum(["full", "page", "board", "selection"]),
   entities: z.object({
     pages: z.array(pageSchema).max(MAX_PAGES),
     boards: z.array(boardSchema).max(MAX_BOARDS),

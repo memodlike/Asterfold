@@ -4,6 +4,7 @@ import type { Board, Bookmark, Page, WorkspaceData } from "../domain/models";
 import {
   bulkDeleteBookmarks,
   bulkMoveBookmarks,
+  bulkRestoreBookmarks,
   createBoard,
   createPage,
   duplicateBoard,
@@ -13,6 +14,7 @@ import {
   renamePage,
   restoreBoard,
   restoreBookmark,
+  swapBoardGridPlacement,
   softDeleteBoard,
   softDeleteBookmark,
   updateBoard,
@@ -178,20 +180,14 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
     void run(async () => {
       await bulkDeleteBookmarks(ids);
       setSelectedIds(new Set());
-      toasts.push({ message: `${ids.length} → ${t("generic.trash")}`, actionLabel: "Undo", onAction: async () => { await Promise.all(ids.map((id) => restoreBookmark(id))); changeBus.publish("bookmark"); } });
+      toasts.push({ message: `${ids.length} → ${t("generic.trash")}`, actionLabel: "Undo", onAction: async () => { await bulkRestoreBookmarks(ids); changeBus.publish("bookmark"); } });
     });
   };
   const exportSelected = (): void => {
     const ids = new Set(selectedIds);
     void run(async () => {
-      const { createBackup, downloadText, serializeBackup } = await import("../services/exportImport");
-      const backup = await createBackup();
-      backup.entities.bookmarks = backup.entities.bookmarks.filter((bookmark) => ids.has(bookmark.id));
-      const selectedBoardIds = new Set(backup.entities.bookmarks.map((bookmark) => bookmark.boardId));
-      backup.entities.boards = backup.entities.boards.filter((board) => selectedBoardIds.has(board.id));
-      const selectedPageIds = new Set(backup.entities.boards.map((board) => board.pageId));
-      backup.entities.pages = backup.entities.pages.filter((page) => selectedPageIds.has(page.id));
-      backup.scope = "board";
+      const { createSelectionBackup, downloadText, serializeBackup } = await import("../services/exportImport");
+      const backup = await createSelectionBackup([...ids]);
       downloadText("asterfold-selection.json", serializeBackup(backup), "application/json");
     });
   };
@@ -220,10 +216,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
           if (workspace.settings.workspaceLayoutMode === "free") {
             const source = boards.find((board) => board.id === id);
             const target = boards.find((board) => board.id === targetId);
-            if (source && target) await Promise.all([
-              updateBoard(source.id, { gridColumn: target.gridColumn, gridRow: target.gridRow }),
-              updateBoard(target.id, { gridColumn: source.gridColumn, gridRow: source.gridRow }),
-            ]);
+            if (source && target) await swapBoardGridPlacement(source.id, target.id);
           }
           await moveBoardToIndex(id, activePage.id, index);
         })}

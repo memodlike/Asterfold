@@ -9,6 +9,7 @@ import {
   getWorkspaceData,
   listTrash,
   bulkMoveBookmarks,
+  bulkRestoreBookmarks,
   emptyTrash,
   findDuplicate,
   permanentlyDelete,
@@ -16,6 +17,7 @@ import {
   purgeTrash,
   restoreBoard,
   restorePage,
+  swapBoardGridPlacement,
   softDeleteBoard,
   softDeleteBookmark,
   softDeletePage,
@@ -115,6 +117,51 @@ describe("Dexie workspace repository", () => {
     const before = await database.bookmarks.toArray();
     await expect(bulkMoveBookmarks([second.id, "missing"], target.id, database)).rejects.toThrow();
     expect(await database.bookmarks.toArray()).toEqual(before);
+  });
+
+  it("updates metadata for every bookmark whose rank changes during a bulk move", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const source = workspace.boards[0]!;
+    const target = await createBoard(workspace.pages[0]!.id, "Target", database);
+    const moved = await createBookmark({ boardId: source.id, title: "Moved", url: "https://moved.example" }, {}, database);
+    const existing = await createBookmark({ boardId: target.id, title: "Existing", url: "https://existing.example" }, {}, database);
+    const before = await database.bookmarks.get(existing.id);
+
+    await bulkMoveBookmarks([moved.id], target.id, database);
+
+    const after = await database.bookmarks.get(existing.id);
+    expect(after?.position).not.toBe(before?.position);
+    expect(after?.version).toBe((before?.version ?? 0) + 1);
+  });
+
+  it("restores a bookmark selection atomically", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const first = await createBookmark({ boardId: workspace.boards[0]!.id, title: "First", url: "https://first.example" }, {}, database);
+    const second = await createBookmark({ boardId: workspace.boards[0]!.id, title: "Second", url: "https://second.example" }, {}, database);
+    await softDeleteBookmark(first.id, database);
+    await softDeleteBookmark(second.id, database);
+    const before = await database.bookmarks.toArray();
+    await expect(bulkRestoreBookmarks([first.id, "missing"], database)).rejects.toThrow();
+    expect(await database.bookmarks.toArray()).toEqual(before);
+
+    await bulkRestoreBookmarks([first.id, second.id, first.id], database);
+    expect((await database.bookmarks.bulkGet([first.id, second.id])).every((bookmark) => bookmark?.deletedAt === null)).toBe(true);
+  });
+
+  it("swaps free-grid board placement atomically and rolls back on failure", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const first = workspace.boards[0]!;
+    const second = await createBoard(workspace.pages[0]!.id, "Second", database);
+    await updateBoard(first.id, { gridColumn: 1, gridRow: 0, gridSpan: 3 }, database);
+    await updateBoard(second.id, { gridColumn: 7, gridRow: 1, gridSpan: 5 }, database);
+
+    await swapBoardGridPlacement(first.id, second.id, database);
+    expect(await database.boards.get(first.id)).toMatchObject({ gridColumn: 7, gridRow: 1, gridSpan: 5 });
+    expect(await database.boards.get(second.id)).toMatchObject({ gridColumn: 1, gridRow: 0, gridSpan: 3 });
+
+    const before = await database.boards.toArray();
+    await expect(swapBoardGridPlacement(first.id, "missing", database)).rejects.toThrow();
+    expect(await database.boards.toArray()).toEqual(before);
   });
 
   it("serializes concurrent appends without duplicate positions", async () => {
