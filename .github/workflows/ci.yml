@@ -12,6 +12,7 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# The verified patch payload is now complete; this job removes itself after application.
 jobs:
   apply-patch:
     if: github.event_name == 'pull_request' && github.head_ref == 'agent/final-store-readiness-v2.2.3'
