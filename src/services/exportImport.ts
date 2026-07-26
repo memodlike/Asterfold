@@ -356,14 +356,11 @@ export function toNetscapeHtml(backup: AsterfoldBackup): string {
 
 export function toMarkdown(backup: AsterfoldBackup): string {
   const text = (value: string): string => value
-    .replaceAll("\\", "\\\\")
     .replace(/\r?\n|\r/gu, " ")
-    .replace(/([#*_`[\]()<>])/gu, "\\$1");
+    .replace(/([\\#*_`[\]()<>])/gu, "\\$1");
   const destination = (value: string): string => value
-    .replaceAll("\\", "\\\\")
     .replace(/\r?\n|\r/gu, "")
-    .replaceAll("(", "\\(")
-    .replaceAll(")", "\\)");
+    .replace(/([\\()])/gu, "\\$1");
   const output = ["# Asterfold bookmarks", ""];
   for (const page of backup.entities.pages.filter((item) => item.deletedAt === null).sort((a, b) => a.position.localeCompare(b.position))) {
     output.push(`## ${text(page.title)}`, "");
