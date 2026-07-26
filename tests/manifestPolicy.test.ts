@@ -19,7 +19,7 @@ describe("Chrome Web Store manifest policy", () => {
       readFile(join(process.cwd(), "scripts/release.mjs"), "utf8"),
     ]);
 
-    expect(packageVersion).toBe("2.2.1");
+    expect(packageVersion).toBe("2.2.2");
     expect(config).toContain("version: packageVersion");
     expect(config).not.toMatch(/permissions:\s*\[[^\]]*["']storage["']/su);
     expect(releaseValidator).not.toMatch(/allowedPermissions[^\n]*["']storage["']/u);
