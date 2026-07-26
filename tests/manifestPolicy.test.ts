@@ -20,10 +20,13 @@ describe("Chrome Web Store manifest policy", () => {
       readFile(join(process.cwd(), "entrypoints", "background.ts"), "utf8"),
     ]);
 
-    expect(packageVersion).toBe("2.2.2");
+    expect(packageVersion).toBe("2.2.3");
     expect(config).toContain("version: packageVersion");
-    expect(config).not.toMatch(/permissions:\s*\[[^\]]*["']storage["']/su);
-    expect(releaseValidator).not.toMatch(/allowedPermissions[^\n]*["']storage["']/u);
+    expect(config).toMatch(/permissions:\s*\[[^\]]*["']storage["']/su);
+    expect(releaseValidator).toContain("storage");
+    expect(releaseValidator).toContain("new\\s+(?:Shared)?Worker");
+    expect(releaseValidator).toContain("WebAssembly");
+    expect(releaseValidator).toContain("<iframe");
     expect(await readFile(join(process.cwd(), "src", "services", "exportImport.ts"), "utf8")).not.toContain('appVersion: "2.1.3"');
     expect(background).toContain("const BADGE_CLEAR_DELAY_MINUTES = 0.5;");
     expect(background).toContain("delayInMinutes: BADGE_CLEAR_DELAY_MINUTES");
@@ -43,8 +46,8 @@ describe("Chrome Web Store manifest policy", () => {
 
     expect(manifest.manifest_version).toBe(3);
     expect(manifest.version).toBe(packageVersion);
-    expect(new Set(manifest.permissions)).toEqual(new Set(["activeTab", "favicon", "alarms", "contextMenus"]));
-    expect(manifest.permissions).not.toEqual(expect.arrayContaining(["storage", "identity", "tabs", "history", "scripting", "webRequest", "cookies"]));
+    expect(new Set(manifest.permissions)).toEqual(new Set(["activeTab", "favicon", "alarms", "contextMenus", "storage"]));
+    expect(manifest.permissions).not.toEqual(expect.arrayContaining(["identity", "tabs", "history", "scripting", "webRequest", "cookies"]));
     expect(manifest.optional_permissions).toEqual(["bookmarks"]);
     expect(manifest.host_permissions).toEqual([]);
     expect(manifest.content_security_policy?.extension_pages).toBe("script-src 'self'; object-src 'self'; base-uri 'self'");

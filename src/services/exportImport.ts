@@ -1,13 +1,15 @@
 import type { AsterfoldDatabase } from "../db/database";
 import { version as packageVersion } from "../../package.json";
 import { db } from "../db/database";
-import { createSnapshot, ensureStarterWorkspace } from "../db/repository";
+import { ensureStarterWorkspace } from "../db/repository";
 import { CURRENT_DB_SCHEMA_VERSION } from "../db/migrations";
 import type { Board, Bookmark, Page, Wallpaper } from "../domain/models";
 import { ImportError, ValidationError } from "../domain/errors";
 import { allocateManyAtEnd, compareRanks } from "../domain/ordering";
 import { backupSchema, type AsterfoldBackup } from "../domain/schemas";
 import { normalizeUrl } from "../domain/urls";
+import { normalizeDescription, normalizeEntityTitle } from "../domain/text";
+import { IMPORT_LIMITS } from "../domain/importLimits";
 import { createId, nowIso } from "../utils/ids";
 import { inspectWallpaperSource } from "./wallpaper";
 
@@ -37,16 +39,20 @@ export interface BackupImportPreview {
 }
 
 function assertNoPrototypeKeys(value: unknown): void {
-  if (value === null || typeof value !== "object") return;
-  if (Array.isArray(value)) {
-    for (const item of value) assertNoPrototypeKeys(item);
-    return;
-  }
-  for (const [key, nested] of Object.entries(value)) {
-    if (["__proto__", "constructor", "prototype"].includes(key)) {
-      throw new ImportError("The backup contains an unsafe object key");
+  const stack: Array<{ value: unknown; depth: number }> = [{ value, depth: 0 }];
+  let nodes = 0;
+  while (stack.length > 0) {
+    const current = stack.pop()!;
+    if (current.value === null || typeof current.value !== "object") continue;
+    nodes += 1;
+    if (nodes > IMPORT_LIMITS.nodes) throw new ImportError("The backup contains too many nested values");
+    if (current.depth > IMPORT_LIMITS.depth) throw new ImportError("The backup nesting is too deep");
+    for (const [key, nested] of Object.entries(current.value)) {
+      if (["__proto__", "constructor", "prototype"].includes(key)) {
+        throw new ImportError("The backup contains an unsafe object key");
+      }
+      stack.push({ value: nested, depth: current.depth + 1 });
     }
-    assertNoPrototypeKeys(nested);
   }
 }
 
@@ -151,13 +157,13 @@ export async function createSelectionBackup(
   const ids = [...new Set(bookmarkIds)];
   if (ids.length === 0) throw new ImportError("Select at least one bookmark to export");
   const bookmarks = await database.bookmarks.where("id").anyOf(ids).toArray();
-  if (bookmarks.length !== ids.length) throw new ImportError("One or more selected bookmarks are unavailable");
+  if (bookmarks.length !== ids.length || bookmarks.some((bookmark) => bookmark.deletedAt !== null)) throw new ImportError("One or more selected bookmarks are unavailable");
   const boardIds = new Set(bookmarks.map((bookmark) => bookmark.boardId));
   const boards = await database.boards.where("id").anyOf([...boardIds]).toArray();
-  if (boards.length !== boardIds.size) throw new ImportError("A selected bookmark has no parent Board");
+  if (boards.length !== boardIds.size || boards.some((board) => board.deletedAt !== null)) throw new ImportError("A selected bookmark has no active parent Board");
   const pageIds = new Set(boards.map((board) => board.pageId));
   const pages = await database.pages.where("id").anyOf([...pageIds]).toArray();
-  if (pages.length !== pageIds.size) throw new ImportError("A selected Board has no parent Page");
+  if (pages.length !== pageIds.size || pages.some((page) => page.deletedAt !== null)) throw new ImportError("A selected Board has no active parent Page");
   return backupSchema.parse({
     schemaVersion: CURRENT_BACKUP_FORMAT_VERSION,
     exportVersion: CURRENT_BACKUP_FORMAT_VERSION,
@@ -173,8 +179,39 @@ export function serializeBackup(backup: AsterfoldBackup): string {
   return JSON.stringify(backup, null, 2);
 }
 
+function normalizeValidatedBackup(validated: AsterfoldBackup): AsterfoldBackup {
+  const normalizedBookmarks = validated.entities.bookmarks.map((bookmark) => {
+    const normalized = normalizeUrl(bookmark.url, false);
+    return {
+      ...bookmark,
+      url: normalized.url,
+      normalizedUrl: normalized.normalizedUrl,
+      hostname: normalized.hostname,
+    };
+  });
+  const normalizedData = {
+    ...validated,
+    entities: { ...validated.entities, bookmarks: normalizedBookmarks },
+  };
+  const legacyTheme = normalizedData.exportVersion < 3 && normalizedData.settings?.theme.wallpaperId
+    && !normalizedData.settings.theme.wallpaperId.startsWith("builtin-")
+    ? { ...normalizedData.settings.theme, wallpaperId: null, backgroundMode: "auto" as const }
+    : normalizedData.settings?.theme;
+  return {
+    ...normalizedData,
+    ...(normalizedData.settings ? {
+      settings: {
+        ...normalizedData.settings,
+        schemaVersion: CURRENT_DB_SCHEMA_VERSION,
+        ...(legacyTheme ? { theme: legacyTheme } : {}),
+      },
+      ...(legacyTheme ? { theme: legacyTheme } : {}),
+    } : {}),
+  };
+}
+
 export function parseBackup(text: string): AsterfoldBackup {
-  if (new Blob([text]).size > 25 * 1024 * 1024) throw new ImportError("Backup must be 25 MB or smaller");
+  if (new Blob([text]).size > IMPORT_LIMITS.fileBytes) throw new ImportError("Backup must be 25 MB or smaller");
   let raw: unknown;
   try {
     raw = JSON.parse(text) as unknown;
@@ -186,26 +223,12 @@ export function parseBackup(text: string): AsterfoldBackup {
   if (!result.success) {
     throw new ImportError(`Backup validation failed: ${result.error.issues[0]?.message ?? "unknown schema error"}`);
   }
-  for (const bookmark of result.data.entities.bookmarks) normalizeUrl(bookmark.url, false);
-  const legacyTheme = result.data.exportVersion < 3 && result.data.settings?.theme.wallpaperId
-    && !result.data.settings.theme.wallpaperId.startsWith("builtin-")
-    ? { ...result.data.settings.theme, wallpaperId: null, backgroundMode: "auto" as const }
-    : result.data.settings?.theme;
-  return {
-    ...result.data,
-    ...(result.data.settings ? {
-      settings: {
-        ...result.data.settings,
-        schemaVersion: CURRENT_DB_SCHEMA_VERSION,
-        ...(legacyTheme ? { theme: legacyTheme } : {}),
-      },
-      ...(legacyTheme ? { theme: legacyTheme } : {}),
-    } : {}),
-  };
+  return normalizeValidatedBackup(result.data);
 }
 
 export function previewBackup(text: string, strategy: "merge" | "replace"): { backup: AsterfoldBackup; preview: BackupImportPreview } {
   const backup = parseBackup(text);
+  if (strategy === "replace" && backup.scope !== "full") throw new ImportError("Only a full backup can replace the workspace");
   return {
     backup,
     preview: {
@@ -261,16 +284,15 @@ export async function restoreBackup(
   strategy: "merge" | "replace",
   database: AsterfoldDatabase = db,
 ): Promise<void> {
-  const validated = backupSchema.parse(backup);
+  const validated = normalizeValidatedBackup(backupSchema.parse(backup));
+  if (strategy === "replace" && validated.scope !== "full") {
+    throw new ImportError("Only a full backup can replace the workspace");
+  }
   const wallpaperAssets = await prepareWallpaperAssets(validated);
-  await database.transaction("rw", [database.pages, database.boards, database.bookmarks, database.settings, database.wallpapers, database.snapshots], async () => {
-    await createSnapshot(`before-${strategy}-restore`, database);
+  await database.transaction("rw", [database.pages, database.boards, database.bookmarks, database.settings, database.wallpapers], async () => {
     if (strategy === "replace") {
-      await Promise.all([database.bookmarks.clear(), database.boards.clear(), database.pages.clear()]);
-      if (validated.exportVersion === 3) {
-        await database.wallpapers.clear();
-        if (wallpaperAssets.length > 0) await database.wallpapers.bulkPut(wallpaperAssets);
-      }
+      await Promise.all([database.bookmarks.clear(), database.boards.clear(), database.pages.clear(), database.wallpapers.clear()]);
+      if (wallpaperAssets.length > 0) await database.wallpapers.bulkPut(wallpaperAssets);
     }
     const currentEntities = strategy === "merge"
       ? await Promise.all([database.pages.toArray(), database.boards.toArray(), database.bookmarks.toArray()])
@@ -344,7 +366,7 @@ export function toNetscapeHtml(backup: AsterfoldBackup): string {
       lines.push(`    <DT><H3>${escapeHtml(board.title)}</H3>`, "    <DL><p>");
       for (const bookmark of (bookmarksByBoard.get(board.id) ?? []).sort((a, b) => a.position.localeCompare(b.position))) {
         lines.push(`      <DT><A HREF="${escapeHtml(bookmark.url)}" ADD_DATE="${Math.floor(new Date(bookmark.createdAt).getTime() / 1000)}">${escapeHtml(bookmark.title)}</A>`);
-        if (bookmark.description) lines.push(`      <DD>${escapeHtml(bookmark.description)}`);
+        if (bookmark.description) lines.push(`      <DD>${escapeHtml(bookmark.description)}</DD>`);
       }
       lines.push("    </DL><p>");
     }
@@ -389,7 +411,7 @@ export function downloadText(filename: string, content: string, mimeType: string
 }
 
 export function parseNetscapeHtml(text: string): ImportRecord[] {
-  if (new Blob([text]).size > 25 * 1024 * 1024) throw new ImportError("Bookmark file must be 25 MB or smaller");
+  if (new Blob([text]).size > IMPORT_LIMITS.fileBytes) throw new ImportError("Bookmark file must be 25 MB or smaller");
   const records: ImportRecord[] = [];
   const folders: string[] = [];
   let pendingFolder: string | null = null;
@@ -401,7 +423,11 @@ export function parseNetscapeHtml(text: string): ImportRecord[] {
     .replace(/&#(\d+);/gu, (_, code: string) => String.fromCodePoint(Number(code)))
     .replace(/&#x([\da-f]+);/giu, (_, code: string) => String.fromCodePoint(Number.parseInt(code, 16)))
     .replaceAll("&quot;", "\"").replaceAll("&apos;", "'").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&amp;", "&");
-  for (const match of text.matchAll(/<\/?(?:dl|h3|a|dd)\b[^>]*>|[^<]+/giu)) {
+  const finishDescription = (): void => {
+    if (capture === "description" && lastRecord) lastRecord.description = decode(buffer).trim().slice(0, 2_000) || null;
+    if (capture === "description") { capture = null; buffer = ""; }
+  };
+  for (const match of text.matchAll(/<\/?(?:dl|dt|h3|a|dd)\b[^>]*>|[^<]+/giu)) {
     const token = match[0];
     if (!token.startsWith("<")) {
       if (capture) buffer += token;
@@ -409,12 +435,14 @@ export function parseNetscapeHtml(text: string): ImportRecord[] {
     }
     const closing = token.startsWith("</");
     const tag = /^<\/?([a-z0-9]+)/iu.exec(token)?.[1]?.toLowerCase();
+    if (capture === "description" && !(tag === "dd" && closing)) finishDescription();
+    if (tag === "dt") continue;
     if (tag === "h3" && !closing) { capture = "folder"; buffer = ""; }
     else if (tag === "h3" && closing && capture === "folder") { pendingFolder = decode(buffer).trim().slice(0, 240) || null; capture = null; }
     else if (tag === "dl" && !closing) {
       if (pendingFolder) folders.push(pendingFolder);
       pendingFolder = null;
-      if (folders.length > 100) throw new ImportError("Bookmark folder nesting is too deep");
+      if (folders.length > IMPORT_LIMITS.depth) throw new ImportError("Bookmark folder nesting is too deep");
     } else if (tag === "dl" && closing) { folders.pop(); }
     else if (tag === "a" && !closing) {
       href = decode(/\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/iu.exec(token)?.slice(1).find(Boolean) ?? "");
@@ -423,15 +451,17 @@ export function parseNetscapeHtml(text: string): ImportRecord[] {
       try {
         const normalized = normalizeUrl(href, false);
         lastRecord = { title: decode(buffer).trim().slice(0, 240) || normalized.hostname, url: normalized.url, description: null, folderPath: [...folders] };
+        if (records.length >= IMPORT_LIMITS.bookmarks) throw new ImportError("Bookmark file contains too many bookmarks");
         records.push(lastRecord);
-      } catch { lastRecord = undefined; }
+      } catch (error) {
+        if (error instanceof ImportError) throw error;
+        lastRecord = undefined;
+      }
       capture = null;
-    } else if (tag === "dd" && !closing) { capture = "description"; buffer = ""; }
-    else if (tag === "dd" && closing && capture === "description") {
-      if (lastRecord) lastRecord.description = decode(buffer).trim().slice(0, 2_000) || null;
-      capture = null;
-    }
+    } else if (tag === "dd" && !closing) { finishDescription(); capture = "description"; buffer = ""; }
+    else if (tag === "dd" && closing) finishDescription();
   }
+  finishDescription();
   return records;
 }
 
@@ -442,20 +472,33 @@ export async function importRecords(
   database: AsterfoldDatabase = db,
 ): Promise<ImportSummary> {
   await ensureStarterWorkspace(database);
+  if (records.length > IMPORT_LIMITS.bookmarks) throw new ImportError("Import contains too many bookmarks");
+  let importNodes = records.length;
+  for (const record of records) {
+    if (record.folderPath.length > IMPORT_LIMITS.depth) throw new ImportError("Import folder nesting is too deep");
+    importNodes += record.folderPath.length;
+    if (importNodes > IMPORT_LIMITS.nodes) throw new ImportError("Import contains too many values");
+  }
   const valid: Array<ImportRecord & { normalizedUrl: string; hostname: string }> = [];
   const invalid: ImportSummary["invalid"] = [];
   for (let index = 0; index < records.length; index += 1) {
     const record = records[index]!;
     try {
       const normalized = normalizeUrl(record.url);
-      valid.push({ ...record, normalizedUrl: normalized.normalizedUrl, hostname: normalized.hostname });
+      valid.push({
+        title: normalizeEntityTitle(record.title, normalized.hostname),
+        url: normalized.url,
+        description: normalizeDescription(record.description),
+        folderPath: record.folderPath.map((folder) => normalizeEntityTitle(folder, "Imported bookmarks")),
+        normalizedUrl: normalized.normalizedUrl,
+        hostname: normalized.hostname,
+      });
     } catch (error) {
       invalid.push({ row: index + 1, reason: error instanceof Error ? error.message : "Invalid URL" });
     }
   }
   if (valid.length === 0 && records.length > 0) throw new ImportError("No valid bookmarks were found");
-  return database.transaction("rw", [database.pages, database.boards, database.bookmarks, database.settings, database.wallpapers, database.snapshots], async () => {
-    await createSnapshot("before-bookmark-import", database);
+  return database.transaction("rw", [database.pages, database.boards, database.bookmarks, database.settings, database.wallpapers], async () => {
     let pageId = destination.pageId;
     if (pageId) {
       const page = await database.pages.get(pageId);
@@ -473,7 +516,7 @@ export async function importRecords(
       await database.pages.add({
         id: pageId,
         userId: null,
-        title: destination.pageTitle.trim() || "Imported",
+        title: normalizeEntityTitle(destination.pageTitle, "Imported"),
         icon: "download",
         accent: null,
         position: allocation.positions[0]!,
@@ -488,7 +531,7 @@ export async function importRecords(
 
     const folderGroups = new Map<string, typeof valid>();
     for (const record of valid) {
-      const folder = record.folderPath.at(-1) || "Imported bookmarks";
+      const folder = normalizeEntityTitle(record.folderPath.at(-1) ?? "", "Imported bookmarks");
       const group = folderGroups.get(folder);
       if (group) group.push(record);
       else folderGroups.set(folder, [record]);
@@ -497,7 +540,7 @@ export async function importRecords(
       .filter((board) => board.deletedAt === null)
       .sort((left, right) => compareRanks(left.position, right.position));
     const missingBoardTitles = [...folderGroups.keys()]
-      .map((title) => title.slice(0, 240))
+      .map((title) => normalizeEntityTitle(title, "Imported bookmarks"))
       .filter((title, index, titles) => !existingBoards.some((board) => board.title === title) && titles.indexOf(title) === index);
     const boardAllocation = allocateManyAtEnd(existingBoards, missingBoardTitles.length);
     const previousBoardPositions = new Map(existingBoards.map((board) => [board.id, board.position]));
@@ -517,7 +560,7 @@ export async function importRecords(
     let imported = 0;
     let skippedDuplicates = 0;
     for (const [folderTitle, group] of folderGroups) {
-      const board = existingBoards.find((candidate) => candidate.title === folderTitle.slice(0, 240));
+      const board = existingBoards.find((candidate) => candidate.title === folderTitle);
       if (!board) throw new ImportError("Import destination Board could not be allocated");
       const current = (await database.bookmarks.where("boardId").equals(board.id).toArray()).filter((bookmark) => bookmark.deletedAt === null);
       const known = new Set(current.map((bookmark) => bookmark.normalizedUrl));
@@ -538,8 +581,8 @@ export async function importRecords(
       if (rebalancedBookmarks.length > 0) await database.bookmarks.bulkPut(rebalancedBookmarks);
       if (accepted.length > 0) {
         await database.bookmarks.bulkAdd(accepted.map((record, index) => ({
-          id: createId(), userId: null, boardId: board.id, title: record.title.slice(0, 240), url: record.url,
-          normalizedUrl: record.normalizedUrl, hostname: record.hostname, description: record.description?.slice(0, 2000) ?? null,
+          id: createId(), userId: null, boardId: board.id, title: record.title, url: record.url,
+          normalizedUrl: record.normalizedUrl, hostname: record.hostname, description: record.description,
           faviconUrl: null, customIcon: null, position: allocation.positions[index]!, openMode: "current" as const, pinned: false,
           createdAt: timestamp, updatedAt: timestamp, deletedAt: null, deletedBatchId: null, version: 1,
         })));

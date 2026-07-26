@@ -1,4 +1,4 @@
-# Chrome Web Store submission values — Asterfold 2.2.2
+# Chrome Web Store submission values — Asterfold 2.2.3
 
 Copy these values into the owner Dashboard only after checking them against the final release ZIP.
 
@@ -40,6 +40,10 @@ Use only a privacy URL that has been opened publicly without authentication. The
 ### `contextMenus`
 
 > Adds the user-invoked Save page, Save link and Open Asterfold commands.
+
+### `storage`
+
+> Stores only the temporary Privacy Mode flag in `chrome.storage.session`, allowing popup and New Tab to share the same visual-protection state. Chrome clears this session value when the browser session ends; bookmark workspace data remains in IndexedDB.
 
 ### Optional `bookmarks`
 

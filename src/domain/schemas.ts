@@ -228,6 +228,12 @@ export const backupSchema = backupCoreSchema.superRefine((backup, context) => {
   if (backup.exportVersion < 3 && backup.assets) {
     context.addIssue({ code: "custom", message: "Legacy backups cannot contain v3 assets" });
   }
+  if (backup.scope === "full" && (!backup.settings || !backup.theme)) {
+    context.addIssue({ code: "custom", message: "Full backups must contain settings and theme" });
+  }
+  if (backup.settings && backup.theme && JSON.stringify(backup.settings.theme) !== JSON.stringify(backup.theme)) {
+    context.addIssue({ code: "custom", message: "Backup settings and theme are inconsistent" });
+  }
   if (backup.scope !== "full" && (backup.settings || backup.theme)) {
     context.addIssue({ code: "custom", message: "Scoped backups cannot contain global settings or theme" });
   }

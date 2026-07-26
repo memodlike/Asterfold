@@ -1,6 +1,6 @@
-# Chrome Web Store Privacy Practices — Asterfold 2.2.2
+# Chrome Web Store Privacy Practices — Asterfold 2.2.3
 
-Prepared on 26 July 2026. These are proposed dashboard answers for the reviewed default release. Recheck every answer against the final uploaded ZIP before submission.
+Prepared on 27 July 2026. These are proposed dashboard answers for the reviewed default release. Recheck every answer against the final uploaded ZIP before submission.
 
 ## Single purpose
 
@@ -30,7 +30,7 @@ If the Dashboard wording or examples change, use the broader disclosure when a c
 
 ## Data handling certifications
 
-The owner can certify the following for the reviewed 2.2.2 default build:
+The owner can certify the following for the reviewed 2.2.3 default build:
 
 - data is used only to provide the extension's single bookmark-workspace purpose;
 - workspace data is stored locally in the user's Chrome profile;
@@ -66,9 +66,10 @@ Do not submit the intended Pages URL until it opens publicly without authenticat
 | `favicon` | Displays Chrome's browser-owned `_favicon` resource for a URL already saved by the user. Asterfold does not request or store a remote favicon URL. |
 | `alarms` | Schedules local Trash cleanup according to the retention period selected by the user. |
 | `contextMenus` | Adds the user-invoked Save page, Save link and Open Asterfold commands. |
+| `storage` | Stores only the temporary Privacy Mode flag in `chrome.storage.session`, allowing popup and New Tab to share the same visual-protection state. Chrome clears session storage when the browser session ends; bookmark workspace data remains in IndexedDB. |
 | optional `bookmarks` | Requested only when the user selects Import Chrome bookmarks. The Chrome bookmark tree is read and processed locally to create an import preview; declining does not affect normal use. |
 
-The final 2.2.2 manifest must not list `storage`, host permissions, content scripts, `tabs`, `history`, `identity`, `scripting`, `webRequest`, cookies or clipboard-read. If the final ZIP differs, stop submission and reconcile the manifest and disclosures.
+The final 2.2.3 manifest must list only `activeTab`, `favicon`, `alarms`, `contextMenus`, `storage` and optional `bookmarks`; it must not list host permissions, content scripts, `tabs`, `history`, `identity`, `scripting`, `webRequest`, cookies or clipboard-read. If the final ZIP differs, stop submission and reconcile the manifest and disclosures.
 
 ## Privacy policy URL
 

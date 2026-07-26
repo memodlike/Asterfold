@@ -1,11 +1,25 @@
 # QA report
 
-Machine-generated and command evidence belongs in `EVIDENCE.md`; this file is the reviewer summary.
+Machine-generated command evidence belongs in `EVIDENCE.md`; this file is the reviewer summary.
 
-On 26 July 2026, branch `codex/final-hardening-v2.2.2` completed a clean local install plus typecheck, lint, 129 unit/integration/component tests with coverage, production build, Store validation, reproducible release, five real unpacked-MV3 Playwright tests and the production dependency audit.
+## Asterfold 2.2.3 scope
 
-Covered flows include safe navigation, Privacy Mode, v1–v5 migration, backup v1/v2/v3 round-trip, selection backup, deleted-batch merge isolation, atomic ordering/repository rollback, strict import, wallpaper rejection/optimization, Quick Save destination repair, keyboard overlay behavior, serious/critical axe checks, 12 locale startup checks, zero application network requests, 100-bookmark desktop layout and deterministic archives.
+Branch `agent/final-store-readiness-v2.2.3` closes the remaining Store-readiness findings from the independent 2.2.2 review:
 
-The five 1280×800 Store screenshots were recaptured from the production MV3 build and visually compared with the 2.2.1 reference at the same viewport. Pages → Boards → Bookmarks, Frost Light/Graphite Dark, glass treatment and the lower-left launcher remain recognizable and unchanged in composition.
+- popup Quick Save clears and rejects stale Page/Board destinations;
+- temporary Privacy Mode is shared between New Tab and popup through `chrome.storage.session`;
+- scoped backups are merge-only and cannot remove global settings or wallpaper assets;
+- imported titles, descriptions, nesting, values and bookmark counts are bounded;
+- backup URL-derived fields are rebuilt from the authoritative URL;
+- Netscape HTML descriptions survive export/import round trips;
+- free-grid placement and ordering move in one transaction;
+- settings updates use transactional read-modify-write;
+- old default Pages receive correct version metadata;
+- inaccessible runtime snapshots are no longer created; the legacy store is retained only for upgrade compatibility;
+- release validation covers the exact 2.2.3 permission set and additional remote-code patterns.
 
-Not claimed: Chrome Web Store approval, a published public privacy URL, representative low-end Windows GPU traces, manual Windows Chrome interaction, or global 85/85/80/85 source coverage. The current full-source coverage is 57.79% lines, 41.98% functions, 46.03% branches and 52.28% statements; critical domain/media modules have stricter per-file gates.
+## Required acceptance gate
+
+The branch is not considered release-ready until GitHub Actions passes typecheck, lint, unit/integration coverage, Store asset validation, deterministic release generation, real unpacked-MV3 Playwright tests, production dependency audit, Windows reproducibility and CodeQL. Exact results and hashes will be appended to `EVIDENCE.md` after the run.
+
+Not claimed before that gate: Chrome Web Store approval, public listing publication, representative low-end Windows GPU traces or a clean full development-tool audit where upstream advisories remain.

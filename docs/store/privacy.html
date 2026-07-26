@@ -23,14 +23,14 @@
 <body>
   <main>
     <h1>Asterfold Privacy Policy</h1>
-    <p class="meta">Effective 26 July 2026 · Policy version 2.2.2</p>
+    <p class="meta">Effective 27 July 2026 · Policy version 2.2.3</p>
     <p class="notice">Asterfold is a local-first bookmark workspace. It processes bookmark and workspace information on the user's device to provide its features. It does not claim that no data is processed.</p>
 
     <h2>Information processed</h2>
-    <p>Asterfold may process bookmark URLs and titles, Pages, Boards, order, opening mode, settings, Trash records, Quick Save destinations, imported bookmark data, local backups, uploaded wallpaper images and local raster icons. This content may be personal if the user chooses to store personal information in it.</p>
+    <p>Asterfold may process bookmark URLs and titles, Pages, Boards, order, opening mode, settings, Trash records, Quick Save destinations, imported bookmark data, local backups and uploaded wallpaper images. Legacy custom raster icon values may remain in imported Asterfold backups for compatibility, but version 2.2.3 does not add or render them. This content may be personal if the user chooses to store personal information in it.</p>
 
     <h2>Storage and network behavior</h2>
-    <p>Workspace records and uploaded assets are stored locally in the user's Chrome profile, primarily in IndexedDB. Search, import preview and backup processing run locally. Asterfold 2.2.2 has no application backend, account or cloud synchronization. The default build has no host permissions and makes no application network requests. Data is not sent to the developer.</p>
+    <p>Workspace records and uploaded assets are stored locally in the user's Chrome profile, primarily in IndexedDB. Search, import preview and backup processing run locally. The temporary Privacy Mode flag is stored in Chrome session storage so popup and New Tab stay consistent; Chrome clears it when the browser session ends. Asterfold 2.2.3 has no application backend, account or cloud synchronization. The default build has no host permissions and makes no application network requests. Data is not sent to the developer.</p>
     <p>Chrome may independently use the network when the user opens a destination page or when Chrome supplies its browser-owned <code>_favicon</code> resource. Asterfold does not store or render remote favicon URLs.</p>
 
     <h2>Use of information</h2>
@@ -47,14 +47,14 @@
     <p>Imported files are validated locally and are not uploaded. Exported backups can contain bookmark URLs, titles, structure, settings and supported local assets, so users should protect them as personal files.</p>
     <p>Users can delete items, empty Trash, remove local extension data, or uninstall the extension. A backup should be exported first if the records matter.</p>
 
-    <h2>Wallpapers and icons</h2>
-    <p>User-selected wallpapers and custom icons are decoded, bounded and stored locally. Asterfold rejects remote image URLs and SVG files as local custom icons.</p>
+    <h2>Wallpapers and legacy icon values</h2>
+    <p>User-selected wallpapers are decoded, bounded and stored locally. Remote wallpaper URLs are rejected. Legacy custom raster icon values may remain in imported backups for compatibility, but version 2.2.3 does not add or render them.</p>
 
     <h2>Privacy Mode</h2>
     <p>Privacy Mode hides titles from the rendered interface and accessible labels, disables clipboard actions and prevents creation of the local search index while active. It is visual shoulder-surfing protection, not encryption. The local database remains accessible to the Chrome profile, operating system or anyone controlling the device.</p>
 
     <h2>Children</h2>
-    <p>Asterfold is a general-purpose productivity tool and is not directed specifically to children. Version 2.2.2 has no developer-operated service that collects user information.</p>
+    <p>Asterfold is a general-purpose productivity tool and is not directed specifically to children. Version 2.2.3 has no developer-operated service that collects user information.</p>
 
     <h2>Limited Use</h2>
     <blockquote>The use of information received from Google APIs will adhere to the Chrome Web Store User Data Policy, including the Limited Use requirements.</blockquote>

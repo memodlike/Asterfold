@@ -17,13 +17,14 @@ import {
   purgeTrash,
   restoreBoard,
   restorePage,
-  swapBoardGridPlacement,
+  moveBoardWithGridSwap,
   softDeleteBoard,
   softDeleteBookmark,
   softDeletePage,
   updateBoard,
   updateBookmark,
   updateSettings,
+  setDefaultPage,
 } from "../src/db/repository";
 import { DuplicateError } from "../src/domain/errors";
 
@@ -148,20 +149,64 @@ describe("Dexie workspace repository", () => {
     expect((await database.bookmarks.bulkGet([first.id, second.id])).every((bookmark) => bookmark?.deletedAt === null)).toBe(true);
   });
 
-  it("swaps free-grid board placement atomically and rolls back on failure", async () => {
+  it("moves and swaps free-grid Boards atomically and rolls back on failure", async () => {
     const workspace = await ensureStarterWorkspace(database);
     const first = workspace.boards[0]!;
     const second = await createBoard(workspace.pages[0]!.id, "Second", database);
     await updateBoard(first.id, { gridColumn: 1, gridRow: 0, gridSpan: 3 }, database);
     await updateBoard(second.id, { gridColumn: 7, gridRow: 1, gridSpan: 5 }, database);
 
-    await swapBoardGridPlacement(first.id, second.id, database);
+    await moveBoardWithGridSwap(first.id, second.id, workspace.pages[0]!.id, 1, database);
     expect(await database.boards.get(first.id)).toMatchObject({ gridColumn: 7, gridRow: 1, gridSpan: 5 });
     expect(await database.boards.get(second.id)).toMatchObject({ gridColumn: 1, gridRow: 0, gridSpan: 3 });
+    expect((await getWorkspaceData(database)).boards.map((board) => board.id)).toEqual([second.id, first.id]);
 
     const before = await database.boards.toArray();
-    await expect(swapBoardGridPlacement(first.id, "missing", database)).rejects.toThrow();
+    await expect(moveBoardWithGridSwap(first.id, "missing", workspace.pages[0]!.id, 0, database)).rejects.toThrow();
     expect(await database.boards.toArray()).toEqual(before);
+  });
+
+  it("serializes concurrent settings patches without losing unrelated fields", async () => {
+    await ensureStarterWorkspace(database);
+    await Promise.all([
+      updateSettings({ workspaceRows: 1 }, database),
+      updateSettings({ workspaceAlignment: "right" }, database),
+    ]);
+    expect(await database.settings.get("app")).toMatchObject({ workspaceRows: 1, workspaceAlignment: "right" });
+  });
+
+  it("updates previous default metadata and assigns a matching default Board", async () => {
+    const initial = await ensureStarterWorkspace(database);
+    const previousDefault = initial.pages[0]!;
+    const nextPage = await createPage("Next", {}, database);
+    const nextBoard = await createBoard(nextPage.id, "Next board", database);
+    const before = await database.pages.get(previousDefault.id);
+
+    await setDefaultPage(nextPage.id, database);
+
+    expect(await database.pages.get(previousDefault.id)).toMatchObject({
+      isDefault: false,
+      version: (before?.version ?? 0) + 1,
+    });
+    expect(await database.pages.get(nextPage.id)).toMatchObject({ isDefault: true });
+    expect(await database.settings.get("app")).toMatchObject({
+      quickSaveDefaultPageId: nextPage.id,
+      quickSaveDefaultBoardId: nextBoard.id,
+    });
+  });
+
+
+  it("does not create inaccessible snapshots during destructive operations", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const bookmark = await createBookmark({ boardId: workspace.boards[0]!.id, title: "Disposable", url: "https://disposable.example" }, {}, database);
+    await softDeleteBookmark(bookmark.id, database);
+    await permanentlyDelete("bookmark", bookmark.id, database);
+    expect(await database.snapshots.count()).toBe(0);
+
+    const second = await createBookmark({ boardId: workspace.boards[0]!.id, title: "Trash", url: "https://trash.example" }, {}, database);
+    await softDeleteBookmark(second.id, database);
+    await emptyTrash(database);
+    expect(await database.snapshots.count()).toBe(0);
   });
 
   it("serializes concurrent appends without duplicate positions", async () => {

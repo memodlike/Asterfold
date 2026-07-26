@@ -78,7 +78,7 @@
 
 **Context:** Quick Save and import must work without browsing-history or page-content access.  
 **Options:** broad tabs/host permissions; narrow event-scoped access.  
-**Decision:** Required `activeTab`, `alarms`, `contextMenus`, `favicon`; optional `bookmarks`; no `storage`, `identity`, wildcard hosts or content scripts.
+**Decision:** Required `activeTab`, `alarms`, `contextMenus`, `favicon`, and `storage`; optional `bookmarks`; no `identity`, wildcard hosts or content scripts. `storage` is restricted to `chrome.storage.session` for the transient cross-context Privacy Mode flag; workspace data remains in IndexedDB.
 **Security/privacy:** Reduces compromise impact and install warnings.  
 **References:** Chrome action, activeTab, permissions, favicon, commands, and contextMenus documentation.  
 **Validation:** manifest E2E and release permission scanner.
@@ -105,14 +105,14 @@
 **Consequences:** Very large valid files occupy memory during preview, bounded by the size cap.  
 **Validation:** hostile input tests and JSON/HTML round-trip tests.
 
-## ADR-010 — Portable backups and safety snapshots
+## ADR-010 — Portable backups and atomic restore
 
 **Date:** 2026-07-17  
 **Status:** Accepted
 
 **Context:** Personal data needs an account-free recovery path.  
 **Options:** proprietary binary; JSON only; JSON plus interoperable formats.  
-**Decision:** Versioned complete JSON backup, Netscape HTML, Markdown, and bounded local snapshots. Replace restore snapshots first.  
+**Decision:** Versioned complete JSON backup, Netscape HTML and Markdown. Replace is accepted only for a complete full backup and commits atomically. Version 2.2.3 creates no hidden recovery snapshots; the legacy IndexedDB store remains only for migration compatibility.  
 **Consequences:** Theme/wallpaper metadata is portable; raw uploaded wallpaper blobs are intentionally not embedded in lightweight text exports.  
 **Validation:** serialize/parse/merge/replace/round-trip tests and E2E backup preview.
 

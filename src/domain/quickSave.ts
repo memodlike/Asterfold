@@ -41,3 +41,21 @@ export function resolveQuickSaveDestination(
   }
   return null;
 }
+
+export function resolvePageBoardSelection(
+  pageId: string,
+  currentBoardId: string,
+  boards: readonly Board[],
+): string {
+  const pageBoards = boards.filter((board) => board.pageId === pageId && board.deletedAt === null);
+  return pageBoards.some((board) => board.id === currentBoardId) ? currentBoardId : pageBoards[0]?.id ?? "";
+}
+
+export function isValidQuickSaveDestination(
+  pageId: string,
+  boardId: string,
+  boards: readonly Board[],
+): boolean {
+  return boards.some((board) => board.id === boardId && board.pageId === pageId && board.deletedAt === null);
+}
+

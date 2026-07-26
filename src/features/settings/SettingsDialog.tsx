@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { browser } from "wxt/browser";
+import { readSessionPrivacy, writeSessionPrivacy } from "../../browser/privacySession";
+import { IMPORT_LIMITS } from "../../domain/importLimits";
 import { Brush, Check, CheckCircle2, Database, Download, FileJson, FileText, Grid2X2, Languages, Shield, Trash2, Upload, Zap } from "lucide-react";
 import type { AppSettings, ThemeConfig, Wallpaper, WorkspaceData } from "../../domain/models";
+import { ImportError } from "../../domain/errors";
 import { validateTheme } from "../../domain/themes";
 import { auditInvariants, getWallpaper, saveWallpaper, updateSettings } from "../../db/repository";
 import {
@@ -36,11 +39,29 @@ interface SettingsDialogProps {
 
 type ChromeNode = chrome.bookmarks.BookmarkTreeNode;
 
-function flattenChromeBookmarks(nodes: ChromeNode[], path: string[] = []): ImportRecord[] {
+
+function flattenChromeBookmarks(nodes: ChromeNode[]): ImportRecord[] {
   const records: ImportRecord[] = [];
-  for (const node of nodes) {
-    if (node.url) records.push({ title: node.title || new URL(node.url).hostname, url: node.url, description: null, folderPath: path });
-    if (node.children) records.push(...flattenChromeBookmarks(node.children, node.title ? [...path, node.title] : path));
+  const stack = [...nodes].reverse().map((node) => ({ node, path: [] as string[], depth: 0 }));
+  let visited = 0;
+  while (stack.length > 0) {
+    const current = stack.pop()!;
+    visited += 1;
+    if (visited > IMPORT_LIMITS.nodes) throw new ImportError("Chrome bookmark tree contains too many nodes");
+    if (current.depth > IMPORT_LIMITS.depth) throw new ImportError("Chrome bookmark folder nesting is too deep");
+    if (current.node.url) {
+      if (records.length >= IMPORT_LIMITS.bookmarks) throw new ImportError("Chrome bookmark tree contains too many bookmarks");
+      records.push({
+        title: current.node.title.trim().slice(0, 240) || "Bookmark",
+        url: current.node.url,
+        description: null,
+        folderPath: current.path,
+      });
+    }
+    const childPath = current.node.title ? [...current.path, current.node.title.slice(0, 240)] : current.path;
+    for (const child of [...(current.node.children ?? [])].reverse()) {
+      stack.push({ node: child, path: childPath, depth: current.depth + 1 });
+    }
   }
   return records;
 }
@@ -66,9 +87,11 @@ export function SettingsDialog(props: SettingsDialogProps) {
   const [backupPreview, setBackupPreview] = useState<AsterfoldBackup | null>(null);
   const [importSource, setImportSource] = useState("");
   const [importBusy, setImportBusy] = useState(false);
+  const [importParsing, setImportParsing] = useState(false);
   const [duplicateStrategy, setDuplicateStrategy] = useState<"skip" | "allow">("skip");
   const [importPageTitle, setImportPageTitle] = useState(t("settings.importedBookmarks"));
   const importInputRef = useRef<HTMLInputElement>(null);
+  const importParseControllerRef = useRef<AbortController | null>(null);
   const wallpaperInputRef = useRef<HTMLInputElement>(null);
   const themeCommitRef = useRef<number | null>(null);
   const pendingThemeRef = useRef<ThemeConfig | null>(null);
@@ -98,12 +121,27 @@ export function SettingsDialog(props: SettingsDialogProps) {
   }, [settings.theme]);
   useEffect(() => () => {
     if (themeCommitRef.current !== null) window.clearTimeout(themeCommitRef.current);
+    importParseControllerRef.current?.abort();
   }, []);
 
   const patchSettings = async (patch: Partial<Omit<AppSettings, "id" | "schemaVersion">>, message = t("generic.save")): Promise<void> => {
     try {
       await updateSettings(patch);
       props.onUpdated(message);
+    } catch {
+      props.onError(t("error.updateSettings"));
+    }
+  };
+  const setPrivacyPersistence = async (enabled: boolean): Promise<void> => {
+    try {
+      if (enabled) {
+        const sessionEnabled = await readSessionPrivacy();
+        await updateSettings({ privacyPersist: true, privacyEnabled: sessionEnabled });
+      } else {
+        await writeSessionPrivacy(settings.privacyEnabled);
+        await updateSettings({ privacyPersist: false, privacyEnabled: false });
+      }
+      props.onUpdated(t("generic.save"));
     } catch {
       props.onError(t("error.updateSettings"));
     }
@@ -120,6 +158,9 @@ export function SettingsDialog(props: SettingsDialogProps) {
     }, 200);
   };
   const closeSettings = (): void => {
+    importParseControllerRef.current?.abort();
+    importParseControllerRef.current = null;
+    setImportParsing(false);
     if (themeCommitRef.current !== null) window.clearTimeout(themeCommitRef.current);
     themeCommitRef.current = null;
     const pending = pendingThemeRef.current;
@@ -139,21 +180,36 @@ export function SettingsDialog(props: SettingsDialogProps) {
     }
   };
   const readImportFile = async (file: File): Promise<void> => {
-    if (file.size > 25 * 1024 * 1024) { props.onError(t("error.importTooLarge")); return; }
+    if (file.size > IMPORT_LIMITS.fileBytes) { props.onError(t("error.importTooLarge")); return; }
+    importParseControllerRef.current?.abort();
+    const controller = new AbortController();
+    importParseControllerRef.current = controller;
+    setImportParsing(true);
     try {
       const text = await file.text();
       if (file.name.toLowerCase().endsWith(".json")) {
-        setBackupPreview(await parseBackupOffThread(text));
+        setBackupPreview(await parseBackupOffThread(text, controller.signal));
         setImportRecordsPreview([]);
       } else {
-        setImportRecordsPreview(await parseHtmlOffThread(text));
+        setImportRecordsPreview(await parseHtmlOffThread(text, controller.signal));
         setBackupPreview(null);
       }
       setImportSource(file.name);
-    } catch {
-      props.onError(t("error.importPreviewFailed"));
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === "AbortError")) props.onError(t("error.importPreviewFailed"));
+    } finally {
+      if (importParseControllerRef.current === controller) {
+        importParseControllerRef.current = null;
+        setImportParsing(false);
+      }
     }
   };
+  const cancelImportParsing = (): void => {
+    importParseControllerRef.current?.abort();
+    importParseControllerRef.current = null;
+    setImportParsing(false);
+  };
+
   const requestChromeImport = async (): Promise<void> => {
     try {
       const granted = await browser.permissions.request({ permissions: ["bookmarks"] });
@@ -177,6 +233,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
   };
   const commitBackupRestore = async (strategy: "merge" | "replace"): Promise<void> => {
     if (!backupPreview) return;
+    if (strategy === "replace" && backupPreview.scope !== "full") { props.onError(t("error.restoreFailed")); return; }
     if (strategy === "replace" && !window.confirm(t("settings.restoreConfirmation"))) return;
     setImportBusy(true);
     try {
@@ -261,11 +318,12 @@ export function SettingsDialog(props: SettingsDialogProps) {
           </SettingsSection> : null}
 
           {section === "data-privacy" ? <SettingsSection title={t("settings.dataPrivacy")} description={t("settings.dataDescription")}>
-            <div className="action-grid"><button onClick={() => void exportAll("json")}><FileJson /><strong>{t("settings.exportJson")}</strong><span>{t("settings.backupVersion")}</span></button><button onClick={() => void exportAll("html")}><Download /><strong>{t("settings.exportHtml")}</strong><span>{t("settings.exportHtmlHint")}</span></button><button onClick={() => void exportAll("markdown")}><FileText /><strong>{t("settings.exportMarkdown")}</strong><span>.md</span></button><button onClick={() => importInputRef.current?.click()}><Upload /><strong>{t("settings.importFile")}</strong><span>{t("settings.importFileHint")}</span></button><button onClick={() => void requestChromeImport()}><Download /><strong>{t("settings.importChrome")}</strong><span>{t("settings.permissionOnDemand")}</span></button></div>
+            <div className="action-grid"><button onClick={() => void exportAll("json")}><FileJson /><strong>{t("settings.exportJson")}</strong><span>{t("settings.backupVersion")}</span></button><button onClick={() => void exportAll("html")}><Download /><strong>{t("settings.exportHtml")}</strong><span>{t("settings.exportHtmlHint")}</span></button><button onClick={() => void exportAll("markdown")}><FileText /><strong>{t("settings.exportMarkdown")}</strong><span>.md</span></button><button disabled={importParsing} onClick={() => importInputRef.current?.click()}><Upload /><strong>{t("settings.importFile")}</strong><span>{t("settings.importFileHint")}</span></button><button onClick={() => void requestChromeImport()}><Download /><strong>{t("settings.importChrome")}</strong><span>{t("settings.permissionOnDemand")}</span></button></div>
             <input ref={importInputRef} hidden type="file" accept="application/json,text/html,.json,.html,.htm" onChange={(event) => { const file = event.target.files?.[0]; if (file) void readImportFile(file); event.currentTarget.value = ""; }} />
-            {importRecordsPreview.length > 0 ? <div className="import-preview"><h3>{importSource}</h3><p>{t("settings.importPreview", { count: importRecordsPreview.length })}</p><div className="form-row"><label>{t("settings.defaultPage")}<input value={importPageTitle} onChange={(event) => setImportPageTitle(event.target.value)} /></label><label>{t("settings.duplicates")}<select value={duplicateStrategy} onChange={(event) => setDuplicateStrategy(event.target.value as "skip" | "allow")}><option value="skip">{t("settings.skip")}</option><option value="allow">{t("settings.allow")}</option></select></label></div><div className="button-row"><Button onClick={() => setImportRecordsPreview([])}>{t("generic.cancel")}</Button><Button variant="primary" disabled={importBusy} onClick={() => void commitRecordImport()}>{t("generic.create")}</Button></div></div> : null}
-            {backupPreview ? <div className="import-preview"><h3>{importSource}</h3><p>{t("settings.backupSummary", { version: backupPreview.exportVersion, pages: backupPreview.entities.pages.length, boards: backupPreview.entities.boards.length, bookmarks: backupPreview.entities.bookmarks.length })}</p><div className="button-row"><Button onClick={() => setBackupPreview(null)}>{t("generic.cancel")}</Button><Button disabled={importBusy} onClick={() => void commitBackupRestore("merge")}>{t("settings.merge")}</Button><Button variant="danger" disabled={importBusy} onClick={() => void commitBackupRestore("replace")}>{t("settings.replace")}</Button></div></div> : null}
-            <SettingRow label={t("settings.privacyPersist")}><label className="switch"><input type="checkbox" checked={settings.privacyPersist} onChange={(event) => void patchSettings({ privacyPersist: event.target.checked, ...(event.target.checked ? {} : { privacyEnabled: false }) })} /><span /></label></SettingRow>
+            {importParsing ? <div className="import-preview" role="status"><p>{t("settings.importParsing")}</p><Button onClick={cancelImportParsing}>{t("generic.cancel")}</Button></div> : null}
+            {importRecordsPreview.length > 0 ? <div className="import-preview"><h3>{importSource}</h3><p>{t("settings.importPreview", { count: importRecordsPreview.length })}</p><div className="form-row"><label>{t("settings.defaultPage")}<input value={importPageTitle} maxLength={240} onChange={(event) => setImportPageTitle(event.target.value)} /></label><label>{t("settings.duplicates")}<select value={duplicateStrategy} onChange={(event) => setDuplicateStrategy(event.target.value as "skip" | "allow")}><option value="skip">{t("settings.skip")}</option><option value="allow">{t("settings.allow")}</option></select></label></div><div className="button-row"><Button onClick={() => setImportRecordsPreview([])}>{t("generic.cancel")}</Button><Button variant="primary" disabled={importBusy} onClick={() => void commitRecordImport()}>{t("generic.create")}</Button></div></div> : null}
+            {backupPreview ? <div className="import-preview"><h3>{importSource}</h3><p>{t("settings.backupSummary", { version: backupPreview.exportVersion, pages: backupPreview.entities.pages.length, boards: backupPreview.entities.boards.length, bookmarks: backupPreview.entities.bookmarks.length })}</p><div className="button-row"><Button onClick={() => setBackupPreview(null)}>{t("generic.cancel")}</Button><Button disabled={importBusy} onClick={() => void commitBackupRestore("merge")}>{t("settings.merge")}</Button>{backupPreview.scope === "full" ? <Button variant="danger" disabled={importBusy} onClick={() => void commitBackupRestore("replace")}>{t("settings.replace")}</Button> : null}</div></div> : null}
+            <SettingRow label={t("settings.privacyPersist")}><label className="switch"><input type="checkbox" checked={settings.privacyPersist} onChange={(event) => void setPrivacyPersistence(event.target.checked)} /><span /></label></SettingRow>
             <SettingRow label={t("settings.retention")}><select value={settings.trashRetentionDays ?? "never"} onChange={(event) => void patchSettings({ trashRetentionDays: event.target.value === "never" ? null : Number(event.target.value) as 7 | 30 | 90 })}><option value="7">{t("settings.days", { count: 7 })}</option><option value="30">{t("settings.days", { count: 30 })}</option><option value="90">{t("settings.days", { count: 90 })}</option><option value="never">{t("settings.never")}</option></select></SettingRow>
             <div className="data-footer"><Button icon={<Trash2 size={16} />} onClick={props.onOpenTrash}>{t("settings.openTrash")}</Button><div className="diagnostic-summary"><Database size={17} /><span>{counts.pages} / {counts.boards} / {counts.bookmarks}</span><span>{formatBytes(storage?.usage)}</span><strong className={invariants.length ? "is-warning" : "is-healthy"}>{invariants.length ? t("settings.issues", { count: invariants.length }) : t("settings.healthy")}</strong></div><Button icon={<CheckCircle2 size={16} />} disabled={diagnosticsBusy} onClick={() => void repeatDiagnostics()}>{t("settings.repeatDiagnostics")}</Button></div>
           </SettingsSection> : null}

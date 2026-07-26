@@ -97,7 +97,7 @@ async function validateUnpacked() {
   if (manifest.version !== packageJson.version) throw new Error("Package and manifest versions differ");
   if (manifest.chrome_url_overrides?.newtab !== "newtab.html") throw new Error("New-tab override is missing");
   if (manifest.action?.default_popup !== "popup.html") throw new Error("Popup entrypoint is missing");
-  const expectedPermissions = ["activeTab", "favicon", "alarms", "contextMenus"];
+  const expectedPermissions = ["activeTab", "favicon", "alarms", "contextMenus", "storage"];
   const expectedOptionalPermissions = ["bookmarks"];
   const sameSet = (actual, expected) => actual.length === expected.length && expected.every((permission) => actual.includes(permission));
   if (!sameSet(manifest.permissions ?? [], expectedPermissions)) throw new Error("Release permissions differ from the least-privilege policy");
@@ -115,7 +115,7 @@ async function validateUnpacked() {
   for (const file of files.filter((path) => /\.(?:html|js|json|css|svg)$/u.test(path))) {
     const text = await readFile(file, "utf8");
     if (/service[_-]?role|SUPABASE_SERVICE|BEGIN (?:RSA |EC )?PRIVATE KEY/iu.test(text)) throw new Error(`Potential secret found in ${file}`);
-    if (/<script[^>]+src=["']https?:|import\s*\(\s*["']https?:|new\s+Function\s*\(|\beval\s*\(/iu.test(text)) throw new Error(`Remote or dynamic code pattern found in ${file}`);
+    if (/<script[^>]+src=["']https?:|<iframe[^>]+src=["']https?:|import\s*\(\s*["']https?:|importScripts\s*\(\s*["']https?:|new\s+(?:Shared)?Worker\s*\(\s*["']https?:|WebAssembly\.(?:instantiateStreaming|compileStreaming)\s*\([^)]*fetch\s*\(\s*["']https?:|data:text\/(?:javascript|html)|new\s+Function\s*\(|\beval\s*\(/iu.test(text)) throw new Error(`Remote or dynamic code pattern found in ${file}`);
   }
 }
 
