@@ -4,8 +4,7 @@ on:
   pull_request:
 
 permissions:
-  contents: read
-  pull-requests: write
+  contents: write
 
 jobs:
   report:
@@ -16,15 +15,13 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: agent/chrome-store-readiness-2.2.3
+          persist-credentials: true
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Report TypeScript errors
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+      - name: Persist TypeScript errors
         shell: bash
         run: |
           set +e
@@ -33,13 +30,13 @@ jobs:
           if [ "$status" -eq 0 ]; then
             exit 0
           fi
-          head -c 12000 /tmp/typecheck.log > /tmp/typecheck-truncated.log
-          jq -Rs '{body: "<!-- asterfold-typecheck-diagnostics -->\n### TypeScript diagnostics\n```text\n" + . + "\n```"}' /tmp/typecheck-truncated.log > /tmp/comment.json
-          curl --fail-with-body --silent --show-error \
-            -X POST \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
-            --data-binary @/tmp/comment.json
+          mkdir -p .diagnostics
+          head -c 12000 /tmp/typecheck.log > .diagnostics/typecheck.txt
+          git add .diagnostics/typecheck.txt
+          git config user.name "Asterfold Diagnostics Bot"
+          git config user.email "actions@users.noreply.github.com"
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: capture TypeScript diagnostics"
+            git push origin HEAD:agent/chrome-store-readiness-2.2.3
+          fi
           exit "$status"
