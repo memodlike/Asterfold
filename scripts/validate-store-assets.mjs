@@ -19,6 +19,10 @@ function fail(message) {
   failures.push(message);
 }
 
+function relativeAssetPath(path) {
+  return relative(root, path).replaceAll("\\", "/");
+}
+
 async function filesUnder(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
   const nested = await Promise.all(entries.map(async (entry) => {
@@ -141,7 +145,7 @@ try {
 }
 
 for (const file of files) {
-  const name = relative(root, file);
+  const name = relativeAssetPath(file);
   const extension = extname(file).toLowerCase();
   if (!allowedExtensions.has(extension)) fail(`${name}: unsupported file extension`);
   const info = await stat(file);
@@ -155,10 +159,10 @@ for (const file of files) {
   }
 }
 
-const screenshots = files.filter((file) => relative(root, file).startsWith("screenshots/") && extname(file).toLowerCase() === ".png");
+const screenshots = files.filter((file) => relativeAssetPath(file).startsWith("screenshots/") && extname(file).toLowerCase() === ".png");
 if (screenshots.length < 1 || screenshots.length > 5) fail(`screenshots: expected 1–5 PNG files, found ${screenshots.length}`);
 for (const screenshot of screenshots) {
-  const name = relative(root, screenshot);
+  const name = relativeAssetPath(screenshot);
   try {
     const dimensions = inspectPng(await readFile(screenshot), false);
     if (dimensions.width !== 1280 || dimensions.height !== 800) {
