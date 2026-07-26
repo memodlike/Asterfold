@@ -1,27 +1,66 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Blob as NodeBlob } from "node:buffer";
+import { version as packageVersion } from "../package.json";
 import { AsterfoldDatabase } from "../src/db/database";
-import { createBookmark, ensureStarterWorkspace, getWorkspaceData } from "../src/db/repository";
+import { createBookmark, ensureStarterWorkspace, getWorkspaceData, updateSettings } from "../src/db/repository";
 import {
   createBackup,
   importRecords,
   parseBackup,
   parseNetscapeHtml,
+  previewBackup,
   restoreBackup,
   serializeBackup,
   toMarkdown,
   toNetscapeHtml,
 } from "../src/services/exportImport";
 
+const webpBytes = new Uint8Array([
+  0x52, 0x49, 0x46, 0x46, 0x04, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
+]);
+
+function uploadedWallpaper(id = "wallpaper-upload") {
+  const blob = new Blob([webpBytes], { type: "image/webp" });
+  return {
+    id,
+    kind: "upload" as const,
+    name: "Local wallpaper",
+    mimeType: "image/webp",
+    blob,
+    thumbnail: blob,
+    value: null,
+    width: 64,
+    height: 64,
+    sourceBytes: blob.size,
+    storedBytes: blob.size * 2,
+    createdAt: "2026-07-26T00:00:00.000Z",
+    updatedAt: "2026-07-26T00:00:00.000Z",
+  };
+}
+
+async function blobBytes(blob: Blob | null | undefined): Promise<Uint8Array> {
+  if (!blob) return new Uint8Array();
+  if (typeof blob.arrayBuffer === "function") return new Uint8Array(await blob.arrayBuffer());
+  return new Promise<Uint8Array>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(new Uint8Array(reader.result as ArrayBuffer)), { once: true });
+    reader.addEventListener("error", () => reject(reader.error ?? new Error("Blob read failed")), { once: true });
+    reader.readAsArrayBuffer(blob);
+  });
+}
+
 describe("safe import and lossless export", () => {
   let database: AsterfoldDatabase;
 
   beforeEach(async () => {
+    vi.stubGlobal("Blob", NodeBlob);
     database = new AsterfoldDatabase(`asterfold-import-${crypto.randomUUID()}`);
     await database.open();
   });
 
   afterEach(async () => {
     await database.delete();
+    vi.unstubAllGlobals();
   });
 
   it("round-trips the hierarchy and escapes HTML export", async () => {
@@ -48,20 +87,197 @@ describe("safe import and lossless export", () => {
     expect(restored.boards).toHaveLength(1);
     expect(restored.bookmarks).toHaveLength(1);
     expect(restored.bookmarks[0]?.title).toBe("<script>alert('x')</script>");
+    const reexported = await createBackup({}, database);
+    expect(reexported.entities).toEqual(parsed.entities);
+    expect(reexported.settings).toEqual(parsed.settings);
+  });
+
+  it("exports backup v3 with the package version and only the active uploaded wallpaper", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const active = uploadedWallpaper();
+    await database.wallpapers.bulkAdd([active, uploadedWallpaper("orphan-wallpaper")]);
+    await updateSettings({
+      theme: { ...workspace.settings.theme, wallpaperId: active.id, backgroundMode: "wallpaper" },
+    }, database);
+
+    const backup = await createBackup({}, database);
+    expect(backup).toMatchObject({
+      schemaVersion: 3,
+      exportVersion: 3,
+      appVersion: packageVersion,
+      assets: {
+        wallpapers: [{
+          id: active.id,
+          kind: "upload",
+          mimeType: "image/webp",
+          width: 64,
+          height: 64,
+          sourceBytes: active.sourceBytes,
+          storedBytes: active.storedBytes,
+        }],
+      },
+    });
+    expect(backup.assets?.wallpapers[0]?.data).toMatch(/^[A-Za-z0-9+/]+={0,2}$/u);
+    expect(backup.assets?.wallpapers[0]?.thumbnail).toBe(backup.assets?.wallpapers[0]?.data);
+    expect(backup.assets?.wallpapers).toHaveLength(1);
+
+    const scoped = await createBackup({ pageId: workspace.pages[0]!.id }, database);
+    expect(scoped.settings).toBeUndefined();
+    expect(scoped.assets?.wallpapers).toEqual([]);
+  });
+
+  it("parses and atomically restores a v3 wallpaper backup", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const active = uploadedWallpaper();
+    await database.wallpapers.add(active);
+    await updateSettings({
+      theme: { ...workspace.settings.theme, wallpaperId: active.id, backgroundMode: "wallpaper" },
+    }, database);
+    const serialized = serializeBackup(await createBackup({}, database));
+
+    await database.wallpapers.clear();
+    await updateSettings({
+      theme: { ...workspace.settings.theme, wallpaperId: null, backgroundMode: "auto" },
+    }, database);
+    vi.stubGlobal("createImageBitmap", vi.fn(() => Promise.resolve({ width: 64, height: 64, close: vi.fn() })));
+    await restoreBackup(parseBackup(serialized), "replace", database);
+
+    const restoredSettings = await database.settings.get("app");
+    const restored = await database.wallpapers.get(active.id);
+    expect(restoredSettings?.theme.wallpaperId).toBe(active.id);
+    expect(restored?.blob).toBeInstanceOf(Blob);
+    expect(restored?.thumbnail).toBeInstanceOf(Blob);
+    expect(await blobBytes(restored?.blob)).toEqual(await blobBytes(active.blob));
+
+    const reexported = parseBackup(serializeBackup(await createBackup({}, database)));
+    expect(reexported.assets).toEqual(parseBackup(serialized).assets);
+  });
+
+  it("rejects unsafe or unbounded v3 wallpaper assets", async () => {
+    const backup = await createBackup({}, database);
+    const encodedWebp = btoa(String.fromCharCode(...webpBytes));
+    const wallpaper = {
+      id: "wallpaper-upload",
+      name: "Wallpaper",
+      kind: "upload",
+      mimeType: "image/webp",
+      width: 64,
+      height: 64,
+      sourceBytes: webpBytes.length,
+      storedBytes: webpBytes.length * 2,
+      data: encodedWebp,
+      thumbnail: encodedWebp,
+      createdAt: "2026-07-26T00:00:00.000Z",
+      updatedAt: "2026-07-26T00:00:00.000Z",
+    };
+    const withAsset = { ...backup, assets: { wallpapers: [wallpaper] } };
+
+    expect(() => parseBackup(JSON.stringify({
+      ...withAsset,
+      assets: { wallpapers: [{ ...wallpaper, data: "not base64!" }] },
+    }))).toThrow(/validation failed/iu);
+    expect(() => parseBackup(JSON.stringify({
+      ...withAsset,
+      assets: { wallpapers: [{ ...wallpaper, mimeType: "image/svg+xml" }] },
+    }))).toThrow(/validation failed/iu);
+    expect(() => parseBackup(JSON.stringify({
+      ...withAsset,
+      assets: { wallpapers: [{ ...wallpaper, data: "https://example.com/wallpaper.webp" }] },
+    }))).toThrow(/validation failed/iu);
+    expect(() => parseBackup(JSON.stringify({
+      ...withAsset,
+      assets: { wallpapers: [{ ...wallpaper, data: btoa("<svg></svg>") }] },
+    }))).toThrow(/validation failed/iu);
+    expect(() => parseBackup(JSON.stringify({
+      ...withAsset,
+      assets: { wallpapers: [{ ...wallpaper, data: "UklGRg==" }] },
+    }))).toThrow(/validation failed/iu);
+    expect(() => parseBackup(JSON.stringify({
+      ...withAsset,
+      assets: { wallpapers: Array.from({ length: 3 }, (_, index) => ({ ...wallpaper, id: `wallpaper-${index}` })) },
+    }))).toThrow(/validation failed/iu);
+  });
+
+  it("does not mutate the workspace when v3 wallpaper restore validation fails", async () => {
+    const existing = await ensureStarterWorkspace(database);
+    const source = new AsterfoldDatabase(`asterfold-import-source-${crypto.randomUUID()}`);
+    await source.open();
+    try {
+      const sourceWorkspace = await ensureStarterWorkspace(source);
+      const active = uploadedWallpaper();
+      await source.wallpapers.add(active);
+      await updateSettings({
+        theme: { ...sourceWorkspace.settings.theme, wallpaperId: active.id, backgroundMode: "wallpaper" },
+      }, source);
+      const backup = await createBackup({}, source);
+      vi.stubGlobal("createImageBitmap", vi.fn(() => Promise.reject(new Error("decoder failed"))));
+      await expect(restoreBackup(backup, "replace", database)).rejects.toThrow(/decoded|decode/iu);
+      expect((await database.pages.toArray()).map((page) => page.id)).toEqual(existing.pages.map((page) => page.id));
+      expect(await database.wallpapers.count()).toBe(0);
+    } finally {
+      await source.delete();
+    }
+  });
+
+  it("rolls back entity and wallpaper writes together when replace restore fails", async () => {
+    const existing = await ensureStarterWorkspace(database);
+    const source = new AsterfoldDatabase(`asterfold-import-rollback-${crypto.randomUUID()}`);
+    await source.open();
+    try {
+      const sourceWorkspace = await ensureStarterWorkspace(source);
+      const active = uploadedWallpaper();
+      await source.wallpapers.add(active);
+      await updateSettings({
+        theme: { ...sourceWorkspace.settings.theme, wallpaperId: active.id, backgroundMode: "wallpaper" },
+      }, source);
+      const backup = await createBackup({}, source);
+      vi.stubGlobal("createImageBitmap", vi.fn(() => Promise.resolve({ width: 64, height: 64, close: vi.fn() })));
+      vi.spyOn(database.wallpapers, "bulkPut").mockRejectedValueOnce(new Error("injected wallpaper write failure"));
+
+      await expect(restoreBackup(backup, "replace", database)).rejects.toThrow(/injected wallpaper write failure/u);
+      expect((await database.pages.toArray()).map((page) => page.id)).toEqual(existing.pages.map((page) => page.id));
+      expect(await database.wallpapers.count()).toBe(0);
+    } finally {
+      await source.delete();
+    }
   });
 
   it("rejects prototype pollution keys and unsafe imported URLs", () => {
     expect(() => parseBackup('{"__proto__":{"polluted":true}}')).toThrow(/unsafe object key/u);
-    const records = parseNetscapeHtml('<DL><p><DT><A HREF="javascript:alert(1)">Bad</A><DT><A HREF="https://safe.example">Safe</A></DL><p>');
+    const records = parseNetscapeHtml('<DL><p><DT><A HREF="javascript:alert(1)">Bad</A><DT><A HREF="https://%75ser@example.com/private">Credentials</A><DT><A HREF="https://safe.example">Safe</A></DL><p>');
     expect(records).toHaveLength(1);
     expect(records[0]?.url).toBe("https://safe.example");
   });
 
-  it("normalizes a backup v1 payload to backup v2 defaults", async () => {
+  it("rejects unknown backup format versions without attempting repair", async () => {
+    const backup = await createBackup({}, database);
+    const malformed = { ...backup, schemaVersion: 99, exportVersion: 99 };
+    expect(() => parseBackup(JSON.stringify(malformed))).toThrow(/validation failed/iu);
+  });
+
+  it("rejects unknown fields, duplicate IDs, orphaned children, and invalid ranks", async () => {
+    const backup = await createBackup({}, database);
+    expect(() => parseBackup(JSON.stringify({ ...backup, unexpected: true }))).toThrow(/validation failed/iu);
+
+    const duplicate = structuredClone(backup);
+    duplicate.entities.pages.push(structuredClone(duplicate.entities.pages[0]!));
+    expect(() => parseBackup(JSON.stringify(duplicate))).toThrow(/duplicate/iu);
+
+    const orphan = structuredClone(backup);
+    orphan.entities.boards[0]!.pageId = "missing-page";
+    expect(() => parseBackup(JSON.stringify(orphan))).toThrow(/parent/iu);
+
+    const invalidRank = structuredClone(backup);
+    invalidRank.entities.boards[0]!.position = "broken";
+    expect(() => parseBackup(JSON.stringify(invalidRank))).toThrow(/rank/iu);
+  });
+
+  it("imports backup v1 and v2 payloads without requiring assets", async () => {
     const backup = await createBackup({}, database);
     const legacy = JSON.parse(serializeBackup(backup)) as Record<string, unknown> & { entities: { boards: Array<Record<string, unknown>> }; settings: Record<string, unknown>; theme: Record<string, unknown> };
     legacy.schemaVersion = 1;
     legacy.exportVersion = 1;
+    delete legacy.assets;
     for (const board of legacy.entities.boards) {
       delete board.bookmarkColumns;
       delete board.gridColumn;
@@ -85,18 +301,52 @@ describe("safe import and lossless export", () => {
     delete legacy.theme.menuMotion;
     delete legacy.theme.dragMotion;
     const normalized = parseBackup(JSON.stringify(legacy));
-    expect(normalized).toMatchObject({ schemaVersion: 2, exportVersion: 2 });
+    expect(normalized).toMatchObject({ schemaVersion: 1, exportVersion: 1 });
     expect(normalized.settings).toMatchObject({ schemaVersion: 5, locale: "auto", workspaceLayoutMode: "auto", workspaceRows: 2, workspaceAlignment: "center" });
     expect(normalized.settings?.theme).toMatchObject({ lowPowerMode: false, bookmarkHoverMotion: true, menuMotion: true, dragMotion: true });
     expect(normalized.entities.boards[0]).toMatchObject({ bookmarkColumns: "auto", gridColumn: 1, gridRow: 0, gridSpan: 3 });
+
+    const v2 = { ...backup, schemaVersion: 2, exportVersion: 2 };
+    delete (v2 as { assets?: unknown }).assets;
+    expect(parseBackup(JSON.stringify(v2))).toMatchObject({ schemaVersion: 2, exportVersion: 2 });
   });
 
-  it("normalizes former default new-tab backup links to the current tab", async () => {
+  it("preserves every explicit open mode through export and parse", async () => {
     const workspace = await ensureStarterWorkspace(database);
-    await createBookmark({ boardId: workspace.boards[0]!.id, title: "Example", url: "https://example.com" }, {}, database);
+    const modes = ["current", "new-tab", "new-window", "incognito"] as const;
+    for (const [index, openMode] of modes.entries()) {
+      await createBookmark({
+        boardId: workspace.boards[0]!.id,
+        title: `Example ${openMode}`,
+        url: `https://example.com/${index}`,
+        openMode,
+      }, {}, database);
+    }
     const backup = await createBackup({}, database);
-    backup.entities.bookmarks[0]!.openMode = "new-tab";
-    expect(parseBackup(serializeBackup(backup)).entities.bookmarks[0]?.openMode).toBe("current");
+    const parsed = parseBackup(serializeBackup(backup));
+    expect(Object.fromEntries(parsed.entities.bookmarks.map((bookmark) => [bookmark.title, bookmark.openMode]))).toEqual({
+      "Example current": "current",
+      "Example new-tab": "new-tab",
+      "Example new-window": "new-window",
+      "Example incognito": "incognito",
+    });
+    expect(parseBackup(serializeBackup(parsed))).toEqual(parsed);
+  });
+
+  it("previews destructive scope and remaps external merge identities", async () => {
+    const original = await createBackup({}, database);
+    const { backup, preview } = previewBackup(serializeBackup(original), "replace");
+    expect(preview).toMatchObject({
+      valid: { pages: 1, boards: 1, bookmarks: 0 },
+      invalid: 0,
+      destructiveScope: "workspace",
+    });
+    await restoreBackup(backup, "merge", database);
+    const merged = await getWorkspaceData(database);
+    expect(merged.pages).toHaveLength(2);
+    expect(new Set(merged.pages.map((page) => page.id)).size).toBe(2);
+    expect(merged.boards).toHaveLength(2);
+    expect(new Set(merged.boards.map((board) => board.id)).size).toBe(2);
   });
 
   it("reports invalid rows and skips normalized duplicates", async () => {

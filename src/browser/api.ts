@@ -1,27 +1,40 @@
 import { browser } from "wxt/browser";
 import type { BookmarkOpenMode } from "../domain/models";
-import { isSafeOpenUrl } from "../domain/urls";
+import { parseSafeNavigationUrl } from "../domain/urls";
+import type { ExtensionErrorCode, ExtensionResponse } from "./messages";
+
+export class ExtensionRequestError extends Error {
+  public constructor(
+    public readonly code: ExtensionErrorCode,
+    public readonly params?: Record<string, string | number>,
+  ) {
+    super(code);
+    this.name = "ExtensionRequestError";
+  }
+}
 
 export function faviconUrl(pageUrl: string, size = 32): string {
-  if (!isSafeOpenUrl(pageUrl) || pageUrl.startsWith("mailto:")) return "";
-  return chrome.runtime.getURL(`/_favicon/?pageUrl=${encodeURIComponent(pageUrl)}&size=${size}`);
+  try {
+    const safeUrl = parseSafeNavigationUrl(pageUrl);
+    return chrome.runtime.getURL(`/_favicon/?pageUrl=${encodeURIComponent(safeUrl)}&size=${size}`);
+  } catch {
+    return "";
+  }
 }
 
 export async function openUrl(url: string, mode: BookmarkOpenMode): Promise<void> {
-  if (!isSafeOpenUrl(url)) throw new Error("Unsafe URL blocked");
-  if (mode === "current") {
-    window.location.assign(url);
-    return;
+  let safeUrl: string;
+  try {
+    safeUrl = parseSafeNavigationUrl(url, { allowMailto: true });
+  } catch {
+    throw new ExtensionRequestError("UNSAFE_URL");
   }
-  if (mode === "new-tab") {
-    await browser.tabs.create({ url, active: true });
-    return;
-  }
-  if (mode === "new-window") {
-    await browser.windows.create({ url, focused: true });
-    return;
-  }
-  await browser.windows.create({ url, incognito: true, focused: true });
+  const response = await browser.runtime.sendMessage({
+    type: "OPEN_URL",
+    url: safeUrl,
+    mode,
+  }) as ExtensionResponse;
+  if (!response.ok) throw new ExtensionRequestError(response.code, response.params);
 }
 
 export async function copyText(value: string): Promise<void> {

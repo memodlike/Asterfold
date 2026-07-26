@@ -18,7 +18,7 @@ import {
   updateBoard,
   updateSettings,
 } from "../db/repository";
-import { copyText, openUrl } from "../browser/api";
+import { copyText, ExtensionRequestError, openUrl } from "../browser/api";
 import { changeBus } from "../browser/changeBus";
 import { Button } from "../components/Button";
 import { IconButton } from "../components/IconButton";
@@ -102,7 +102,16 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
       changeBus.publish("all");
       if (success) notifySuccess(success);
     } catch (error) {
-      notifyError(error instanceof Error ? error.message : "Не удалось выполнить действие");
+      if (error instanceof ExtensionRequestError) {
+        const key = error.code === "UNSAFE_URL"
+          ? "error.navigationUnsafe"
+          : error.code === "INCOGNITO_UNAVAILABLE"
+            ? "error.incognitoUnavailable"
+            : "error.navigationFailed";
+        notifyError(t(key));
+      } else {
+        notifyError(t("error.actionFailed"));
+      }
     }
   };
   const selectPage = (id: string): void => {

@@ -9,7 +9,6 @@ Asterfold application code, product mark, wallpapers, themes, copy, and layout a
 | `@dnd-kit/core` | 6.3.1 | MIT | Accessible drag sensors and collision system |
 | `@dnd-kit/sortable` | 10.0.0 | MIT | Sortable/multi-container behavior |
 | `@dnd-kit/utilities` | 3.2.2 | MIT | Transform utilities |
-| `@supabase/supabase-js` | 2.57.4 | MIT | Optional disabled-by-default cloud client |
 | `dexie` | 4.4.4 | Apache-2.0 | IndexedDB transactions and migrations |
 | `dexie-react-hooks` | 4.4.0 | Apache-2.0 | Reactive IndexedDB queries |
 | `lucide-react` | 0.545.0 | ISC | Consistent interface icons |
@@ -26,7 +25,7 @@ Asterfold application code, product mark, wallpapers, themes, copy, and layout a
 | TypeScript / Node and React types | TypeScript 5.9.3 and installed `@types/*` | Apache-2.0 / MIT |
 | ESLint toolchain | ESLint 9.38.0 and installed plugins/configs | MIT |
 | Vitest / Testing Library / jsdom | Vitest 4.1.10, Testing Library 16.3/6.9, jsdom 27.0.1 | MIT |
-| Playwright | 1.56.1 | Apache-2.0 |
+| Playwright / axe-playwright | 1.56.1 / 4.12.1 | Apache-2.0 / MPL-2.0 |
 | fake-indexeddb | 6.2.4 | Apache-2.0 |
 
-No code was copied from LumiList or from the GPL/AGPL/MPL projects considered during architecture research. Those projects are not dependencies. The browser/Chromium binary used for QA is not distributed in the release archives.
+No code was copied from LumiList or from projects considered only during architecture research. The MPL-2.0 axe test adapter is listed above and is a development-only dependency. The browser/Chromium binary used for QA is not distributed in the release archives.

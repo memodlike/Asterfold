@@ -8,6 +8,10 @@ import {
   ensureStarterWorkspace,
   getWorkspaceData,
   listTrash,
+  bulkMoveBookmarks,
+  emptyTrash,
+  findDuplicate,
+  permanentlyDelete,
   moveBookmarkToIndex,
   purgeTrash,
   restoreBoard,
@@ -16,6 +20,7 @@ import {
   softDeleteBookmark,
   softDeletePage,
   updateBoard,
+  updateBookmark,
   updateSettings,
 } from "../src/db/repository";
 import { DuplicateError } from "../src/domain/errors";
@@ -44,6 +49,9 @@ describe("Dexie workspace repository", () => {
     expect(first.normalizedUrl).toBe("https://dexie.org/");
     expect(first.openMode).toBe("current");
     await expect(createBookmark({ boardId: board.id, title: "Again", url: "https://dexie.org/" }, {}, database)).rejects.toBeInstanceOf(DuplicateError);
+    await expect(updateBookmark(second.id, { url: "https://dexie.org/" }, database)).rejects.toBeInstanceOf(DuplicateError);
+    expect(await findDuplicate(board.id, first.url, database, first.id)).toBeNull();
+    expect((await findDuplicate(board.id, first.url, database, second.id))?.id).toBe(first.id);
 
     await moveBookmarkToIndex(second.id, board.id, 0, database);
     const workspace = await getWorkspaceData(database);
@@ -91,5 +99,96 @@ describe("Dexie workspace repository", () => {
     await database.open();
     expect(await database.boards.get(board.id)).toMatchObject({ gridColumn: 7, gridRow: 1, gridSpan: 6, bookmarkColumns: 2 });
     expect(await database.settings.get("app")).toMatchObject({ workspaceLayoutMode: "free", workspaceRows: 1, workspaceAlignment: "right" });
+  });
+
+  it("moves a deduplicated bookmark selection in one transaction and rolls back on failure", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const source = workspace.boards[0]!;
+    const target = await createBoard(workspace.pages[0]!.id, "Target", database);
+    const first = await createBookmark({ boardId: source.id, title: "First", url: "https://first.example" }, {}, database);
+    const second = await createBookmark({ boardId: source.id, title: "Second", url: "https://second.example" }, {}, database);
+    const third = await createBookmark({ boardId: source.id, title: "Third", url: "https://third.example" }, {}, database);
+
+    await bulkMoveBookmarks([third.id, first.id, third.id], target.id, database);
+    expect((await database.bookmarks.where("boardId").equals(target.id).sortBy("position")).map((item) => item.id)).toEqual([first.id, third.id]);
+
+    const before = await database.bookmarks.toArray();
+    await expect(bulkMoveBookmarks([second.id, "missing"], target.id, database)).rejects.toThrow();
+    expect(await database.bookmarks.toArray()).toEqual(before);
+  });
+
+  it("serializes concurrent appends without duplicate positions", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const board = workspace.boards[0]!;
+    await Promise.all(Array.from({ length: 40 }, (_, index) => createBookmark({
+      boardId: board.id,
+      title: `Concurrent ${index}`,
+      url: `https://concurrent.example/${index}`,
+    }, {}, database)));
+    const bookmarks = await database.bookmarks.where("boardId").equals(board.id).toArray();
+    expect(bookmarks).toHaveLength(40);
+    expect(new Set(bookmarks.map((bookmark) => bookmark.position)).size).toBe(40);
+  });
+
+  it("repairs default, active, and Quick Save references after deleting destinations", async () => {
+    const initial = await ensureStarterWorkspace(database);
+    const originalPage = initial.pages[0]!;
+    const originalBoard = initial.boards[0]!;
+    const replacementPage = await createPage("Replacement", {}, database);
+    const replacementBoard = await createBoard(replacementPage.id, "Replacement board", database);
+    await updateSettings({
+      activePageId: originalPage.id,
+      quickSaveDefaultPageId: originalPage.id,
+      quickSaveDefaultBoardId: originalBoard.id,
+      quickSaveLastPageId: originalPage.id,
+      quickSaveLastBoardId: originalBoard.id,
+    }, database);
+
+    await softDeletePage(originalPage.id, database);
+    const settings = await database.settings.get("app");
+    expect(settings).toMatchObject({
+      activePageId: replacementPage.id,
+      quickSaveDefaultPageId: replacementPage.id,
+      quickSaveDefaultBoardId: replacementBoard.id,
+      quickSaveLastPageId: replacementPage.id,
+      quickSaveLastBoardId: replacementBoard.id,
+    });
+    const defaults = (await database.pages.toArray()).filter((page) => page.deletedAt === null && page.isDefault);
+    expect(defaults.map((page) => page.id)).toEqual([replacementPage.id]);
+    expect(await auditInvariants(database)).toEqual([]);
+  });
+
+  it("purges a deleted hierarchy from its root and tolerates repeated destructive submissions", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const page = workspace.pages[0]!;
+    const board = workspace.boards[0]!;
+    const bookmark = await createBookmark({ boardId: board.id, title: "Child", url: "https://child.example" }, {}, database);
+    await softDeletePage(page.id, database);
+    await database.pages.update(page.id, { deletedAt: "2020-01-01T00:00:00.000Z" });
+    await database.boards.update(board.id, { deletedAt: "2030-01-01T00:00:00.000Z" });
+    await database.bookmarks.update(bookmark.id, { deletedAt: "2030-01-01T00:00:00.000Z" });
+
+    expect(await purgeTrash(30, database)).toBe(3);
+    expect(await database.pages.get(page.id)).toBeUndefined();
+    expect(await database.boards.get(board.id)).toBeUndefined();
+    expect(await database.bookmarks.get(bookmark.id)).toBeUndefined();
+
+    const replacement = (await getWorkspaceData(database)).pages[0]!;
+    await softDeletePage(replacement.id, database);
+    await permanentlyDelete("page", replacement.id, database);
+    await expect(permanentlyDelete("page", replacement.id, database)).resolves.toBeUndefined();
+    expect(await emptyTrash(database)).toBeGreaterThanOrEqual(0);
+    expect(await emptyTrash(database)).toBe(0);
+  });
+
+  it("garbage-collects uploaded wallpapers after replacing the active reference", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const timestamp = new Date().toISOString();
+    await database.wallpapers.bulkAdd(["old", "current"].map((id) => ({
+      id, kind: "upload" as const, name: id, mimeType: "image/webp", blob: new Blob(["x"]),
+      thumbnail: null, value: null, createdAt: timestamp, updatedAt: timestamp,
+    })));
+    await updateSettings({ theme: { ...workspace.settings.theme, wallpaperId: "current", backgroundMode: "wallpaper" } }, database);
+    expect((await database.wallpapers.toArray()).map((wallpaper) => wallpaper.id)).toEqual(["current"]);
   });
 });

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Asterfold Privacy Policy</title>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.6; }
+    body { margin: 0; background: Canvas; color: CanvasText; }
+    main { width: min(46rem, calc(100% - 2rem)); margin: 0 auto; padding: 2.5rem 0 4rem; }
+    h1 { margin: 0 0 .5rem; font-size: clamp(2rem, 6vw, 3rem); line-height: 1.1; }
+    h2 { margin: 2rem 0 .5rem; font-size: 1.3rem; line-height: 1.25; }
+    p, li { max-width: 72ch; }
+    .meta { color: GrayText; }
+    .notice { padding: 1rem 1.1rem; border: 1px solid ButtonBorder; border-radius: .75rem; background: ButtonFace; color: ButtonText; }
+    a { color: LinkText; text-underline-offset: .15em; }
+    blockquote { margin: 1rem 0; padding: .75rem 1rem; border-inline-start: .25rem solid Highlight; background: ButtonFace; color: ButtonText; }
+    code { font: inherit; font-weight: 600; }
+    @media (max-width: 32rem) { main { width: min(100% - 1.25rem, 46rem); padding-top: 1.5rem; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Asterfold Privacy Policy</h1>
+    <p class="meta">Effective 26 July 2026 · Policy version 2.2.1</p>
+    <p class="notice">Asterfold is a local-first bookmark workspace. It processes bookmark and workspace information on the user's device to provide its features. It does not claim that no data is processed.</p>
+
+    <h2>Information processed</h2>
+    <p>Asterfold may process bookmark URLs and titles, Pages, Boards, order, opening mode, settings, Trash records, Quick Save destinations, imported bookmark data, local backups, uploaded wallpaper images and local raster icons. This content may be personal if the user chooses to store personal information in it.</p>
+
+    <h2>Storage and network behavior</h2>
+    <p>Workspace records and uploaded assets are stored locally in the user's Chrome profile, primarily in IndexedDB. Search, import preview and backup processing run locally. Asterfold 2.2.1 has no application backend, account or cloud synchronization. The default build has no host permissions and makes no application network requests. Data is not sent to the developer.</p>
+    <p>Chrome may independently use the network when the user opens a destination page or when Chrome supplies its browser-owned <code>_favicon</code> resource. Asterfold does not store or render remote favicon URLs.</p>
+
+    <h2>Use of information</h2>
+    <p>Local information is used only to display, organize, search, open, import, export, restore and maintain the user's bookmark workspace, including Quick Save, Trash and optional local appearance assets.</p>
+
+    <h2>No sale, advertising or analytics</h2>
+    <p>Asterfold does not transmit user data to the developer, sell or share user data, run advertising or affiliate tracking, build user profiles, use analytics or telemetry, or allow developer personnel to read the local workspace. It uses no remote scripts or executable code.</p>
+
+    <h2>Quick Save and Chrome bookmarks</h2>
+    <p>Quick Save reads the active page URL and title only after the user invokes the toolbar action, keyboard command or supported context-menu action. It saves that information locally.</p>
+    <p>The optional <code>bookmarks</code> permission is requested only when the user chooses to import Chrome bookmarks. If granted, the Chrome bookmark tree is read and processed locally to create an import preview. Declining it does not affect the normal workspace or file import/export.</p>
+
+    <h2>Imports, backups and deletion</h2>
+    <p>Imported files are validated locally and are not uploaded. Exported backups can contain bookmark URLs, titles, structure, settings and supported local assets, so users should protect them as personal files.</p>
+    <p>Users can delete items, empty Trash, remove local extension data, or uninstall the extension. A backup should be exported first if the records matter.</p>
+
+    <h2>Wallpapers and icons</h2>
+    <p>User-selected wallpapers and custom icons are decoded, bounded and stored locally. Asterfold rejects remote image URLs and SVG files as local custom icons.</p>
+
+    <h2>Privacy Mode</h2>
+    <p>Privacy Mode hides titles from the rendered interface and accessible labels, disables clipboard actions and prevents creation of the local search index while active. It is visual shoulder-surfing protection, not encryption. The local database remains accessible to the Chrome profile, operating system or anyone controlling the device.</p>
+
+    <h2>Children</h2>
+    <p>Asterfold is a general-purpose productivity tool and is not directed specifically to children. Version 2.2.1 has no developer-operated service that collects user information.</p>
+
+    <h2>Limited Use</h2>
+    <blockquote>The use of information received from Google APIs will adhere to the Chrome Web Store User Data Policy, including the Limited Use requirements.</blockquote>
+    <p lang="ru">Русский перевод: использование информации, полученной через API Google, соответствует политике пользовательских данных Chrome Web Store, включая требования Limited Use. Точная обязательная английская формулировка приведена выше без изменений.</p>
+
+    <h2>Changes and contact</h2>
+    <p>Material changes to data practices require an updated effective date and policy before release. Questions can be submitted through the <a href="https://github.com/memodlike/Asterfold/issues">public issue tracker</a>. The source policy is available in the <a href="https://github.com/memodlike/Asterfold/blob/main/docs/security/privacy.md">public repository</a>.</p>
+  </main>
+</body>
+</html>

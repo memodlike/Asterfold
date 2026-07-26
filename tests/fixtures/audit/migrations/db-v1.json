@@ -1,0 +1,137 @@
+{
+  "fixtureFormat": 1,
+  "dbVersion": 1,
+  "description": "Sparse v1 data with all open modes and no post-v1 settings fields.",
+  "stores": {
+    "pages": [
+      {
+        "id": "page-active",
+        "userId": null,
+        "title": "Audit workspace",
+        "icon": null,
+        "accent": null,
+        "position": "000000000001",
+        "isDefault": true,
+        "createdAt": "2025-01-02T03:04:05.000Z",
+        "updatedAt": "2025-01-02T03:04:05.000Z",
+        "deletedAt": null,
+        "deletedBatchId": null,
+        "version": 1
+      }
+    ],
+    "boards": [
+      {
+        "id": "board-main",
+        "userId": null,
+        "pageId": "page-active",
+        "title": "Audit board",
+        "icon": null,
+        "accent": null,
+        "position": "000000000001",
+        "collapsed": false,
+        "layout": "list",
+        "createdAt": "2025-01-02T03:04:05.000Z",
+        "updatedAt": "2025-01-02T03:04:05.000Z",
+        "deletedAt": null,
+        "deletedBatchId": null,
+        "version": 1
+      }
+    ],
+    "bookmarks": [
+      {
+        "id": "bookmark-000",
+        "userId": null,
+        "boardId": "board-main",
+        "title": "Audit bookmark 0",
+        "url": "https://example.test/audit/0?mode=current",
+        "normalizedUrl": "https://example.test/audit/0?mode=current",
+        "hostname": "example.test",
+        "description": "Fixture bookmark using current",
+        "faviconUrl": "https://remote.invalid/favicon.ico",
+        "customIcon": null,
+        "position": "000000000001",
+        "openMode": "current",
+        "pinned": true,
+        "createdAt": "2025-01-02T03:04:05.000Z",
+        "updatedAt": "2025-01-02T03:04:05.000Z",
+        "deletedAt": null,
+        "deletedBatchId": null,
+        "version": 1
+      },
+      {
+        "id": "bookmark-001",
+        "userId": null,
+        "boardId": "board-main",
+        "title": "Audit bookmark 1",
+        "url": "https://example.test/audit/1?mode=new-tab",
+        "normalizedUrl": "https://example.test/audit/1?mode=new-tab",
+        "hostname": "example.test",
+        "description": "Fixture bookmark using new-tab",
+        "faviconUrl": null,
+        "customIcon": null,
+        "position": "000000000002",
+        "openMode": "new-tab",
+        "pinned": false,
+        "createdAt": "2025-01-02T03:04:05.000Z",
+        "updatedAt": "2025-01-02T03:04:05.000Z",
+        "deletedAt": null,
+        "deletedBatchId": null,
+        "version": 1
+      },
+      {
+        "id": "bookmark-002",
+        "userId": null,
+        "boardId": "board-main",
+        "title": "Audit bookmark 2",
+        "url": "https://example.test/audit/2?mode=new-window",
+        "normalizedUrl": "https://example.test/audit/2?mode=new-window",
+        "hostname": "example.test",
+        "description": "Fixture bookmark using new-window",
+        "faviconUrl": null,
+        "customIcon": null,
+        "position": "000000000003",
+        "openMode": "new-window",
+        "pinned": false,
+        "createdAt": "2025-01-02T03:04:05.000Z",
+        "updatedAt": "2025-01-02T03:04:05.000Z",
+        "deletedAt": null,
+        "deletedBatchId": null,
+        "version": 1
+      },
+      {
+        "id": "bookmark-003",
+        "userId": null,
+        "boardId": "board-main",
+        "title": "Audit bookmark 3",
+        "url": "https://example.test/audit/3?mode=incognito",
+        "normalizedUrl": "https://example.test/audit/3?mode=incognito",
+        "hostname": "example.test",
+        "description": "Fixture bookmark using incognito",
+        "faviconUrl": null,
+        "customIcon": null,
+        "position": "000000000004",
+        "openMode": "incognito",
+        "pinned": false,
+        "createdAt": "2025-01-02T03:04:05.000Z",
+        "updatedAt": "2025-01-02T03:04:05.000Z",
+        "deletedAt": null,
+        "deletedBatchId": null,
+        "version": 1
+      }
+    ],
+    "settings": [
+      {
+        "id": "app",
+        "schemaVersion": 1,
+        "activePageId": "page-active",
+        "navigationMode": "rail",
+        "updatedAt": "2025-01-02T03:04:05.000Z"
+      }
+    ],
+    "wallpapers": [],
+    "syncOperations": [],
+    "syncState": [],
+    "snapshots": [],
+    "diagnostics": []
+  }
+}

@@ -22,13 +22,16 @@ export function Modal({ open, title, description, size = "medium", side = false,
   const titleId = useId();
   const descriptionId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  const backdropPointerRef = useRef(false);
 
   useEffect(() => {
     if (!open) return;
     const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const panel = panelRef.current;
     const first = panel?.querySelector<HTMLElement>(FOCUSABLE);
-    first?.focus();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    (first ?? panel)?.focus();
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -50,15 +53,25 @@ export function Modal({ open, title, description, size = "medium", side = false,
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
       previouslyFocused?.focus();
     };
   }, [onClose, open]);
 
   if (!open) return null;
   return (
-    <div className={`modal-backdrop ${side ? "modal-backdrop--side" : ""}`} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <div
+      className={`modal-backdrop ${side ? "modal-backdrop--side" : ""}`}
+      role="presentation"
+      onPointerDown={(event) => { backdropPointerRef.current = event.target === event.currentTarget; }}
+      onPointerUp={(event) => {
+        if (backdropPointerRef.current && event.target === event.currentTarget) onClose();
+        backdropPointerRef.current = false;
+      }}
+    >
       <div
         ref={panelRef}
+        tabIndex={-1}
         className={`modal modal--${size} ${side ? "modal--side" : ""} ${className}`}
         role="dialog"
         aria-modal="true"

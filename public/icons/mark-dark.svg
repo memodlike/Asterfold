@@ -1,16 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Asterfold mark, dark">
-  <defs>
-    <linearGradient id="a" x1="20" y1="16" x2="108" y2="112" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#9FC0FF"/>
-      <stop offset="1" stop-color="#3F7CFF"/>
-    </linearGradient>
-  </defs>
-  <rect width="128" height="128" rx="28" fill="#0D1117"/>
-  <g fill="url(#a)">
-    <path d="M64 12 78 49 64 59 50 49Z"/><path d="m116 64-37 14-10-14 10-14Z"/>
-    <path d="m64 116-14-37 14-10 14 10Z"/><path d="M12 64 49 50l10 14-10 14Z"/>
-    <path d="m101 27-16 36-17-3 3-17Z"/><path d="m101 101-36-16 3-17 17 3Z"/>
-    <path d="M27 101 43 65l17 3-3 17Z"/><path d="m27 27 36 16-3 17-17-3Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Asterfold folded asterisk">
+  <rect width="128" height="128" rx="28" fill="#20242C"/>
+  <g fill="#F5F7FA">
+    <path d="M64 12 82 48 69 59 55 48Z"/>
+    <path d="m116 64-36 18-11-13 11-14Z"/>
+    <path d="m64 116-18-36 13-11 14 11Z"/>
+    <path d="M12 64 48 46l11 13-11 14Z"/>
   </g>
-  <circle cx="64" cy="64" r="8" fill="#DCE7FF"/>
+  <path d="m64 55 9 9-9 9-9-9Z" fill="#20242C"/>
 </svg>

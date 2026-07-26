@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-07-24",
+  "commit": "eeb0fe52804c6da9431260390837cd4c4302093f",
+  "environment": {
+    "os": "macOS 26.5.2 (25F84)",
+    "architecture": "arm64",
+    "node": "26.5.0",
+    "npm": "11.17.0",
+    "chrome": "150.0.7871.182",
+    "playwrightChromium": "141.0.7390.37",
+    "wxt": "0.20.27",
+    "vite": "7.3.6",
+    "typescript": "5.9.3"
+  },
+  "commandsSeconds": {
+    "npmCi": 9.89,
+    "typecheck": 2.61,
+    "lint": 5.78,
+    "unit": 3.0,
+    "build": 2.41,
+    "release": 3.09,
+    "e2eUntilFailure": 4.17,
+    "e2eInstalledChromeUntilFailure": 0.99,
+    "auditUntilFailure": 0.48
+  },
+  "bundleBytes": {
+    "reportedTotal": 940500,
+    "useWorkspaceChunk": 395854,
+    "background": 248647,
+    "newtabChunk": 84274,
+    "exportImportChunk": 62412,
+    "newtabCss": 30703,
+    "searchPaletteChunk": 25374
+  },
+  "runtime": {
+    "startupMs": null,
+    "popupMs": null,
+    "quickSaveMs": null,
+    "dragMs": null,
+    "settingsSliderMs": null,
+    "searchMs": null,
+    "documentListenerCount": null,
+    "heapBytes": null,
+    "gpuRaster": null,
+    "applicationNetworkRequestCount": null,
+    "unavailableReason": "Playwright Chromium aborted before extension startup because Crashpad attempted to access a protected user-library path."
+  },
+  "datasets": {
+    "bookmarks100": "fixture-created",
+    "bookmarks1000": "not-measured",
+    "bookmarks10000": "not-measured"
+  },
+  "phase8After": {
+    "commit": "Phase 8 commit",
+    "unitEnvironment": "macOS arm64, Node 26.5.0",
+    "search10000": {
+      "indexMs": 79.08,
+      "queryMs": 2.41,
+      "resultLimit": 100,
+      "queryLengthLimit": 256
+    },
+    "documentPointerListenersFor100BookmarksAnd4Boards": {
+      "beforeSourceCount": 104,
+      "afterClosedMenuSourceCount": 0,
+      "afterOpenMenuSourceCount": 1
+    },
+    "renderer": {
+      "boardBackdropFiltersBefore": 4,
+      "boardBackdropFiltersAfter": 0,
+      "lowPowerBackdropFilters": 0,
+      "contentVisibility": true
+    },
+    "bundleBytesReported": 1130000,
+    "gpuRaster": null,
+    "heapBytes": null,
+    "unavailableReason": "No representative low-end Windows GPU trace host was available. No GPU or heap improvement is claimed."
+  }
+}

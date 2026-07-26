@@ -18,9 +18,9 @@ const lightPalette: Palette = { canvas: "#f1f2f4", surface: "255 255 255", surfa
 const darkPalette: Palette = { canvas: "#16171a", surface: "38 40 44", surfaceSolid: "#25272b", surfaceElevated: "#2d2f34", text: "#f5f5f6", secondary: "#a1a3aa", border: "255 255 255", danger: "#ff7772", success: "#64d79b", shadow: "0 24px 64px rgb(0 0 0 / .34)" };
 
 export const BUILTIN_WALLPAPERS = [
-  { id: "builtin-aurora", name: "Quiet Aurora", value: 'url("/wallpapers/quiet-aurora.webp")' },
-  { id: "builtin-mesh", name: "Blue Mesh", value: 'url("/wallpapers/blue-mesh.webp")' },
-  { id: "builtin-dusk", name: "Dusk", value: 'url("/wallpapers/dusk.webp")' },
+  { id: "builtin-aurora", labelKey: "settings.wallpaperAurora", value: 'url("/wallpapers/quiet-aurora.webp")' },
+  { id: "builtin-mesh", labelKey: "settings.wallpaperMesh", value: 'url("/wallpapers/blue-mesh.webp")' },
+  { id: "builtin-dusk", labelKey: "settings.wallpaperDusk", value: 'url("/wallpapers/dusk.webp")' },
 ] as const;
 
 export function themeStyle(theme: ThemeConfig, wallpaper: Wallpaper | undefined, wallpaperUrl: string | null, dark: boolean): CSSProperties {

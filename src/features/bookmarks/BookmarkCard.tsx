@@ -1,10 +1,11 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Copy, ExternalLink, Link2, MoveRight, Pencil, Trash2 } from "lucide-react";
-import { memo, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
+import { memo, useEffect, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
 import type { Bookmark } from "../../domain/models";
 import { FloatingContextMenu, type ContextMenuPoint } from "../../components/FloatingContextMenu";
 import { faviconUrl } from "../../browser/api";
+import { safeCustomIconUrl } from "../../domain/icons";
 import { useI18n } from "../../i18n";
 
 interface BookmarkCardProps {
@@ -26,18 +27,16 @@ export const BookmarkCard = memo(function BookmarkCard(props: BookmarkCardProps)
   const sortable = useSortable({ id: `bookmark:${props.bookmark.id}`, data: { type: "bookmark", bookmarkId: props.bookmark.id, boardId: props.bookmark.boardId } });
   const [iconFailed, setIconFailed] = useState(false);
   const [menuPoint, setMenuPoint] = useState<ContextMenuPoint | null>(null);
-  const rootRef = useRef<HTMLElement>(null);
-  const source = props.bookmark.customIcon || props.bookmark.faviconUrl || faviconUrl(props.bookmark.url, 20);
-  const monogram = (props.bookmark.hostname[0] || props.bookmark.title[0] || "?").toUpperCase();
+  const source = safeCustomIconUrl(props.bookmark.customIcon) || faviconUrl(props.bookmark.url, 20);
+  const displayTitle = props.privacy ? t("privacy.hiddenBookmark") : props.bookmark.title;
+  const openLabel = props.privacy ? t("privacy.openHiddenBookmark") : t("bookmark.open", { name: props.bookmark.title });
+  const menuLabel = props.privacy ? t("privacy.hiddenBookmarkActions") : t("bookmark.actions", { name: props.bookmark.title });
+  const monogram = props.privacy ? "•" : (props.bookmark.hostname[0] || props.bookmark.title[0] || "?").toUpperCase();
   const style = { transform: CSS.Transform.toString(sortable.transform), transition: sortable.transition } as CSSProperties;
 
   useEffect(() => {
-    const close = (event: PointerEvent): void => {
-      if (!rootRef.current?.contains(event.target as Node)) setMenuPoint(null);
-    };
-    document.addEventListener("pointerdown", close);
-    return () => document.removeEventListener("pointerdown", close);
-  }, []);
+    setIconFailed(false);
+  }, [source]);
 
   const openContext = (event: MouseEvent): void => {
     event.preventDefault();
@@ -57,7 +56,7 @@ export const BookmarkCard = memo(function BookmarkCard(props: BookmarkCardProps)
 
   return (
     <article
-      ref={(node) => { rootRef.current = node; sortable.setNodeRef(node); }}
+      ref={sortable.setNodeRef}
       style={style}
       className={`bookmark-card ${props.selected ? "is-selected" : ""} ${sortable.isDragging ? "is-dragging" : ""}`}
       data-bookmark-id={props.bookmark.id}
@@ -65,7 +64,8 @@ export const BookmarkCard = memo(function BookmarkCard(props: BookmarkCardProps)
     >
       <button
         className="bookmark-card__open"
-        title={t("bookmark.open", { name: props.bookmark.title })}
+        title={openLabel}
+        aria-label={openLabel}
         onClick={(event) => {
           if (event.metaKey || event.ctrlKey || event.shiftKey) props.onSelect(props.bookmark, event);
           else props.onOpen(props.bookmark);
@@ -75,9 +75,9 @@ export const BookmarkCard = memo(function BookmarkCard(props: BookmarkCardProps)
         {...sortable.listeners}
       >
         <span className="favicon" aria-hidden="true">{source && !iconFailed ? <img src={source} alt="" onError={() => setIconFailed(true)} /> : <span>{monogram}</span>}</span>
-        <strong className={props.privacy ? "private-content" : ""}>{props.bookmark.title}</strong>
+        <strong className={props.privacy ? "private-content" : ""}>{displayTitle}</strong>
       </button>
-      {menuPoint ? <FloatingContextMenu label={t("bookmark.actions", { name: props.bookmark.title })} point={menuPoint} onClose={() => setMenuPoint(null)}>
+      {menuPoint ? <FloatingContextMenu label={menuLabel} point={menuPoint} onClose={() => setMenuPoint(null)}>
         <button onClick={() => action(() => props.onOpen(props.bookmark))}><ExternalLink size={15} />{t("bookmark.open", { name: "" }).trim()}</button>
         <button onClick={() => action(() => props.onEdit(props.bookmark))}><Pencil size={15} />{t("bookmark.edit")}</button>
         <button onClick={() => action(() => props.onMove(props.bookmark))}><MoveRight size={15} />{t("generic.move")}</button>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CheckCircle2, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, Info, X } from "lucide-react";
 import { Button } from "./Button";
 import { IconButton } from "./IconButton";
 import { useI18n } from "../i18n";
@@ -38,6 +38,15 @@ export function useToasts(): ToastController {
     setToasts((current) => [...current.slice(-2), { ...input, id }]);
     timers.current.set(id, window.setTimeout(() => remove(id), input.actionLabel ? 7_000 : 4_000));
   }, [remove]);
+  const pause = (id: number): void => {
+    const timer = timers.current.get(id);
+    if (timer !== undefined) window.clearTimeout(timer);
+    timers.current.delete(id);
+  };
+  const resume = (toast: Toast): void => {
+    pause(toast.id);
+    timers.current.set(toast.id, window.setTimeout(() => remove(toast.id), 2_000));
+  };
 
   useEffect(() => () => {
     for (const timer of timers.current.values()) window.clearTimeout(timer);
@@ -48,8 +57,16 @@ export function useToasts(): ToastController {
     region: (
       <div className="toast-region" role="region" aria-label={t("generic.notifications")}>
         {toasts.map((toast) => (
-          <div className={`toast toast--${toast.tone ?? "neutral"}`} key={toast.id} role="status">
-            <CheckCircle2 size={18} aria-hidden="true" />
+          <div
+            className={`toast toast--${toast.tone ?? "neutral"}`}
+            key={toast.id}
+            role={toast.tone === "error" ? "alert" : "status"}
+            onPointerEnter={() => pause(toast.id)}
+            onPointerLeave={() => resume(toast)}
+            onFocusCapture={() => pause(toast.id)}
+            onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) resume(toast); }}
+          >
+            {toast.tone === "error" ? <AlertCircle size={18} aria-hidden="true" /> : toast.tone === "success" ? <CheckCircle2 size={18} aria-hidden="true" /> : <Info size={18} aria-hidden="true" />}
             <span>{toast.message}</span>
             {toast.actionLabel && toast.onAction ? (
               <Button variant="ghost" size="small" onClick={() => { void Promise.resolve(toast.onAction?.()).finally(() => remove(toast.id)); }}>{toast.actionLabel}</Button>

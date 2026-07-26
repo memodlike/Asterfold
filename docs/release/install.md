@@ -1,4 +1,4 @@
-# Install Asterfold 2.1.3
+# Install Asterfold 2.2.1
 
 ## Requirements
 
@@ -57,3 +57,12 @@ npm run release
 ```
 
 Load `.output/chrome-mv3` for development or `release/chrome-unpacked` for the validated release copy.
+
+## Chrome Web Store status
+
+Preparing listing text and Store assets does not mean Asterfold has been reviewed or published by Chrome Web Store. Until a verified Store listing URL is added here, install only from the signed/validated project release as described above.
+
+- [Privacy policy](../security/privacy.md)
+- [Chrome Web Store submission checklist](../store/submission-checklist.md)
+- [English Store listing](../../store-assets/listing/store-listing-en.md)
+- [Russian Store listing](../../store-assets/listing/store-listing-ru.md)
