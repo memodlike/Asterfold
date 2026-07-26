@@ -1,5 +1,5 @@
---- a/src/e2e/extension.spec.ts
-+++ b/src/e2e/extension.spec.ts
+--- a/e2e/extension.spec.ts
++++ b/e2e/extension.spec.ts
 @@ -282,6 +282,8 @@
      }
      expect(externalRequests).toEqual([]);
