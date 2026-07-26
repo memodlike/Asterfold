@@ -52,7 +52,7 @@ describe("cross-context session Privacy Mode", () => {
     const { result } = renderHook(() => usePrivacyMode({ privacyPersist: false, privacyEnabled: false }));
 
     expect(result.current.privacy).toBe(true);
-    await act(async () => { resolveRead?.({}); });
+    act(() => { resolveRead?.({}); });
     await waitFor(() => expect(result.current.privacy).toBe(false));
   });
 
