@@ -2,9 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Blob as NodeBlob } from "node:buffer";
 import { version as packageVersion } from "../package.json";
 import { AsterfoldDatabase } from "../src/db/database";
-import { createBookmark, ensureStarterWorkspace, getWorkspaceData, updateSettings } from "../src/db/repository";
+import { createBoard, createBookmark, ensureStarterWorkspace, getWorkspaceData, updateSettings } from "../src/db/repository";
+import { isValidRank, validateScope } from "../src/domain/ordering";
 import {
   createBackup,
+  createSelectionBackup,
+  downloadText,
   importRecords,
   parseBackup,
   parseNetscapeHtml,
@@ -92,6 +95,44 @@ describe("safe import and lossless export", () => {
     expect(reexported.settings).toEqual(parsed.settings);
   });
 
+  it("escapes adversarial Markdown headings, text, descriptions, and link destinations", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const page = workspace.pages[0]!;
+    const board = workspace.boards[0]!;
+    await database.pages.update(page.id, { title: "# Page [one]\ncontinued" });
+    await database.boards.update(board.id, { title: "Board (primary) \\\\" });
+    await createBookmark({
+      boardId: board.id,
+      title: "Title ](https://evil.invalid) #",
+      url: "https://example.com/a_(b)",
+      description: "line one\n* line two",
+    }, {}, database);
+    const markdown = toMarkdown(await createBackup({}, database));
+    expect(markdown).toContain("## \\# Page \\[one\\] continued");
+    expect(markdown).toContain("### Board \\(primary\\) \\\\\\\\");
+    expect(markdown).toContain("[Title \\]\\(https://evil.invalid\\) \\#]");
+    expect(markdown).toContain("(https://example.com/a_\\(b\\))");
+    expect(markdown).toContain("line one \\* line two");
+  });
+
+  it("keeps a download URL alive through a DOM-backed anchor click", () => {
+    vi.useFakeTimers();
+    const createObjectURL = vi.fn(() => "blob:asterfold-download");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", { ...URL, createObjectURL, revokeObjectURL });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function clickAnchor(this: HTMLAnchorElement) {
+      expect(document.body.contains(this)).toBe(true);
+    });
+
+    downloadText("backup.json", "{}", "application/json");
+    expect(click).toHaveBeenCalledOnce();
+    expect(document.querySelector('a[download="backup.json"]')).toBeNull();
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+    vi.runAllTimers();
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:asterfold-download");
+    vi.useRealTimers();
+  });
+
   it("exports backup v3 with the package version and only the active uploaded wallpaper", async () => {
     const workspace = await ensureStarterWorkspace(database);
     const active = uploadedWallpaper();
@@ -124,6 +165,28 @@ describe("safe import and lossless export", () => {
     const scoped = await createBackup({ pageId: workspace.pages[0]!.id }, database);
     expect(scoped.settings).toBeUndefined();
     expect(scoped.assets?.wallpapers).toEqual([]);
+  });
+
+  it("creates a valid selection backup with only the selected bookmarks and their ancestors", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const first = await createBookmark({
+      boardId: workspace.boards[0]!.id,
+      title: "Selected",
+      url: "https://selected.example",
+    }, {}, database);
+    await createBookmark({
+      boardId: workspace.boards[0]!.id,
+      title: "Not selected",
+      url: "https://not-selected.example",
+    }, {}, database);
+
+    const backup = await createSelectionBackup([first.id, first.id], database);
+    expect(backup.scope).toBe("selection");
+    expect(backup.entities.pages.map((page) => page.id)).toEqual([workspace.pages[0]!.id]);
+    expect(backup.entities.boards.map((board) => board.id)).toEqual([workspace.boards[0]!.id]);
+    expect(backup.entities.bookmarks.map((bookmark) => bookmark.id)).toEqual([first.id]);
+    expect(backup.settings).toBeUndefined();
+    expect(parseBackup(serializeBackup(backup))).toEqual(backup);
   });
 
   it("parses and atomically restores a v3 wallpaper backup", async () => {
@@ -349,6 +412,75 @@ describe("safe import and lossless export", () => {
     expect(new Set(merged.boards.map((board) => board.id)).size).toBe(2);
   });
 
+  it("remaps deleted batches and produces unique ranks when merging", async () => {
+    const destination = await ensureStarterWorkspace(database);
+    const destinationBookmark = await createBookmark({
+      boardId: destination.boards[0]!.id,
+      title: "Destination deleted",
+      url: "https://destination.example",
+    }, {}, database);
+    await database.bookmarks.update(destinationBookmark.id, {
+      deletedAt: "2026-07-26T00:00:00.000Z",
+      deletedBatchId: "shared-external-batch",
+    });
+
+    const source = new AsterfoldDatabase(`asterfold-merge-source-${crypto.randomUUID()}`);
+    await source.open();
+    try {
+      const sourceWorkspace = await ensureStarterWorkspace(source);
+      const sourceBookmark = await createBookmark({
+        boardId: sourceWorkspace.boards[0]!.id,
+        title: "Source deleted",
+        url: "https://source.example",
+      }, {}, source);
+      await source.transaction("rw", source.boards, source.bookmarks, async () => {
+        await source.boards.update(sourceWorkspace.boards[0]!.id, {
+          deletedAt: "2026-07-26T00:00:00.000Z",
+          deletedBatchId: "shared-external-batch",
+        });
+        await source.bookmarks.update(sourceBookmark.id, {
+          deletedAt: "2026-07-26T00:00:00.000Z",
+          deletedBatchId: "shared-external-batch",
+        });
+      });
+      const sourceBackup = await createBackup({}, source);
+      await restoreBackup(sourceBackup, "merge", database);
+
+      const importedPage = (await database.pages.toArray()).find((page) => page.id !== destination.pages[0]!.id)!;
+      const importedBoard = (await database.boards.toArray()).find((board) => board.pageId === importedPage.id)!;
+      const importedBookmark = (await database.bookmarks.toArray()).find((bookmark) => bookmark.boardId === importedBoard.id)!;
+      expect(importedBoard.deletedBatchId).toBeTruthy();
+      expect(importedBoard.deletedBatchId).not.toBe("shared-external-batch");
+      expect(importedBookmark.deletedBatchId).toBe(importedBoard.deletedBatchId);
+      expect((await database.bookmarks.get(destinationBookmark.id))?.deletedBatchId).toBe("shared-external-batch");
+
+      const pageRanks = (await database.pages.toArray()).map((page) => page.position);
+      expect(new Set(pageRanks).size).toBe(pageRanks.length);
+    } finally {
+      await source.delete();
+    }
+  });
+
+  it("clears dangling uploaded wallpaper references in legacy backups", async () => {
+    const backup = await createBackup({}, database);
+    const legacy = structuredClone(backup);
+    legacy.schemaVersion = 2;
+    legacy.exportVersion = 2;
+    delete (legacy as { assets?: unknown }).assets;
+    legacy.settings!.theme = {
+      ...legacy.settings!.theme,
+      wallpaperId: "missing-upload",
+      backgroundMode: "wallpaper",
+    };
+    legacy.theme = legacy.settings!.theme;
+
+    const parsed = parseBackup(JSON.stringify(legacy));
+    expect(parsed.settings?.theme).toMatchObject({
+      wallpaperId: null,
+      backgroundMode: "auto",
+    });
+  });
+
   it("reports invalid rows and skips normalized duplicates", async () => {
     const workspace = await ensureStarterWorkspace(database);
     const records = [
@@ -359,6 +491,31 @@ describe("safe import and lossless export", () => {
     expect(first).toEqual({ imported: 1, skippedDuplicates: 0, invalid: [{ row: 2, reason: "This URL scheme is not allowed" }] });
     const second = await importRecords(records.slice(0, 1), { pageTitle: "Ignored", pageId: workspace.pages[0]!.id }, "skip", database);
     expect(second).toMatchObject({ imported: 0, skippedDuplicates: 1, invalid: [] });
+  });
+
+  it("repairs corrupt destination ranks before appending imported records", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const board = await createBoard(workspace.pages[0]!.id, "Engineering", database);
+    const first = await createBookmark({ boardId: board.id, title: "First", url: "https://example.com/first" }, {}, database);
+    const second = await createBookmark({ boardId: board.id, title: "Second", url: "https://example.com/second" }, {}, database);
+    await database.bookmarks.bulkUpdate([
+      { key: first.id, changes: { position: "000000000001" } },
+      { key: second.id, changes: { position: "000000000001" } },
+    ]);
+
+    await importRecords([{
+      title: "Imported",
+      url: "https://example.com/imported",
+      description: null,
+      folderPath: ["Engineering"],
+    }], { pageTitle: "Ignored", pageId: workspace.pages[0]!.id }, "skip", database);
+
+    const bookmarks = (await database.bookmarks.where("boardId").equals(board.id).toArray()).filter((item) => item.deletedAt === null);
+    expect(validateScope(bookmarks)).toEqual([]);
+    expect(bookmarks.every((item) => isValidRank(item.position))).toBe(true);
+    expect(new Set(bookmarks.map((item) => item.position)).size).toBe(bookmarks.length);
+    expect(bookmarks.find((item) => item.id === first.id)?.version).toBe(2);
+    expect(bookmarks.find((item) => item.id === second.id)?.version).toBe(2);
   });
 
   it("imports 10,000 Unicode bookmarks in bounded bulk transactions", async () => {

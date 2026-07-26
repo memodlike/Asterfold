@@ -23,6 +23,7 @@ export interface ToastController {
 export function useToasts(): ToastController {
   const { t } = useI18n();
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [busyActions, setBusyActions] = useState<Set<number>>(new Set());
   const idRef = useRef(0);
   const timers = useRef(new Map<number, number>());
 
@@ -47,6 +48,30 @@ export function useToasts(): ToastController {
     pause(toast.id);
     timers.current.set(toast.id, window.setTimeout(() => remove(toast.id), 2_000));
   };
+  const runAction = async (toast: Toast): Promise<void> => {
+    if (!toast.onAction || busyActions.has(toast.id)) return;
+    pause(toast.id);
+    setBusyActions((current) => new Set(current).add(toast.id));
+    try {
+      await toast.onAction();
+      remove(toast.id);
+    } catch {
+      setToasts((current) => current.map((item) => {
+        if (item.id !== toast.id) return item;
+        const failed = { ...item, tone: "error" as const, message: t("error.actionFailed") };
+        delete failed.actionLabel;
+        delete failed.onAction;
+        return failed;
+      }));
+      timers.current.set(toast.id, window.setTimeout(() => remove(toast.id), 4_000));
+    } finally {
+      setBusyActions((current) => {
+        const next = new Set(current);
+        next.delete(toast.id);
+        return next;
+      });
+    }
+  };
 
   useEffect(() => () => {
     for (const timer of timers.current.values()) window.clearTimeout(timer);
@@ -69,7 +94,7 @@ export function useToasts(): ToastController {
             {toast.tone === "error" ? <AlertCircle size={18} aria-hidden="true" /> : toast.tone === "success" ? <CheckCircle2 size={18} aria-hidden="true" /> : <Info size={18} aria-hidden="true" />}
             <span>{toast.message}</span>
             {toast.actionLabel && toast.onAction ? (
-              <Button variant="ghost" size="small" onClick={() => { void Promise.resolve(toast.onAction?.()).finally(() => remove(toast.id)); }}>{toast.actionLabel}</Button>
+              <Button variant="ghost" size="small" disabled={busyActions.has(toast.id)} onClick={() => { void runAction(toast); }}>{toast.actionLabel}</Button>
             ) : null}
             <IconButton label={t("generic.dismiss")} onClick={() => remove(toast.id)}><X size={16} /></IconButton>
           </div>

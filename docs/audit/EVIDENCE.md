@@ -289,3 +289,65 @@ Frost Light, Graphite Dark, and glass aesthetic remain intact. Migration and
 backup tests preserve bookmark data, order, `openMode`, settings, wallpapers,
 deleted hierarchy, and stale Quick Save references. Cloud runtime and claims
 are absent from the default release.
+
+## Asterfold 2.2.2 final hardening evidence
+
+Environment: macOS 26.5.2 (25F84), Node 26.5.0, npm 11.17.0, Google Chrome
+150.0.7871.187, WXT 0.20.27, Vite 7.3.6 and TypeScript 5.9.3. The clean local
+gate ran on 26 July 2026 from branch `codex/final-hardening-v2.2.2` after commit
+`6df18da`.
+
+| Test ID | Command | Exit | Key output |
+| --- | --- | ---: | --- |
+| AF-222-I001 | `npm run clean && npm ci` | 0 | 642 packages installed from lockfile; WXT types generated; npm reported 19 high development-tool advisories |
+| AF-222-S001 | `npm run typecheck` | 0 | `tsc --noEmit` with `noUnusedLocals` and `noUnusedParameters` |
+| AF-222-S002 | `npm run lint` | 0 | ESLint completed with zero warnings, including `scripts/**/*.mjs` |
+| AF-222-U001 | `npm run test:coverage` | 0 | 19 files, 129/129 tests in 31.07 s; resource-heavy suites run serially to remove coverage-run timeout flakes without changing assertions |
+| AF-222-COV001 | `npm run test:coverage` | 0 | Full source: 57.79% lines, 41.98% functions, 46.03% branches, 52.28% statements; stricter critical-module gates pass |
+| AF-222-B001 | `npm run build` | 0 | Chrome MV3 2.2.2, 1.18 MB reported by WXT |
+| AF-222-R001 | `npm run release:repro` | 0 | Store validation passed (14 files, 5 screenshots); two release generations were byte-identical |
+| AF-222-E001 | `npm run test:e2e` | 0 | 5/5 in 25.4 s: least privilege, axe/reduced motion, 12 locales/zero app network, privileged URL validation, persistence/core flows/100 bookmarks |
+| AF-222-ALARM001 | `npx vitest run tests/manifestPolicy.test.ts` | 0 | Regression first failed on the 3-second alarm, then passed after the badge-clear schedule was raised to Chrome's 30-second minimum |
+| AF-222-A001 | `npm run audit:production` | 0 | 0 production vulnerabilities |
+| AF-222-A002 | `npm audit --json` | 1 | 19 high development-tool advisories, 0 critical; the full audit is not called clean |
+| AF-222-Z001 | `unzip -p release/Asterfold-Chrome.zip manifest.json` | 0 | MV3, version 2.2.2, exact permissions, no host permissions/content scripts |
+
+The release manifest extracted from the generated Store ZIP contains:
+
+```json
+{
+  "manifest_version": 3,
+  "version": "2.2.2",
+  "minimum_chrome_version": "120",
+  "permissions": ["activeTab", "favicon", "alarms", "contextMenus"],
+  "optional_permissions": ["bookmarks"],
+  "host_permissions": [],
+  "content_scripts": null,
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; base-uri 'self'"
+  },
+  "background": { "service_worker": "background.js" },
+  "chrome_url_overrides": { "newtab": "newtab.html" }
+}
+```
+
+The extension release ZIP contains `manifest.json` at its root, contains no
+source maps, host permissions, content scripts or remotely hosted executable
+code, and excludes Store documentation/screenshots from the runtime package.
+The exact final artifact hashes are generated after the documentation commit
+and live in the release `checksums.txt`; they are also published with the
+GitHub Release rather than copied here into a self-referential source archive.
+
+Current residual evidence:
+
+- The master audit requested 85/85/80/85 coverage globally. That global target
+  is not met and remains `OPEN` in `FINDINGS_STATUS.md`; no threshold or claim
+  was weakened to report a false pass.
+- The production dependency graph is clean. The full development audit remains
+  non-zero because fixes require ESLint 10 or unavailable upstream WXT changes.
+- The real MV3 gate uses Playwright Chromium with the production unpacked
+  extension. Computer Use confirmed the user's Chrome profile remained on the
+  standard `chrome://newtab/`; the test extension was not installed into or
+  allowed to modify that personal profile.
+- Chrome Web Store review/publication and a public GitHub Pages privacy URL are
+  owner/Store actions and are not claimed.

@@ -251,6 +251,8 @@ kbd { padding: 5px 8px; border: 1px solid var(--color-border); border-radius: 7p
 .trash-row__actions { display: flex; align-items: center; gap: 4px; }
 .trash-row__actions .button--ghost { width: 30px; padding: 0; color: var(--color-text-secondary); }
 .trash-row__actions .button--ghost:hover { color: var(--color-danger); background: color-mix(in srgb, var(--color-danger) 10%, transparent); }
+.inline-error { margin: 0; padding: 9px 11px; border: 1px solid color-mix(in srgb, var(--color-danger) 28%, transparent); border-radius: 10px; color: var(--color-danger); background: color-mix(in srgb, var(--color-danger) 8%, transparent); font-size: 12px; line-height: 1.4; }
+.sr-only { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
 
 @media (max-width: 1000px) {
   .canvas { padding: 22px 22px 58px; }

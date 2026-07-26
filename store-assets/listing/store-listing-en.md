@@ -41,7 +41,7 @@ Organize bookmarks into Pages and Boards, then open them directly from the new t
 
 ### Privacy by design
 
-Asterfold 2.2.1 is local-first. Workspace data is stored in the local Chrome profile. The default release has no application backend, account, analytics, advertising, telemetry, cloud synchronization, host permissions or content scripts, and it makes no application network requests.
+Asterfold 2.2.2 is local-first. Workspace data is stored in the local Chrome profile. The default release has no application backend, account, analytics, advertising, telemetry, cloud synchronization, host permissions or content scripts, and it makes no application network requests.
 
 Chrome may use the network when you open a destination page or when it supplies its browser-owned favicon resource. Privacy Mode hides bookmark titles in the interface and local search while active, but it is visual protection rather than database encryption.
 

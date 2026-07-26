@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { browser } from "wxt/browser";
-import { Archive, Brush, Check, CheckCircle2, Database, Download, FileJson, FileText, Grid2X2, Languages, Shield, Trash2, Upload, Zap } from "lucide-react";
+import { Brush, Check, CheckCircle2, Database, Download, FileJson, FileText, Grid2X2, Languages, Shield, Trash2, Upload, Zap } from "lucide-react";
 import type { AppSettings, ThemeConfig, Wallpaper, WorkspaceData } from "../../domain/models";
 import { validateTheme } from "../../domain/themes";
-import { auditInvariants, createSnapshot, getWallpaper, saveWallpaper, updateSettings } from "../../db/repository";
+import { auditInvariants, getWallpaper, saveWallpaper, updateSettings } from "../../db/repository";
 import {
   createBackup,
+  CURRENT_BACKUP_FORMAT_VERSION,
   downloadText,
   importRecords,
   restoreBackup,
@@ -60,6 +61,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
   const [wallpaperInfo, setWallpaperInfo] = useState<Wallpaper | null>(null);
   const [themeDraft, setThemeDraft] = useState(settings.theme);
   const [invariants, setInvariants] = useState<string[]>([]);
+  const [diagnosticsBusy, setDiagnosticsBusy] = useState(false);
   const [importRecordsPreview, setImportRecordsPreview] = useState<ImportRecord[]>([]);
   const [backupPreview, setBackupPreview] = useState<AsterfoldBackup | null>(null);
   const [importSource, setImportSource] = useState("");
@@ -85,7 +87,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
     if (!importRecordsPreview.length && !backupPreview) setImportPageTitle(t("settings.importedBookmarks"));
     if (browser.commands?.getAll) void browser.commands.getAll().then((commands) => setShortcut(commands.find((command) => command.name === "quick-save")?.shortcut || "—")).catch(() => setShortcut("—"));
     if (navigator.storage?.estimate) void navigator.storage.estimate().then(setStorage).catch(() => setStorage(undefined));
-    void auditInvariants().then(setInvariants);
+    void auditInvariants().then(setInvariants).catch(() => setInvariants([]));
   }, [backupPreview, importRecordsPreview.length, props.initialSection, props.open, t]);
   useEffect(() => {
     if (!props.open || !themeDraft.wallpaperId) { setWallpaperInfo(null); return; }
@@ -128,7 +130,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
   const exportAll = async (format: "json" | "html" | "markdown"): Promise<void> => {
     try {
       const backup = await createBackup();
-      if (format === "json") downloadText(`asterfold-backup-v2-${new Date().toISOString().slice(0, 10)}.json`, serializeBackup(backup), "application/json");
+      if (format === "json") downloadText(`asterfold-backup-v${CURRENT_BACKUP_FORMAT_VERSION}-${new Date().toISOString().slice(0, 10)}.json`, serializeBackup(backup), "application/json");
       if (format === "html") downloadText("asterfold-bookmarks.html", toNetscapeHtml(backup), "text/html");
       if (format === "markdown") downloadText("asterfold-bookmarks.md", toMarkdown(backup), "text/markdown");
       props.onUpdated(t("settings.exported", { format: format.toUpperCase() }));
@@ -191,6 +193,19 @@ export function SettingsDialog(props: SettingsDialogProps) {
       patchTheme({ wallpaperId: wallpaper.id, backgroundMode: "wallpaper" });
     } catch { props.onError(t("error.wallpaperSaveFailed")); }
   };
+  const repeatDiagnostics = async (): Promise<void> => {
+    if (diagnosticsBusy) return;
+    setDiagnosticsBusy(true);
+    try {
+      const issues = await auditInvariants();
+      setInvariants(issues);
+      props.onUpdated(t("settings.diagnosticsRepeated"));
+    } catch {
+      props.onError(t("error.actionFailed"));
+    } finally {
+      setDiagnosticsBusy(false);
+    }
+  };
 
   return (
     <Modal open={props.open} size="fullscreen" title={t("settings.title")} onClose={closeSettings}>
@@ -246,13 +261,13 @@ export function SettingsDialog(props: SettingsDialogProps) {
           </SettingsSection> : null}
 
           {section === "data-privacy" ? <SettingsSection title={t("settings.dataPrivacy")} description={t("settings.dataDescription")}>
-            <div className="action-grid"><button onClick={() => void exportAll("json")}><FileJson /><strong>{t("settings.exportJson")}</strong><span>{t("settings.backupVersion")}</span></button><button onClick={() => void exportAll("html")}><Download /><strong>{t("settings.exportHtml")}</strong><span>{t("settings.exportHtmlHint")}</span></button><button onClick={() => void exportAll("markdown")}><FileText /><strong>{t("settings.exportMarkdown")}</strong><span>.md</span></button><button onClick={() => importInputRef.current?.click()}><Upload /><strong>{t("settings.importFile")}</strong><span>{t("settings.importFileHint")}</span></button><button onClick={() => void requestChromeImport()}><Download /><strong>{t("settings.importChrome")}</strong><span>{t("settings.permissionOnDemand")}</span></button><button onClick={() => void createSnapshot("manual").then(() => props.onUpdated(t("settings.snapshotCreated")))}><Archive /><strong>{t("settings.snapshot")}</strong><span>{t("settings.snapshotHint")}</span></button></div>
+            <div className="action-grid"><button onClick={() => void exportAll("json")}><FileJson /><strong>{t("settings.exportJson")}</strong><span>{t("settings.backupVersion")}</span></button><button onClick={() => void exportAll("html")}><Download /><strong>{t("settings.exportHtml")}</strong><span>{t("settings.exportHtmlHint")}</span></button><button onClick={() => void exportAll("markdown")}><FileText /><strong>{t("settings.exportMarkdown")}</strong><span>.md</span></button><button onClick={() => importInputRef.current?.click()}><Upload /><strong>{t("settings.importFile")}</strong><span>{t("settings.importFileHint")}</span></button><button onClick={() => void requestChromeImport()}><Download /><strong>{t("settings.importChrome")}</strong><span>{t("settings.permissionOnDemand")}</span></button></div>
             <input ref={importInputRef} hidden type="file" accept="application/json,text/html,.json,.html,.htm" onChange={(event) => { const file = event.target.files?.[0]; if (file) void readImportFile(file); event.currentTarget.value = ""; }} />
             {importRecordsPreview.length > 0 ? <div className="import-preview"><h3>{importSource}</h3><p>{t("settings.importPreview", { count: importRecordsPreview.length })}</p><div className="form-row"><label>{t("settings.defaultPage")}<input value={importPageTitle} onChange={(event) => setImportPageTitle(event.target.value)} /></label><label>{t("settings.duplicates")}<select value={duplicateStrategy} onChange={(event) => setDuplicateStrategy(event.target.value as "skip" | "allow")}><option value="skip">{t("settings.skip")}</option><option value="allow">{t("settings.allow")}</option></select></label></div><div className="button-row"><Button onClick={() => setImportRecordsPreview([])}>{t("generic.cancel")}</Button><Button variant="primary" disabled={importBusy} onClick={() => void commitRecordImport()}>{t("generic.create")}</Button></div></div> : null}
             {backupPreview ? <div className="import-preview"><h3>{importSource}</h3><p>{t("settings.backupSummary", { version: backupPreview.exportVersion, pages: backupPreview.entities.pages.length, boards: backupPreview.entities.boards.length, bookmarks: backupPreview.entities.bookmarks.length })}</p><div className="button-row"><Button onClick={() => setBackupPreview(null)}>{t("generic.cancel")}</Button><Button disabled={importBusy} onClick={() => void commitBackupRestore("merge")}>{t("settings.merge")}</Button><Button variant="danger" disabled={importBusy} onClick={() => void commitBackupRestore("replace")}>{t("settings.replace")}</Button></div></div> : null}
             <SettingRow label={t("settings.privacyPersist")}><label className="switch"><input type="checkbox" checked={settings.privacyPersist} onChange={(event) => void patchSettings({ privacyPersist: event.target.checked, ...(event.target.checked ? {} : { privacyEnabled: false }) })} /><span /></label></SettingRow>
             <SettingRow label={t("settings.retention")}><select value={settings.trashRetentionDays ?? "never"} onChange={(event) => void patchSettings({ trashRetentionDays: event.target.value === "never" ? null : Number(event.target.value) as 7 | 30 | 90 })}><option value="7">{t("settings.days", { count: 7 })}</option><option value="30">{t("settings.days", { count: 30 })}</option><option value="90">{t("settings.days", { count: 90 })}</option><option value="never">{t("settings.never")}</option></select></SettingRow>
-            <div className="data-footer"><Button icon={<Trash2 size={16} />} onClick={props.onOpenTrash}>{t("settings.openTrash")}</Button><div className="diagnostic-summary"><Database size={17} /><span>{counts.pages} / {counts.boards} / {counts.bookmarks}</span><span>{formatBytes(storage?.usage)}</span><strong className={invariants.length ? "is-warning" : "is-healthy"}>{invariants.length ? t("settings.issues", { count: invariants.length }) : t("settings.healthy")}</strong></div><Button icon={<CheckCircle2 size={16} />} onClick={() => void auditInvariants().then((issues) => { setInvariants(issues); props.onUpdated(t("settings.diagnosticsRepeated")); })}>{t("settings.repeatDiagnostics")}</Button></div>
+            <div className="data-footer"><Button icon={<Trash2 size={16} />} onClick={props.onOpenTrash}>{t("settings.openTrash")}</Button><div className="diagnostic-summary"><Database size={17} /><span>{counts.pages} / {counts.boards} / {counts.bookmarks}</span><span>{formatBytes(storage?.usage)}</span><strong className={invariants.length ? "is-warning" : "is-healthy"}>{invariants.length ? t("settings.issues", { count: invariants.length }) : t("settings.healthy")}</strong></div><Button icon={<CheckCircle2 size={16} />} disabled={diagnosticsBusy} onClick={() => void repeatDiagnostics()}>{t("settings.repeatDiagnostics")}</Button></div>
           </SettingsSection> : null}
         </div>
       </div>

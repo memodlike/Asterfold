@@ -20,14 +20,29 @@ export function MoveDialog(props: MoveDialogProps) {
   const available = destinations.filter((item) => item.id !== props.currentId);
   const firstDestinationId = available[0]?.id ?? "";
   const [destination, setDestination] = useState(firstDestinationId);
-  useEffect(() => { if (props.open) setDestination(firstDestinationId); }, [props.open, firstDestinationId]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(false);
+  useEffect(() => { if (props.open) { setDestination(firstDestinationId); setError(false); } }, [props.open, firstDestinationId]);
+  const move = async (): Promise<void> => {
+    if (!destination) return;
+    setBusy(true);
+    setError(false);
+    try {
+      await props.onMove(destination);
+      props.onClose();
+    } catch {
+      setError(true);
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
-    <Modal open={props.open} size="small" title={t(props.type === "board" ? "move.board" : "move.bookmarks")} onClose={props.onClose} footer={<><Button onClick={props.onClose}>{t("generic.cancel")}</Button><Button variant="primary" disabled={!destination} onClick={() => { void Promise.resolve(props.onMove(destination)).then(props.onClose); }}>{t("generic.move")}</Button></>}>
+    <Modal open={props.open} size="small" title={t(props.type === "board" ? "move.board" : "move.bookmarks")} onClose={props.onClose} footer={<><Button onClick={props.onClose}>{t("generic.cancel")}</Button><Button variant="primary" disabled={!destination || busy} onClick={() => void move()}>{t("generic.move")}</Button></>}>
       <div className="form-stack"><label>{t("generic.destination")}<select autoFocus value={destination} onChange={(event) => setDestination(event.target.value)}>
         {props.type === "board"
           ? props.pages.filter((page) => page.id !== props.currentId).map((page) => <option key={page.id} value={page.id}>{page.title}</option>)
           : props.pages.map((page) => <optgroup key={page.id} label={page.title}>{props.boards.filter((board) => board.pageId === page.id && board.id !== props.currentId).map((board) => <option key={board.id} value={board.id}>{board.title}</option>)}</optgroup>)}
-      </select></label></div>
+      </select></label>{error ? <p className="inline-error" role="alert">{t("error.actionFailed")}</p> : null}</div>
     </Modal>
   );
 }

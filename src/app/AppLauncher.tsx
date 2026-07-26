@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { FolderPlus, Layers3, Search, Settings, Shield, ShieldCheck, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, FolderPlus, Layers3, Pencil, Search, Settings, Shield, ShieldCheck, Star, Trash2 } from "lucide-react";
 import type { Page } from "../domain/models";
+import { FloatingContextMenu, type ContextMenuPoint } from "../components/FloatingContextMenu";
 import { useI18n } from "../i18n";
 
 interface AppLauncherProps {
@@ -10,6 +11,11 @@ interface AppLauncherProps {
   onCreateBoard: () => void;
   onCreatePage: () => void;
   onSelectPage: (id: string) => void;
+  onRenamePage: (page: Page) => void;
+  onDuplicatePage: (page: Page) => void;
+  onDefaultPage: (page: Page) => void;
+  onMovePage: (page: Page, targetIndex: number) => void;
+  onDeletePage: (page: Page) => void;
   onSearch: () => void;
   onPrivacy: () => void;
   onTrash: () => void;
@@ -20,6 +26,7 @@ export function AppLauncher(props: AppLauncherProps) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [pagesOpen, setPagesOpen] = useState(false);
+  const [pageMenu, setPageMenu] = useState<{ page: Page; point: ContextMenuPoint } | null>(null);
   const closeTimer = useRef<number | undefined>(undefined);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -84,7 +91,7 @@ export function AppLauncher(props: AppLauncherProps) {
         }}>
           <button role="menuitem" onClick={() => act(props.onCreateBoard)}><FolderPlus size={17} /><span>{t("launcher.newBoard")}</span></button>
           <button role="menuitem" aria-expanded={pagesOpen} onClick={() => setPagesOpen((value) => !value)}><Layers3 size={17} /><span>{t("launcher.pages")}</span></button>
-          {pagesOpen ? <div className="launcher-pages"><button role="menuitem" className="launcher-pages__create" onClick={() => act(props.onCreatePage)}><FolderPlus size={14} />{t("name.newPage")}</button>{props.pages.map((page) => <button role="menuitem" key={page.id} className={page.id === props.activePageId ? "is-active" : ""} onClick={() => act(() => props.onSelectPage(page.id))}>{page.title}</button>)}</div> : null}
+          {pagesOpen ? <div className="launcher-pages"><button role="menuitem" className="launcher-pages__create" onClick={() => act(props.onCreatePage)}><FolderPlus size={14} />{t("name.newPage")}</button>{props.pages.map((page) => <button role="menuitem" key={page.id} className={page.id === props.activePageId ? "is-active" : ""} onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); setPageMenu({ page, point: { x: event.clientX, y: event.clientY } }); }} onKeyDown={(event) => { if (event.shiftKey && event.key === "F10") { event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect(); setPageMenu({ page, point: { x: rect.right, y: rect.bottom } }); } }} onClick={() => act(() => props.onSelectPage(page.id))}>{page.title}</button>)}</div> : null}
           <button role="menuitem" onClick={() => act(props.onSearch)}><Search size={17} /><span>{t("generic.search")}</span></button>
           <button role="menuitem" className={props.privacy ? "is-active" : ""} onClick={() => act(props.onPrivacy)}>{props.privacy ? <ShieldCheck size={17} /> : <Shield size={17} />}<span>{t(props.privacy ? "launcher.privacyOn" : "launcher.privacyOff")}</span></button>
           <button role="menuitem" onClick={() => act(props.onTrash)}><Trash2 size={17} /><span>{t("generic.trash")}</span></button>
@@ -95,6 +102,14 @@ export function AppLauncher(props: AppLauncherProps) {
         <img src="/icons/mark-monochrome.svg" alt="" />
         <span>Asterfold</span>
       </button>
+      {pageMenu ? <FloatingContextMenu label={t("generic.page")} point={pageMenu.point} onClose={() => setPageMenu(null)}>
+        <button onClick={() => { props.onRenamePage(pageMenu.page); setPageMenu(null); }}><Pencil size={15} />{t("generic.rename")}</button>
+        <button onClick={() => { props.onDuplicatePage(pageMenu.page); setPageMenu(null); }}><Copy size={15} />{t("generic.duplicate")}</button>
+        <button disabled={pageMenu.page.isDefault} onClick={() => { props.onDefaultPage(pageMenu.page); setPageMenu(null); }}><Star size={15} />{t("settings.defaultPage")}</button>
+        <button disabled={props.pages.findIndex((page) => page.id === pageMenu.page.id) <= 0} onClick={() => { props.onMovePage(pageMenu.page, props.pages.findIndex((page) => page.id === pageMenu.page.id) - 1); setPageMenu(null); }}><ChevronLeft size={15} />{t("generic.moveLeft")}</button>
+        <button disabled={props.pages.findIndex((page) => page.id === pageMenu.page.id) >= props.pages.length - 1} onClick={() => { props.onMovePage(pageMenu.page, props.pages.findIndex((page) => page.id === pageMenu.page.id) + 1); setPageMenu(null); }}><ChevronRight size={15} />{t("generic.moveRight")}</button>
+        <button className="danger" onClick={() => { props.onDeletePage(pageMenu.page); setPageMenu(null); }}><Trash2 size={15} />{t("bookmark.moveTrash")}</button>
+      </FloatingContextMenu> : null}
     </div>
   );
 }

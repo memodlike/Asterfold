@@ -1,17 +1,12 @@
 import { z } from "zod";
 import type { ThemeConfig } from "./models";
 import { isValidRank } from "./ordering";
+import { WALLPAPER_LIMITS } from "./mediaLimits";
 
 const MAX_ID = 128;
 const MAX_PAGES = 10_000;
 const MAX_BOARDS = 50_000;
 const MAX_BOOKMARKS = 50_000;
-const MAX_WALLPAPER_SOURCE_BYTES = 8 * 1024 * 1024;
-const MAX_WALLPAPER_ENCODED_BYTES = 8 * 1024 * 1024;
-const MAX_WALLPAPER_THUMBNAIL_BYTES = 2 * 1024 * 1024;
-const MAX_WALLPAPER_AGGREGATE_BYTES = 10 * 1024 * 1024;
-const MAX_WALLPAPER_DIMENSION = 8_192;
-const MAX_WALLPAPER_PIXELS = 40_000_000;
 const id = z.string().min(1).max(MAX_ID);
 const nullableId = id.nullable();
 const isoDate = z.string().datetime({ offset: true });
@@ -178,16 +173,16 @@ export const backupWallpaperSchema = z.object({
   name: z.string().min(1).max(240),
   kind: z.literal("upload"),
   mimeType: z.literal("image/webp"),
-  width: finite.int().min(1).max(MAX_WALLPAPER_DIMENSION),
-  height: finite.int().min(1).max(MAX_WALLPAPER_DIMENSION),
-  sourceBytes: finite.int().min(1).max(MAX_WALLPAPER_SOURCE_BYTES),
-  storedBytes: finite.int().min(2).max(MAX_WALLPAPER_AGGREGATE_BYTES),
-  data: encodedWebp(MAX_WALLPAPER_ENCODED_BYTES),
-  thumbnail: encodedWebp(MAX_WALLPAPER_THUMBNAIL_BYTES),
+  width: finite.int().min(1).max(WALLPAPER_LIMITS.sourceDimension),
+  height: finite.int().min(1).max(WALLPAPER_LIMITS.sourceDimension),
+  sourceBytes: finite.int().min(1).max(WALLPAPER_LIMITS.sourceBytes),
+  storedBytes: finite.int().min(2).max(WALLPAPER_LIMITS.aggregateBytes),
+  data: encodedWebp(WALLPAPER_LIMITS.encodedBytes),
+  thumbnail: encodedWebp(WALLPAPER_LIMITS.thumbnailBytes),
   createdAt: isoDate,
   updatedAt: isoDate,
 }).strict().superRefine((wallpaper, context) => {
-  if (wallpaper.width * wallpaper.height > MAX_WALLPAPER_PIXELS) {
+  if (wallpaper.width * wallpaper.height > WALLPAPER_LIMITS.sourcePixels) {
     context.addIssue({ code: "custom", message: "Wallpaper pixel count is too large" });
   }
   const decodedBytes = decodedBase64Size(wallpaper.data) + decodedBase64Size(wallpaper.thumbnail);
@@ -201,7 +196,7 @@ const backupCoreSchema = z.object({
   exportVersion: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   exportedAt: isoDate,
   appVersion: z.string().min(1).max(64),
-  scope: z.enum(["full", "page", "board"]),
+  scope: z.enum(["full", "page", "board", "selection"]),
   entities: z.object({
     pages: z.array(pageSchema).max(MAX_PAGES),
     boards: z.array(boardSchema).max(MAX_BOARDS),
@@ -245,7 +240,7 @@ export const backupSchema = backupCoreSchema.superRefine((backup, context) => {
     context.addIssue({ code: "custom", message: `Duplicate wallpaper ID: ${duplicateWallpaperId}` });
   }
   const aggregateWallpaperBytes = backup.assets?.wallpapers.reduce((total, wallpaper) => total + wallpaper.storedBytes, 0) ?? 0;
-  if (aggregateWallpaperBytes > MAX_WALLPAPER_AGGREGATE_BYTES) {
+  if (aggregateWallpaperBytes > WALLPAPER_LIMITS.aggregateBytes) {
     context.addIssue({ code: "custom", message: "Wallpaper assets exceed the aggregate size limit" });
   }
   for (const [kind, entities] of Object.entries(backup.entities)) {

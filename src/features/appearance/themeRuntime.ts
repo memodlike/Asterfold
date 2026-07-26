@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { ThemeConfig, Wallpaper } from "../../domain/models";
+import type { ThemeConfig } from "../../domain/models";
 
 interface Palette {
   canvas: string;
@@ -23,7 +23,7 @@ export const BUILTIN_WALLPAPERS = [
   { id: "builtin-dusk", labelKey: "settings.wallpaperDusk", value: 'url("/wallpapers/dusk.webp")' },
 ] as const;
 
-export function themeStyle(theme: ThemeConfig, wallpaper: Wallpaper | undefined, wallpaperUrl: string | null, dark: boolean): CSSProperties {
+export function themeStyle(theme: ThemeConfig, wallpaperUrl: string | null, dark: boolean): CSSProperties {
   const palette = dark ? darkPalette : lightPalette;
   const builtin = BUILTIN_WALLPAPERS.find((item) => item.id === theme.wallpaperId);
   const wallpaperImage = theme.backgroundMode === "wallpaper" ? wallpaperUrl ? `url("${wallpaperUrl}")` : builtin?.value ?? "none" : "none";

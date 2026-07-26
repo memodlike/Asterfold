@@ -1,4 +1,4 @@
-# Chrome Web Store Privacy Practices — Asterfold 2.2.1
+# Chrome Web Store Privacy Practices — Asterfold 2.2.2
 
 Prepared on 26 July 2026. These are proposed dashboard answers for the reviewed default release. Recheck every answer against the final uploaded ZIP before submission.
 
@@ -30,7 +30,7 @@ If the Dashboard wording or examples change, use the broader disclosure when a c
 
 ## Data handling certifications
 
-The owner can certify the following for the reviewed 2.2.1 default build:
+The owner can certify the following for the reviewed 2.2.2 default build:
 
 - data is used only to provide the extension's single bookmark-workspace purpose;
 - workspace data is stored locally in the user's Chrome profile;
@@ -68,7 +68,7 @@ Do not submit the intended Pages URL until it opens publicly without authenticat
 | `contextMenus` | Adds the user-invoked Save page, Save link and Open Asterfold commands. |
 | optional `bookmarks` | Requested only when the user selects Import Chrome bookmarks. The Chrome bookmark tree is read and processed locally to create an import preview; declining does not affect normal use. |
 
-The final 2.2.1 manifest must not list `storage`, host permissions, content scripts, `tabs`, `history`, `identity`, `scripting`, `webRequest`, cookies or clipboard-read. If the final ZIP differs, stop submission and reconcile the manifest and disclosures.
+The final 2.2.2 manifest must not list `storage`, host permissions, content scripts, `tabs`, `history`, `identity`, `scripting`, `webRequest`, cookies or clipboard-read. If the final ZIP differs, stop submission and reconcile the manifest and disclosures.
 
 ## Privacy policy URL
 

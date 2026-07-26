@@ -20,6 +20,7 @@ interface BookmarkEditorProps {
   onClose: () => void;
   onSaved: (bookmark: Bookmark) => void;
   onError: (message: string) => void;
+  privacy?: boolean;
 }
 
 export function BookmarkEditor(props: BookmarkEditorProps) {
@@ -29,7 +30,6 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
   const [description, setDescription] = useState("");
   const [boardId, setBoardId] = useState("");
   const [openMode, setOpenMode] = useState<BookmarkOpenMode>("current");
-  const [pinned, setPinned] = useState(false);
   const [duplicate, setDuplicate] = useState<Bookmark | null>(null);
   const [allowDuplicate, setAllowDuplicate] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -41,7 +41,6 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
     setDescription(props.bookmark?.description ?? props.initialDescription ?? "");
     setBoardId(props.bookmark?.boardId ?? props.initialBoardId);
     setOpenMode(props.bookmark?.openMode ?? "current");
-    setPinned(props.bookmark?.pinned ?? false);
     setAllowDuplicate(false);
     setDuplicate(null);
   }, [props.bookmark, props.initialBoardId, props.initialDescription, props.initialTitle, props.initialUrl, props.open]);
@@ -62,15 +61,16 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
   }, [boardId, props.bookmark?.id, props.open, url]);
 
   const boardOptions = useMemo(() => props.pages.map((page) => ({ page, boards: props.boards.filter((board) => board.pageId === page.id) })), [props.boards, props.pages]);
-  const icon = url.startsWith("http") ? faviconUrl(url, 48) : "";
+  const icon = !props.privacy && url.startsWith("http") ? faviconUrl(url, 48) : "";
+  const formId = "asterfold-bookmark-editor";
 
   const save = async (): Promise<void> => {
     setSaving(true);
     performance.mark("asterfold-save-start");
     try {
       const saved = props.bookmark
-        ? await updateBookmark(props.bookmark.id, { title, url, description, boardId, openMode, pinned })
-        : await createBookmark({ boardId, title, url, description, openMode, pinned }, { allowDuplicate });
+        ? await updateBookmark(props.bookmark.id, { title, url, description, boardId, openMode })
+        : await createBookmark({ boardId, title, url, description, openMode }, { allowDuplicate });
       performance.mark("asterfold-save-committed");
       performance.measure("asterfold-local-save", "asterfold-save-start", "asterfold-save-committed");
       props.onSaved(saved);
@@ -94,9 +94,13 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
       title={t(props.bookmark ? "bookmark.editTitle" : "bookmark.add")}
       description={t(props.bookmark ? "bookmark.editDescription" : "bookmark.addDescription")}
       onClose={props.onClose}
-      footer={<><Button onClick={props.onClose}>{t("generic.cancel")}</Button><Button variant="primary" disabled={saving || !boardId} onClick={() => void save()}>{saving ? t("popup.saving") : t("generic.save")}</Button></>}
+      footer={props.privacy
+        ? <Button onClick={props.onClose}>{t("generic.close")}</Button>
+        : <><Button onClick={props.onClose}>{t("generic.cancel")}</Button><Button type="submit" form={formId} variant="primary" disabled={saving || !boardId}>{saving ? t("popup.saving") : t("generic.save")}</Button></>}
     >
-      <form className="form-stack" onSubmit={(event) => { event.preventDefault(); void save(); }}>
+      {props.privacy ? (
+        <div className="search-state search-private"><span className="search-state__icon"><BookmarkIcon size={22} /></span><div><strong>{t("search.privateTitle")}</strong><span>{t("search.privateBody")}</span></div></div>
+      ) : <form id={formId} className="form-stack" onSubmit={(event) => { event.preventDefault(); void save(); }}>
         <div className="bookmark-preview">
           <span className="favicon favicon--large">{icon ? <img src={icon} alt="" /> : <BookmarkIcon size={22} />}</span>
           <div><strong>{title || t("bookmark.untitled")}</strong><small>{url}</small></div>
@@ -116,7 +120,7 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
           <div className="inline-warning"><AlertTriangle size={18} /><div><strong>{t("bookmark.duplicateWarning")}</strong><span>{duplicate.title}</span>{!props.bookmark ? <button type="button" onClick={() => setAllowDuplicate(true)}>{t(allowDuplicate ? "bookmark.copyWillSave" : "bookmark.saveCopy")}</button> : null}</div><ExternalLink size={15} /></div>
         ) : null}
         <button type="submit" hidden aria-hidden="true" />
-      </form>
+      </form>}
     </Modal>
   );
 }

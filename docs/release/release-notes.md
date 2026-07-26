@@ -1,19 +1,21 @@
-# Asterfold 2.2.1 — Chrome Web Store readiness
+# Asterfold 2.2.2 — final hardening
 
-Patch-релиз для подготовки local-first новой вкладки Chrome к отправке на проверку Chrome Web Store. Дизайн и структура Pages → Boards → Bookmarks сохранены.
+Patch-релиз делает local-first новую вкладку Chrome надёжнее перед отправкой на проверку Chrome Web Store. Узнаваемый дизайн, Frost Light, Graphite Dark, стекло, launcher снизу слева и структура Pages → Boards → Bookmarks сохранены.
 
 ## Что изменилось
 
-- 🔐 Удалено неиспользуемое разрешение `storage`; данные по-прежнему хранятся локально в IndexedDB.
-- 🧳 Версия приложения берётся из одного источника; backup v3 сохраняет активные пользовательские обои и продолжает принимать backup v1/v2.
-- 🖼️ Данные обоев в backup ограничены по типу и размеру и проверяются до атомарного восстановления.
-- 📄 Обновлены Privacy Policy, Privacy Practices, permission rationale и чек-лист отправки.
-- 🛍️ Добавлены реальные Store-скриншоты, иконка, promo tile, marquee и листинги EN/RU.
-- ✅ Добавлены автоматические проверки размеров Store assets, разрешений Manifest V3, версии, remote code и воспроизводимости архивов.
-- 📦 Store-материалы собираются отдельно и не попадают в ZIP расширения.
-- 🧪 Кандидат 2.2.1 прошёл typecheck, lint, 106 unit-тестов, 5 реальных MV3 E2E, проверку воспроизводимости и production audit без известных уязвимостей.
+- 🧳 Выборочный backup теперь сам проходит строгую проверку и содержит только выбранные закладки и необходимые родительские блоки/страницы.
+- 🔁 Повторный merge удалённых данных изолирует batch ID, а восстановление не задевает соседнюю импортированную копию.
+- 📐 Импорт, дублирование, перемещение блоков и массовые операции используют единый атомарный порядок без конфликтующих ranks.
+- 🔒 Privacy Mode скрывает реальные названия и URL в карточках, редакторе, корзине, drag overlay, toast, popup и accessibility tree.
+- ⚡ Quick Save не может сохранить ссылку в блок другой страницы; без подходящего блока кнопка сохранения отключена.
+- 🖼️ Обои проходят единые ограничения декодирования, размеров и backup; dangling legacy-ссылки безопасно сбрасываются.
+- 🧹 Массовый Undo, Trash и free-grid swap выполняются одной транзакцией и не оставляют частичное состояние при ошибке.
+- 🗂️ Page actions теперь доступны из клавиатурного меню: переименование, дублирование, default, перемещение и удаление.
+- 🧭 Background восстанавливает Trash alarm, обрабатывает rejected tasks и очищает badge устойчивым MV3 alarm.
+- 🧪 Локально выполнены typecheck, lint, 129 unit/integration/component тестов, 5 реальных MV3 E2E, Store validation, воспроизводимый release и production audit с 0 уязвимостей.
 
-**Ready for submission to Chrome Web Store.** Это не означает, что расширение уже отправлено, одобрено или опубликовано.
+**Ready for submission review.** Это не означает, что расширение уже отправлено, одобрено или опубликовано Chrome Web Store.
 
 ## Установка
 
@@ -27,7 +29,7 @@ Patch-релиз для подготовки local-first новой вкладк
 
 ## Проверка
 
-Текущие команды, окружение, test IDs, SHA-256 и оставшиеся риски публикуются в `docs/audit/EVIDENCE.md` и `docs/audit/FINDINGS_STATUS.md`. Не используйте GitHub **Source code (zip)** как установочный архив.
+Текущие команды, окружение, test IDs, SHA-256 и оставшиеся риски публикуются в `docs/audit/EVIDENCE.md` и `docs/audit/FINDINGS_STATUS.md`. Полный development audit по-прежнему показывает advisories в build-only WXT/ESLint toolchain; production dependencies чисты. Не используйте GitHub **Source code (zip)** как установочный архив.
 
 ## Chrome Web Store documentation
 

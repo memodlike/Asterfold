@@ -1,6 +1,6 @@
 # Threat model
 
-Scope: Asterfold 2.2.0 default local-first MV3 release.
+Scope: Asterfold 2.2.2 default local-first MV3 release.
 
 | Asset | Threat | Mitigation | Residual risk |
 | --- | --- | --- | --- |

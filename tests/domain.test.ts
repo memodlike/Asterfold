@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { evenlySpacedRanks, isValidRank, rankBetween } from "../src/domain/ordering";
+import { allocateManyAtEnd, evenlySpacedRanks, isValidRank, rankBetween } from "../src/domain/ordering";
 import { getThemePreset, validateTheme } from "../src/domain/themes";
 import { isSafeOpenUrl, normalizeUrl, parseSafeNavigationUrl } from "../src/domain/urls";
 import { parseExtensionMessage } from "../src/browser/messages";
+import { primaryShortcut } from "../src/browser/platform";
 
 describe("position keys", () => {
   it("creates stable sorted ranks and inserts between neighbors", () => {
@@ -20,6 +21,19 @@ describe("position keys", () => {
   it("signals an exhausted gap and rejects reversed bounds", () => {
     expect(rankBetween("000000000000", "000000000001")).toBeNull();
     expect(() => rankBetween("zzzzzzzzzzzz", "000000000001")).toThrow(/reversed/u);
+  });
+
+  it("allocates large append batches after corrupt or dense scopes without duplicate ranks", () => {
+    const scope = [
+      { id: "first", position: "000000000001" },
+      { id: "second", position: "000000000001" },
+    ];
+    const allocation = allocateManyAtEnd(scope, 10_000);
+    const positions = [...allocation.scope.map((item) => item.position), ...allocation.positions];
+    expect(positions).toHaveLength(10_002);
+    expect(new Set(positions).size).toBe(positions.length);
+    expect(positions.every(isValidRank)).toBe(true);
+    expect([...positions].sort()).toEqual(positions);
   });
 });
 
@@ -79,6 +93,12 @@ describe("URL safety", () => {
 });
 
 describe("themes and runtime messages", () => {
+  it("formats primary shortcuts for Apple and non-Apple platforms", () => {
+    expect(primaryShortcut("k", "MacIntel")).toEqual({ visual: "⌘ K", aria: "Meta+K" });
+    expect(primaryShortcut("Enter", "Win32")).toEqual({ visual: "Ctrl + Enter", aria: "Control+Enter" });
+    expect(primaryShortcut("k", "Linux x86_64")).toEqual({ visual: "Ctrl + K", aria: "Control+K" });
+  });
+
   it("clamps every user-controlled numeric theme value", () => {
     const validated = validateTheme({
       ...getThemePreset("aurora"),
@@ -101,8 +121,27 @@ describe("themes and runtime messages", () => {
       faviconSize: 48,
       wallpaperDim: 0,
       wallpaperZoom: 2,
-      accent: "#155eef",
+      accent: "#9b8cff",
     });
+  });
+
+  it("drops unknown theme keys and safely falls back from non-finite or invalid values", () => {
+    const validated = validateTheme({
+      ...getThemePreset("graphite-dark"),
+      mode: "sepia",
+      density: "tiny",
+      surfaceOpacity: Number.NaN,
+      wallpaperZoom: Number.POSITIVE_INFINITY,
+      unknownExecutableSetting: "https://example.com/code.js",
+    } as never);
+    expect(validated).toMatchObject({
+      preset: "graphite-dark",
+      mode: "dark",
+      density: "comfortable",
+      surfaceOpacity: 0.74,
+      wallpaperZoom: 1,
+    });
+    expect(validated).not.toHaveProperty("unknownExecutableSetting");
   });
 
   it("accepts only the closed extension command union", () => {
@@ -118,5 +157,7 @@ describe("themes and runtime messages", () => {
     expect(parseExtensionMessage({ type: "QUICK_SAVE", tabId: Number.MAX_SAFE_INTEGER + 1 })).toBeNull();
     expect(parseExtensionMessage({ type: "OPEN_WORKSPACE", pageId: "" })).toBeNull();
     expect(parseExtensionMessage({ type: "INSTANT_SAVE", url: "https://example.com", title: "x".repeat(241) })).toBeNull();
+    expect(parseExtensionMessage({ type: "SET_BADGE", status: "saved" })).toEqual({ type: "SET_BADGE", status: "saved" });
+    expect(parseExtensionMessage({ type: "SET_BADGE", status: "unknown" })).toBeNull();
   });
 });

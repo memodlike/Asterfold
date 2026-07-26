@@ -14,16 +14,19 @@ describe("Chrome Web Store manifest policy", () => {
   }, 30_000);
 
   it("keeps package, WXT and release validation on one least-privilege version policy", async () => {
-    const [config, releaseValidator] = await Promise.all([
+    const [config, releaseValidator, background] = await Promise.all([
       readFile(join(process.cwd(), "wxt.config.ts"), "utf8"),
       readFile(join(process.cwd(), "scripts/release.mjs"), "utf8"),
+      readFile(join(process.cwd(), "entrypoints", "background.ts"), "utf8"),
     ]);
 
-    expect(packageVersion).toBe("2.2.1");
+    expect(packageVersion).toBe("2.2.2");
     expect(config).toContain("version: packageVersion");
     expect(config).not.toMatch(/permissions:\s*\[[^\]]*["']storage["']/su);
     expect(releaseValidator).not.toMatch(/allowedPermissions[^\n]*["']storage["']/u);
     expect(await readFile(join(process.cwd(), "src", "services", "exportImport.ts"), "utf8")).not.toContain('appVersion: "2.1.3"');
+    expect(background).toContain("const BADGE_CLEAR_DELAY_MINUTES = 0.5;");
+    expect(background).toContain("delayInMinutes: BADGE_CLEAR_DELAY_MINUTES");
   });
 
   it("validates the built manifest as MV3 with the exact allowed permission set", async () => {

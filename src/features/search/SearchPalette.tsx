@@ -4,6 +4,7 @@ import type { Board, Bookmark, Page } from "../../domain/models";
 import { BookmarkSearchEngine, createSearchDocuments, type SearchField, type SearchMode } from "../../search/searchEngine";
 import { Modal } from "../../components/Modal";
 import { useI18n } from "../../i18n";
+import { primaryShortcut } from "../../browser/platform";
 
 interface SearchPaletteProps {
   open: boolean;
@@ -32,12 +33,17 @@ export function SearchPalette(props: SearchPaletteProps) {
   const engine = useMemo(() => props.privacy ? null : new BookmarkSearchEngine(createSearchDocuments(props.pages, props.boards, props.bookmarks)), [props.boards, props.bookmarks, props.pages, props.privacy]);
   const results = useMemo(() => engine?.search(query, { mode, field, ...(scope === "page" ? { pageId: props.activePageId } : {}), limit: 40 }) ?? [], [engine, field, mode, props.activePageId, query, scope]);
   const bookmarkById = useMemo(() => new Map(props.bookmarks.map((bookmark) => [bookmark.id, bookmark])), [props.bookmarks]);
+  const searchShortcut = primaryShortcut("K");
 
   useEffect(() => {
     if (props.open) {
       window.setTimeout(() => inputRef.current?.focus(), 0);
     }
   }, [props.open]);
+
+  useEffect(() => {
+    setActiveIndex((current) => results.length === 0 ? 0 : Math.min(current, results.length - 1));
+  }, [results.length]);
 
   const close = (): void => {
     props.onClose();
@@ -55,11 +61,11 @@ export function SearchPalette(props: SearchPaletteProps) {
   return (
     <Modal open={props.open} size="large" className="modal--search" title={t("search.title")} description={t("search.placeholder")} onClose={close}>
       <div className="search-palette" onKeyDown={(event) => {
-        if (event.key === "ArrowDown") { event.preventDefault(); setActiveIndex((current) => Math.min(results.length - 1, current + 1)); }
-        if (event.key === "ArrowUp") { event.preventDefault(); setActiveIndex((current) => Math.max(0, current - 1)); }
+        if (event.key === "ArrowDown" && results.length > 0) { event.preventDefault(); setActiveIndex((current) => Math.min(results.length - 1, current + 1)); }
+        if (event.key === "ArrowUp" && results.length > 0) { event.preventDefault(); setActiveIndex((current) => Math.max(0, current - 1)); }
         if (event.key === "Enter" && !event.nativeEvent.isComposing) { event.preventDefault(); activate(); }
       }}>
-        <div className="search-palette__input"><Search size={20} /><input ref={inputRef} disabled={props.privacy} value={props.privacy ? t("search.protected") : query} onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }} placeholder={t("search.placeholder")} /><kbd>⌘ K</kbd></div>
+        <div className="search-palette__input"><Search size={20} /><input ref={inputRef} disabled={props.privacy} value={props.privacy ? t("search.protected") : query} onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }} placeholder={t("search.placeholder")} aria-keyshortcuts={searchShortcut.aria} /><kbd>{searchShortcut.visual}</kbd></div>
         <div className="search-palette__filters">
           <div className="segmented" aria-label={t("search.mode")}>{(["fuzzy", "prefix", "exact"] as const).map((item) => <button className={mode === item ? "is-active" : ""} key={item} onClick={() => { setMode(item); setActiveIndex(0); }}>{t(item === "fuzzy" ? "search.fuzzy" : item === "prefix" ? "search.prefix" : "search.exact")}</button>)}</div>
           <label className="search-palette__select"><span className="sr-only">{t("search.title")}</span><select value={field} onChange={(event) => { setField(event.target.value as SearchField); setActiveIndex(0); }} aria-label={t("search.title")}><option value="all">{t("search.allFields")}</option><option value="title">{t("search.titleOnly")}</option><option value="url">{t("search.urlOnly")}</option></select></label>

@@ -5,7 +5,7 @@ import { createSnapshot, ensureStarterWorkspace } from "../db/repository";
 import { CURRENT_DB_SCHEMA_VERSION } from "../db/migrations";
 import type { Board, Bookmark, Page, Wallpaper } from "../domain/models";
 import { ImportError, ValidationError } from "../domain/errors";
-import { evenlySpacedRanks } from "../domain/ordering";
+import { allocateManyAtEnd, compareRanks } from "../domain/ordering";
 import { backupSchema, type AsterfoldBackup } from "../domain/schemas";
 import { normalizeUrl } from "../domain/urls";
 import { createId, nowIso } from "../utils/ids";
@@ -143,6 +143,32 @@ export async function createBackup(
   });
 }
 
+export async function createSelectionBackup(
+  bookmarkIds: readonly string[],
+  database: AsterfoldDatabase = db,
+): Promise<AsterfoldBackup> {
+  await ensureStarterWorkspace(database);
+  const ids = [...new Set(bookmarkIds)];
+  if (ids.length === 0) throw new ImportError("Select at least one bookmark to export");
+  const bookmarks = await database.bookmarks.where("id").anyOf(ids).toArray();
+  if (bookmarks.length !== ids.length) throw new ImportError("One or more selected bookmarks are unavailable");
+  const boardIds = new Set(bookmarks.map((bookmark) => bookmark.boardId));
+  const boards = await database.boards.where("id").anyOf([...boardIds]).toArray();
+  if (boards.length !== boardIds.size) throw new ImportError("A selected bookmark has no parent Board");
+  const pageIds = new Set(boards.map((board) => board.pageId));
+  const pages = await database.pages.where("id").anyOf([...pageIds]).toArray();
+  if (pages.length !== pageIds.size) throw new ImportError("A selected Board has no parent Page");
+  return backupSchema.parse({
+    schemaVersion: CURRENT_BACKUP_FORMAT_VERSION,
+    exportVersion: CURRENT_BACKUP_FORMAT_VERSION,
+    exportedAt: nowIso(),
+    appVersion: packageVersion,
+    scope: "selection",
+    entities: { pages, boards, bookmarks },
+    assets: { wallpapers: [] },
+  });
+}
+
 export function serializeBackup(backup: AsterfoldBackup): string {
   return JSON.stringify(backup, null, 2);
 }
@@ -161,9 +187,20 @@ export function parseBackup(text: string): AsterfoldBackup {
     throw new ImportError(`Backup validation failed: ${result.error.issues[0]?.message ?? "unknown schema error"}`);
   }
   for (const bookmark of result.data.entities.bookmarks) normalizeUrl(bookmark.url, false);
+  const legacyTheme = result.data.exportVersion < 3 && result.data.settings?.theme.wallpaperId
+    && !result.data.settings.theme.wallpaperId.startsWith("builtin-")
+    ? { ...result.data.settings.theme, wallpaperId: null, backgroundMode: "auto" as const }
+    : result.data.settings?.theme;
   return {
     ...result.data,
-    ...(result.data.settings ? { settings: { ...result.data.settings, schemaVersion: CURRENT_DB_SCHEMA_VERSION } } : {}),
+    ...(result.data.settings ? {
+      settings: {
+        ...result.data.settings,
+        schemaVersion: CURRENT_DB_SCHEMA_VERSION,
+        ...(legacyTheme ? { theme: legacyTheme } : {}),
+      },
+      ...(legacyTheme ? { theme: legacyTheme } : {}),
+    } : {}),
   };
 }
 
@@ -235,31 +272,48 @@ export async function restoreBackup(
         if (wallpaperAssets.length > 0) await database.wallpapers.bulkPut(wallpaperAssets);
       }
     }
-    const [currentPages, currentBoards, currentBookmarks] = strategy === "merge"
+    const currentEntities = strategy === "merge"
       ? await Promise.all([database.pages.toArray(), database.boards.toArray(), database.bookmarks.toArray()])
       : [[], [], []];
+    let currentPages = currentEntities[0];
+    const currentBoards = currentEntities[1];
+    const currentBookmarks = currentEntities[2];
     let incomingPages = validated.entities.pages as Page[];
     let incomingBoards = validated.entities.boards as Board[];
     let incomingBookmarks = validated.entities.bookmarks as Bookmark[];
     if (strategy === "merge") {
       const pageIds = new Map(incomingPages.map((page) => [page.id, createId()]));
       const boardIds = new Map(incomingBoards.map((board) => [board.id, createId()]));
-      const pageRanks = evenlySpacedRanks(currentPages.length + incomingPages.length).slice(currentPages.length);
+      const deletedBatchIds = new Map(
+        [...incomingPages, ...incomingBoards, ...incomingBookmarks]
+          .map((entity) => entity.deletedBatchId)
+          .filter((id): id is string => id !== null)
+          .map((id) => [id, createId()]),
+      );
+      const pageAllocation = allocateManyAtEnd(currentPages, incomingPages.length);
+      const previousPagePositions = new Map(currentPages.map((page) => [page.id, page.position]));
+      const mergeTimestamp = nowIso();
+      currentPages = pageAllocation.scope.map((page) => previousPagePositions.get(page.id) === page.position
+        ? page
+        : { ...page, updatedAt: mergeTimestamp, version: page.version + 1 });
       incomingPages = incomingPages.map((page, index) => ({
         ...page,
         id: pageIds.get(page.id)!,
-        position: pageRanks[index]!,
+        position: pageAllocation.positions[index]!,
         isDefault: false,
+        deletedBatchId: page.deletedBatchId ? deletedBatchIds.get(page.deletedBatchId)! : null,
       }));
       incomingBoards = incomingBoards.map((board) => ({
         ...board,
         id: boardIds.get(board.id)!,
         pageId: pageIds.get(board.pageId)!,
+        deletedBatchId: board.deletedBatchId ? deletedBatchIds.get(board.deletedBatchId)! : null,
       }));
       incomingBookmarks = incomingBookmarks.map((bookmark) => ({
         ...bookmark,
         id: createId(),
         boardId: boardIds.get(bookmark.boardId)!,
+        deletedBatchId: bookmark.deletedBatchId ? deletedBatchIds.get(bookmark.deletedBatchId)! : null,
       }));
     }
     await database.pages.bulkPut([...currentPages, ...incomingPages]);
@@ -301,13 +355,19 @@ export function toNetscapeHtml(backup: AsterfoldBackup): string {
 }
 
 export function toMarkdown(backup: AsterfoldBackup): string {
+  const text = (value: string): string => value
+    .replace(/\r?\n|\r/gu, " ")
+    .replace(/([\\#*_`[\]()<>])/gu, "\\$1");
+  const destination = (value: string): string => value
+    .replace(/\r?\n|\r/gu, "")
+    .replace(/([\\()])/gu, "\\$1");
   const output = ["# Asterfold bookmarks", ""];
   for (const page of backup.entities.pages.filter((item) => item.deletedAt === null).sort((a, b) => a.position.localeCompare(b.position))) {
-    output.push(`## ${page.title}`, "");
+    output.push(`## ${text(page.title)}`, "");
     for (const board of backup.entities.boards.filter((item) => item.pageId === page.id && item.deletedAt === null).sort((a, b) => a.position.localeCompare(b.position))) {
-      output.push(`### ${board.title}`, "");
+      output.push(`### ${text(board.title)}`, "");
       for (const bookmark of backup.entities.bookmarks.filter((item) => item.boardId === board.id && item.deletedAt === null).sort((a, b) => a.position.localeCompare(b.position))) {
-        output.push(`- [${bookmark.title.replaceAll("]", "\\]")}](${bookmark.url})${bookmark.description ? ` — ${bookmark.description}` : ""}`);
+        output.push(`- [${text(bookmark.title)}](${destination(bookmark.url)})${bookmark.description ? ` — ${text(bookmark.description)}` : ""}`);
       }
       output.push("");
     }
@@ -321,8 +381,11 @@ export function downloadText(filename: string, content: string, mimeType: string
   anchor.href = url;
   anchor.download = filename;
   anchor.rel = "noopener";
+  anchor.hidden = true;
+  document.body.append(anchor);
   anchor.click();
-  queueMicrotask(() => URL.revokeObjectURL(url));
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 export function parseNetscapeHtml(text: string): ImportRecord[] {
@@ -398,16 +461,22 @@ export async function importRecords(
       const page = await database.pages.get(pageId);
       if (!page || page.deletedAt !== null) throw new ValidationError("Import destination Page not found");
     } else {
-      const existingPages = (await database.pages.toArray()).filter((page) => page.deletedAt === null).sort((a, b) => a.position.localeCompare(b.position));
+      const existingPages = (await database.pages.toArray()).filter((page) => page.deletedAt === null).sort((a, b) => compareRanks(a.position, b.position));
       pageId = createId();
       const timestamp = nowIso();
+      const allocation = allocateManyAtEnd(existingPages, 1);
+      const previousPositions = new Map(existingPages.map((page) => [page.id, page.position]));
+      const rebalancedPages = allocation.scope
+        .filter((page) => previousPositions.get(page.id) !== page.position)
+        .map((page) => ({ ...page, updatedAt: timestamp, version: page.version + 1 }));
+      if (rebalancedPages.length > 0) await database.pages.bulkPut(rebalancedPages);
       await database.pages.add({
         id: pageId,
         userId: null,
         title: destination.pageTitle.trim() || "Imported",
         icon: "download",
         accent: null,
-        position: evenlySpacedRanks(existingPages.length + 1).at(-1)!,
+        position: allocation.positions[0]!,
         isDefault: false,
         createdAt: timestamp,
         updatedAt: timestamp,
@@ -424,22 +493,32 @@ export async function importRecords(
       if (group) group.push(record);
       else folderGroups.set(folder, [record]);
     }
-    const existingBoards = (await database.boards.where("pageId").equals(pageId).toArray()).filter((board) => board.deletedAt === null);
+    const existingBoards = (await database.boards.where("pageId").equals(pageId).toArray())
+      .filter((board) => board.deletedAt === null)
+      .sort((left, right) => compareRanks(left.position, right.position));
+    const missingBoardTitles = [...folderGroups.keys()]
+      .map((title) => title.slice(0, 240))
+      .filter((title, index, titles) => !existingBoards.some((board) => board.title === title) && titles.indexOf(title) === index);
+    const boardAllocation = allocateManyAtEnd(existingBoards, missingBoardTitles.length);
+    const previousBoardPositions = new Map(existingBoards.map((board) => [board.id, board.position]));
+    const boardTimestamp = nowIso();
+    const rebalancedBoards = boardAllocation.scope
+      .filter((board) => previousBoardPositions.get(board.id) !== board.position)
+      .map((board) => ({ ...board, updatedAt: boardTimestamp, version: board.version + 1 }));
+    if (rebalancedBoards.length > 0) await database.boards.bulkPut(rebalancedBoards);
+    const newBoards = missingBoardTitles.map((title, index): Board => ({
+      id: createId(), userId: null, pageId, title, icon: "folder", accent: null,
+      position: boardAllocation.positions[index]!, collapsed: false, layout: "list",
+      bookmarkColumns: "auto", gridColumn: 1, gridRow: 0, gridSpan: 3,
+      createdAt: boardTimestamp, updatedAt: boardTimestamp, deletedAt: null, deletedBatchId: null, version: 1,
+    }));
+    if (newBoards.length > 0) await database.boards.bulkAdd(newBoards);
+    existingBoards.splice(0, existingBoards.length, ...boardAllocation.scope, ...newBoards);
     let imported = 0;
     let skippedDuplicates = 0;
     for (const [folderTitle, group] of folderGroups) {
-      let board = existingBoards.find((candidate) => candidate.title === folderTitle);
-      if (!board) {
-        const timestamp = nowIso();
-        board = {
-          id: createId(), userId: null, pageId, title: folderTitle.slice(0, 240), icon: "folder", accent: null,
-          position: evenlySpacedRanks(existingBoards.length + 1).at(-1)!, collapsed: false, layout: "list",
-          bookmarkColumns: "auto", gridColumn: 1, gridRow: 0, gridSpan: 3,
-          createdAt: timestamp, updatedAt: timestamp, deletedAt: null, deletedBatchId: null, version: 1,
-        };
-        await database.boards.add(board);
-        existingBoards.push(board);
-      }
+      const board = existingBoards.find((candidate) => candidate.title === folderTitle.slice(0, 240));
+      if (!board) throw new ImportError("Import destination Board could not be allocated");
       const current = (await database.bookmarks.where("boardId").equals(board.id).toArray()).filter((bookmark) => bookmark.deletedAt === null);
       const known = new Set(current.map((bookmark) => bookmark.normalizedUrl));
       const accepted = group.filter((record) => {
@@ -450,13 +529,18 @@ export async function importRecords(
         known.add(record.normalizedUrl);
         return true;
       });
-      const ranks = evenlySpacedRanks(current.length + accepted.length).slice(current.length);
       const timestamp = nowIso();
+      const allocation = allocateManyAtEnd(current, accepted.length);
+      const previousPositions = new Map(current.map((bookmark) => [bookmark.id, bookmark.position]));
+      const rebalancedBookmarks = allocation.scope
+        .filter((bookmark) => previousPositions.get(bookmark.id) !== bookmark.position)
+        .map((bookmark) => ({ ...bookmark, updatedAt: timestamp, version: bookmark.version + 1 }));
+      if (rebalancedBookmarks.length > 0) await database.bookmarks.bulkPut(rebalancedBookmarks);
       if (accepted.length > 0) {
         await database.bookmarks.bulkAdd(accepted.map((record, index) => ({
           id: createId(), userId: null, boardId: board.id, title: record.title.slice(0, 240), url: record.url,
           normalizedUrl: record.normalizedUrl, hostname: record.hostname, description: record.description?.slice(0, 2000) ?? null,
-          faviconUrl: null, customIcon: null, position: ranks[index]!, openMode: "current" as const, pinned: false,
+          faviconUrl: null, customIcon: null, position: allocation.positions[index]!, openMode: "current" as const, pinned: false,
           createdAt: timestamp, updatedAt: timestamp, deletedAt: null, deletedBatchId: null, version: 1,
         })));
       }

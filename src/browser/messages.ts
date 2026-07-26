@@ -9,6 +9,7 @@ export const extensionMessageSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("INSTANT_SAVE"), url: urlSchema, title: titleSchema }).strict(),
   z.object({ type: z.literal("OPEN_WORKSPACE"), pageId: entityIdSchema.optional() }).strict(),
   z.object({ type: z.literal("OPEN_URL"), url: urlSchema, mode: z.enum(["current", "new-tab", "new-window", "incognito"]) }).strict(),
+  z.object({ type: z.literal("SET_BADGE"), status: z.enum(["saved", "duplicate", "error"]) }).strict(),
   z.object({ type: z.literal("DATA_CHANGED"), entity: z.enum(["page", "board", "bookmark", "settings", "trash"]) }).strict(),
 ]);
 

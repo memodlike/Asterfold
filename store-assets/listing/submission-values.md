@@ -1,4 +1,4 @@
-# Chrome Web Store submission values — Asterfold 2.2.1
+# Chrome Web Store submission values — Asterfold 2.2.2
 
 Copy these values into the owner Dashboard only after checking them against the final release ZIP.
 

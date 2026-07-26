@@ -1,8 +1,5 @@
 import { ValidationError } from "../domain/errors";
-
-const MAX_SOURCE_BYTES = 8 * 1024 * 1024;
-const MAX_DIMENSION = 8_192;
-const MAX_PIXELS = 40_000_000;
+import { WALLPAPER_LIMITS } from "../domain/mediaLimits";
 
 export interface WallpaperSourceInfo {
   mimeType: "image/png" | "image/jpeg" | "image/webp" | "image/avif";
@@ -35,7 +32,7 @@ export function sniffWallpaperMime(bytes: Uint8Array): WallpaperSourceInfo["mime
 }
 
 export async function inspectWallpaperSource(file: Blob): Promise<WallpaperSourceInfo> {
-  if (file.size === 0 || file.size > MAX_SOURCE_BYTES) throw new ValidationError("Wallpaper must be between 1 byte and 8 MB");
+  if (file.size === 0 || file.size > WALLPAPER_LIMITS.sourceBytes) throw new ValidationError("Wallpaper must be between 1 byte and 8 MB");
   const header = file.slice(0, Math.min(file.size, 64 * 1024));
   const buffer = typeof header.arrayBuffer === "function"
     ? await header.arrayBuffer()
@@ -59,7 +56,7 @@ export async function inspectWallpaperSource(file: Blob): Promise<WallpaperSourc
     throw new ValidationError("Wallpaper image could not be decoded");
   }
   try {
-    if (bitmap.width < 1 || bitmap.height < 1 || bitmap.width > MAX_DIMENSION || bitmap.height > MAX_DIMENSION || bitmap.width * bitmap.height > MAX_PIXELS) {
+    if (bitmap.width < 1 || bitmap.height < 1 || bitmap.width > WALLPAPER_LIMITS.sourceDimension || bitmap.height > WALLPAPER_LIMITS.sourceDimension || bitmap.width * bitmap.height > WALLPAPER_LIMITS.sourcePixels) {
       throw new ValidationError("Wallpaper dimensions are too large");
     }
     return { mimeType, width: bitmap.width, height: bitmap.height, sourceBytes: file.size };
@@ -83,6 +80,34 @@ async function renderWebp(bitmap: ImageBitmap, width: number, height: number, qu
   return blob;
 }
 
+async function encodeWithinLimit(
+  bitmap: ImageBitmap,
+  initialWidth: number,
+  initialHeight: number,
+  maxBytes: number,
+  initialQuality: number,
+  minimumDimension: number,
+): Promise<{ blob: Blob; width: number; height: number }> {
+  let width = initialWidth;
+  let height = initialHeight;
+  let quality = initialQuality;
+  for (let attempt = 0; attempt < 64; attempt += 1) {
+    const blob = await renderWebp(bitmap, width, height, quality);
+    if (blob.size <= maxBytes) return { blob, width, height };
+    if (quality > WALLPAPER_LIMITS.minimumQuality) {
+      quality = Math.max(WALLPAPER_LIMITS.minimumQuality, quality - 0.1);
+      continue;
+    }
+    const longest = Math.max(width, height);
+    if (longest <= minimumDimension) break;
+    const scale = Math.max(minimumDimension / longest, 0.78);
+    width = Math.max(1, Math.round(width * scale));
+    height = Math.max(1, Math.round(height * scale));
+    quality = initialQuality;
+  }
+  throw new ValidationError("Wallpaper cannot be encoded within the local backup size limit");
+}
+
 export async function processWallpaper(file: Blob): Promise<ProcessedWallpaper> {
   const info = await inspectWallpaperSource(file);
   let bitmap: ImageBitmap;
@@ -92,22 +117,38 @@ export async function processWallpaper(file: Blob): Promise<ProcessedWallpaper> 
     throw new ValidationError("Wallpaper image could not be decoded");
   }
   try {
-    const scale = Math.min(1, 3_840 / Math.max(info.width, info.height));
-    const width = Math.max(1, Math.round(info.width * scale));
-    const height = Math.max(1, Math.round(info.height * scale));
-    const thumbnailScale = Math.min(1, 480 / Math.max(width, height));
-    const [blob, thumbnail] = await Promise.all([
-      renderWebp(bitmap, width, height, 0.82),
-      renderWebp(bitmap, Math.max(1, Math.round(width * thumbnailScale)), Math.max(1, Math.round(height * thumbnailScale)), 0.7),
-    ]);
+    const scale = Math.min(1, WALLPAPER_LIMITS.outputDimension / Math.max(info.width, info.height));
+    const initialWidth = Math.max(1, Math.round(info.width * scale));
+    const initialHeight = Math.max(1, Math.round(info.height * scale));
+    const encoded = await encodeWithinLimit(
+      bitmap,
+      initialWidth,
+      initialHeight,
+      WALLPAPER_LIMITS.encodedBytes,
+      0.82,
+      WALLPAPER_LIMITS.minimumOutputDimension,
+    );
+    const thumbnailScale = Math.min(1, WALLPAPER_LIMITS.thumbnailDimension / Math.max(encoded.width, encoded.height));
+    const thumbnailEncoded = await encodeWithinLimit(
+      bitmap,
+      Math.max(1, Math.round(encoded.width * thumbnailScale)),
+      Math.max(1, Math.round(encoded.height * thumbnailScale)),
+      WALLPAPER_LIMITS.thumbnailBytes,
+      0.7,
+      WALLPAPER_LIMITS.minimumThumbnailDimension,
+    );
+    const storedBytes = encoded.blob.size + thumbnailEncoded.blob.size;
+    if (storedBytes > WALLPAPER_LIMITS.aggregateBytes) {
+      throw new ValidationError("Wallpaper cannot be encoded within the local backup size limit");
+    }
     return {
       ...info,
       mimeType: "image/webp",
-      width,
-      height,
-      blob,
-      thumbnail,
-      storedBytes: blob.size + thumbnail.size,
+      width: encoded.width,
+      height: encoded.height,
+      blob: encoded.blob,
+      thumbnail: thumbnailEncoded.blob,
+      storedBytes,
     };
   } finally {
     bitmap.close();

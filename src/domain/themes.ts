@@ -1,4 +1,5 @@
 import type { ThemeConfig, ThemePresetId } from "./models";
+import { themeSchema } from "./schemas";
 
 export interface ThemePreset {
   id: ThemePresetId;
@@ -51,25 +52,48 @@ export function isValidHexColor(value: string): boolean {
 }
 
 export function validateTheme(theme: ThemeConfig): ThemeConfig {
-  return {
-    ...theme,
-    accent: isValidHexColor(theme.accent) ? theme.accent : "#155eef",
-    canvas: isValidHexColor(theme.canvas) ? theme.canvas : "#f5f7fb",
-    surfaceOpacity: Math.min(1, Math.max(0.2, theme.surfaceOpacity)),
-    blur: Math.min(32, Math.max(0, theme.blur)),
-    radius: Math.min(28, Math.max(4, theme.radius)),
-    fontScale: Math.min(1.25, Math.max(0.9, theme.fontScale)),
-    boardWidth: Math.min(520, Math.max(280, theme.boardWidth)),
-    faviconSize: Math.min(48, Math.max(20, theme.faviconSize)),
-    wallpaperDim: Math.min(0.8, Math.max(0, theme.wallpaperDim)),
-    wallpaperBlur: Math.min(30, Math.max(0, theme.wallpaperBlur)),
-    wallpaperSaturation: Math.min(1.8, Math.max(0, theme.wallpaperSaturation)),
-    wallpaperZoom: Math.min(2, Math.max(1, theme.wallpaperZoom)),
-    lowPowerMode: theme.lowPowerMode,
-    bookmarkHoverMotion: theme.bookmarkHoverMotion,
-    menuMotion: theme.menuMotion,
-    dragMotion: theme.dragMotion,
-    glassVariant: theme.glassVariant === "clear" ? "clear" : "regular",
-    backgroundMode: ["auto", "solid", "wallpaper"].includes(theme.backgroundMode) ? theme.backgroundMode : "auto",
+  const source = theme as unknown as Record<string, unknown>;
+  const enumValue = <T extends string>(value: unknown, values: readonly T[], fallback: T): T => (
+    typeof value === "string" && values.includes(value as T) ? value as T : fallback
+  );
+  const finiteNumber = (value: unknown, fallback: number, minimum: number, maximum: number): number => (
+    typeof value === "number" && Number.isFinite(value) ? Math.min(maximum, Math.max(minimum, value)) : fallback
+  );
+  const booleanValue = (value: unknown, fallback: boolean): boolean => typeof value === "boolean" ? value : fallback;
+  const preset = enumValue(source.preset, THEME_PRESETS.map((item) => item.id), "frost-light");
+  const fallback = getThemePreset(preset);
+  const candidate: ThemeConfig = {
+    preset,
+    mode: enumValue(source.mode, ["system", "light", "dark"], fallback.mode),
+    accent: typeof source.accent === "string" && isValidHexColor(source.accent) ? source.accent : fallback.accent,
+    canvas: typeof source.canvas === "string" && isValidHexColor(source.canvas) ? source.canvas : fallback.canvas,
+    surfaceOpacity: finiteNumber(source.surfaceOpacity, fallback.surfaceOpacity, 0.2, 1),
+    blur: finiteNumber(source.blur, fallback.blur, 0, 32),
+    radius: finiteNumber(source.radius, fallback.radius, 4, 28),
+    density: enumValue(source.density, ["compact", "comfortable", "spacious"], fallback.density),
+    fontScale: finiteNumber(source.fontScale, fallback.fontScale, 0.9, 1.25),
+    boardWidth: finiteNumber(source.boardWidth, fallback.boardWidth, 280, 520),
+    cardVariant: enumValue(source.cardVariant, ["minimal", "standard", "visual"], fallback.cardVariant),
+    showHostname: booleanValue(source.showHostname, fallback.showHostname),
+    showDescription: booleanValue(source.showDescription, fallback.showDescription),
+    faviconSize: finiteNumber(source.faviconSize, fallback.faviconSize, 20, 48),
+    motion: booleanValue(source.motion, fallback.motion),
+    lowPowerMode: booleanValue(source.lowPowerMode, fallback.lowPowerMode),
+    bookmarkHoverMotion: booleanValue(source.bookmarkHoverMotion, fallback.bookmarkHoverMotion),
+    menuMotion: booleanValue(source.menuMotion, fallback.menuMotion),
+    dragMotion: booleanValue(source.dragMotion, fallback.dragMotion),
+    wallpaperId: source.wallpaperId === null || (typeof source.wallpaperId === "string" && source.wallpaperId.length <= 128)
+      ? source.wallpaperId
+      : fallback.wallpaperId,
+    wallpaperDim: finiteNumber(source.wallpaperDim, fallback.wallpaperDim, 0, 0.8),
+    wallpaperBlur: finiteNumber(source.wallpaperBlur, fallback.wallpaperBlur, 0, 30),
+    wallpaperSaturation: finiteNumber(source.wallpaperSaturation, fallback.wallpaperSaturation, 0, 1.8),
+    wallpaperPosition: typeof source.wallpaperPosition === "string" && source.wallpaperPosition.length <= 64
+      ? source.wallpaperPosition
+      : fallback.wallpaperPosition,
+    wallpaperZoom: finiteNumber(source.wallpaperZoom, fallback.wallpaperZoom, 1, 2),
+    glassVariant: enumValue(source.glassVariant, ["regular", "clear"], fallback.glassVariant),
+    backgroundMode: enumValue(source.backgroundMode, ["auto", "solid", "wallpaper"], fallback.backgroundMode),
   };
+  return themeSchema.parse(candidate);
 }

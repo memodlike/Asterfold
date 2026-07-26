@@ -32,6 +32,19 @@ async function openLauncher(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Открыть меню Asterfold" }).click();
 }
 
+async function captureStoreScreenshot(page: Page, filename: string): Promise<void> {
+  if (!captureScreenshots) return;
+  const previousViewport = page.viewportSize();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.waitForTimeout(220);
+  await page.screenshot({ path: join(screenshotPath, filename) });
+  if (previousViewport) await page.setViewportSize(previousViewport);
+}
+
+async function dismissToasts(page: Page): Promise<void> {
+  await expect(page.locator(".toast")).toHaveCount(0, { timeout: 8_000 });
+}
+
 async function setWorkspaceLocale(page: Page, locale: string): Promise<void> {
   await page.evaluate(async (nextLocale) => {
     const request = indexedDB.open("asterfold");
@@ -76,6 +89,99 @@ async function setWorkspaceThemeMode(page: Page, mode: "light" | "dark"): Promis
     });
     database.close();
   }, mode);
+}
+
+async function seedStoreShowcase(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    const request = indexedDB.open("asterfold");
+    const database = await new Promise<IDBDatabase>((resolvePromise, reject) => {
+      request.onsuccess = () => resolvePromise(request.result);
+      request.onerror = () => reject(request.error ?? new Error("Unable to open IndexedDB"));
+    });
+    const transaction = database.transaction(["boards", "bookmarks", "settings"], "readwrite");
+    const settingsStore = transaction.objectStore("settings");
+    const settings = await new Promise<Record<string, unknown> & { activePageId: string; theme: Record<string, unknown> }>((resolvePromise, reject) => {
+      const get = settingsStore.get("app");
+      get.onsuccess = () => resolvePromise(get.result as Record<string, unknown> & { activePageId: string; theme: Record<string, unknown> });
+      get.onerror = () => reject(get.error ?? new Error("Unable to read settings"));
+    });
+    const boards = [
+      { id: "showcase-work", title: "Work", items: [["GitHub", "https://github.com/"], ["Linear", "https://linear.app/"], ["Notion", "https://www.notion.so/"], ["Google Calendar", "https://calendar.google.com/"]] },
+      { id: "showcase-design", title: "Design", items: [["Figma", "https://www.figma.com/"], ["Product references", "https://mobbin.com/"], ["Design system", "https://m3.material.io/"], ["Icons", "https://lucide.dev/"]] },
+      { id: "showcase-research", title: "Research", items: [["Reading list", "https://developer.chrome.com/docs/extensions/"], ["Product notes", "https://www.notion.so/"], ["Market research", "https://trends.google.com/"], ["Accessibility", "https://www.w3.org/WAI/"]] },
+      { id: "showcase-later", title: "Later", items: [["Playwright docs", "https://playwright.dev/docs/chrome-extensions"], ["Google Docs", "https://docs.google.com/"], ["Meeting notes", "https://www.notion.so/"], ["Roadmap", "https://linear.app/"]] },
+    ] as const;
+    const timestamp = new Date().toISOString();
+    transaction.objectStore("boards").clear();
+    transaction.objectStore("bookmarks").clear();
+    boards.forEach((board, boardIndex) => {
+      transaction.objectStore("boards").put({
+        id: board.id,
+        userId: null,
+        pageId: settings.activePageId,
+        title: board.title,
+        icon: null,
+        accent: null,
+        position: String(boardIndex + 1).padStart(12, "0"),
+        collapsed: false,
+        layout: "list",
+        bookmarkColumns: 1,
+        gridColumn: boardIndex * 3 + 1,
+        gridRow: 0,
+        gridSpan: 3,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        deletedAt: null,
+        deletedBatchId: null,
+        version: 1,
+      });
+      board.items.forEach(([title, url], itemIndex) => {
+        transaction.objectStore("bookmarks").put({
+          id: `showcase-${boardIndex}-${itemIndex}`,
+          userId: null,
+          boardId: board.id,
+          title,
+          url,
+          normalizedUrl: url,
+          hostname: new URL(url).hostname,
+          description: null,
+          faviconUrl: null,
+          customIcon: null,
+          position: String(itemIndex + 1).padStart(12, "0"),
+          openMode: "current",
+          pinned: false,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          deletedAt: null,
+          deletedBatchId: null,
+          version: 1,
+        });
+      });
+    });
+    settingsStore.put({
+      ...settings,
+      workspaceRows: 1,
+      workspaceLayoutMode: "auto",
+      workspaceAlignment: "center",
+      theme: {
+        ...settings.theme,
+        mode: "dark",
+        backgroundMode: "wallpaper",
+        wallpaperId: "builtin-dusk",
+        surfaceOpacity: 0.68,
+        blur: 14,
+        wallpaperDim: 0.42,
+        wallpaperBlur: 0,
+        wallpaperSaturation: 0.88,
+      },
+      updatedAt: timestamp,
+    });
+    await new Promise<void>((resolvePromise, reject) => {
+      transaction.oncomplete = () => resolvePromise();
+      transaction.onerror = () => reject(transaction.error ?? new Error("Unable to write Store showcase"));
+    });
+    database.close();
+  });
 }
 
 async function seedScaleFixture(page: Page): Promise<void> {
@@ -340,7 +446,6 @@ test.describe.serial("Asterfold MV3 release", () => {
     expect(sourceMenuBounds.top).toBeGreaterThanOrEqual(8);
     expect(sourceMenuBounds.right).toBeLessThanOrEqual(1440 - 8);
     expect(sourceMenuBounds.bottom).toBeLessThanOrEqual(900 - 8);
-    if (captureScreenshots) await page.screenshot({ path: join(screenshotPath, "context-menu-light.png") });
     await page.getByRole("menuitem", { name: "Переместить", exact: true }).click();
     dialog = page.getByRole("dialog");
     await dialog.getByLabel("Назначение").selectOption({ label: "Later" });
@@ -348,12 +453,22 @@ test.describe.serial("Asterfold MV3 release", () => {
     await expect(target.getByText("Playwright docs", { exact: true })).toBeVisible();
     await page.reload();
     await expect(target.getByText("Playwright docs", { exact: true })).toBeVisible();
+    if (captureScreenshots) {
+      await seedStoreShowcase(page);
+      await page.reload();
+      await expect(page.getByText("Playwright docs", { exact: true })).toBeVisible();
+    }
+    await captureStoreScreenshot(page, "01-workspace-1280x800.png");
 
     await page.keyboard.press("Control+K");
     dialog = page.getByRole("dialog");
     await expect(dialog.locator(".search-palette__input")).toHaveCSS("border-radius", "15px");
     await expect(dialog.locator(".search-state")).toHaveCSS("border-radius", "17px");
-    if (captureScreenshots) { await page.waitForTimeout(220); await page.screenshot({ path: join(screenshotPath, "search-empty.png") }); }
+    if (captureScreenshots) {
+      await dialog.getByPlaceholder(/Название, URL/u).fill("design");
+      await expect(dialog.getByRole("button", { name: /Design system/u })).toBeVisible();
+    }
+    await captureStoreScreenshot(page, "02-search-1280x800.png");
     await dialog.getByPlaceholder(/Название, URL/u).fill("playwrite");
     await expect(dialog.getByRole("button", { name: /Playwright docs/u })).toBeVisible();
     await page.keyboard.press("Escape");
@@ -365,6 +480,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await expect(page.locator('[title*="Playwright docs"]')).toHaveCount(0);
     const privateBookmark = page.getByRole("button", { name: "Открыть скрытую закладку" }).first();
     await expect(privateBookmark).toBeVisible();
+    await captureStoreScreenshot(page, "04-privacy-1280x800.png");
     await privateBookmark.click({ button: "right" });
     await expect(page.getByRole("menu", { name: "Действия скрытой закладки" })).toBeVisible();
     await expect(page.getByRole("menuitem", { name: "Копировать URL" })).toBeDisabled();
@@ -373,9 +489,12 @@ test.describe.serial("Asterfold MV3 release", () => {
     await openLauncher(page);
     await page.getByRole("menuitem", { name: "Выключить приватность" }).click();
 
+    if (captureScreenshots) await dismissToasts(page);
     await openLauncher(page);
     await page.getByRole("menuitem", { name: "Настройки" }).click();
     dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await captureStoreScreenshot(page, "03-settings-1280x800.png");
     const lowPowerToggle = dialog.locator('label.switch:has(input[aria-label="Режим для слабых ПК"])');
     await expect(lowPowerToggle).toHaveCount(1);
     await lowPowerToggle.click();
@@ -390,7 +509,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await dialog.getByRole("button", { name: "Данные и приватность" }).click();
     const downloadPromise = page.waitForEvent("download");
     await dialog.getByRole("button", { name: /Резервная копия JSON/u }).click();
-    expect((await downloadPromise).suggestedFilename()).toMatch(/^asterfold-backup-v2-\d{4}-\d{2}-\d{2}\.json$/u);
+    expect((await downloadPromise).suggestedFilename()).toMatch(/^asterfold-backup-v3-\d{4}-\d{2}-\d{2}\.json$/u);
     await dialog.getByRole("button", { name: "Закрыть" }).click();
 
     await page.getByRole("button", { name: "Playwright docs" }).click({ button: "right" });
@@ -399,7 +518,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await page.getByRole("menuitem", { name: "Корзина" }).click();
     dialog = page.getByRole("dialog");
     await expect(dialog.locator(".trash-row")).toHaveCSS("border-radius", "14px");
-    if (captureScreenshots) { await page.waitForTimeout(220); await page.screenshot({ path: join(screenshotPath, "trash-item.png") }); }
+    await captureStoreScreenshot(page, "05-trash-1280x800.png");
     await dialog.getByRole("button", { name: "Восстановить" }).click();
     await dialog.getByRole("button", { name: "Закрыть" }).click();
     await expect(page.getByText("Playwright docs", { exact: true })).toBeVisible();
@@ -408,7 +527,6 @@ test.describe.serial("Asterfold MV3 release", () => {
     await page.getByRole("menuitem", { name: "Корзина" }).click();
     dialog = page.getByRole("dialog");
     await expect(dialog.locator(".trash-empty")).toHaveCSS("border-radius", "18px");
-    if (captureScreenshots) { await page.waitForTimeout(220); await page.screenshot({ path: join(screenshotPath, "trash-empty.png") }); }
     await dialog.getByRole("button", { name: "Закрыть" }).click();
 
     await setWorkspaceThemeMode(page, "dark");
@@ -442,12 +560,10 @@ test.describe.serial("Asterfold MV3 release", () => {
     expect(cornerMenuBounds.right).toBeLessThanOrEqual(1280 - 8);
     expect(cornerMenuBounds.bottom).toBeLessThanOrEqual(720 - 8);
     await page.keyboard.press("Escape");
-    if (captureScreenshots) await page.screenshot({ path: join(screenshotPath, "scale-1280x720.png") });
     await page.setViewportSize({ width: 1672, height: 941 });
     expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true);
     await page.setViewportSize({ width: 1920, height: 1080 });
     expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true);
-    if (captureScreenshots) await page.screenshot({ path: join(screenshotPath, "scale-1920x1080.png") });
     expect(runtimeErrors).toEqual([]);
     await page.close();
   });

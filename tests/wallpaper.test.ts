@@ -1,9 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
-import { inspectWallpaperSource, processWallpaper } from "../src/services/wallpaper";
+import { inspectWallpaperSource, processWallpaper, sniffWallpaperMime } from "../src/services/wallpaper";
 
 const pngHeader = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 describe("wallpaper pipeline", () => {
+  it("recognizes every supported raster signature and rejects unknown bytes", () => {
+    expect(sniffWallpaperMime(pngHeader)).toBe("image/png");
+    expect(sniffWallpaperMime(new Uint8Array([0xff, 0xd8, 0xff]))).toBe("image/jpeg");
+    expect(sniffWallpaperMime(new TextEncoder().encode("RIFF0000WEBP"))).toBe("image/webp");
+    expect(sniffWallpaperMime(new TextEncoder().encode("0000ftypavif"))).toBe("image/avif");
+    expect(sniffWallpaperMime(new Uint8Array([1, 2, 3, 4]))).toBeNull();
+  });
+
+  it("rejects empty sources before decoding", async () => {
+    await expect(inspectWallpaperSource(new Blob([], { type: "image/png" }))).rejects.toThrow(/between 1 byte/iu);
+  });
+
   it("rejects MIME spoofing before decode", async () => {
     const spoofed = new Blob([pngHeader], { type: "image/jpeg" });
     await expect(inspectWallpaperSource(spoofed)).rejects.toThrow(/does not match/iu);
@@ -56,6 +68,44 @@ describe("wallpaper pipeline", () => {
     const processed = await processWallpaper(new Blob([pngHeader], { type: "image/png" }));
     expect(processed).toMatchObject({ mimeType: "image/webp", width: 3840, height: 2160, storedBytes: 64 });
     expect(processed.thumbnail.type).toBe("image/webp");
+    expect(close).toHaveBeenCalledTimes(2);
+    vi.unstubAllGlobals();
+  });
+
+  it("reduces quality until high-entropy output fits backup limits", async () => {
+    const close = vi.fn();
+    vi.stubGlobal("createImageBitmap", vi.fn(() => Promise.resolve({ width: 3840, height: 2160, close })));
+    const qualities: number[] = [];
+    class CanvasMock {
+      public constructor(public width: number, public height: number) {}
+      public getContext() { return { drawImage: vi.fn() }; }
+      public convertToBlob(options: { quality?: number }) {
+        const quality = options.quality ?? 1;
+        qualities.push(quality);
+        const size = quality > 0.52 ? 9 * 1024 * 1024 : 512 * 1024;
+        return Promise.resolve({ size, type: "image/webp" } as Blob);
+      }
+    }
+    vi.stubGlobal("OffscreenCanvas", CanvasMock);
+    const processed = await processWallpaper(new Blob([pngHeader], { type: "image/png" }));
+    expect(processed.blob.size).toBeLessThanOrEqual(8 * 1024 * 1024);
+    expect(processed.thumbnail.size).toBeLessThanOrEqual(2 * 1024 * 1024);
+    expect(processed.storedBytes).toBeLessThanOrEqual(10 * 1024 * 1024);
+    expect(Math.min(...qualities)).toBeLessThanOrEqual(0.52);
+    expect(close).toHaveBeenCalledTimes(2);
+    vi.unstubAllGlobals();
+  });
+
+  it("rejects output that cannot fit even after adaptive quality and resize", async () => {
+    const close = vi.fn();
+    vi.stubGlobal("createImageBitmap", vi.fn(() => Promise.resolve({ width: 3840, height: 2160, close })));
+    class CanvasMock {
+      public constructor(public width: number, public height: number) {}
+      public getContext() { return { drawImage: vi.fn() }; }
+      public convertToBlob() { return Promise.resolve({ size: 11 * 1024 * 1024, type: "image/webp" } as Blob); }
+    }
+    vi.stubGlobal("OffscreenCanvas", CanvasMock);
+    await expect(processWallpaper(new Blob([pngHeader], { type: "image/png" }))).rejects.toThrow(/backup size limit/iu);
     expect(close).toHaveBeenCalledTimes(2);
     vi.unstubAllGlobals();
   });

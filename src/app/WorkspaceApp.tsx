@@ -4,17 +4,24 @@ import type { Board, Bookmark, Page, WorkspaceData } from "../domain/models";
 import {
   bulkDeleteBookmarks,
   bulkMoveBookmarks,
+  bulkRestoreBookmarks,
   createBoard,
   createPage,
   duplicateBoard,
   duplicateBookmark,
+  duplicatePage,
   moveBoardToIndex,
   moveBookmarkToIndex,
+  movePageToIndex,
   renamePage,
   restoreBoard,
   restoreBookmark,
+  restorePage,
+  setDefaultPage,
+  swapBoardGridPlacement,
   softDeleteBoard,
   softDeleteBookmark,
+  softDeletePage,
   updateBoard,
   updateSettings,
 } from "../db/repository";
@@ -46,7 +53,8 @@ type MoveIntent = { kind: "bookmark"; bookmark: Bookmark } | { kind: "board"; bo
 interface EditorIntent { bookmark: Bookmark | null; boardId: string }
 
 export function WorkspaceApp() {
-  const workspace = useWorkspace();
+  const { workspace, failed, retry } = useWorkspace();
+  if (failed) return <div className="app-loading"><span>{translate("auto", "error.actionFailed")}</span><Button onClick={retry}>{translate("auto", "generic.retry")}</Button></div>;
   if (!workspace) return <div className="app-loading"><Sparkles size={22} /><span>{translate("auto", "loading.opening")}</span></div>;
   return <I18nProvider preference={workspace.settings.locale} documentTitle="tab.title"><WorkspaceScreen workspace={workspace} /></I18nProvider>;
 }
@@ -130,14 +138,20 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   const deleteBoard = (board: Board): void => {
     void run(async () => {
       await softDeleteBoard(board.id);
-      toasts.push({ message: `${board.title} → ${t("generic.trash")}`, actionLabel: "Undo", onAction: async () => { await restoreBoard(board.id); changeBus.publish("board"); } });
+      toasts.push({ message: `${privacy ? t("generic.board") : board.title} → ${t("generic.trash")}`, actionLabel: t("generic.undo"), onAction: async () => { await restoreBoard(board.id); changeBus.publish("board"); } });
     });
   };
   const deleteBookmark = (bookmark: Bookmark): void => {
     void run(async () => {
       await softDeleteBookmark(bookmark.id);
       setSelectedIds((current) => { const next = new Set(current); next.delete(bookmark.id); return next; });
-      toasts.push({ message: `${bookmark.title} → ${t("generic.trash")}`, actionLabel: "Undo", onAction: async () => { await restoreBookmark(bookmark.id); changeBus.publish("bookmark"); } });
+      toasts.push({ message: `${privacy ? t("privacy.hiddenBookmark") : bookmark.title} → ${t("generic.trash")}`, actionLabel: t("generic.undo"), onAction: async () => { await restoreBookmark(bookmark.id); changeBus.publish("bookmark"); } });
+    });
+  };
+  const deletePage = (page: Page): void => {
+    void run(async () => {
+      await softDeletePage(page.id);
+      toasts.push({ message: `${privacy ? t("generic.page") : page.title} → ${t("generic.trash")}`, actionLabel: t("generic.undo"), onAction: async () => { await restorePage(page.id); changeBus.publish("page"); } });
     });
   };
   const openBookmark = (bookmark: Bookmark): void => { void run(() => openUrl(bookmark.url, bookmark.openMode)); };
@@ -157,15 +171,18 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   };
   const copyUrl = (bookmark: Bookmark): void => {
     if (privacy) { notifyError(t("privacy.clipboard")); return; }
-    void copyText(bookmark.url).then(() => notifySuccess("URL copied")).catch(() => notifyError("Clipboard access failed"));
+    void copyText(bookmark.url).then(() => notifySuccess(t("bookmark.copyUrl"))).catch(() => notifyError(t("error.actionFailed")));
   };
   const copyMarkdown = (bookmark: Bookmark): void => {
     if (privacy) { notifyError(t("privacy.clipboard")); return; }
-    void copyText(`[${bookmark.title}](${bookmark.url})`).then(() => notifySuccess("Markdown copied")).catch(() => notifyError("Clipboard access failed"));
+    void copyText(`[${bookmark.title}](${bookmark.url})`).then(() => notifySuccess(t("bookmark.copyMarkdown"))).catch(() => notifyError(t("error.actionFailed")));
   };
   const revealBookmark = (bookmark: Bookmark, pageId: string): void => {
     selectPage(pageId);
-    window.setTimeout(() => document.querySelector<HTMLElement>(`[data-bookmark-id="${CSS.escape(bookmark.id)}"]`)?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" }), 120);
+    window.setTimeout(() => {
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches || !workspace.settings.theme.motion;
+      document.querySelector<HTMLElement>(`[data-bookmark-id="${CSS.escape(bookmark.id)}"]`)?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center", inline: "center" });
+    }, 120);
   };
   const togglePrivacy = (): void => {
     const next = !privacy;
@@ -178,20 +195,14 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
     void run(async () => {
       await bulkDeleteBookmarks(ids);
       setSelectedIds(new Set());
-      toasts.push({ message: `${ids.length} → ${t("generic.trash")}`, actionLabel: "Undo", onAction: async () => { await Promise.all(ids.map((id) => restoreBookmark(id))); changeBus.publish("bookmark"); } });
+      toasts.push({ message: `${ids.length} → ${t("generic.trash")}`, actionLabel: t("generic.undo"), onAction: async () => { await bulkRestoreBookmarks(ids); changeBus.publish("bookmark"); } });
     });
   };
   const exportSelected = (): void => {
     const ids = new Set(selectedIds);
     void run(async () => {
-      const { createBackup, downloadText, serializeBackup } = await import("../services/exportImport");
-      const backup = await createBackup();
-      backup.entities.bookmarks = backup.entities.bookmarks.filter((bookmark) => ids.has(bookmark.id));
-      const selectedBoardIds = new Set(backup.entities.bookmarks.map((bookmark) => bookmark.boardId));
-      backup.entities.boards = backup.entities.boards.filter((board) => selectedBoardIds.has(board.id));
-      const selectedPageIds = new Set(backup.entities.boards.map((board) => board.pageId));
-      backup.entities.pages = backup.entities.pages.filter((page) => selectedPageIds.has(page.id));
-      backup.scope = "board";
+      const { createSelectionBackup, downloadText, serializeBackup } = await import("../services/exportImport");
+      const backup = await createSelectionBackup([...ids]);
       downloadText("asterfold-selection.json", serializeBackup(backup), "application/json");
     });
   };
@@ -220,10 +231,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
           if (workspace.settings.workspaceLayoutMode === "free") {
             const source = boards.find((board) => board.id === id);
             const target = boards.find((board) => board.id === targetId);
-            if (source && target) await Promise.all([
-              updateBoard(source.id, { gridColumn: target.gridColumn, gridRow: target.gridRow }),
-              updateBoard(target.id, { gridColumn: source.gridColumn, gridRow: source.gridRow }),
-            ]);
+            if (source && target) await swapBoardGridPlacement(source.id, target.id);
           }
           await moveBoardToIndex(id, activePage.id, index);
         })}
@@ -245,16 +253,21 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
         onCreateBoard={() => setNameIntent({ kind: "new-board" })}
         onCreatePage={() => setNameIntent({ kind: "new-page" })}
         onSelectPage={selectPage}
+        onRenamePage={(page) => setNameIntent({ kind: "rename-page", page })}
+        onDuplicatePage={(page) => void run(() => duplicatePage(page.id))}
+        onDefaultPage={(page) => void run(() => setDefaultPage(page.id))}
+        onMovePage={(page, targetIndex) => void run(() => movePageToIndex(page.id, targetIndex))}
+        onDeletePage={deletePage}
         onSearch={() => setSearchOpen(true)}
         onPrivacy={togglePrivacy}
         onTrash={() => setTrashOpen(true)}
         onSettings={() => openSettings("appearance")}
       />
-      {selectedIds.size > 0 ? <div className="bulk-toolbar"><strong>{selectedIds.size}</strong><Button size="small" onClick={() => setMoveIntent({ kind: "bulk" })}>{t("generic.move")}</Button><Button size="small" icon={<Download size={14} />} onClick={exportSelected}>Export</Button><Button size="small" variant="danger" onClick={bulkDelete}>{t("generic.delete")}</Button><IconButton label={t("generic.close")} onClick={() => setSelectedIds(new Set())}><X size={16} /></IconButton></div> : null}
+      {selectedIds.size > 0 ? <div className="bulk-toolbar"><strong>{selectedIds.size}</strong><Button size="small" onClick={() => setMoveIntent({ kind: "bulk" })}>{t("generic.move")}</Button><Button size="small" icon={<Download size={14} />} onClick={exportSelected}>{t("generic.export")}</Button><Button size="small" variant="danger" onClick={bulkDelete}>{t("generic.delete")}</Button><IconButton label={t("generic.close")} onClick={() => setSelectedIds(new Set())}><X size={16} /></IconButton></div> : null}
 
       <Suspense fallback={null}>
         {searchOpen ? <SearchPalette open privacy={privacy} pages={workspace.pages} boards={workspace.boards} bookmarks={workspace.bookmarks} activePageId={activePage.id} onClose={() => setSearchOpen(false)} onOpen={openBookmark} onReveal={revealBookmark} onEdit={(bookmark) => setEditor({ bookmark, boardId: bookmark.boardId })} onMove={(bookmark) => setMoveIntent({ kind: "bookmark", bookmark })} onCopy={copyUrl} onDelete={deleteBookmark} /> : null}
-        {editor !== null ? <BookmarkEditor open bookmark={editor.bookmark} initialBoardId={editor.boardId || boards[0]?.id || ""} pages={workspace.pages} boards={workspace.boards} onClose={() => setEditor(null)} onSaved={() => { changeBus.publish("bookmark"); notifySuccess(t("bookmark.saved")); }} onError={notifyError} /> : null}
+        {editor !== null ? <BookmarkEditor open bookmark={editor.bookmark} privacy={privacy} initialBoardId={editor.boardId || boards[0]?.id || ""} pages={workspace.pages} boards={workspace.boards} onClose={() => setEditor(null)} onSaved={() => { changeBus.publish("bookmark"); notifySuccess(t("bookmark.saved")); }} onError={notifyError} /> : null}
       </Suspense>
       <NameDialog open={nameIntent !== null} title={t(nameIntent?.kind === "new-page" ? "name.newPage" : nameIntent?.kind === "rename-page" ? "name.renamePage" : nameIntent?.kind === "new-board" ? "name.newBoard" : "name.renameBoard")} label={t("generic.title")} initialValue={nameIntent && "page" in nameIntent ? nameIntent.page.title : nameIntent && "board" in nameIntent ? nameIntent.board.title : ""} submitLabel={t(nameIntent?.kind.startsWith("new-") ? "generic.create" : "generic.save")} onClose={() => setNameIntent(null)} onSubmit={handleNameSubmit} />
       <MoveDialog
@@ -273,7 +286,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
       />
       <Suspense fallback={null}>
         {settingsOpen ? <SettingsDialog open initialSection={settingsSection} workspace={workspace} onClose={() => setSettingsOpen(false)} onUpdated={notifySuccess} onError={notifyError} onOpenTrash={() => { setSettingsOpen(false); setTrashOpen(true); }} /> : null}
-        {trashOpen ? <TrashDialog open onClose={() => setTrashOpen(false)} onChanged={(message) => { changeBus.publish("trash"); notifySuccess(message); }} onError={notifyError} /> : null}
+        {trashOpen ? <TrashDialog open privacy={privacy} onClose={() => setTrashOpen(false)} onChanged={(message) => { changeBus.publish("trash"); notifySuccess(message); }} onError={notifyError} /> : null}
       </Suspense>
       {toasts.region}
     </div>
