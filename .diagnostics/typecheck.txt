@@ -1,0 +1,5 @@
+
+> asterfold@2.2.3 typecheck
+> tsc --noEmit
+
+src/i18n/index.tsx(517,7): error TS2741: Property '"popup.boardRequired"' is missing in type '{ "tab.title": string; "loading.opening": string; "loading.repairing": string; "generic.close": string; "generic.cancel": string; "generic.save": string; "generic.create": string; "generic.move": string; ... 242 more ...; "popup.createBoardFailed": string; }' but required in type 'Record<"tab.title" | "loading.opening" | "loading.repairing" | "generic.close" | "generic.cancel" | "generic.save" | "generic.create" | "generic.move" | "generic.moveLeft" | "generic.moveRight" | ... 241 more ... | "popup.boardRequired", string>'.
