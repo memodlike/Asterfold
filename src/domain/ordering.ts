@@ -22,6 +22,11 @@ export interface RankAllocation<T extends RankedEntity> {
   scope: T[];
 }
 
+export interface RankBatchAllocation<T extends RankedEntity> {
+  positions: string[];
+  scope: T[];
+}
+
 function parseRank(rank: string): bigint {
   if (!RANK_PATTERN.test(rank)) {
     throw new ValidationError(`Invalid position key: ${rank}`);
@@ -114,6 +119,33 @@ export function allocateAtEnd<T extends RankedEntity>(scope: readonly T[]): Rank
   }
   if (position === null) throw new ValidationError("Unable to allocate a position after rebalancing");
   return { position, scope: normalized };
+}
+
+export function allocateManyAtEnd<T extends RankedEntity>(scope: readonly T[], count: number): RankBatchAllocation<T> {
+  if (!Number.isSafeInteger(count) || count < 0) {
+    throw new ValidationError("Position count must be a non-negative safe integer");
+  }
+  let normalized = validateScope(scope).length === 0 ? ordered(scope) : rebalance(scope);
+  const positions: string[] = [];
+  let previous = normalized.at(-1)?.position ?? null;
+  for (let index = 0; index < count; index += 1) {
+    let position = rankBetween(previous, null);
+    if (position === null) {
+      const placeholders = positions.map((allocatedPosition, placeholderIndex) => ({
+        id: `__allocated_${placeholderIndex}`,
+        position: allocatedPosition,
+      }));
+      const rebalanced = rebalance([...normalized, ...placeholders]);
+      normalized = rebalanced.slice(0, normalized.length) as T[];
+      positions.splice(0, positions.length, ...rebalanced.slice(normalized.length).map((item) => item.position));
+      previous = positions.at(-1) ?? normalized.at(-1)?.position ?? null;
+      position = rankBetween(previous, null);
+    }
+    if (position === null) throw new ValidationError("Unable to allocate positions after rebalancing");
+    positions.push(position);
+    previous = position;
+  }
+  return { positions, scope: normalized };
 }
 
 export function allocateBetween<T extends RankedEntity>(

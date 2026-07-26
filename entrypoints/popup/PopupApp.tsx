@@ -9,6 +9,7 @@ import { faviconUrl, openWorkspace } from "../../src/browser/api";
 import { Logo } from "../../src/components/Logo";
 import { useWorkspace } from "../../src/app/useWorkspace";
 import { translate, type MessageKey } from "../../src/i18n";
+import { primaryShortcut } from "../../src/browser/platform";
 
 interface ActiveTabData {
   title: string;
@@ -98,8 +99,9 @@ export function PopupApp() {
   const unsupported = !/^https?:\/\//i.test(tab.url) && !/^mailto:/i.test(tab.url);
   const privacy = workspace.settings.privacyPersist && workspace.settings.privacyEnabled;
   const visibleTitle = privacy ? t("privacy.hiddenBookmark") : tab.title;
+  const saveShortcut = primaryShortcut("Enter");
   return (
-    <main className="popup" onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter") { event.preventDefault(); void save(); } }}>
+    <main className="popup" aria-keyshortcuts={saveShortcut.aria} onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter") { event.preventDefault(); void save(); } }}>
       <header className="popup__header"><Logo /><button title={t("generic.settings")} aria-label={t("generic.settings")} onClick={() => void openWorkspace()}><Settings size={17} /></button></header>
       <section className="popup__content">
         <div className="popup__title"><h1>{t("popup.title")}</h1>{shortcut ? <kbd>{shortcut}</kbd> : null}</div>
@@ -115,7 +117,7 @@ export function PopupApp() {
         <button className="save-button" disabled={saving || unsupported || !boardId || (!!duplicate && !allowDuplicate)} onClick={() => void save()}>{saving ? t("popup.saving") : t("popup.save")}</button>
         <button className="workspace-button" onClick={() => void openWorkspace(pageId)}><ExternalLink size={16} />{t("popup.openWorkspace")}</button>
       </section>
-      <footer><span><kbd>Ctrl</kbd><kbd>Enter</kbd> {t("generic.save")}</span><span>{t("popup.localOnly")}</span></footer>
+      <footer><span><kbd>{saveShortcut.visual}</kbd> {t("generic.save")}</span><span>{t("popup.localOnly")}</span></footer>
     </main>
   );
 }

@@ -238,4 +238,24 @@ describe("Dexie workspace repository", () => {
     await updateSettings({ theme: { ...workspace.settings.theme, wallpaperId: "current", backgroundMode: "wallpaper" } }, database);
     expect((await database.wallpapers.toArray()).map((wallpaper) => wallpaper.id)).toEqual(["current"]);
   });
+
+  it("reports ordering, settings, hierarchy, and wallpaper integrity defects without mutating data", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const page = workspace.pages[0]!;
+    const secondPage = await createPage("Second", {}, database);
+    await database.pages.update(secondPage.id, { position: page.position });
+    await database.settings.update("app", {
+      activePageId: "missing-page",
+      theme: { ...workspace.settings.theme, wallpaperId: "missing-upload", backgroundMode: "wallpaper" },
+    });
+    const before = await database.pages.toArray();
+
+    const issues = await auditInvariants(database);
+    expect(issues).toEqual(expect.arrayContaining([
+      expect.stringContaining("DUPLICATE_RANK"),
+      expect.stringContaining("Active Page setting"),
+      expect.stringContaining("missing local asset"),
+    ]));
+    expect(await database.pages.toArray()).toEqual(before);
+  });
 });

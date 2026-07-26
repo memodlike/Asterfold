@@ -2,10 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Blob as NodeBlob } from "node:buffer";
 import { version as packageVersion } from "../package.json";
 import { AsterfoldDatabase } from "../src/db/database";
-import { createBookmark, ensureStarterWorkspace, getWorkspaceData, updateSettings } from "../src/db/repository";
+import { createBoard, createBookmark, ensureStarterWorkspace, getWorkspaceData, updateSettings } from "../src/db/repository";
+import { isValidRank, validateScope } from "../src/domain/ordering";
 import {
   createBackup,
   createSelectionBackup,
+  downloadText,
   importRecords,
   parseBackup,
   parseNetscapeHtml,
@@ -91,6 +93,44 @@ describe("safe import and lossless export", () => {
     const reexported = await createBackup({}, database);
     expect(reexported.entities).toEqual(parsed.entities);
     expect(reexported.settings).toEqual(parsed.settings);
+  });
+
+  it("escapes adversarial Markdown headings, text, descriptions, and link destinations", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const page = workspace.pages[0]!;
+    const board = workspace.boards[0]!;
+    await database.pages.update(page.id, { title: "# Page [one]\ncontinued" });
+    await database.boards.update(board.id, { title: "Board (primary) \\\\" });
+    await createBookmark({
+      boardId: board.id,
+      title: "Title ](https://evil.invalid) #",
+      url: "https://example.com/a_(b)",
+      description: "line one\n* line two",
+    }, {}, database);
+    const markdown = toMarkdown(await createBackup({}, database));
+    expect(markdown).toContain("## \\# Page \\[one\\] continued");
+    expect(markdown).toContain("### Board \\(primary\\) \\\\\\\\");
+    expect(markdown).toContain("[Title \\]\\(https://evil.invalid\\) \\#]");
+    expect(markdown).toContain("(https://example.com/a_\\(b\\))");
+    expect(markdown).toContain("line one \\* line two");
+  });
+
+  it("keeps a download URL alive through a DOM-backed anchor click", () => {
+    vi.useFakeTimers();
+    const createObjectURL = vi.fn(() => "blob:asterfold-download");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", { ...URL, createObjectURL, revokeObjectURL });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function clickAnchor(this: HTMLAnchorElement) {
+      expect(document.body.contains(this)).toBe(true);
+    });
+
+    downloadText("backup.json", "{}", "application/json");
+    expect(click).toHaveBeenCalledOnce();
+    expect(document.querySelector('a[download="backup.json"]')).toBeNull();
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+    vi.runAllTimers();
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:asterfold-download");
+    vi.useRealTimers();
   });
 
   it("exports backup v3 with the package version and only the active uploaded wallpaper", async () => {
@@ -451,6 +491,31 @@ describe("safe import and lossless export", () => {
     expect(first).toEqual({ imported: 1, skippedDuplicates: 0, invalid: [{ row: 2, reason: "This URL scheme is not allowed" }] });
     const second = await importRecords(records.slice(0, 1), { pageTitle: "Ignored", pageId: workspace.pages[0]!.id }, "skip", database);
     expect(second).toMatchObject({ imported: 0, skippedDuplicates: 1, invalid: [] });
+  });
+
+  it("repairs corrupt destination ranks before appending imported records", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const board = await createBoard(workspace.pages[0]!.id, "Engineering", database);
+    const first = await createBookmark({ boardId: board.id, title: "First", url: "https://example.com/first" }, {}, database);
+    const second = await createBookmark({ boardId: board.id, title: "Second", url: "https://example.com/second" }, {}, database);
+    await database.bookmarks.bulkUpdate([
+      { key: first.id, changes: { position: "000000000001" } },
+      { key: second.id, changes: { position: "000000000001" } },
+    ]);
+
+    await importRecords([{
+      title: "Imported",
+      url: "https://example.com/imported",
+      description: null,
+      folderPath: ["Engineering"],
+    }], { pageTitle: "Ignored", pageId: workspace.pages[0]!.id }, "skip", database);
+
+    const bookmarks = (await database.bookmarks.where("boardId").equals(board.id).toArray()).filter((item) => item.deletedAt === null);
+    expect(validateScope(bookmarks)).toEqual([]);
+    expect(bookmarks.every((item) => isValidRank(item.position))).toBe(true);
+    expect(new Set(bookmarks.map((item) => item.position)).size).toBe(bookmarks.length);
+    expect(bookmarks.find((item) => item.id === first.id)?.version).toBe(2);
+    expect(bookmarks.find((item) => item.id === second.id)?.version).toBe(2);
   });
 
   it("imports 10,000 Unicode bookmarks in bounded bulk transactions", async () => {

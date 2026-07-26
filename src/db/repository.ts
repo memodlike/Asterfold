@@ -11,9 +11,11 @@ import type {
   WorkspaceData,
 } from "../domain/models";
 import { DuplicateError, PersistenceError, ValidationError } from "../domain/errors";
-import { allocateAtEnd, compareRanks, evenlySpacedRanks, moveMany } from "../domain/ordering";
+import { allocateAtEnd, allocateManyAtEnd, compareRanks, evenlySpacedRanks, moveMany, validateScope } from "../domain/ordering";
 import { normalizeUrl } from "../domain/urls";
 import { validateTheme } from "../domain/themes";
+import { appSettingsSchema, snapshotSchema, wallpaperMetadataSchema } from "../domain/schemas";
+import { WALLPAPER_LIMITS } from "../domain/mediaLimits";
 import { createId, nowIso } from "../utils/ids";
 import { processWallpaper } from "../services/wallpaper";
 import { createDefaultSettings } from "./defaults";
@@ -428,20 +430,52 @@ export async function restorePage(id: string, database: AsterfoldDatabase = db):
     if (!page || page.deletedAt === null) throw new ValidationError("Deleted page not found");
     const batchId = page.deletedBatchId;
     const timestamp = nowIso();
-    await database.pages.update(id, { deletedAt: null, deletedBatchId: null, updatedAt: timestamp, version: page.version + 1 });
+    const activePageScope = await activePages(database);
+    const pageAllocation = allocateAtEnd(activePageScope);
+    const previousPagePositions = new Map(activePageScope.map((item) => [item.id, item.position]));
+    const rebalancedPages = pageAllocation.scope
+      .filter((item) => previousPagePositions.get(item.id) !== item.position)
+      .map((item) => ({ ...item, updatedAt: timestamp, version: item.version + 1 }));
+    if (rebalancedPages.length > 0) await database.pages.bulkPut(rebalancedPages);
+    await database.pages.update(id, { position: pageAllocation.position, deletedAt: null, deletedBatchId: null, updatedAt: timestamp, version: page.version + 1 });
     if (batchId) {
-      await database.boards.where("pageId").equals(id).filter((board) => board.deletedBatchId === batchId).modify((board) => {
-        board.deletedAt = null;
-        board.deletedBatchId = null;
-        board.updatedAt = timestamp;
-        board.version += 1;
-      });
-      await database.bookmarks.filter((bookmark) => bookmark.deletedBatchId === batchId).modify((bookmark) => {
-        bookmark.deletedAt = null;
-        bookmark.deletedBatchId = null;
-        bookmark.updatedAt = timestamp;
-        bookmark.version += 1;
-      });
+      const boardsToRestore = await database.boards.where("pageId").equals(id).filter((board) => board.deletedBatchId === batchId).toArray();
+      const activeBoardScope = await activeBoards(database, id);
+      const boardAllocation = allocateManyAtEnd(activeBoardScope, boardsToRestore.length);
+      const previousBoardPositions = new Map(activeBoardScope.map((item) => [item.id, item.position]));
+      const rebalancedBoards = boardAllocation.scope
+        .filter((item) => previousBoardPositions.get(item.id) !== item.position)
+        .map((item) => ({ ...item, updatedAt: timestamp, version: item.version + 1 }));
+      if (rebalancedBoards.length > 0) await database.boards.bulkPut(rebalancedBoards);
+      const restoredBoards = boardsToRestore.map((board, index) => ({
+        ...board,
+        position: boardAllocation.positions[index]!,
+        deletedAt: null,
+        deletedBatchId: null,
+        updatedAt: timestamp,
+        version: board.version + 1,
+      }));
+      if (restoredBoards.length > 0) await database.boards.bulkPut(restoredBoards);
+      for (const board of restoredBoards) {
+        const bookmarksToRestore = await database.bookmarks.where("boardId").equals(board.id).filter((bookmark) => bookmark.deletedBatchId === batchId).toArray();
+        const activeBookmarkScope = await activeBookmarks(database, board.id);
+        const bookmarkAllocation = allocateManyAtEnd(activeBookmarkScope, bookmarksToRestore.length);
+        const previousBookmarkPositions = new Map(activeBookmarkScope.map((item) => [item.id, item.position]));
+        const rebalancedBookmarks = bookmarkAllocation.scope
+          .filter((item) => previousBookmarkPositions.get(item.id) !== item.position)
+          .map((item) => ({ ...item, updatedAt: timestamp, version: item.version + 1 }));
+        if (rebalancedBookmarks.length > 0) await database.bookmarks.bulkPut(rebalancedBookmarks);
+        if (bookmarksToRestore.length > 0) {
+          await database.bookmarks.bulkPut(bookmarksToRestore.map((bookmark, index) => ({
+            ...bookmark,
+            position: bookmarkAllocation.positions[index]!,
+            deletedAt: null,
+            deletedBatchId: null,
+            updatedAt: timestamp,
+            version: bookmark.version + 1,
+          })));
+        }
+      }
     }
     await database.settings.update("app", { activePageId: id, updatedAt: timestamp });
     await repairWorkspaceInvariants(database);
@@ -617,14 +651,33 @@ export async function restoreBoard(id: string, database: AsterfoldDatabase = db)
     if (!parent || parent.deletedAt !== null) throw new ValidationError("Restore the parent page first");
     const timestamp = nowIso();
     const batchId = board.deletedBatchId;
-    await database.boards.update(id, { deletedAt: null, deletedBatchId: null, updatedAt: timestamp, version: board.version + 1 });
+    const activeBoardScope = await activeBoards(database, board.pageId);
+    const boardAllocation = allocateAtEnd(activeBoardScope);
+    const previousBoardPositions = new Map(activeBoardScope.map((item) => [item.id, item.position]));
+    const rebalancedBoards = boardAllocation.scope
+      .filter((item) => previousBoardPositions.get(item.id) !== item.position)
+      .map((item) => ({ ...item, updatedAt: timestamp, version: item.version + 1 }));
+    if (rebalancedBoards.length > 0) await database.boards.bulkPut(rebalancedBoards);
+    await database.boards.update(id, { position: boardAllocation.position, deletedAt: null, deletedBatchId: null, updatedAt: timestamp, version: board.version + 1 });
     if (batchId) {
-      await database.bookmarks.where("boardId").equals(id).filter((bookmark) => bookmark.deletedBatchId === batchId).modify((bookmark) => {
-        bookmark.deletedAt = null;
-        bookmark.deletedBatchId = null;
-        bookmark.updatedAt = timestamp;
-        bookmark.version += 1;
-      });
+      const bookmarksToRestore = await database.bookmarks.where("boardId").equals(id).filter((bookmark) => bookmark.deletedBatchId === batchId).toArray();
+      const activeBookmarkScope = await activeBookmarks(database, id);
+      const bookmarkAllocation = allocateManyAtEnd(activeBookmarkScope, bookmarksToRestore.length);
+      const previousBookmarkPositions = new Map(activeBookmarkScope.map((item) => [item.id, item.position]));
+      const rebalancedBookmarks = bookmarkAllocation.scope
+        .filter((item) => previousBookmarkPositions.get(item.id) !== item.position)
+        .map((item) => ({ ...item, updatedAt: timestamp, version: item.version + 1 }));
+      if (rebalancedBookmarks.length > 0) await database.bookmarks.bulkPut(rebalancedBookmarks);
+      if (bookmarksToRestore.length > 0) {
+        await database.bookmarks.bulkPut(bookmarksToRestore.map((bookmark, index) => ({
+          ...bookmark,
+          position: bookmarkAllocation.positions[index]!,
+          deletedAt: null,
+          deletedBatchId: null,
+          updatedAt: timestamp,
+          version: bookmark.version + 1,
+        })));
+      }
     }
     await repairWorkspaceInvariants(database);
   });
@@ -794,7 +847,15 @@ export async function restoreBookmark(id: string, database: AsterfoldDatabase = 
     if (!bookmark || bookmark.deletedAt === null) throw new ValidationError("Deleted bookmark not found");
     const board = await database.boards.get(bookmark.boardId);
     if (!board || board.deletedAt !== null) throw new ValidationError("Restore the parent board first");
-    await database.bookmarks.update(id, { deletedAt: null, deletedBatchId: null, updatedAt: nowIso(), version: bookmark.version + 1 });
+    const timestamp = nowIso();
+    const activeBookmarkScope = await activeBookmarks(database, bookmark.boardId);
+    const allocation = allocateAtEnd(activeBookmarkScope);
+    const previousPositions = new Map(activeBookmarkScope.map((item) => [item.id, item.position]));
+    const rebalanced = allocation.scope
+      .filter((item) => previousPositions.get(item.id) !== item.position)
+      .map((item) => ({ ...item, updatedAt: timestamp, version: item.version + 1 }));
+    if (rebalanced.length > 0) await database.bookmarks.bulkPut(rebalanced);
+    await database.bookmarks.update(id, { position: allocation.position, deletedAt: null, deletedBatchId: null, updatedAt: timestamp, version: bookmark.version + 1 });
   });
 }
 
@@ -812,13 +873,24 @@ export async function bulkRestoreBookmarks(ids: readonly string[], database: Ast
       throw new ValidationError("Restore the parent Board first");
     }
     const timestamp = nowIso();
-    await database.bookmarks.bulkPut(bookmarks.map((bookmark) => ({
-      ...bookmark,
-      deletedAt: null,
-      deletedBatchId: null,
-      updatedAt: timestamp,
-      version: bookmark.version + 1,
-    })));
+    for (const boardId of boardIds) {
+      const restoring = sortByPosition(bookmarks.filter((bookmark) => bookmark.boardId === boardId));
+      const activeBookmarkScope = await activeBookmarks(database, boardId);
+      const allocation = allocateManyAtEnd(activeBookmarkScope, restoring.length);
+      const previousPositions = new Map(activeBookmarkScope.map((item) => [item.id, item.position]));
+      const rebalanced = allocation.scope
+        .filter((item) => previousPositions.get(item.id) !== item.position)
+        .map((item) => ({ ...item, updatedAt: timestamp, version: item.version + 1 }));
+      if (rebalanced.length > 0) await database.bookmarks.bulkPut(rebalanced);
+      await database.bookmarks.bulkPut(restoring.map((bookmark, index) => ({
+        ...bookmark,
+        position: allocation.positions[index]!,
+        deletedAt: null,
+        deletedBatchId: null,
+        updatedAt: timestamp,
+        version: bookmark.version + 1,
+      })));
+    }
   });
 }
 
@@ -998,29 +1070,47 @@ export async function garbageCollectWallpapers(database: AsterfoldDatabase = db,
 }
 
 export async function auditInvariants(database: AsterfoldDatabase = db): Promise<string[]> {
-  const [pages, boards, bookmarks, settings] = await Promise.all([
+  const [pages, boards, bookmarks, settings, wallpapers, snapshots] = await Promise.all([
     database.pages.toArray(),
     database.boards.toArray(),
     database.bookmarks.toArray(),
     database.settings.get("app"),
+    database.wallpapers.toArray(),
+    database.snapshots.toArray(),
   ]);
   const issues: string[] = [];
   const activePageIds = new Set(pages.filter((page) => page.deletedAt === null).map((page) => page.id));
   const activePagesList = pages.filter((page) => page.deletedAt === null);
   const activeBoardsList = boards.filter((board) => board.deletedAt === null);
-  const activeBoardIds = new Set(activeBoardsList.map((board) => board.id));
   if (activePageIds.size === 0) issues.push("No active Page exists");
   if (activePagesList.filter((page) => page.isDefault).length !== 1) issues.push("Exactly one active default Page is required");
-  if (settings?.activePageId && !activePageIds.has(settings.activePageId)) issues.push("Active Page setting points to a missing Page");
-  for (const board of boards.filter((item) => item.deletedAt === null)) {
-    if (!activePageIds.has(board.pageId)) issues.push(`Board ${board.id} has no active parent Page`);
+  for (const issue of validateScope(activePagesList)) issues.push(`Page ordering ${issue.code}: ${issue.id}`);
+  for (const page of activePagesList) {
+    for (const issue of validateScope(activeBoardsList.filter((board) => board.pageId === page.id))) {
+      issues.push(`Board ordering ${issue.code}: ${issue.id}`);
+    }
   }
-  for (const bookmark of bookmarks.filter((item) => item.deletedAt === null)) {
-    if (!activeBoardIds.has(bookmark.boardId)) issues.push(`Bookmark ${bookmark.id} has no active parent Board`);
-    try {
-      normalizeUrl(bookmark.url, false);
-    } catch {
-      issues.push(`Bookmark ${bookmark.id} contains an unsafe URL`);
+  for (const board of activeBoardsList) {
+    for (const issue of validateScope(bookmarks.filter((bookmark) => bookmark.deletedAt === null && bookmark.boardId === board.id))) {
+      issues.push(`Bookmark ordering ${issue.code}: ${issue.id}`);
+    }
+  }
+  if (settings?.activePageId && !activePageIds.has(settings.activePageId)) issues.push("Active Page setting points to a missing Page");
+  for (const board of boards) {
+    const parent = pages.find((page) => page.id === board.pageId);
+    if (!parent) issues.push(`Board ${board.id} has no parent Page`);
+    else if (board.deletedAt === null && parent.deletedAt !== null) issues.push(`Active Board ${board.id} has a deleted parent Page`);
+  }
+  for (const bookmark of bookmarks) {
+    const parent = boards.find((board) => board.id === bookmark.boardId);
+    if (!parent) issues.push(`Bookmark ${bookmark.id} has no parent Board`);
+    else if (bookmark.deletedAt === null && parent.deletedAt !== null) issues.push(`Active Bookmark ${bookmark.id} has a deleted parent Board`);
+    if (bookmark.deletedAt === null) {
+      try {
+        normalizeUrl(bookmark.url, false);
+      } catch {
+        issues.push(`Bookmark ${bookmark.id} contains an unsafe URL`);
+      }
     }
   }
   const checkPair = (label: string, pageId: string | null | undefined, boardId: string | null | undefined): void => {
@@ -1031,8 +1121,43 @@ export async function auditInvariants(database: AsterfoldDatabase = db): Promise
     }
   };
   if (settings) {
+    if (!appSettingsSchema.safeParse(settings).success) issues.push("App settings do not match the current schema");
     checkPair("Quick Save default", settings.quickSaveDefaultPageId, settings.quickSaveDefaultBoardId);
     checkPair("Quick Save last", settings.quickSaveLastPageId, settings.quickSaveLastBoardId);
+    const wallpaperId = settings.theme.wallpaperId;
+    const builtinIds = new Set(["builtin-aurora", "builtin-mesh", "builtin-dusk"]);
+    if (wallpaperId?.startsWith("builtin-") && !builtinIds.has(wallpaperId)) issues.push("Wallpaper setting points to an unknown builtin");
+    if (wallpaperId && !wallpaperId.startsWith("builtin-") && !wallpapers.some((wallpaper) => wallpaper.id === wallpaperId)) {
+      issues.push("Wallpaper setting points to a missing local asset");
+    }
+  } else {
+    issues.push("App settings are missing");
+  }
+  for (const wallpaper of wallpapers) {
+    const metadata = {
+      id: wallpaper.id,
+      kind: wallpaper.kind,
+      name: wallpaper.name,
+      mimeType: wallpaper.mimeType,
+      value: wallpaper.value,
+      createdAt: wallpaper.createdAt,
+      updatedAt: wallpaper.updatedAt,
+    };
+    if (!wallpaperMetadataSchema.safeParse(metadata).success) issues.push(`Wallpaper ${wallpaper.id} has invalid metadata`);
+    if (wallpaper.kind === "upload") {
+      if (!wallpaper.blob || !wallpaper.thumbnail) issues.push(`Wallpaper ${wallpaper.id} is missing raster data`);
+      if (!Number.isSafeInteger(wallpaper.width) || !Number.isSafeInteger(wallpaper.height)
+        || (wallpaper.width ?? 0) < 1 || (wallpaper.height ?? 0) < 1
+        || (wallpaper.width ?? 0) * (wallpaper.height ?? 0) > WALLPAPER_LIMITS.sourcePixels) {
+        issues.push(`Wallpaper ${wallpaper.id} has invalid dimensions`);
+      }
+      if (!Number.isSafeInteger(wallpaper.storedBytes) || (wallpaper.storedBytes ?? 0) > WALLPAPER_LIMITS.aggregateBytes) {
+        issues.push(`Wallpaper ${wallpaper.id} exceeds storage limits`);
+      }
+    }
+  }
+  for (const snapshot of snapshots) {
+    if (!snapshotSchema.safeParse(snapshot).success) issues.push(`Snapshot ${snapshot.id} is invalid`);
   }
   return issues;
 }
