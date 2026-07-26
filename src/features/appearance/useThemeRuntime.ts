@@ -23,14 +23,22 @@ export function useThemeRuntime(theme: ThemeConfig | undefined) {
       setWallpaperUrl(null);
       return;
     }
-    void db.wallpapers.get(theme.wallpaperId).then((record) => {
-      if (!active) return;
-      setWallpaper(record);
-      if (record?.blob) {
-        objectUrl = URL.createObjectURL(record.blob);
-        setWallpaperUrl(objectUrl);
-      }
-    });
+    void db.wallpapers.get(theme.wallpaperId)
+      .then((record) => {
+        if (!active) return;
+        setWallpaper(record);
+        if (record?.blob) {
+          objectUrl = URL.createObjectURL(record.blob);
+          setWallpaperUrl(objectUrl);
+        } else {
+          setWallpaperUrl(null);
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setWallpaper(undefined);
+        setWallpaperUrl(null);
+      });
     return () => {
       active = false;
       if (objectUrl) URL.revokeObjectURL(objectUrl);

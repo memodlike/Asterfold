@@ -61,6 +61,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
   const [wallpaperInfo, setWallpaperInfo] = useState<Wallpaper | null>(null);
   const [themeDraft, setThemeDraft] = useState(settings.theme);
   const [invariants, setInvariants] = useState<string[]>([]);
+  const [diagnosticsBusy, setDiagnosticsBusy] = useState(false);
   const [importRecordsPreview, setImportRecordsPreview] = useState<ImportRecord[]>([]);
   const [backupPreview, setBackupPreview] = useState<AsterfoldBackup | null>(null);
   const [importSource, setImportSource] = useState("");
@@ -86,7 +87,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
     if (!importRecordsPreview.length && !backupPreview) setImportPageTitle(t("settings.importedBookmarks"));
     if (browser.commands?.getAll) void browser.commands.getAll().then((commands) => setShortcut(commands.find((command) => command.name === "quick-save")?.shortcut || "—")).catch(() => setShortcut("—"));
     if (navigator.storage?.estimate) void navigator.storage.estimate().then(setStorage).catch(() => setStorage(undefined));
-    void auditInvariants().then(setInvariants);
+    void auditInvariants().then(setInvariants).catch(() => setInvariants([]));
   }, [backupPreview, importRecordsPreview.length, props.initialSection, props.open, t]);
   useEffect(() => {
     if (!props.open || !themeDraft.wallpaperId) { setWallpaperInfo(null); return; }
@@ -192,6 +193,19 @@ export function SettingsDialog(props: SettingsDialogProps) {
       patchTheme({ wallpaperId: wallpaper.id, backgroundMode: "wallpaper" });
     } catch { props.onError(t("error.wallpaperSaveFailed")); }
   };
+  const repeatDiagnostics = async (): Promise<void> => {
+    if (diagnosticsBusy) return;
+    setDiagnosticsBusy(true);
+    try {
+      const issues = await auditInvariants();
+      setInvariants(issues);
+      props.onUpdated(t("settings.diagnosticsRepeated"));
+    } catch {
+      props.onError(t("error.actionFailed"));
+    } finally {
+      setDiagnosticsBusy(false);
+    }
+  };
 
   return (
     <Modal open={props.open} size="fullscreen" title={t("settings.title")} onClose={closeSettings}>
@@ -253,7 +267,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
             {backupPreview ? <div className="import-preview"><h3>{importSource}</h3><p>{t("settings.backupSummary", { version: backupPreview.exportVersion, pages: backupPreview.entities.pages.length, boards: backupPreview.entities.boards.length, bookmarks: backupPreview.entities.bookmarks.length })}</p><div className="button-row"><Button onClick={() => setBackupPreview(null)}>{t("generic.cancel")}</Button><Button disabled={importBusy} onClick={() => void commitBackupRestore("merge")}>{t("settings.merge")}</Button><Button variant="danger" disabled={importBusy} onClick={() => void commitBackupRestore("replace")}>{t("settings.replace")}</Button></div></div> : null}
             <SettingRow label={t("settings.privacyPersist")}><label className="switch"><input type="checkbox" checked={settings.privacyPersist} onChange={(event) => void patchSettings({ privacyPersist: event.target.checked, ...(event.target.checked ? {} : { privacyEnabled: false }) })} /><span /></label></SettingRow>
             <SettingRow label={t("settings.retention")}><select value={settings.trashRetentionDays ?? "never"} onChange={(event) => void patchSettings({ trashRetentionDays: event.target.value === "never" ? null : Number(event.target.value) as 7 | 30 | 90 })}><option value="7">{t("settings.days", { count: 7 })}</option><option value="30">{t("settings.days", { count: 30 })}</option><option value="90">{t("settings.days", { count: 90 })}</option><option value="never">{t("settings.never")}</option></select></SettingRow>
-            <div className="data-footer"><Button icon={<Trash2 size={16} />} onClick={props.onOpenTrash}>{t("settings.openTrash")}</Button><div className="diagnostic-summary"><Database size={17} /><span>{counts.pages} / {counts.boards} / {counts.bookmarks}</span><span>{formatBytes(storage?.usage)}</span><strong className={invariants.length ? "is-warning" : "is-healthy"}>{invariants.length ? t("settings.issues", { count: invariants.length }) : t("settings.healthy")}</strong></div><Button icon={<CheckCircle2 size={16} />} onClick={() => void auditInvariants().then((issues) => { setInvariants(issues); props.onUpdated(t("settings.diagnosticsRepeated")); })}>{t("settings.repeatDiagnostics")}</Button></div>
+            <div className="data-footer"><Button icon={<Trash2 size={16} />} onClick={props.onOpenTrash}>{t("settings.openTrash")}</Button><div className="diagnostic-summary"><Database size={17} /><span>{counts.pages} / {counts.boards} / {counts.bookmarks}</span><span>{formatBytes(storage?.usage)}</span><strong className={invariants.length ? "is-warning" : "is-healthy"}>{invariants.length ? t("settings.issues", { count: invariants.length }) : t("settings.healthy")}</strong></div><Button icon={<CheckCircle2 size={16} />} disabled={diagnosticsBusy} onClick={() => void repeatDiagnostics()}>{t("settings.repeatDiagnostics")}</Button></div>
           </SettingsSection> : null}
         </div>
       </div>
