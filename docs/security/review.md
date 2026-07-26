@@ -18,7 +18,7 @@ The default manifest has no host permission or cloud identity permission. Cloud 
 
 ## Dependency status
 
-`npm run audit:production` reports zero production advisories at this review. Full `npm audit --json` reports seven high advisories in WXT's `web-ext` development toolchain. Those are not in the runtime dependency graph, but the full audit is not called clean. CI blocks high production advisories and new high-severity dependency changes.
+`npm run audit:production` reports zero production advisories at the 2.2.2 review. Full `npm audit --json` reports 19 high advisories in the ESLint/WXT development toolchain and zero critical advisories. The available fixes either require the ESLint 10 major line or are not available through the current WXT dependency graph. These packages are not in the runtime dependency graph, but the full development audit is not called clean. CI blocks high production advisories and new high-severity dependency changes.
 
 ## Residual risk
 
