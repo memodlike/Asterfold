@@ -11,6 +11,7 @@ import {
   duplicateBookmark,
   duplicatePage,
   moveBoardToIndex,
+  moveBoardWithGridSwap,
   moveBookmarkToIndex,
   movePageToIndex,
   renamePage,
@@ -18,7 +19,6 @@ import {
   restoreBookmark,
   restorePage,
   setDefaultPage,
-  swapBoardGridPlacement,
   softDeleteBoard,
   softDeleteBookmark,
   softDeletePage,
@@ -26,7 +26,6 @@ import {
   updateSettings,
 } from "../db/repository";
 import { copyText, ExtensionRequestError, openUrl } from "../browser/api";
-import { changeBus } from "../browser/changeBus";
 import { Button } from "../components/Button";
 import { IconButton } from "../components/IconButton";
 import { MoveDialog } from "../components/MoveDialog";
@@ -37,6 +36,7 @@ import { useThemeRuntime } from "../features/appearance/useThemeRuntime";
 import { I18nProvider, translate, useI18n } from "../i18n";
 import { AppLauncher } from "./AppLauncher";
 import { useWorkspace } from "./useWorkspace";
+import { usePrivacyMode } from "./usePrivacyMode";
 
 const BookmarkEditor = lazy(async () => import("../features/bookmarks/BookmarkEditor").then((module) => ({ default: module.BookmarkEditor })));
 const SearchPalette = lazy(async () => import("../features/search/SearchPalette").then((module) => ({ default: module.SearchPalette })));
@@ -71,18 +71,17 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   const [editor, setEditor] = useState<EditorIntent | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
-  const [sessionPrivacy, setSessionPrivacy] = useState(false);
   const initialSettingsSeen = useRef(false);
   const appStyle = useThemeRuntime(workspace.settings.theme);
+  const { privacy, setPrivacy } = usePrivacyMode(workspace.settings);
 
   useEffect(() => {
     if (initialSettingsSeen.current) return;
     initialSettingsSeen.current = true;
     performance.mark("asterfold-interactive");
-    setSessionPrivacy(workspace.settings.privacyPersist && workspace.settings.privacyEnabled);
     const requestedPage = new URLSearchParams(location.search).get("page");
     if (requestedPage && workspace.pages.some((page) => page.id === requestedPage)) void updateSettings({ activePageId: requestedPage });
-  }, [workspace.pages, workspace.settings.privacyEnabled, workspace.settings.privacyPersist]);
+  }, [workspace.pages]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent): void => {
@@ -102,12 +101,10 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   const boards = workspace.boards.filter((board) => board.pageId === activePage.id);
   const boardIds = new Set(boards.map((board) => board.id));
   const bookmarks = workspace.bookmarks.filter((bookmark) => boardIds.has(bookmark.boardId));
-  const privacy = workspace.settings.privacyPersist ? workspace.settings.privacyEnabled : sessionPrivacy;
 
   const run = async (action: () => Promise<unknown>, success?: string): Promise<void> => {
     try {
       await action();
-      changeBus.publish("all");
       if (success) notifySuccess(success);
     } catch (error) {
       if (error instanceof ExtensionRequestError) {
@@ -133,25 +130,24 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
     if (intent.kind === "rename-page") await renamePage(intent.page.id, value);
     if (intent.kind === "new-board") await createBoard(activePage.id, value);
     if (intent.kind === "rename-board") await updateBoard(intent.board.id, { title: value });
-    changeBus.publish(intent.kind.includes("page") ? "page" : "board");
   };
   const deleteBoard = (board: Board): void => {
     void run(async () => {
       await softDeleteBoard(board.id);
-      toasts.push({ message: `${privacy ? t("generic.board") : board.title} → ${t("generic.trash")}`, actionLabel: t("generic.undo"), onAction: async () => { await restoreBoard(board.id); changeBus.publish("board"); } });
+      toasts.push({ message: `${privacy ? t("generic.board") : board.title} → ${t("generic.trash")}`, actionLabel: t("generic.undo"), onAction: async () => { await restoreBoard(board.id); } });
     });
   };
   const deleteBookmark = (bookmark: Bookmark): void => {
     void run(async () => {
       await softDeleteBookmark(bookmark.id);
       setSelectedIds((current) => { const next = new Set(current); next.delete(bookmark.id); return next; });
-      toasts.push({ message: `${privacy ? t("privacy.hiddenBookmark") : bookmark.title} → ${t("generic.trash")}`, actionLabel: t("generic.undo"), onAction: async () => { await restoreBookmark(bookmark.id); changeBus.publish("bookmark"); } });
+      toasts.push({ message: `${privacy ? t("privacy.hiddenBookmark") : bookmark.title} → ${t("generic.trash")}`, actionLabel: t("generic.undo"), onAction: async () => { await restoreBookmark(bookmark.id); } });
     });
   };
   const deletePage = (page: Page): void => {
     void run(async () => {
       await softDeletePage(page.id);
-      toasts.push({ message: `${privacy ? t("generic.page") : page.title} → ${t("generic.trash")}`, actionLabel: t("generic.undo"), onAction: async () => { await restorePage(page.id); changeBus.publish("page"); } });
+      toasts.push({ message: `${privacy ? t("generic.page") : page.title} → ${t("generic.trash")}`, actionLabel: t("generic.undo"), onAction: async () => { await restorePage(page.id); } });
     });
   };
   const openBookmark = (bookmark: Bookmark): void => { void run(() => openUrl(bookmark.url, bookmark.openMode)); };
@@ -186,8 +182,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   };
   const togglePrivacy = (): void => {
     const next = !privacy;
-    if (workspace.settings.privacyPersist) void run(() => updateSettings({ privacyEnabled: next }), t(next ? "privacy.on" : "privacy.off"));
-    else { setSessionPrivacy(next); notifySuccess(t(next ? "privacy.on" : "privacy.off")); }
+    void run(() => setPrivacy(next), t(next ? "privacy.on" : "privacy.off"));
   };
   const bulkDelete = (): void => {
     const ids = [...selectedIds];
@@ -195,7 +190,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
     void run(async () => {
       await bulkDeleteBookmarks(ids);
       setSelectedIds(new Set());
-      toasts.push({ message: `${ids.length} → ${t("generic.trash")}`, actionLabel: t("generic.undo"), onAction: async () => { await bulkRestoreBookmarks(ids); changeBus.publish("bookmark"); } });
+      toasts.push({ message: `${ids.length} → ${t("generic.trash")}`, actionLabel: t("generic.undo"), onAction: async () => { await bulkRestoreBookmarks(ids); } });
     });
   };
   const exportSelected = (): void => {
@@ -227,14 +222,9 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
         onMoveBoard={(board) => setMoveIntent({ kind: "board", board })}
         onDuplicateBoard={(board) => void run(() => duplicateBoard(board.id))}
         onDeleteBoard={deleteBoard}
-        onMoveBoardIndex={(id, index, targetId) => void run(async () => {
-          if (workspace.settings.workspaceLayoutMode === "free") {
-            const source = boards.find((board) => board.id === id);
-            const target = boards.find((board) => board.id === targetId);
-            if (source && target) await swapBoardGridPlacement(source.id, target.id);
-          }
-          await moveBoardToIndex(id, activePage.id, index);
-        })}
+        onMoveBoardIndex={(id, index, targetId) => void run(() => workspace.settings.workspaceLayoutMode === "free"
+          ? moveBoardWithGridSwap(id, targetId, activePage.id, index)
+          : moveBoardToIndex(id, activePage.id, index))}
         onOpenBookmark={openBookmark}
         onEditBookmark={(bookmark) => setEditor({ bookmark, boardId: bookmark.boardId })}
         onMoveBookmark={(bookmark) => setMoveIntent({ kind: "bookmark", bookmark })}
@@ -267,7 +257,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
 
       <Suspense fallback={null}>
         {searchOpen ? <SearchPalette open privacy={privacy} pages={workspace.pages} boards={workspace.boards} bookmarks={workspace.bookmarks} activePageId={activePage.id} onClose={() => setSearchOpen(false)} onOpen={openBookmark} onReveal={revealBookmark} onEdit={(bookmark) => setEditor({ bookmark, boardId: bookmark.boardId })} onMove={(bookmark) => setMoveIntent({ kind: "bookmark", bookmark })} onCopy={copyUrl} onDelete={deleteBookmark} /> : null}
-        {editor !== null ? <BookmarkEditor open bookmark={editor.bookmark} privacy={privacy} initialBoardId={editor.boardId || boards[0]?.id || ""} pages={workspace.pages} boards={workspace.boards} onClose={() => setEditor(null)} onSaved={() => { changeBus.publish("bookmark"); notifySuccess(t("bookmark.saved")); }} onError={notifyError} /> : null}
+        {editor !== null ? <BookmarkEditor open bookmark={editor.bookmark} privacy={privacy} initialBoardId={editor.boardId || boards[0]?.id || ""} pages={workspace.pages} boards={workspace.boards} onClose={() => setEditor(null)} onSaved={() => notifySuccess(t("bookmark.saved"))} onError={notifyError} /> : null}
       </Suspense>
       <NameDialog open={nameIntent !== null} title={t(nameIntent?.kind === "new-page" ? "name.newPage" : nameIntent?.kind === "rename-page" ? "name.renamePage" : nameIntent?.kind === "new-board" ? "name.newBoard" : "name.renameBoard")} label={t("generic.title")} initialValue={nameIntent && "page" in nameIntent ? nameIntent.page.title : nameIntent && "board" in nameIntent ? nameIntent.board.title : ""} submitLabel={t(nameIntent?.kind.startsWith("new-") ? "generic.create" : "generic.save")} onClose={() => setNameIntent(null)} onSubmit={handleNameSubmit} />
       <MoveDialog
@@ -281,12 +271,11 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
           if (moveIntent?.kind === "board") await moveBoardToIndex(moveIntent.board.id, destinationId, Number.MAX_SAFE_INTEGER);
           if (moveIntent?.kind === "bookmark") await moveBookmarkToIndex(moveIntent.bookmark.id, destinationId, Number.MAX_SAFE_INTEGER);
           if (moveIntent?.kind === "bulk") { await bulkMoveBookmarks([...selectedIds], destinationId); setSelectedIds(new Set()); }
-          changeBus.publish("all");
         }}
       />
       <Suspense fallback={null}>
         {settingsOpen ? <SettingsDialog open initialSection={settingsSection} workspace={workspace} onClose={() => setSettingsOpen(false)} onUpdated={notifySuccess} onError={notifyError} onOpenTrash={() => { setSettingsOpen(false); setTrashOpen(true); }} /> : null}
-        {trashOpen ? <TrashDialog open privacy={privacy} onClose={() => setTrashOpen(false)} onChanged={(message) => { changeBus.publish("trash"); notifySuccess(message); }} onError={notifyError} /> : null}
+        {trashOpen ? <TrashDialog open privacy={privacy} onClose={() => setTrashOpen(false)} onChanged={notifySuccess} onError={notifyError} /> : null}
       </Suspense>
       {toasts.region}
     </div>

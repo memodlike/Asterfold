@@ -1,0 +1,47 @@
+name: Apply final readiness patch
+
+on:
+  push:
+    branches:
+      - agent/final-store-readiness-v2.2.3
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-final-readiness-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify and apply remaining patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .agent-patch-v2/part04
+          cat .agent-patch-v2/part* > /tmp/asterfold.patch.gz.b64
+          base64 --decode /tmp/asterfold.patch.gz.b64 > /tmp/asterfold.patch.gz
+          echo "32498cfac4177b05a8840ab0e2e3fa16be3d5553a8aa0fce09728dfa156a6cb5  /tmp/asterfold.patch.gz" | sha256sum -c -
+          gzip -dc /tmp/asterfold.patch.gz > /tmp/asterfold.patch
+          git apply --check /tmp/asterfold.patch
+          git apply /tmp/asterfold.patch
+          rm -rf .agent-patch .agent-patch-v2
+
+      - name: Commit applied source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Complete Chrome Store readiness hardening"
+          git push origin HEAD
