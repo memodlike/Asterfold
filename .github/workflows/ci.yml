@@ -27,9 +27,14 @@ jobs:
       - run: npm ci
       - name: Production dependency audit
         run: npm run audit:production
+      - name: Full development dependency audit
+        continue-on-error: true
+        run: npm audit --json
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - name: Chrome Web Store asset validation
+        run: node scripts/validate-store-assets.mjs
       - run: npm run release:repro
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
@@ -53,6 +58,7 @@ jobs:
             release/Asterfold-Chrome.zip
             release/chrome-unpacked.zip
             release/extension-source.zip
+            release/Asterfold-Store-Assets.zip
             release/checksums.txt
           if-no-files-found: error
 

@@ -6,6 +6,7 @@ const root = resolve(process.cwd());
 const output = resolve(root, ".output/chrome-mv3");
 const release = resolve(root, "release");
 const unpacked = join(release, "chrome-unpacked");
+const storeAssets = resolve(root, "store-assets");
 const fixedDosDate = 0x5021; // 2020-01-01
 const fixedDosTime = 0;
 
@@ -160,6 +161,21 @@ const filteredSourceFiles = sourceFiles.filter((path) => {
 });
 await writeDeterministicZip(join(release, "extension-source.zip"), filteredSourceFiles.map((path) => ({ path, name: relative(root, path).replaceAll("\\", "/") })));
 
-const archives = ["Asterfold-Chrome.zip", "chrome-unpacked.zip", "extension-source.zip"].map((name) => join(release, name));
+const storeFiles = await walk(storeAssets);
+const storeDocumentation = [
+  ["docs/store/privacy.html", "documentation/privacy.html"],
+  ["docs/store/privacy-practices.md", "documentation/privacy-practices.md"],
+  ["docs/store/submission-checklist.md", "documentation/submission-checklist.md"],
+  ["docs/security/permissions.md", "documentation/permission-rationale.md"],
+].map(([source, name]) => ({ path: join(root, source), name }));
+await writeDeterministicZip(
+  join(release, "Asterfold-Store-Assets.zip"),
+  [
+    ...storeFiles.map((path) => ({ path, name: relative(storeAssets, path).replaceAll("\\", "/") })),
+    ...storeDocumentation,
+  ],
+);
+
+const archives = ["Asterfold-Chrome.zip", "chrome-unpacked.zip", "extension-source.zip", "Asterfold-Store-Assets.zip"].map((name) => join(release, name));
 await writeFile(join(release, "checksums.txt"), `${(await Promise.all(archives.map(checksum))).join("\n")}\n`, "utf8");
 console.log(`Release ready: ${release}`);

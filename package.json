@@ -14,8 +14,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "release": "npm run build && node scripts/release.mjs",
-    "release:repro": "npm run build && node scripts/verify-release.mjs",
+    "validate:store": "node scripts/validate-store-assets.mjs",
+    "release": "npm run build && npm run validate:store && node scripts/release.mjs",
+    "release:repro": "npm run build && npm run validate:store && node scripts/verify-release.mjs",
     "audit:production": "npm audit --omit=dev --audit-level=high",
     "clean": "node scripts/clean.mjs"
   },
