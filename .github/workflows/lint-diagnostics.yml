@@ -1,0 +1,42 @@
+name: Lint diagnostics
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  report:
+    if: github.actor == 'memodlike' && github.event.pull_request.head.ref == 'agent/chrome-store-readiness-2.2.3'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: agent/chrome-store-readiness-2.2.3
+          persist-credentials: true
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Persist ESLint errors
+        shell: bash
+        run: |
+          set +e
+          npm run lint > /tmp/lint.log 2>&1
+          status=$?
+          if [ "$status" -eq 0 ]; then
+            exit 0
+          fi
+          mkdir -p .diagnostics
+          head -c 12000 /tmp/lint.log > .diagnostics/lint.txt
+          git add .diagnostics/lint.txt
+          git config user.name "Asterfold Diagnostics Bot"
+          git config user.email "actions@users.noreply.github.com"
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: capture ESLint diagnostics"
+            git push origin HEAD:agent/chrome-store-readiness-2.2.3
+          fi
+          exit "$status"
