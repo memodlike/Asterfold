@@ -6,6 +6,12 @@ const MAX_ID = 128;
 const MAX_PAGES = 10_000;
 const MAX_BOARDS = 50_000;
 const MAX_BOOKMARKS = 50_000;
+const MAX_WALLPAPER_SOURCE_BYTES = 8 * 1024 * 1024;
+const MAX_WALLPAPER_ENCODED_BYTES = 8 * 1024 * 1024;
+const MAX_WALLPAPER_THUMBNAIL_BYTES = 2 * 1024 * 1024;
+const MAX_WALLPAPER_AGGREGATE_BYTES = 10 * 1024 * 1024;
+const MAX_WALLPAPER_DIMENSION = 8_192;
+const MAX_WALLPAPER_PIXELS = 40_000_000;
 const id = z.string().min(1).max(MAX_ID);
 const nullableId = id.nullable();
 const isoDate = z.string().datetime({ offset: true });
@@ -143,9 +149,56 @@ export const syncOperationSchema = z.object({
   error: z.string().max(2_000).nullable(),
 }).strict();
 
+function decodedBase64Size(value: string): number {
+  const padding = value.endsWith("==") ? 2 : value.endsWith("=") ? 1 : 0;
+  return Math.floor(value.length * 3 / 4) - padding;
+}
+
+function isWebpBase64(value: string): boolean {
+  try {
+    const header = atob(value.slice(0, 32));
+    return header.startsWith("RIFF") && header.slice(8, 12) === "WEBP";
+  } catch {
+    return false;
+  }
+}
+
+function encodedWebp(maxBytes: number) {
+  return z.string()
+    .min(16)
+    .max(Math.ceil(maxBytes / 3) * 4)
+    .regex(/^[A-Za-z0-9+/]+={0,2}$/u, "Wallpaper data must be canonical base64")
+    .refine((value) => value.length % 4 === 0, "Wallpaper base64 padding is invalid")
+    .refine((value) => decodedBase64Size(value) <= maxBytes, "Wallpaper data is too large")
+    .refine(isWebpBase64, "Wallpaper data must contain a local WebP raster");
+}
+
+export const backupWallpaperSchema = z.object({
+  id,
+  name: z.string().min(1).max(240),
+  kind: z.literal("upload"),
+  mimeType: z.literal("image/webp"),
+  width: finite.int().min(1).max(MAX_WALLPAPER_DIMENSION),
+  height: finite.int().min(1).max(MAX_WALLPAPER_DIMENSION),
+  sourceBytes: finite.int().min(1).max(MAX_WALLPAPER_SOURCE_BYTES),
+  storedBytes: finite.int().min(2).max(MAX_WALLPAPER_AGGREGATE_BYTES),
+  data: encodedWebp(MAX_WALLPAPER_ENCODED_BYTES),
+  thumbnail: encodedWebp(MAX_WALLPAPER_THUMBNAIL_BYTES),
+  createdAt: isoDate,
+  updatedAt: isoDate,
+}).strict().superRefine((wallpaper, context) => {
+  if (wallpaper.width * wallpaper.height > MAX_WALLPAPER_PIXELS) {
+    context.addIssue({ code: "custom", message: "Wallpaper pixel count is too large" });
+  }
+  const decodedBytes = decodedBase64Size(wallpaper.data) + decodedBase64Size(wallpaper.thumbnail);
+  if (decodedBytes !== wallpaper.storedBytes) {
+    context.addIssue({ code: "custom", message: "Wallpaper stored byte count is inconsistent" });
+  }
+});
+
 const backupCoreSchema = z.object({
-  schemaVersion: z.union([z.literal(1), z.literal(2)]),
-  exportVersion: z.union([z.literal(1), z.literal(2)]),
+  schemaVersion: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  exportVersion: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   exportedAt: isoDate,
   appVersion: z.string().min(1).max(64),
   scope: z.enum(["full", "page", "board"]),
@@ -156,6 +209,9 @@ const backupCoreSchema = z.object({
   }).strict(),
   settings: appSettingsSchema.optional(),
   theme: themeSchema.optional(),
+  assets: z.object({
+    wallpapers: z.array(backupWallpaperSchema).max(1),
+  }).strict().optional(),
 }).strict();
 
 function duplicate(values: readonly string[]): string | null {
@@ -168,6 +224,30 @@ function duplicate(values: readonly string[]): string | null {
 }
 
 export const backupSchema = backupCoreSchema.superRefine((backup, context) => {
+  if (backup.schemaVersion !== backup.exportVersion) {
+    context.addIssue({ code: "custom", message: "Backup schema and export versions must match" });
+  }
+  if (backup.exportVersion === 3 && !backup.assets) {
+    context.addIssue({ code: "custom", message: "Backup v3 assets section is required" });
+  }
+  if (backup.exportVersion < 3 && backup.assets) {
+    context.addIssue({ code: "custom", message: "Legacy backups cannot contain v3 assets" });
+  }
+  if (backup.scope !== "full" && (backup.settings || backup.theme)) {
+    context.addIssue({ code: "custom", message: "Scoped backups cannot contain global settings or theme" });
+  }
+  if (backup.scope !== "full" && (backup.assets?.wallpapers.length ?? 0) > 0) {
+    context.addIssue({ code: "custom", message: "Scoped backups cannot contain global wallpaper assets" });
+  }
+  const wallpaperIds = backup.assets?.wallpapers.map((wallpaper) => wallpaper.id) ?? [];
+  const duplicateWallpaperId = duplicate(wallpaperIds);
+  if (duplicateWallpaperId) {
+    context.addIssue({ code: "custom", message: `Duplicate wallpaper ID: ${duplicateWallpaperId}` });
+  }
+  const aggregateWallpaperBytes = backup.assets?.wallpapers.reduce((total, wallpaper) => total + wallpaper.storedBytes, 0) ?? 0;
+  if (aggregateWallpaperBytes > MAX_WALLPAPER_AGGREGATE_BYTES) {
+    context.addIssue({ code: "custom", message: "Wallpaper assets exceed the aggregate size limit" });
+  }
   for (const [kind, entities] of Object.entries(backup.entities)) {
     const duplicateId = duplicate(entities.map((entity) => entity.id));
     if (duplicateId) context.addIssue({ code: "custom", message: `Duplicate ${kind} ID: ${duplicateId}` });
@@ -201,6 +281,13 @@ export const backupSchema = backupCoreSchema.superRefine((backup, context) => {
   }
   if (backup.scope === "full" && backup.settings) {
     const settings = backup.settings;
+    const wallpaperId = settings.theme.wallpaperId;
+    if (backup.exportVersion === 3 && wallpaperId && !wallpaperId.startsWith("builtin-") && !wallpaperIds.includes(wallpaperId)) {
+      context.addIssue({ code: "custom", message: "Active uploaded wallpaper asset is missing" });
+    }
+    if (wallpaperIds.some((assetId) => assetId !== wallpaperId)) {
+      context.addIssue({ code: "custom", message: "Backup contains an unreferenced wallpaper asset" });
+    }
     if (settings.activePageId && pages.get(settings.activePageId)?.deletedAt !== null) {
       context.addIssue({ code: "custom", message: "Active Page setting has no active parent" });
     }

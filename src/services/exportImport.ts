@@ -1,15 +1,17 @@
 import type { AsterfoldDatabase } from "../db/database";
+import { version as packageVersion } from "../../package.json";
 import { db } from "../db/database";
 import { createSnapshot, ensureStarterWorkspace } from "../db/repository";
 import { CURRENT_DB_SCHEMA_VERSION } from "../db/migrations";
-import type { Board, Bookmark, Page } from "../domain/models";
+import type { Board, Bookmark, Page, Wallpaper } from "../domain/models";
 import { ImportError, ValidationError } from "../domain/errors";
 import { evenlySpacedRanks } from "../domain/ordering";
 import { backupSchema, type AsterfoldBackup } from "../domain/schemas";
 import { normalizeUrl } from "../domain/urls";
 import { createId, nowIso } from "../utils/ids";
+import { inspectWallpaperSource } from "./wallpaper";
 
-export const CURRENT_BACKUP_FORMAT_VERSION = 2;
+export const CURRENT_BACKUP_FORMAT_VERSION = 3;
 export { backupSchema, type AsterfoldBackup } from "../domain/schemas";
 
 export interface ImportRecord {
@@ -48,6 +50,56 @@ function assertNoPrototypeKeys(value: unknown): void {
   }
 }
 
+async function encodeBlob(blob: Blob): Promise<string> {
+  const buffer = typeof blob.arrayBuffer === "function"
+    ? await blob.arrayBuffer()
+    : blob instanceof Blob ? await new Promise<ArrayBuffer>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.addEventListener("load", () => resolve(reader.result as ArrayBuffer), { once: true });
+      reader.addEventListener("error", () => reject(new ImportError("Wallpaper data could not be read")), { once: true });
+      reader.readAsArrayBuffer(blob);
+    }) : await new Response(blob).arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = "";
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  return btoa(binary);
+}
+
+function decodeBlob(value: string, mimeType: "image/webp"): Blob {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return new Blob([bytes], { type: mimeType });
+}
+
+async function serializeActiveWallpaper(settings: { theme: { wallpaperId: string | null } }, database: AsterfoldDatabase) {
+  const wallpaperId = settings.theme.wallpaperId;
+  if (!wallpaperId || wallpaperId.startsWith("builtin-")) return [];
+  const wallpaper = await database.wallpapers.get(wallpaperId);
+  if (!wallpaper || wallpaper.kind !== "upload" || wallpaper.mimeType !== "image/webp" || !wallpaper.blob || !wallpaper.thumbnail
+    || !wallpaper.width || !wallpaper.height || !wallpaper.sourceBytes || !wallpaper.storedBytes) {
+    throw new ImportError("The active uploaded wallpaper is unavailable for a complete backup");
+  }
+  const [data, thumbnail] = await Promise.all([encodeBlob(wallpaper.blob), encodeBlob(wallpaper.thumbnail)]);
+  return [{
+    id: wallpaper.id,
+    name: wallpaper.name,
+    kind: wallpaper.kind,
+    mimeType: wallpaper.mimeType,
+    width: wallpaper.width,
+    height: wallpaper.height,
+    sourceBytes: wallpaper.sourceBytes,
+    storedBytes: wallpaper.storedBytes,
+    data,
+    thumbnail,
+    createdAt: wallpaper.createdAt,
+    updatedAt: wallpaper.updatedAt,
+  }];
+}
+
 export async function createBackup(
   options: { pageId?: string; boardId?: string } = {},
   database: AsterfoldDatabase = db,
@@ -78,14 +130,16 @@ export async function createBackup(
     boards = allBoards.filter((board) => boardIds.has(board.id));
     bookmarks = allBookmarks.filter((bookmark) => boardIds.has(bookmark.boardId));
   }
+  const wallpapers = scope === "full" ? await serializeActiveWallpaper(settings, database) : [];
   return backupSchema.parse({
-    schemaVersion: 2,
-    exportVersion: 2,
+    schemaVersion: CURRENT_BACKUP_FORMAT_VERSION,
+    exportVersion: CURRENT_BACKUP_FORMAT_VERSION,
     exportedAt: nowIso(),
-    appVersion: "2.1.3",
+    appVersion: packageVersion,
     scope,
     entities: { pages, boards, bookmarks },
     ...(scope === "full" ? { settings, theme: settings.theme } : {}),
+    assets: { wallpapers },
   });
 }
 
@@ -107,12 +161,9 @@ export function parseBackup(text: string): AsterfoldBackup {
     throw new ImportError(`Backup validation failed: ${result.error.issues[0]?.message ?? "unknown schema error"}`);
   }
   for (const bookmark of result.data.entities.bookmarks) normalizeUrl(bookmark.url, false);
-  const migrated = result.data.exportVersion === 1
-    ? migrateBackupV1ToV2(result.data)
-    : result.data;
   return {
-    ...migrated,
-    ...(migrated.settings ? { settings: { ...migrated.settings, schemaVersion: CURRENT_DB_SCHEMA_VERSION } } : {}),
+    ...result.data,
+    ...(result.data.settings ? { settings: { ...result.data.settings, schemaVersion: CURRENT_DB_SCHEMA_VERSION } } : {}),
   };
 }
 
@@ -135,12 +186,37 @@ export function previewBackup(text: string, strategy: "merge" | "replace"): { ba
   };
 }
 
-function migrateBackupV1ToV2(backup: AsterfoldBackup): AsterfoldBackup {
-  return {
-    ...backup,
-    schemaVersion: CURRENT_BACKUP_FORMAT_VERSION,
-    exportVersion: CURRENT_BACKUP_FORMAT_VERSION,
-  };
+async function prepareWallpaperAssets(backup: AsterfoldBackup): Promise<Wallpaper[]> {
+  if (backup.exportVersion !== 3) return [];
+  return Promise.all((backup.assets?.wallpapers ?? []).map(async (asset) => {
+    const blob = decodeBlob(asset.data, "image/webp");
+    const thumbnail = decodeBlob(asset.thumbnail, "image/webp");
+    const [imageInfo] = await Promise.all([
+      inspectWallpaperSource(blob),
+      inspectWallpaperSource(thumbnail),
+    ]);
+    if (imageInfo.width !== asset.width || imageInfo.height !== asset.height) {
+      throw new ImportError("Wallpaper dimensions do not match the backup metadata");
+    }
+    if (blob.size + thumbnail.size !== asset.storedBytes) {
+      throw new ImportError("Wallpaper size does not match the backup metadata");
+    }
+    return {
+      id: asset.id,
+      name: asset.name,
+      kind: asset.kind,
+      mimeType: asset.mimeType,
+      blob,
+      thumbnail,
+      value: null,
+      width: asset.width,
+      height: asset.height,
+      sourceBytes: asset.sourceBytes,
+      storedBytes: asset.storedBytes,
+      createdAt: asset.createdAt,
+      updatedAt: asset.updatedAt,
+    };
+  }));
 }
 
 export async function restoreBackup(
@@ -148,18 +224,23 @@ export async function restoreBackup(
   strategy: "merge" | "replace",
   database: AsterfoldDatabase = db,
 ): Promise<void> {
-  backupSchema.parse(backup);
+  const validated = backupSchema.parse(backup);
+  const wallpaperAssets = await prepareWallpaperAssets(validated);
   await database.transaction("rw", [database.pages, database.boards, database.bookmarks, database.settings, database.wallpapers, database.snapshots], async () => {
     await createSnapshot(`before-${strategy}-restore`, database);
     if (strategy === "replace") {
       await Promise.all([database.bookmarks.clear(), database.boards.clear(), database.pages.clear()]);
+      if (validated.exportVersion === 3) {
+        await database.wallpapers.clear();
+        if (wallpaperAssets.length > 0) await database.wallpapers.bulkPut(wallpaperAssets);
+      }
     }
     const [currentPages, currentBoards, currentBookmarks] = strategy === "merge"
       ? await Promise.all([database.pages.toArray(), database.boards.toArray(), database.bookmarks.toArray()])
       : [[], [], []];
-    let incomingPages = backup.entities.pages as Page[];
-    let incomingBoards = backup.entities.boards as Board[];
-    let incomingBookmarks = backup.entities.bookmarks as Bookmark[];
+    let incomingPages = validated.entities.pages as Page[];
+    let incomingBoards = validated.entities.boards as Board[];
+    let incomingBookmarks = validated.entities.bookmarks as Bookmark[];
     if (strategy === "merge") {
       const pageIds = new Map(incomingPages.map((page) => [page.id, createId()]));
       const boardIds = new Map(incomingBoards.map((board) => [board.id, createId()]));
@@ -184,7 +265,7 @@ export async function restoreBackup(
     await database.pages.bulkPut([...currentPages, ...incomingPages]);
     await database.boards.bulkPut([...currentBoards, ...incomingBoards]);
     await database.bookmarks.bulkPut([...currentBookmarks, ...incomingBookmarks]);
-    if (backup.settings && strategy === "replace") await database.settings.put(backup.settings);
+    if (validated.settings && strategy === "replace") await database.settings.put(validated.settings);
   });
   await ensureStarterWorkspace(database);
 }
