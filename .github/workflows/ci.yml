@@ -28,6 +28,7 @@ jobs:
           set -euo pipefail
           cat .bootstrap/part-* > /tmp/asterfold-2.2.3.patch.gz
           gzip -dc /tmp/asterfold-2.2.3.patch.gz > /tmp/asterfold-2.2.3.patch
+          git checkout origin/main -- .github/workflows/ci.yml
           git apply --index --whitespace=error-all /tmp/asterfold-2.2.3.patch
           rm -rf .bootstrap
           git add -A
