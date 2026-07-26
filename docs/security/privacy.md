@@ -1,8 +1,8 @@
 # Asterfold privacy policy
 
 Effective date: 26 July 2026<br>
-Policy version: 2.2.1<br>
-Applies to: Asterfold 2.2.1 for Chrome
+Policy version: 2.2.2<br>
+Applies to: Asterfold 2.2.2 for Chrome
 
 Asterfold replaces the Chrome new tab with a local-first visual workspace for organizing and opening bookmarks. It processes the information needed for those features on the user's device. It does not claim that no data is processed.
 
@@ -25,7 +25,7 @@ This information may include personal or sensitive content if the user puts such
 
 Workspace records and uploaded assets are stored locally in the user's Chrome profile, primarily in IndexedDB. Search indexes, import previews and safety snapshots are also created locally.
 
-Asterfold 2.2.1 has no application backend, account system or cloud synchronization. The default build has no host permissions and makes no application network requests. Data is not sent to the developer.
+Asterfold 2.2.2 has no application backend, account system or cloud synchronization. The default build has no host permissions and makes no application network requests. Data is not sent to the developer.
 
 Chrome itself may use the network when the user opens a destination page or when Chrome supplies its browser-owned `_favicon` resource for a saved URL. Those browser actions are separate from an application request by Asterfold. Asterfold does not store or render a remote favicon URL.
 
@@ -84,7 +84,7 @@ Privacy Mode is shoulder-surfing protection, not encryption. The underlying loca
 
 ## Children
 
-Asterfold is a general-purpose productivity tool and is not directed specifically to children. It does not knowingly collect information through a developer-operated service because no such service exists in version 2.2.1.
+Asterfold is a general-purpose productivity tool and is not directed specifically to children. It does not knowingly collect information through a developer-operated service because no such service exists in version 2.2.2.
 
 ## Limited Use
 
