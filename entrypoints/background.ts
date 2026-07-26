@@ -12,6 +12,7 @@ const MENU_SAVE_LINK = "asterfold-save-link";
 const MENU_OPEN = "asterfold-open";
 const TRASH_ALARM = "asterfold-trash-cleanup";
 const BADGE_CLEAR_ALARM = "asterfold-badge-clear";
+const BADGE_CLEAR_DELAY_MINUTES = 0.5;
 
 function runTask(task: Promise<unknown>, area: string): void {
   void task.catch(() => console.error(`Asterfold background task failed: ${area}`));
@@ -35,7 +36,7 @@ async function ensureMenus(): Promise<void> {
 async function setBadge(text: string, color: string): Promise<void> {
   await browser.action.setBadgeBackgroundColor({ color });
   await browser.action.setBadgeText({ text });
-  await browser.alarms.create(BADGE_CLEAR_ALARM, { delayInMinutes: 0.05 });
+  await browser.alarms.create(BADGE_CLEAR_ALARM, { delayInMinutes: BADGE_CLEAR_DELAY_MINUTES });
 }
 
 async function saveUrl(url: string, title: string): Promise<ExtensionResponse> {
