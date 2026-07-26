@@ -12,6 +12,7 @@ import {
   duplicatePage,
   moveBoardToIndex,
   moveBookmarkToIndex,
+  movePageToIndex,
   renamePage,
   restoreBoard,
   restoreBookmark,
@@ -255,13 +256,14 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
         onRenamePage={(page) => setNameIntent({ kind: "rename-page", page })}
         onDuplicatePage={(page) => void run(() => duplicatePage(page.id))}
         onDefaultPage={(page) => void run(() => setDefaultPage(page.id))}
+        onMovePage={(page, targetIndex) => void run(() => movePageToIndex(page.id, targetIndex))}
         onDeletePage={deletePage}
         onSearch={() => setSearchOpen(true)}
         onPrivacy={togglePrivacy}
         onTrash={() => setTrashOpen(true)}
         onSettings={() => openSettings("appearance")}
       />
-      {selectedIds.size > 0 ? <div className="bulk-toolbar"><strong>{selectedIds.size}</strong><Button size="small" onClick={() => setMoveIntent({ kind: "bulk" })}>{t("generic.move")}</Button><Button size="small" icon={<Download size={14} />} onClick={exportSelected}>Export</Button><Button size="small" variant="danger" onClick={bulkDelete}>{t("generic.delete")}</Button><IconButton label={t("generic.close")} onClick={() => setSelectedIds(new Set())}><X size={16} /></IconButton></div> : null}
+      {selectedIds.size > 0 ? <div className="bulk-toolbar"><strong>{selectedIds.size}</strong><Button size="small" onClick={() => setMoveIntent({ kind: "bulk" })}>{t("generic.move")}</Button><Button size="small" icon={<Download size={14} />} onClick={exportSelected}>{t("generic.export")}</Button><Button size="small" variant="danger" onClick={bulkDelete}>{t("generic.delete")}</Button><IconButton label={t("generic.close")} onClick={() => setSelectedIds(new Set())}><X size={16} /></IconButton></div> : null}
 
       <Suspense fallback={null}>
         {searchOpen ? <SearchPalette open privacy={privacy} pages={workspace.pages} boards={workspace.boards} bookmarks={workspace.bookmarks} activePageId={activePage.id} onClose={() => setSearchOpen(false)} onOpen={openBookmark} onReveal={revealBookmark} onEdit={(bookmark) => setEditor({ bookmark, boardId: bookmark.boardId })} onMove={(bookmark) => setMoveIntent({ kind: "bookmark", bookmark })} onCopy={copyUrl} onDelete={deleteBookmark} /> : null}

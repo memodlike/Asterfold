@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Copy, FolderPlus, Layers3, Pencil, Search, Settings, Shield, ShieldCheck, Star, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, FolderPlus, Layers3, Pencil, Search, Settings, Shield, ShieldCheck, Star, Trash2 } from "lucide-react";
 import type { Page } from "../domain/models";
 import { FloatingContextMenu, type ContextMenuPoint } from "../components/FloatingContextMenu";
 import { useI18n } from "../i18n";
@@ -14,6 +14,7 @@ interface AppLauncherProps {
   onRenamePage: (page: Page) => void;
   onDuplicatePage: (page: Page) => void;
   onDefaultPage: (page: Page) => void;
+  onMovePage: (page: Page, targetIndex: number) => void;
   onDeletePage: (page: Page) => void;
   onSearch: () => void;
   onPrivacy: () => void;
@@ -105,6 +106,8 @@ export function AppLauncher(props: AppLauncherProps) {
         <button onClick={() => { props.onRenamePage(pageMenu.page); setPageMenu(null); }}><Pencil size={15} />{t("generic.rename")}</button>
         <button onClick={() => { props.onDuplicatePage(pageMenu.page); setPageMenu(null); }}><Copy size={15} />{t("generic.duplicate")}</button>
         <button disabled={pageMenu.page.isDefault} onClick={() => { props.onDefaultPage(pageMenu.page); setPageMenu(null); }}><Star size={15} />{t("settings.defaultPage")}</button>
+        <button disabled={props.pages.findIndex((page) => page.id === pageMenu.page.id) <= 0} onClick={() => { props.onMovePage(pageMenu.page, props.pages.findIndex((page) => page.id === pageMenu.page.id) - 1); setPageMenu(null); }}><ChevronLeft size={15} />{t("generic.moveLeft")}</button>
+        <button disabled={props.pages.findIndex((page) => page.id === pageMenu.page.id) >= props.pages.length - 1} onClick={() => { props.onMovePage(pageMenu.page, props.pages.findIndex((page) => page.id === pageMenu.page.id) + 1); setPageMenu(null); }}><ChevronRight size={15} />{t("generic.moveRight")}</button>
         <button className="danger" onClick={() => { props.onDeletePage(pageMenu.page); setPageMenu(null); }}><Trash2 size={15} />{t("bookmark.moveTrash")}</button>
       </FloatingContextMenu> : null}
     </div>

@@ -53,8 +53,9 @@ async function saveUrl(url: string, title: string): Promise<ExtensionResponse> {
     "default",
   )?.boardId;
   if (!boardId) return { ok: false, code: "BOARD_REQUIRED" };
+  const t = (key: MessageKey): string => translate(workspace.settings.locale, key);
   try {
-    const fallbackTitle = safeUrl.startsWith("mailto:") ? "Email" : new URL(safeUrl).hostname;
+    const fallbackTitle = safeUrl.startsWith("mailto:") ? t("bookmark.email") : new URL(safeUrl).hostname;
     await createBookmark({ boardId, title: title || fallbackTitle, url: safeUrl }, { allowDuplicate: workspace.settings.duplicateStrategy === "allow" });
     await setBadge("✓", "#079455");
     return { ok: true, data: { status: "saved" } };
@@ -72,7 +73,7 @@ async function saveActiveTab(tabId?: number): Promise<ExtensionResponse> {
   const tabs = tabId === undefined ? await browser.tabs.query({ active: true, currentWindow: true }) : [await browser.tabs.get(tabId)];
   const tab = tabs[0];
   if (!tab?.url) return { ok: false, code: "ACTIVE_TAB_UNAVAILABLE" };
-  return saveUrl(tab.url, tab.title ?? "Untitled page");
+  return saveUrl(tab.url, tab.title ?? "");
 }
 
 async function openWorkspace(pageId?: string): Promise<void> {
@@ -156,10 +157,10 @@ export default defineBackground(() => {
   browser.contextMenus.onClicked.addListener((info, tab) => {
     if (info.menuItemId === MENU_OPEN) { runTask(openWorkspace(), "open-workspace-menu"); return; }
     if (info.menuItemId === MENU_SAVE_LINK && info.linkUrl) {
-      let title = info.selectionText?.trim() || "Link";
+      let title = info.selectionText?.trim() || "";
       try {
         const safeUrl = parseSafeNavigationUrl(info.linkUrl, { allowMailto: true });
-        if (!info.selectionText?.trim()) title = safeUrl.startsWith("mailto:") ? "Email" : new URL(safeUrl).hostname;
+        if (!info.selectionText?.trim()) title = safeUrl.startsWith("mailto:") ? "" : new URL(safeUrl).hostname;
       } catch {
         return;
       }
@@ -168,7 +169,7 @@ export default defineBackground(() => {
     }
     if (info.menuItemId === MENU_SAVE_PAGE) {
       const url = tab?.url ?? info.pageUrl;
-      if (url) runTask(saveUrl(url, tab?.title ?? new URL(url).hostname), "save-page-menu");
+      if (url) runTask(saveUrl(url, tab?.title ?? ""), "save-page-menu");
     }
   });
 
