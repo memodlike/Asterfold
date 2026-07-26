@@ -12,6 +12,7 @@ interface TrashDialogProps {
   onClose: () => void;
   onChanged: (message: string) => void;
   onError: (message: string) => void;
+  privacy?: boolean;
 }
 
 export function TrashDialog(props: TrashDialogProps) {
@@ -54,7 +55,7 @@ export function TrashDialog(props: TrashDialogProps) {
             const meta = typeMeta(item.type);
             return <article className="trash-row" key={`${item.type}:${item.id}`}>
               <span className="trash-row__icon" aria-hidden="true">{meta.icon}</span>
-              <div className="trash-row__content"><strong>{item.title}</strong><span>{meta.label}{item.deletedAt ? ` · ${dateTime.format(new Date(item.deletedAt))}` : ""}</span></div>
+              <div className="trash-row__content"><strong>{props.privacy ? t("privacy.hiddenBookmark") : item.title}</strong><span>{meta.label}{item.deletedAt ? ` · ${dateTime.format(new Date(item.deletedAt))}` : ""}</span></div>
               <div className="trash-row__actions"><Button size="small" icon={<ArchiveRestore size={14} />} onClick={() => void restore(item.type, item.id)}>{t("trash.restore")}</Button><Button size="small" variant="ghost" aria-label={t("generic.delete")} icon={<Trash2 size={14} />} onClick={() => void remove(item.type, item.id)} /></div>
             </article>;
           })}</div>

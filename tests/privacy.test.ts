@@ -3,6 +3,7 @@ import { DndContext } from "@dnd-kit/core";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BookmarkCard } from "../src/features/bookmarks/BookmarkCard";
+import { BookmarkEditor } from "../src/features/bookmarks/BookmarkEditor";
 import { I18nProvider } from "../src/i18n";
 import { safeCustomIconUrl } from "../src/domain/icons";
 import type { Bookmark } from "../src/domain/models";
@@ -66,9 +67,30 @@ describe("favicon and privacy contract", () => {
     expect(safeCustomIconUrl(`data:image/png;base64,${"A".repeat(200_000)}`)).toBe("");
   });
 
-  it("does not render remote favicon fields and resets to Chrome favicon", () => {
+  it("does not render legacy remote or custom favicon fields", () => {
+    const customIcon = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Z7S8AAAAASUVORK5CYII=";
     const view = renderCard(false);
     expect(view.container.querySelector('img[src*="tracker.invalid"]')).toBeNull();
+    view.unmount();
+
+    const callback = vi.fn();
+    const customView = render(createElement(I18nProvider, {
+      preference: "en",
+      children: createElement(DndContext, null, createElement(BookmarkCard, {
+        bookmark: { ...bookmark, customIcon },
+        privacy: false,
+        selected: false,
+        onOpen: callback,
+        onEdit: callback,
+        onMove: callback,
+        onDuplicate: callback,
+        onDelete: callback,
+        onCopyUrl: callback,
+        onCopyMarkdown: callback,
+        onSelect: callback,
+      })),
+    }));
+    expect(customView.container.querySelector(`img[src="${customIcon}"]`)).toBeNull();
   });
 
   it("removes the real bookmark title from privacy DOM and context menu", () => {
@@ -82,5 +104,26 @@ describe("favicon and privacy contract", () => {
     expect(view.baseElement.textContent).not.toContain(bookmark.title);
     expect(screen.getByRole("menuitem", { name: "Copy URL" })).toBeDisabled();
     expect(screen.getByRole("menuitem", { name: "Copy Markdown" })).toBeDisabled();
+  });
+
+  it("does not place bookmark fields in the editor DOM while privacy mode is active", () => {
+    const view = render(createElement(I18nProvider, {
+      preference: "en",
+      children: createElement(BookmarkEditor, {
+        open: true,
+        privacy: true,
+        bookmark,
+        initialBoardId: bookmark.boardId,
+        pages: [{ id: "page-private", title: "Private page", deletedAt: null }] as never,
+        boards: [{ id: bookmark.boardId, pageId: "page-private", title: "Private board", deletedAt: null }] as never,
+        onClose: vi.fn(),
+        onSaved: vi.fn(),
+        onError: vi.fn(),
+      }),
+    }));
+    expect(view.baseElement.textContent).not.toContain(bookmark.title);
+    expect(view.baseElement.textContent).not.toContain(bookmark.url);
+    expect(view.baseElement.querySelector(`input[value="${bookmark.title}"]`)).toBeNull();
+    expect(screen.getByText("Search content is protected")).toBeVisible();
   });
 });

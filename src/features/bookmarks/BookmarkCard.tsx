@@ -5,7 +5,6 @@ import { memo, useEffect, useState, type CSSProperties, type KeyboardEvent, type
 import type { Bookmark } from "../../domain/models";
 import { FloatingContextMenu, type ContextMenuPoint } from "../../components/FloatingContextMenu";
 import { faviconUrl } from "../../browser/api";
-import { safeCustomIconUrl } from "../../domain/icons";
 import { useI18n } from "../../i18n";
 
 interface BookmarkCardProps {
@@ -27,7 +26,9 @@ export const BookmarkCard = memo(function BookmarkCard(props: BookmarkCardProps)
   const sortable = useSortable({ id: `bookmark:${props.bookmark.id}`, data: { type: "bookmark", bookmarkId: props.bookmark.id, boardId: props.bookmark.boardId } });
   const [iconFailed, setIconFailed] = useState(false);
   const [menuPoint, setMenuPoint] = useState<ContextMenuPoint | null>(null);
-  const source = safeCustomIconUrl(props.bookmark.customIcon) || faviconUrl(props.bookmark.url, 20);
+  // Legacy customIcon values remain in backups for lossless compatibility, but
+  // are not rendered until they have a bounded decode-and-resize pipeline.
+  const source = faviconUrl(props.bookmark.url, 20);
   const displayTitle = props.privacy ? t("privacy.hiddenBookmark") : props.bookmark.title;
   const openLabel = props.privacy ? t("privacy.openHiddenBookmark") : t("bookmark.open", { name: props.bookmark.title });
   const menuLabel = props.privacy ? t("privacy.hiddenBookmarkActions") : t("bookmark.actions", { name: props.bookmark.title });

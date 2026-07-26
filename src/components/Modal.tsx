@@ -23,6 +23,11 @@ export function Modal({ open, title, description, size = "medium", side = false,
   const descriptionId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const backdropPointerRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return;
@@ -35,7 +40,7 @@ export function Modal({ open, title, description, size = "medium", side = false,
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== "Tab" || !panel) return;
@@ -56,7 +61,7 @@ export function Modal({ open, title, description, size = "medium", side = false,
       document.body.style.overflow = previousOverflow;
       previouslyFocused?.focus();
     };
-  }, [onClose, open]);
+  }, [open]);
 
   if (!open) return null;
   return (

@@ -32,4 +32,14 @@ describe("accessible overlays", () => {
     view.unmount();
     expect(document.body.style.overflow).toBe("");
   });
+
+  it("uses the latest close callback without restarting the modal lifecycle", () => {
+    const firstClose = vi.fn();
+    const secondClose = vi.fn();
+    const view = render(createElement(Modal, { open: true, title: "Dialog", onClose: firstClose, children: createElement("button", null, "Action") }));
+    view.rerender(createElement(Modal, { open: true, title: "Dialog", onClose: secondClose, children: createElement("button", null, "Action") }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(firstClose).not.toHaveBeenCalled();
+    expect(secondClose).toHaveBeenCalledOnce();
+  });
 });

@@ -25,6 +25,7 @@ const ru = {
   "generic.destination": "Назначение",
   "generic.open": "Открыть",
   "generic.undo": "Отменить",
+  "generic.retry": "Повторить",
   "generic.dismiss": "Скрыть уведомление",
   "generic.notifications": "Уведомления",
   "launcher.label": "Открыть меню Asterfold",
@@ -280,6 +281,7 @@ const kk: Record<MessageKey, string> = {
   "generic.destination": "Орналасуы",
   "generic.open": "Ашу",
   "generic.undo": "Болдырмау",
+  "generic.retry": "Қайталау",
   "launcher.label": "Asterfold мәзірін ашу",
   "launcher.newBoard": "Жаңа блок",
   "launcher.pages": "Беттер",
@@ -510,7 +512,7 @@ const kk: Record<MessageKey, string> = {
 
 const en: Record<MessageKey, string> = {
   "tab.title": "New Tab", "loading.opening": "Opening your new tab…", "loading.repairing": "Restoring your workspace…",
-  "generic.close": "Close", "generic.cancel": "Cancel", "generic.save": "Save", "generic.create": "Create", "generic.move": "Move", "generic.delete": "Delete", "generic.rename": "Rename", "generic.duplicate": "Duplicate", "generic.settings": "Settings", "generic.search": "Search", "generic.trash": "Trash", "generic.page": "Page", "generic.board": "Board", "generic.bookmark": "Bookmark", "generic.title": "Title", "generic.description": "Description", "generic.destination": "Destination", "generic.open": "Open", "generic.undo": "Undo", "generic.dismiss": "Dismiss notification", "generic.notifications": "Notifications",
+  "generic.close": "Close", "generic.cancel": "Cancel", "generic.save": "Save", "generic.create": "Create", "generic.move": "Move", "generic.delete": "Delete", "generic.rename": "Rename", "generic.duplicate": "Duplicate", "generic.settings": "Settings", "generic.search": "Search", "generic.trash": "Trash", "generic.page": "Page", "generic.board": "Board", "generic.bookmark": "Bookmark", "generic.title": "Title", "generic.description": "Description", "generic.destination": "Destination", "generic.open": "Open", "generic.undo": "Undo", "generic.retry": "Retry", "generic.dismiss": "Dismiss notification", "generic.notifications": "Notifications",
   "launcher.label": "Open Asterfold menu", "launcher.newBoard": "New board", "launcher.pages": "Pages", "launcher.privacyOn": "Turn privacy off", "launcher.privacyOff": "Turn privacy on", "launcher.settings": "Settings", "launcher.pageCurrent": "Current page", "context.savePage": "Save page to Asterfold", "context.saveLink": "Save link to Asterfold", "context.openWorkspace": "Open Asterfold workspace",
   "board.add": "Add a bookmark to {name}", "board.actions": "Actions for {name}", "board.columns": "Bookmark columns", "board.columnsAuto": "Automatic", "board.columnsOne": "One column", "board.columnsTwo": "Two columns", "board.size": "Board size", "board.sizeSmall": "Compact", "board.sizeMedium": "Medium", "board.sizeLarge": "Wide", "board.movePage": "Move to page", "board.empty": "Drop a link here or press +", "board.createFirst": "Create your first board", "board.createFirstDescription": "Group bookmarks by project and context.",
   "bookmark.open": "Open {name}", "bookmark.actions": "Actions for {name}", "bookmark.edit": "Edit", "bookmark.copyUrl": "Copy URL", "bookmark.copyMarkdown": "Copy Markdown", "bookmark.moveTrash": "Move to trash", "bookmark.add": "Add bookmark", "bookmark.editTitle": "Edit bookmark", "bookmark.addDescription": "Save a link directly to the selected board.", "bookmark.editDescription": "Update the link and its destination.", "bookmark.untitled": "Untitled bookmark", "bookmark.url": "URL", "bookmark.urlPlaceholder": "https://example.com", "bookmark.optionalNote": "Optional note", "bookmark.openMode": "Open in", "bookmark.currentTab": "Current tab", "bookmark.newTab": "New tab", "bookmark.newWindow": "New window", "bookmark.incognito": "Incognito window", "bookmark.pin": "Pin bookmark", "bookmark.duplicateWarning": "This link is already saved in this board", "bookmark.saveCopy": "Save another copy", "bookmark.copyWillSave": "A copy will be saved", "bookmark.saved": "Bookmark saved locally",

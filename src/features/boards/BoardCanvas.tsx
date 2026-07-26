@@ -186,7 +186,7 @@ export function BoardCanvas(props: BoardCanvasProps) {
         </SortableContext>
         {createPortal(
           <DragOverlay dropAnimation={null}>
-            {active ? <div className={`drag-overlay drag-overlay--${active.type}`}><span>{active.title}</span></div> : null}
+            {active ? <div className={`drag-overlay drag-overlay--${active.type}`}><span>{props.privacy && active.type === "bookmark" ? t("privacy.hiddenBookmark") : active.title}</span></div> : null}
           </DragOverlay>,
           document.body,
         )}

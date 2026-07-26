@@ -118,5 +118,7 @@ describe("themes and runtime messages", () => {
     expect(parseExtensionMessage({ type: "QUICK_SAVE", tabId: Number.MAX_SAFE_INTEGER + 1 })).toBeNull();
     expect(parseExtensionMessage({ type: "OPEN_WORKSPACE", pageId: "" })).toBeNull();
     expect(parseExtensionMessage({ type: "INSTANT_SAVE", url: "https://example.com", title: "x".repeat(241) })).toBeNull();
+    expect(parseExtensionMessage({ type: "SET_BADGE", status: "saved" })).toEqual({ type: "SET_BADGE", status: "saved" });
+    expect(parseExtensionMessage({ type: "SET_BADGE", status: "unknown" })).toBeNull();
   });
 });

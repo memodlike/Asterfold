@@ -39,6 +39,10 @@ export function SearchPalette(props: SearchPaletteProps) {
     }
   }, [props.open]);
 
+  useEffect(() => {
+    setActiveIndex((current) => results.length === 0 ? 0 : Math.min(current, results.length - 1));
+  }, [results.length]);
+
   const close = (): void => {
     props.onClose();
   };
@@ -55,8 +59,8 @@ export function SearchPalette(props: SearchPaletteProps) {
   return (
     <Modal open={props.open} size="large" className="modal--search" title={t("search.title")} description={t("search.placeholder")} onClose={close}>
       <div className="search-palette" onKeyDown={(event) => {
-        if (event.key === "ArrowDown") { event.preventDefault(); setActiveIndex((current) => Math.min(results.length - 1, current + 1)); }
-        if (event.key === "ArrowUp") { event.preventDefault(); setActiveIndex((current) => Math.max(0, current - 1)); }
+        if (event.key === "ArrowDown" && results.length > 0) { event.preventDefault(); setActiveIndex((current) => Math.min(results.length - 1, current + 1)); }
+        if (event.key === "ArrowUp" && results.length > 0) { event.preventDefault(); setActiveIndex((current) => Math.max(0, current - 1)); }
         if (event.key === "Enter" && !event.nativeEvent.isComposing) { event.preventDefault(); activate(); }
       }}>
         <div className="search-palette__input"><Search size={20} /><input ref={inputRef} disabled={props.privacy} value={props.privacy ? t("search.protected") : query} onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }} placeholder={t("search.placeholder")} /><kbd>⌘ K</kbd></div>
