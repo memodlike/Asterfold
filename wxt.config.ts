@@ -1,4 +1,5 @@
 import { defineConfig } from "wxt";
+import { version as packageVersion } from "./package.json";
 
 export default defineConfig({
   modules: ["@wxt-dev/module-react"],
@@ -8,9 +9,9 @@ export default defineConfig({
     name: "Asterfold",
     short_name: "Asterfold",
     description: "A private, local-first visual bookmark workspace.",
-    version: "2.2.0",
+    version: packageVersion,
     minimum_chrome_version: "120",
-    permissions: ["storage", "activeTab", "favicon", "alarms", "contextMenus"],
+    permissions: ["activeTab", "favicon", "alarms", "contextMenus"],
     optional_permissions: ["bookmarks"],
     host_permissions: [],
     action: {

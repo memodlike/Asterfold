@@ -96,13 +96,13 @@ async function validateUnpacked() {
   if (manifest.version !== packageJson.version) throw new Error("Package and manifest versions differ");
   if (manifest.chrome_url_overrides?.newtab !== "newtab.html") throw new Error("New-tab override is missing");
   if (manifest.action?.default_popup !== "popup.html") throw new Error("Popup entrypoint is missing");
-  const allowedPermissions = new Set(["storage", "activeTab", "favicon", "alarms", "contextMenus"]);
-  const allowedOptionalPermissions = new Set(["bookmarks"]);
-  for (const permission of manifest.permissions ?? []) if (!allowedPermissions.has(permission)) throw new Error(`Unexpected release permission: ${permission}`);
-  for (const permission of manifest.optional_permissions ?? []) if (!allowedOptionalPermissions.has(permission)) throw new Error(`Unexpected optional permission: ${permission}`);
-  for (const origin of manifest.host_permissions ?? []) {
-    if (!/^https:\/\/[^*]+\/\*$/u.test(origin)) throw new Error(`Non-exact HTTPS host permission: ${origin}`);
-  }
+  const expectedPermissions = ["activeTab", "favicon", "alarms", "contextMenus"];
+  const expectedOptionalPermissions = ["bookmarks"];
+  const sameSet = (actual, expected) => actual.length === expected.length && expected.every((permission) => actual.includes(permission));
+  if (!sameSet(manifest.permissions ?? [], expectedPermissions)) throw new Error("Release permissions differ from the least-privilege policy");
+  if (!sameSet(manifest.optional_permissions ?? [], expectedOptionalPermissions)) throw new Error("Release optional permissions differ from policy");
+  if ((manifest.host_permissions ?? []).length !== 0) throw new Error("Release must not request host permissions");
+  if (manifest.content_scripts !== undefined) throw new Error("Release must not contain content scripts");
   if (manifest.content_security_policy?.extension_pages !== "script-src 'self'; object-src 'self'; base-uri 'self'") throw new Error("Unexpected extension CSP");
   for (const size of [16, 32, 48, 128]) {
     const icon = await readFile(join(unpacked, `icons/icon-${size}.png`));

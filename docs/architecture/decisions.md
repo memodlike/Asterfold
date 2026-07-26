@@ -20,7 +20,7 @@
 
 **Context:** Records must survive reload/restart, support transactions/Blob data, and remain local-first.  
 **Options:** React-only state; `localStorage`; Chrome storage; IndexedDB through Dexie.  
-**Decision:** Dexie/IndexedDB is the record source of truth; React derives UI through narrow live queries. Chrome storage is reserved for optional auth.  
+**Decision:** Dexie/IndexedDB is the record source of truth; React derives UI through narrow live queries. The production extension does not use the Chrome Storage API.
 **Consequences:** Local writes complete before success feedback; popup and new tab share one extension database.  
 **Security/privacy:** No entity is mirrored into webpage-accessible storage.  
 **Validation:** CRUD, persistence, popup sharing, and repository tests.
@@ -78,7 +78,7 @@
 
 **Context:** Quick Save and import must work without browsing-history or page-content access.  
 **Options:** broad tabs/host permissions; narrow event-scoped access.  
-**Decision:** Required `activeTab`, `alarms`, `contextMenus`, `favicon`, `storage`; optional `bookmarks`; no `identity`, wildcard hosts or content scripts.
+**Decision:** Required `activeTab`, `alarms`, `contextMenus`, `favicon`; optional `bookmarks`; no `storage`, `identity`, wildcard hosts or content scripts.
 **Security/privacy:** Reduces compromise impact and install warnings.  
 **References:** Chrome action, activeTab, permissions, favicon, commands, and contextMenus documentation.  
 **Validation:** manifest E2E and release permission scanner.

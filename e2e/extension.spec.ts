@@ -139,8 +139,8 @@ test.describe.serial("Asterfold MV3 release", () => {
     expect(probe.manifest.manifest_version).toBe(3);
     expect(probe.manifest.chrome_url_overrides?.newtab).toBe("newtab.html");
     expect(probe.manifest.action?.default_popup).toBe("popup.html");
-    expect(probe.manifest.permissions).toEqual(expect.arrayContaining(["activeTab", "alarms", "contextMenus", "favicon", "storage"]));
-    expect(probe.manifest.permissions).not.toEqual(expect.arrayContaining(["tabs", "history", "scripting", "webRequest"]));
+    expect(new Set(probe.manifest.permissions)).toEqual(new Set(["activeTab", "alarms", "contextMenus", "favicon"]));
+    expect(probe.manifest.permissions).not.toEqual(expect.arrayContaining(["storage", "tabs", "history", "scripting", "webRequest"]));
     expect(probe.manifest.host_permissions ?? []).toEqual([]);
   });
 
