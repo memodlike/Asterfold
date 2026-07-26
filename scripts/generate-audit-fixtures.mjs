@@ -288,13 +288,15 @@ function stripUndefined(value) {
 
 function goldenBackup(exportVersion) {
   const isV1 = exportVersion === 1;
-  const backupBoards = [board()];
-  const backupSettings = fullSettings(isV1 ? 3 : 5, {
+  let backupBoards = [board()];
+  let backupSettings = fullSettings(isV1 ? 3 : 5, {
     theme: isV1 ? frostThemeV2 : fullTheme,
   });
   if (isV1) {
-    for (const key of ["locale", "workspaceLayoutMode", "workspaceRows", "workspaceAlignment"]) delete backupSettings[key];
-    for (const key of ["bookmarkColumns", "gridColumn", "gridRow", "gridSpan"]) delete backupBoards[0][key];
+    const modernSettingsKeys = new Set(["locale", "workspaceLayoutMode", "workspaceRows", "workspaceAlignment"]);
+    const modernBoardKeys = new Set(["bookmarkColumns", "gridColumn", "gridRow", "gridSpan"]);
+    backupSettings = Object.fromEntries(Object.entries(backupSettings).filter(([key]) => !modernSettingsKeys.has(key)));
+    backupBoards = [Object.fromEntries(Object.entries(backupBoards[0]).filter(([key]) => !modernBoardKeys.has(key)))];
   }
   return stripUndefined({
     schemaVersion: exportVersion,

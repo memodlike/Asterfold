@@ -1,9 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
-import { inspectWallpaperSource, processWallpaper } from "../src/services/wallpaper";
+import { inspectWallpaperSource, processWallpaper, sniffWallpaperMime } from "../src/services/wallpaper";
 
 const pngHeader = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 describe("wallpaper pipeline", () => {
+  it("recognizes every supported raster signature and rejects unknown bytes", () => {
+    expect(sniffWallpaperMime(pngHeader)).toBe("image/png");
+    expect(sniffWallpaperMime(new Uint8Array([0xff, 0xd8, 0xff]))).toBe("image/jpeg");
+    expect(sniffWallpaperMime(new TextEncoder().encode("RIFF0000WEBP"))).toBe("image/webp");
+    expect(sniffWallpaperMime(new TextEncoder().encode("0000ftypavif"))).toBe("image/avif");
+    expect(sniffWallpaperMime(new Uint8Array([1, 2, 3, 4]))).toBeNull();
+  });
+
+  it("rejects empty sources before decoding", async () => {
+    await expect(inspectWallpaperSource(new Blob([], { type: "image/png" }))).rejects.toThrow(/between 1 byte/iu);
+  });
+
   it("rejects MIME spoofing before decode", async () => {
     const spoofed = new Blob([pngHeader], { type: "image/jpeg" });
     await expect(inspectWallpaperSource(spoofed)).rejects.toThrow(/does not match/iu);

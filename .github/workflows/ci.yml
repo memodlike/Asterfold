@@ -32,7 +32,7 @@ jobs:
         run: npm audit --json
       - run: npm run typecheck
       - run: npm run lint
-      - run: npm test
+      - run: npm run test:coverage
       - name: Chrome Web Store asset validation
         run: node scripts/validate-store-assets.mjs
       - run: npm run release:repro

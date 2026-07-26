@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { db } from "../../db/database";
-import type { ThemeConfig, Wallpaper } from "../../domain/models";
+import type { ThemeConfig } from "../../domain/models";
 import { themeStyle } from "./themeRuntime";
 
 export function useThemeRuntime(theme: ThemeConfig | undefined) {
-  const [wallpaper, setWallpaper] = useState<Wallpaper>();
   const [wallpaperUrl, setWallpaperUrl] = useState<string | null>(null);
   const [systemDark, setSystemDark] = useState(() => matchMedia("(prefers-color-scheme: dark)").matches);
 
@@ -19,14 +18,12 @@ export function useThemeRuntime(theme: ThemeConfig | undefined) {
     let active = true;
     let objectUrl: string | null = null;
     if (!theme?.wallpaperId || theme.wallpaperId.startsWith("builtin-")) {
-      setWallpaper(undefined);
       setWallpaperUrl(null);
       return;
     }
     void db.wallpapers.get(theme.wallpaperId)
       .then((record) => {
         if (!active) return;
-        setWallpaper(record);
         if (record?.blob) {
           objectUrl = URL.createObjectURL(record.blob);
           setWallpaperUrl(objectUrl);
@@ -36,7 +33,6 @@ export function useThemeRuntime(theme: ThemeConfig | undefined) {
       })
       .catch(() => {
         if (!active) return;
-        setWallpaper(undefined);
         setWallpaperUrl(null);
       });
     return () => {
@@ -53,8 +49,8 @@ export function useThemeRuntime(theme: ThemeConfig | undefined) {
   }, [systemDark, theme]);
 
   const style = useMemo(
-    () => theme ? themeStyle(theme, wallpaper, wallpaperUrl, theme.mode === "dark" || (theme.mode === "system" && systemDark)) : undefined,
-    [systemDark, theme, wallpaper, wallpaperUrl],
+    () => theme ? themeStyle(theme, wallpaperUrl, theme.mode === "dark" || (theme.mode === "system" && systemDark)) : undefined,
+    [systemDark, theme, wallpaperUrl],
   );
 
   useEffect(() => {
