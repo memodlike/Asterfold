@@ -282,6 +282,8 @@ test.describe.serial("Asterfold MV3 release", () => {
     }
     expect(externalRequests).toEqual([]);
     await setWorkspaceLocale(page, "en");
+    await page.reload();
+    await expect(page).toHaveTitle("New Tab");
     await page.close();
   });
 
@@ -396,6 +398,9 @@ test.describe.serial("Asterfold MV3 release", () => {
     page.on("pageerror", (error) => runtimeErrors.push(`newtab: ${error.message}`));
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/newtab.html`);
+    await expect(page.locator(".app-shell")).toBeVisible();
+    await setWorkspaceLocale(page, "en");
+    await page.reload();
     await expect(page).toHaveTitle("New Tab");
     await expect(page.locator('link[rel="icon"]')).toHaveAttribute("href", "/icons/new-tab.svg");
     await setWorkspaceLocale(page, "ru");
