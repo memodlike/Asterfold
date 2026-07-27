@@ -1,239 +1,206 @@
 <div align="center">
   <img src="public/icons/mark.svg" width="72" alt="Asterfold" />
   <h1>Asterfold</h1>
-  <p><strong>Новая вкладка Chrome, в которой все важные сайты уже разложены по местам.</strong></p>
-  <p>Локально · Без регистрации · 12 выбираемых языков · Manifest V3</p>
+  <p><strong>A local-first visual bookmark workspace for the Chrome New Tab page.</strong></p>
+  <p>No account · No analytics · 12 selectable interface languages · Manifest V3</p>
 </div>
 
-![Главный экран Asterfold](docs/images/workspace.png)
+![Asterfold workspace](docs/images/workspace.png)
 
 <p align="center">
-  <strong>Открыл новую вкладку → увидел нужный блок → нажал на сайт.</strong><br />
-  Никаких длинных меню, лишних панелей и поиска закладок по всему Chrome.
+  <strong>Open a new tab, find the right board, and launch the site you need.</strong><br />
+  No crowded browser menus, permanent toolbars, or cloud account required.
 </p>
 
-## Быстрый обзор
+## Overview
 
-| Что вы хотите сделать | Что нажать |
-|---|---|
-| Открыть сохранённый сайт | Нажать на его название |
-| Добавить ссылку | Навести на блок и нажать `+` |
-| Создать новую группу | Знак Asterfold → **Новый блок** |
-| Найти сайт | Знак Asterfold → **Поиск** или `Ctrl/Cmd + K` |
-| Изменить внешний вид | Знак Asterfold → **Настройки** |
-| Вернуть удалённое | Знак Asterfold → **Корзина** |
+Asterfold replaces the Chrome New Tab page with a structured bookmark workspace:
 
-## Что это такое — совсем просто
-
-Представьте школьный стол:
-
-- **страница** — это отдельный стол, например «Учёба» или «Работа»;
-- **блок** — это коробка на столе, например «Математика» или «Дизайн»;
-- **закладка** — это ссылка внутри коробки.
-
-Вы открываете новую вкладку — и сразу видите все нужные сайты. Не нужно искать их в длинном меню Chrome.
+- **Pages** separate work, study, personal, or project contexts.
+- **Boards** group related bookmarks inside each Page.
+- **Bookmarks** open in the current tab, a new tab, or a new window.
 
 ```text
-Страница «Работа»
-├── Блок «Проекты»
+Page: Work
+├── Board: Projects
 │   ├── Notion
 │   ├── Linear
 │   └── GitHub
-└── Блок «Дизайн»
+└── Board: Design
     ├── Figma
     └── Mobbin
 ```
 
-## Как продукт работает
+## Main features
 
-1. Откройте новую вкладку Chrome.
-2. Нажмите маленький знак Asterfold в левом нижнем углу.
-3. Создайте блок и добавьте в него ссылки.
+| Feature | What it does |
+|---|---|
+| Pages and Boards | Organizes bookmarks by context and topic |
+| Drag and drop | Reorders Boards and Bookmarks visually |
+| Quick Save | Saves the active tab from the extension popup |
+| Search | Finds bookmarks by title or URL with `Ctrl/Cmd + K` |
+| Privacy Mode | Temporarily hides bookmark titles and URLs in New Tab and popup |
+| Trash | Restores accidentally deleted Pages, Boards, and Bookmarks |
+| Import and export | Supports Asterfold JSON backups, Netscape HTML, and optional Chrome bookmark import |
+| 12 interface languages | Full English, Russian, and Kazakh coverage with safe English fallback for rare strings |
+| Light and dark themes | Follows the system theme or uses a selected mode |
+| Wallpaper controls | Adjusts background, surface opacity, blur, dimming, and saturation |
+| Low Power Mode | Reduces visual effects for lower-end devices |
 
-Дальше можно перетаскивать блоки и закладки мышкой, искать нужный сайт и создавать отдельные страницы под разные задачи.
+All primary data is stored locally in the Chrome profile through IndexedDB.
 
-### Карта продукта
+## Product flow
 
 ```mermaid
 flowchart LR
-    Chrome["Новая вкладка Chrome"] --> Page["Страница<br/>Работа / Учёба / Личное"]
-    Page --> Board1["Блок<br/>Проекты"]
-    Page --> Board2["Блок<br/>Дизайн"]
-    Page --> Board3["Блок<br/>Документы"]
-    Board1 --> Link1["Закладка<br/>Notion"]
-    Board1 --> Link2["Закладка<br/>Linear"]
-    Board2 --> Link3["Закладка<br/>Figma"]
-    Board3 --> Link4["Закладка<br/>Google Docs"]
+    Chrome["Chrome New Tab"] --> Page["Page<br/>Work / Study / Personal"]
+    Page --> Board1["Board<br/>Projects"]
+    Page --> Board2["Board<br/>Design"]
+    Page --> Board3["Board<br/>Documents"]
+    Board1 --> Link1["Bookmark<br/>Notion"]
+    Board1 --> Link2["Bookmark<br/>Linear"]
+    Board2 --> Link3["Bookmark<br/>Figma"]
+    Board3 --> Link4["Bookmark<br/>Google Docs"]
 ```
 
-### Пользовательский путь в BPMN 2.0
+The editable BPMN 2.0 user-flow model is available at [docs/diagrams/asterfold-user-flow.bpmn](docs/diagrams/asterfold-user-flow.bpmn).
 
-![BPMN 2.0: как пользователь работает с Asterfold](docs/diagrams/asterfold-user-flow.svg)
+## Interface
 
-Полную редактируемую схему можно открыть в любом BPMN 2.0 редакторе: [asterfold-user-flow.bpmn](docs/diagrams/asterfold-user-flow.bpmn).
+Asterfold keeps the workspace visually quiet. The only permanent control is the Asterfold launcher in the lower-left corner.
 
-## Что умеет Asterfold
+The launcher provides access to:
 
-| Возможность | Простое объяснение |
-|---|---|
-| Страницы | Разделяют работу, учёбу и личные ссылки |
-| Блоки | Собирают похожие закладки в одну группу |
-| Drag-and-drop | Блоки и ссылки можно переставлять мышкой |
-| Quick Save | Быстро сохраняет текущий сайт через popup расширения |
-| Поиск | Находит ссылку по названию или адресу |
-| Privacy Mode | Временно скрывает названия закладок |
-| Корзина | Позволяет вернуть случайно удалённые данные |
-| Импорт и экспорт | Создаёт резервную копию и переносит закладки |
-| 12 языков интерфейса | Автоопределение языка Chrome и ручной выбор; RU/KK/EN полные, редкие строки остальных языков безопасно используют English |
-| Светлая и тёмная тема | Может следовать теме системы автоматически |
-| Обои и стекло | Можно выбрать фон, прозрачность и размытие |
+- new Board creation;
+- Page management;
+- search;
+- Privacy Mode;
+- Trash;
+- settings.
 
-Все данные хранятся **локально на компьютере** в IndexedDB. Для основной работы не нужны регистрация, облако, API-ключ или аналитика.
+![Asterfold settings](docs/images/settings.png)
 
-## Интерфейс
-
-На экране нет постоянной панели, верхнего меню и лишних кнопок. Единственный постоянный элемент — полупрозрачный знак Asterfold снизу слева.
-
-При нажатии он открывает меню:
-
-- новый блок;
-- страницы;
-- поиск;
-- приватность;
-- корзина;
-- настройки.
-
-![Настройки Asterfold](docs/images/settings.png)
-
-В настройках пять понятных разделов: внешний вид, компоновка, язык, Quick Save, данные и приватность.
-
-### Как выглядит при 100 закладках
+### Scale validation
 
 | 1280 × 720 | 1920 × 1080 |
 |---|---|
-| ![100 закладок на экране 1280 на 720](docs/images/scale-1280x720.png) | ![100 закладок на экране 1920 на 1080](docs/images/scale-1920x1080.png) |
+| ![100 bookmarks at 1280 by 720](docs/images/scale-1280x720.png) | ![100 bookmarks at 1920 by 1080](docs/images/scale-1920x1080.png) |
 
-## Как установить готовое расширение
+The release E2E suite validates 100 bookmarks across four Boards without desktop-page scrolling at 1280×720, 1672×941, and 1920×1080.
 
-1. Скачайте репозиторий и распакуйте его.
-2. Откройте в Chrome адрес `chrome://extensions`.
-3. Включите **Режим разработчика**.
-4. Нажмите **Загрузить распакованное расширение**.
-5. Выберите папку `release/chrome-unpacked`.
-6. Откройте новую вкладку.
+## Privacy and security
 
-Подробная инструкция находится в [docs/release/install.md](docs/release/install.md).
+Asterfold is designed around local storage and least-privilege extension access.
 
-## Как пользоваться
+- No account is required.
+- No analytics or advertising SDK is included.
+- No host permissions are requested.
+- No content scripts are injected into websites.
+- No browsing history permission is requested.
+- No remote executable code is loaded.
+- Backup files are created only after an explicit user action.
+- Chrome bookmark access is optional and requested only from the explicit import action.
 
-### Добавить блок
+### Required permissions
 
-Откройте меню Asterfold → **Новый блок** → введите название.
+| Permission | Purpose |
+|---|---|
+| `activeTab` | Reads the active tab only after the user opens Quick Save |
+| `favicon` | Displays Chrome-provided favicons without broad website access |
+| `alarms` | Runs local maintenance and reminder tasks |
+| `contextMenus` | Adds explicit Asterfold browser actions |
+| `storage` | Stores only the transient cross-context Privacy Mode flag in `chrome.storage.session` |
 
-### Добавить закладку
+### Optional permission
 
-Наведите указатель на заголовок блока → нажмите появившийся `+` → укажите название и URL.
+| Permission | Purpose |
+|---|---|
+| `bookmarks` | Imports Chrome bookmarks after direct user approval |
 
-### Переставить элементы
+Detailed review material:
 
-Перетащите блок или закладку в новое место. Для клавиатуры блоки переставляются через `Alt + ←/→`.
+- [Privacy policy](docs/security/privacy.md)
+- [Static privacy-policy page](docs/store/privacy.html)
+- [Permission rationale](docs/security/permissions.md)
+- [Chrome Web Store privacy-practice answers](docs/store/privacy-practices.md)
+- [Chrome Web Store submission checklist](docs/store/submission-checklist.md)
 
-### Открыть действия
+## Install the unpacked build
 
-Нажмите правой кнопкой на блок или закладку. С клавиатуры используйте `Shift + F10`.
+1. Download and extract the latest GitHub Release.
+2. Open `chrome://extensions` in Chrome.
+3. Enable **Developer mode**.
+4. Select **Load unpacked**.
+5. Choose the extracted `chrome-unpacked` folder containing `manifest.json`.
+6. Open a new tab.
 
-### Найти ссылку
+For normal installation, use the latest **`Asterfold-Chrome.zip`** release asset. Do not use GitHub's automatically generated source archive as an extension package.
 
-Откройте меню → **Поиск** или нажмите `Ctrl/Cmd + K`.
+See [docs/release/install.md](docs/release/install.md) for the full installation guide.
 
-## Вместимость и производительность
+## Development
 
-- Проверено 100 закладок в четырёх блоках.
-- На десктопных экранах 1280×720, 1672×941 и 1920×1080 они помещаются без внутренней прокрутки.
-- В Balanced размытие применяется один раз к workspace; блоки и строки не создают отдельные GPU blur-слои.
-- Тяжёлые окна поиска, настроек, корзины и редактора загружаются только при открытии.
-- Никакого отдельного animation runtime: используются CSS, Web Animations API и существующий `dnd-kit`.
+### Requirements
 
-## Безопасность данных
+- Node.js 22 or newer
+- npm
+- Chromium or Google Chrome for real-extension E2E tests
 
-- Основное хранилище — IndexedDB в профиле Chrome.
-- Backup v3 экспортируется в JSON и включает активные пользовательские обои.
-- Старые backup v1/v2 продолжают импортироваться.
-- Удалённые элементы сначала попадают в корзину.
-- Расширение не запрашивает доступ к истории, содержимому сайтов или всем вкладкам.
-
-Резервную копию всё равно стоит периодически сохранять через **Настройки → Данные и приватность**.
-
-Подробности:
-
-- [политика конфиденциальности](docs/security/privacy.md);
-- [статическая HTML-версия политики](docs/store/privacy.html);
-- [обоснование разрешений](docs/security/permissions.md);
-- [ответы Privacy Practices для Chrome Web Store](docs/store/privacy-practices.md);
-- [чек-лист ручной отправки в Chrome Web Store](docs/store/submission-checklist.md).
-
-Наличие подготовленного Store-пакета не означает, что расширение уже прошло модерацию или опубликовано в Chrome Web Store.
-
-### Куда идут данные
-
-```mermaid
-flowchart TD
-    User["Пользователь"] --> UI["Asterfold в новой вкладке"]
-    UI --> DB[("IndexedDB<br/>профиль Chrome")]
-    DB --> Backup["Резервная копия JSON"]
-    Backup --> Restore["Восстановление на этом<br/>или другом компьютере"]
-    Cloud["Обязательное облако"] -. "не используется" .-> DB
-```
-
-## Для разработчиков
-
-Технологии: React 19, TypeScript, WXT, Dexie/IndexedDB, dnd-kit, MiniSearch и Vitest.
+### Validate the project
 
 ```bash
 npm ci
 npm run typecheck
 npm run lint
-npm test
+npm run test:coverage
 npm run build
 npm run test:e2e
-npm run release
+npm run release:repro
 ```
 
-Готовая Manifest V3 сборка появляется в `release/chrome-unpacked`.
+The project uses React 19, TypeScript, WXT, Dexie/IndexedDB, dnd-kit, MiniSearch, Vitest, Playwright, and Axe.
 
-### Структура проекта
+### Project structure
 
 ```text
-entrypoints/          страницы расширения: new tab, popup, background
-src/app/              главный экран и меню Asterfold
-src/features/         блоки, закладки, поиск, настройки и корзина
-src/db/               IndexedDB, миграции и операции с данными
-src/i18n/             тексты интерфейса и языковой выбор
-tests/                unit и integration тесты
-e2e/                  проверка настоящей MV3 сборки в Chromium
-docs/                 документация, схемы и проверенные скриншоты
-store-assets/         отдельные материалы листинга Chrome Web Store
+entrypoints/          New Tab, popup, and service-worker entrypoints
+src/app/              Workspace shell and launcher
+src/features/         Boards, Bookmarks, search, settings, and Trash
+src/db/               IndexedDB schema, migrations, and transactions
+src/i18n/             Interface dictionaries and locale selection
+tests/                Unit and integration tests
+e2e/                  Real unpacked-MV3 Playwright tests
+docs/                 Architecture, security, release, and review documentation
+store-assets/         Chrome Web Store screenshots and promotional assets
 ```
 
-Для изменений в коде есть [краткое руководство разработчика](docs/development/CONTRIBUTING.md).
+Contribution guidance is available in [docs/development/CONTRIBUTING.md](docs/development/CONTRIBUTING.md).
 
-## Статус проекта
+## Release artifacts
 
-Asterfold 2.2.3 — local-first Manifest V3 расширение, подготовленное к отправке на проверку Chrome Web Store. Оно не требует аккаунта, сохраняет данные и `openMode` при миграциях, а default build не содержит cloud-клиента.
+A reproducible release contains:
 
-## История версий
+- `Asterfold-Chrome.zip` — upload/install package with `manifest.json` at the ZIP root;
+- `chrome-unpacked.zip` — unpacked folder wrapper;
+- `extension-source.zip` — reviewable source snapshot;
+- `Asterfold-Store-Assets.zip` — listing, screenshots, promo images, and review documentation;
+- `checksums.txt` — SHA-256 checksums for all release archives.
 
-На странице [Releases](https://github.com/memodlike/Asterfold/releases) GitHub всегда показывает свежую версию первой. Если прокрутить ниже, будут предыдущие версии. Для обычной установки скачивайте только самый верхний файл **`Asterfold-Chrome.zip`**.
+The release pipeline verifies Manifest V3 structure, permission policy, CSP, forbidden files, remote-code patterns, Store asset dimensions, Windows packaging, CodeQL, accessibility, and real unpacked-extension behavior.
 
-1. **v2.2.3 — финальная готовность Chrome Web Store.** Исправлены popup destination, session Privacy Mode, scoped Replace, импортные лимиты и round-trip, atomic free-grid, settings races и release gates.
-2. **v2.2.2 — финальное укрепление данных и приватности.** Исправлены выборочный backup, merge удалённых данных, Quick Save, атомарные перемещения и Undo, скрытие приватных данных, обработка обоев, Page actions и устойчивость фоновых задач.
-3. **v2.2.1 — готовность к отправке в Chrome Web Store.** Удалено неиспользуемое разрешение `storage`, backup v3 сохраняет активные пользовательские обои, обновлены privacy-документы и добавлен проверяемый Store-пакет.
-4. **v2.2.0 — hardening данных, безопасности и выпуска.** Централизована безопасная навигация, усилены миграции/backup/import/order, добавлены Low Power и a11y gates, cloud исключён из default build, архивы воспроизводимы.
-5. **v2.1.3 — единый языковой слой.** Ошибки, уведомления, импорт, Quick Save, подсказки и подписи доступности проходят через общий словарь.
-6. **v2.1.2 — Search и Trash.** Поиск и корзина получили единый стеклянный дизайн.
-7. **v2.1.1 — контраст и вкладка Chrome.** Контекстное меню открывается поверх интерфейса, favicon стал нейтральным.
-8. **v2.1.0 — языки и переходы.** Добавлены европейские языки и текущая вкладка как стандартный режим.
-9. **v2.0.3 — меню и ручная производительность.** Исправлены края меню и ручные настройки эффектов.
-10. **v2.0.2 — лёгкий режим.** Добавлен режим для слабых ПК.
-11. **v2.0.1 — правильная установка в Chrome.** `manifest.json` находится в корне установочного архива.
-12. **v2.0.0 — большой редизайн.** Новая вкладка Pages → Boards → Bookmarks.
+## Current status
+
+**Asterfold 2.2.3** is a local-first Manifest V3 release prepared for Chrome Web Store submission.
+
+The repository does not claim Chrome Web Store publication, approval, user counts, ratings, awards, or endorsements until those facts exist publicly.
+
+## Version history
+
+1. **v2.2.3 — Chrome Web Store readiness.** Fixed Quick Save destination validation, cross-context session Privacy Mode, scoped restore safety, bounded imports, HTML description round-trip, atomic free-grid moves, settings races, and release gates.
+2. **v2.2.2 — Data and privacy hardening.** Improved scoped backups, deleted-data merge behavior, Quick Save, atomic moves and Undo, wallpaper handling, Page actions, and background reliability.
+3. **v2.2.1 — Store submission package.** Added verifiable Store collateral, privacy documentation, and backup v3 wallpaper support.
+4. **v2.2.0 — Security and release hardening.** Centralized safe navigation, strengthened migrations/import/order handling, added Low Power and accessibility gates, and made release archives reproducible.
+5. **v2.1.x — Localization, Search, Trash, contrast, and keyboard improvements.**
+6. **v2.0.x — Pages → Boards → Bookmarks redesign and correct Chrome packaging.**
+
+The newest published build is always listed first on the [GitHub Releases page](https://github.com/memodlike/Asterfold/releases).
