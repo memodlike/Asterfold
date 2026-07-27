@@ -1,0 +1,73 @@
+name: Verify published v2.2.3 release
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Inspect published release metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view v2.2.3 \
+            --repo "$GITHUB_REPOSITORY" \
+            --json tagName,name,isLatest,targetCommitish,assets,url
+
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/asterfold-release
+          gh release download v2.2.3 \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir /tmp/asterfold-release
+          find /tmp/asterfold-release -maxdepth 1 -type f -printf '%f\n' | sort
+
+      - name: Verify asset set and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/asterfold-release
+          expected=$'Asterfold-Chrome.zip\nAsterfold-Store-Assets.zip\nchecksums.txt\nchrome-unpacked.zip\nextension-source.zip'
+          actual="$(find . -maxdepth 1 -type f -printf '%f\n' | sort)"
+          test "$actual" = "$expected"
+          sha256sum --check checksums.txt
+
+      - name: Verify Chrome package structure
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/asterfold-chrome
+          mkdir -p /tmp/asterfold-chrome
+          unzip -q /tmp/asterfold-release/Asterfold-Chrome.zip -d /tmp/asterfold-chrome
+          test -f /tmp/asterfold-chrome/manifest.json
+          node <<'NODE'
+          const fs = require('node:fs');
+          const manifest = JSON.parse(fs.readFileSync('/tmp/asterfold-chrome/manifest.json', 'utf8'));
+          if (manifest.manifest_version !== 3) throw new Error('manifest_version is not 3');
+          if (manifest.version !== '2.2.3') throw new Error('unexpected release version');
+          if ((manifest.host_permissions ?? []).length !== 0) throw new Error('host permissions are present');
+          if (manifest.content_scripts !== undefined) throw new Error('content scripts are present');
+          const expected = new Set(['activeTab', 'favicon', 'alarms', 'contextMenus', 'storage']);
+          const actual = new Set(manifest.permissions ?? []);
+          if (actual.size !== expected.size || [...expected].some((permission) => !actual.has(permission))) {
+            throw new Error('required permissions differ from policy');
+          }
+          if (manifest.content_security_policy?.extension_pages !== "script-src 'self'; object-src 'self'; base-uri 'self'") {
+            throw new Error('unexpected extension CSP');
+          }
+          console.log('Published Asterfold 2.2.3 package passed independent verification.');
+          NODE
