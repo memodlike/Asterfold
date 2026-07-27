@@ -1,4 +1,4 @@
-# Install Asterfold 2.2.2
+# Install Asterfold 2.2.3
 
 ## Requirements
 
@@ -40,7 +40,7 @@ No private signing key is distributed or required.
 
 - Keep the previous release archive and the pre-update JSON backup.
 - A database schema downgrade is not automatic. To return to an older build, load it as a separate unpacked extension and restore a backup that version understands.
-- If an import is interrupted or rejected, the existing workspace remains intact. Replace-mode restore creates a local snapshot before changing records.
+- If an import is interrupted or rejected, the existing workspace remains intact. Replace mode accepts only a complete full backup and commits its records atomically; export a separate backup first when the current workspace matters.
 - To start over intentionally, remove Asterfold from `chrome://extensions`, delete its local data when Chrome offers that option, then load the release again. Export first if any data matters.
 
 ## Development build

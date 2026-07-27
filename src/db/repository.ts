@@ -6,7 +6,6 @@ import type {
   BookmarkPatch,
   NewBookmarkInput,
   Page,
-  Snapshot,
   Wallpaper,
   WorkspaceData,
 } from "../domain/models";
@@ -16,43 +15,14 @@ import { normalizeUrl } from "../domain/urls";
 import { validateTheme } from "../domain/themes";
 import { appSettingsSchema, snapshotSchema, wallpaperMetadataSchema } from "../domain/schemas";
 import { WALLPAPER_LIMITS } from "../domain/mediaLimits";
+import { normalizeDescription, normalizeEntityTitle } from "../domain/text";
 import { createId, nowIso } from "../utils/ids";
 import { processWallpaper } from "../services/wallpaper";
 import { createDefaultSettings } from "./defaults";
 import { db, type AsterfoldDatabase } from "./database";
 
-const MAX_TITLE_LENGTH = 240;
-const MAX_DESCRIPTION_LENGTH = 2_000;
-const MAX_SNAPSHOTS = 10;
-
-function cleanTitle(value: string, fallback: string): string {
-  const title = value.trim() || fallback;
-  if (title.length > MAX_TITLE_LENGTH) {
-    throw new ValidationError(`Title must be ${MAX_TITLE_LENGTH} characters or fewer`);
-  }
-  return title;
-}
-
-function cleanDescription(value: string | null | undefined): string | null {
-  const description = value?.trim() ?? "";
-  if (description.length > MAX_DESCRIPTION_LENGTH) {
-    throw new ValidationError(`Description must be ${MAX_DESCRIPTION_LENGTH} characters or fewer`);
-  }
-  return description.length === 0 ? null : description;
-}
-
 function sortByPosition<T extends { position: string }>(items: T[]): T[] {
   return items.sort((left, right) => compareRanks(left.position, right.position));
-}
-
-function hashPayload(value: unknown): string {
-  const text = JSON.stringify(value);
-  let hash = 2_166_136_261;
-  for (let index = 0; index < text.length; index += 1) {
-    hash ^= text.charCodeAt(index);
-    hash = Math.imul(hash, 16_777_619);
-  }
-  return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
 async function activePages(database: AsterfoldDatabase): Promise<Page[]> {
@@ -109,34 +79,6 @@ async function repairWorkspaceInvariants(database: AsterfoldDatabase): Promise<v
   if (Object.entries(patch).some(([key, value]) => settings[key as keyof typeof patch] !== value)) {
     await database.settings.update("app", { ...patch, updatedAt: timestamp });
   }
-}
-
-async function captureSnapshotPayload(database: AsterfoldDatabase): Promise<unknown> {
-  const [pages, boards, bookmarks, settings, wallpapers] = await Promise.all([
-    database.pages.toArray(),
-    database.boards.toArray(),
-    database.bookmarks.toArray(),
-    database.settings.toArray(),
-    database.wallpapers.toArray(),
-  ]);
-  return { schemaVersion: 1, pages, boards, bookmarks, settings, wallpapers };
-}
-
-async function addSnapshot(database: AsterfoldDatabase, reason: string): Promise<Snapshot> {
-  const payload = await captureSnapshotPayload(database);
-  const snapshot: Snapshot = {
-    id: createId(),
-    schemaVersion: 1,
-    createdAt: nowIso(),
-    reason,
-    checksum: hashPayload(payload),
-    payload,
-  };
-  await database.snapshots.add(snapshot);
-  const snapshots = await database.snapshots.orderBy("createdAt").toArray();
-  const overflow = snapshots.slice(0, Math.max(0, snapshots.length - MAX_SNAPSHOTS));
-  if (overflow.length > 0) await database.snapshots.bulkDelete(overflow.map((item) => item.id));
-  return snapshot;
 }
 
 export async function ensureStarterWorkspace(database: AsterfoldDatabase = db): Promise<WorkspaceData> {
@@ -224,19 +166,26 @@ export async function updateSettings(
   database: AsterfoldDatabase = db,
 ): Promise<AppSettings> {
   await ensureStarterWorkspace(database);
-  const current = await database.settings.get("app");
-  if (!current) throw new PersistenceError("Application settings are unavailable");
-  const next: AppSettings = {
-    ...current,
-    ...patch,
-    theme: patch.theme ? validateTheme(patch.theme) : current.theme,
-    id: "app",
-    schemaVersion: current.schemaVersion,
-    updatedAt: nowIso(),
-  };
-  await database.settings.put(next);
-  if (patch.theme) await garbageCollectWallpapers(database, next.theme.wallpaperId);
-  return next;
+  return database.transaction("rw", [database.settings, database.wallpapers], async () => {
+    const current = await database.settings.get("app");
+    if (!current) throw new PersistenceError("Application settings are unavailable");
+    const next: AppSettings = appSettingsSchema.parse({
+      ...current,
+      ...patch,
+      theme: patch.theme ? validateTheme(patch.theme) : current.theme,
+      id: "app",
+      schemaVersion: current.schemaVersion,
+      updatedAt: nowIso(),
+    });
+    await database.settings.put(next);
+    if (patch.theme) {
+      const orphanIds = (await database.wallpapers
+        .filter((wallpaper) => wallpaper.kind === "upload" && wallpaper.id !== next.theme.wallpaperId)
+        .primaryKeys()) as string[];
+      if (orphanIds.length > 0) await database.wallpapers.bulkDelete(orphanIds);
+    }
+    return next;
+  });
 }
 
 export async function createPage(
@@ -257,7 +206,7 @@ export async function createPage(
     const page: Page = {
       id: createId(),
       userId: null,
-      title: cleanTitle(title, "Untitled page"),
+      title: normalizeEntityTitle(title, "Untitled page"),
       icon: options.icon ?? "folder",
       accent: options.accent ?? null,
       position,
@@ -269,7 +218,11 @@ export async function createPage(
       version: 1,
     };
     if (page.isDefault) {
-      await database.pages.filter((candidate) => candidate.isDefault).modify({ isDefault: false });
+      await database.pages.filter((candidate) => candidate.isDefault).modify((candidate) => {
+        candidate.isDefault = false;
+        candidate.updatedAt = timestamp;
+        candidate.version += 1;
+      });
     }
     await database.pages.add(page);
     await database.settings.update("app", { activePageId: page.id, updatedAt: timestamp });
@@ -280,16 +233,26 @@ export async function createPage(
 export async function renamePage(id: string, title: string, database: AsterfoldDatabase = db): Promise<void> {
   const page = await database.pages.get(id);
   if (!page || page.deletedAt !== null) throw new ValidationError("Page not found");
-  await database.pages.update(id, { title: cleanTitle(title, page.title), updatedAt: nowIso(), version: page.version + 1 });
+  await database.pages.update(id, { title: normalizeEntityTitle(title, page.title), updatedAt: nowIso(), version: page.version + 1 });
 }
 
 export async function setDefaultPage(id: string, database: AsterfoldDatabase = db): Promise<void> {
-  await database.transaction("rw", database.pages, database.settings, async () => {
+  await database.transaction("rw", [database.pages, database.boards, database.settings], async () => {
     const page = await database.pages.get(id);
     if (!page || page.deletedAt !== null) throw new ValidationError("Page not found");
-    await database.pages.filter((candidate) => candidate.isDefault).modify({ isDefault: false });
-    await database.pages.update(id, { isDefault: true, updatedAt: nowIso(), version: page.version + 1 });
-    await database.settings.update("app", { quickSaveDefaultPageId: id, updatedAt: nowIso() });
+    const timestamp = nowIso();
+    await database.pages.filter((candidate) => candidate.isDefault && candidate.id !== id).modify((candidate) => {
+      candidate.isDefault = false;
+      candidate.updatedAt = timestamp;
+      candidate.version += 1;
+    });
+    if (!page.isDefault) await database.pages.update(id, { isDefault: true, updatedAt: timestamp, version: page.version + 1 });
+    const defaultBoardId = (await activeBoards(database, id))[0]?.id ?? null;
+    await database.settings.update("app", {
+      quickSaveDefaultPageId: id,
+      quickSaveDefaultBoardId: defaultBoardId,
+      updatedAt: timestamp,
+    });
   });
 }
 
@@ -322,7 +285,7 @@ export async function duplicatePage(id: string, database: AsterfoldDatabase = db
     const page: Page = {
       ...source,
       id: pageId,
-      title: cleanTitle(`${source.title} copy`, source.title),
+      title: normalizeEntityTitle(`${source.title} copy`, source.title),
       position: allocation.position,
       isDefault: false,
       createdAt: timestamp,
@@ -502,7 +465,7 @@ export async function createBoard(
       id: createId(),
       userId: null,
       pageId,
-      title: cleanTitle(title, "Untitled board"),
+      title: normalizeEntityTitle(title, "Untitled board"),
       icon: "layout-list",
       accent: null,
       position,
@@ -532,7 +495,7 @@ export async function updateBoard(
   if (!board || board.deletedAt !== null) throw new ValidationError("Board not found");
   await database.boards.update(id, {
     ...patch,
-    title: patch.title === undefined ? board.title : cleanTitle(patch.title, board.title),
+    title: patch.title === undefined ? board.title : normalizeEntityTitle(patch.title, board.title),
     gridColumn: patch.gridColumn === undefined ? board.gridColumn : Math.min(12, Math.max(1, Math.round(patch.gridColumn))),
     gridRow: patch.gridRow === undefined ? board.gridRow : patch.gridRow === 1 ? 1 : 0,
     gridSpan: patch.gridSpan === undefined ? board.gridSpan : Math.min(6, Math.max(2, Math.round(patch.gridSpan))),
@@ -541,36 +504,48 @@ export async function updateBoard(
   });
 }
 
-export async function swapBoardGridPlacement(
-  firstId: string,
-  secondId: string,
+export async function moveBoardWithGridSwap(
+  id: string,
+  targetId: string,
+  targetPageId: string,
+  targetIndex: number,
   database: AsterfoldDatabase = db,
 ): Promise<void> {
-  if (firstId === secondId) return;
-  await database.transaction("rw", database.boards, async () => {
-    const [first, second] = await database.boards.bulkGet([firstId, secondId]);
-    if (!first || !second || first.deletedAt !== null || second.deletedAt !== null || first.pageId !== second.pageId) {
-      throw new ValidationError("Boards for grid swap were not found on the same Page");
-    }
-    const timestamp = nowIso();
-    await database.boards.bulkPut([
-      {
-        ...first,
-        gridColumn: second.gridColumn,
-        gridRow: second.gridRow,
-        gridSpan: second.gridSpan,
-        updatedAt: timestamp,
-        version: first.version + 1,
-      },
-      {
-        ...second,
-        gridColumn: first.gridColumn,
-        gridRow: first.gridRow,
-        gridSpan: first.gridSpan,
-        updatedAt: timestamp,
-        version: second.version + 1,
-      },
+  if (id === targetId) return;
+  await database.transaction("rw", database.pages, database.boards, async () => {
+    const [page, current, target] = await Promise.all([
+      database.pages.get(targetPageId),
+      database.boards.get(id),
+      database.boards.get(targetId),
     ]);
+    if (!page || page.deletedAt !== null || !current || current.deletedAt !== null || !target || target.deletedAt !== null
+      || target.pageId !== targetPageId || current.pageId !== targetPageId) {
+      throw new ValidationError("Boards for grid move were not found on the active Page");
+    }
+    const targetBoards = (await activeBoards(database, targetPageId)).filter((board) => board.id !== id);
+    const moved = moveMany([...targetBoards, current], [id], targetIndex);
+    const originals = new Map([...targetBoards, current].map((board) => [board.id, board]));
+    const timestamp = nowIso();
+    await database.boards.bulkPut(moved.map((board) => {
+      const original = originals.get(board.id)!;
+      const placement = board.id === current.id
+        ? { gridColumn: target.gridColumn, gridRow: target.gridRow, gridSpan: target.gridSpan }
+        : board.id === target.id
+          ? { gridColumn: current.gridColumn, gridRow: current.gridRow, gridSpan: current.gridSpan }
+          : { gridColumn: board.gridColumn, gridRow: board.gridRow, gridSpan: board.gridSpan };
+      const changed = original.position !== board.position
+        || original.pageId !== targetPageId
+        || original.gridColumn !== placement.gridColumn
+        || original.gridRow !== placement.gridRow
+        || original.gridSpan !== placement.gridSpan;
+      return {
+        ...board,
+        ...placement,
+        pageId: targetPageId,
+        updatedAt: changed ? timestamp : board.updatedAt,
+        version: changed ? board.version + 1 : board.version,
+      };
+    }));
   });
 }
 
@@ -610,7 +585,7 @@ export async function duplicateBoard(id: string, database: AsterfoldDatabase = d
     const copy: Board = {
       ...source,
       id: createId(),
-      title: cleanTitle(`${source.title} copy`, source.title),
+      title: normalizeEntityTitle(`${source.title} copy`, source.title),
       position: allocation.position,
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -727,11 +702,11 @@ export async function createBookmark(
       id: createId(),
       userId: null,
       boardId: input.boardId,
-      title: cleanTitle(input.title, normalized.hostname || "Untitled bookmark"),
+      title: normalizeEntityTitle(input.title, normalized.hostname || "Untitled bookmark"),
       url: normalized.url,
       normalizedUrl: normalized.normalizedUrl,
       hostname: normalized.hostname,
-      description: cleanDescription(input.description),
+      description: normalizeDescription(input.description),
       faviconUrl: null,
       customIcon: null,
       position,
@@ -784,8 +759,8 @@ export async function updateBookmark(
       ...patch,
       boardId: targetBoardId,
       position,
-      title: patch.title === undefined ? current.title : cleanTitle(patch.title, current.title),
-      description: patch.description === undefined ? current.description : cleanDescription(patch.description),
+      title: patch.title === undefined ? current.title : normalizeEntityTitle(patch.title, current.title),
+      description: patch.description === undefined ? current.description : normalizeDescription(patch.description),
       url: normalized?.url ?? current.url,
       normalizedUrl: normalized?.normalizedUrl ?? current.normalizedUrl,
       hostname: normalized?.hostname ?? current.hostname,
@@ -977,12 +952,11 @@ export async function permanentlyDelete(
   id: string,
   database: AsterfoldDatabase = db,
 ): Promise<void> {
-  await database.transaction("rw", [database.pages, database.boards, database.bookmarks, database.snapshots, database.settings, database.wallpapers], async () => {
+  await database.transaction("rw", [database.pages, database.boards, database.bookmarks, database.settings], async () => {
     if (type === "bookmark") {
       const item = await database.bookmarks.get(id);
       if (!item) return;
       if (item.deletedAt === null) throw new ValidationError("Only Trash items can be permanently deleted");
-      await addSnapshot(database, `permanent-delete-${type}`);
       await database.bookmarks.delete(id);
       return;
     }
@@ -990,7 +964,6 @@ export async function permanentlyDelete(
       const item = await database.boards.get(id);
       if (!item) return;
       if (item.deletedAt === null) throw new ValidationError("Only Trash items can be permanently deleted");
-      await addSnapshot(database, `permanent-delete-${type}`);
       await database.bookmarks.where("boardId").equals(id).delete();
       await database.boards.delete(id);
       await repairWorkspaceInvariants(database);
@@ -999,7 +972,6 @@ export async function permanentlyDelete(
     const item = await database.pages.get(id);
     if (!item) return;
     if (item.deletedAt === null) throw new ValidationError("Only Trash items can be permanently deleted");
-    await addSnapshot(database, `permanent-delete-${type}`);
     const boardIds = (await database.boards.where("pageId").equals(id).primaryKeys()) as string[];
     if (boardIds.length > 0) await database.bookmarks.where("boardId").anyOf(boardIds).delete();
     await database.boards.where("pageId").equals(id).delete();
@@ -1009,11 +981,10 @@ export async function permanentlyDelete(
 }
 
 export async function emptyTrash(database: AsterfoldDatabase = db): Promise<number> {
-  return database.transaction("rw", [database.pages, database.boards, database.bookmarks, database.snapshots, database.settings, database.wallpapers], async () => {
+  return database.transaction("rw", [database.pages, database.boards, database.bookmarks, database.settings], async () => {
     const trash = await listTrash(database);
     const count = trash.pages.length + trash.boards.length + trash.bookmarks.length;
     if (count === 0) return 0;
-    await addSnapshot(database, "empty-trash");
     await Promise.all([
       database.pages.bulkDelete(trash.pages.map((item) => item.id)),
       database.boards.bulkDelete(trash.boards.map((item) => item.id)),
@@ -1024,9 +995,6 @@ export async function emptyTrash(database: AsterfoldDatabase = db): Promise<numb
   });
 }
 
-export async function createSnapshot(reason: string, database: AsterfoldDatabase = db): Promise<Snapshot> {
-  return database.transaction("rw", [database.pages, database.boards, database.bookmarks, database.settings, database.wallpapers, database.snapshots], async () => addSnapshot(database, reason));
-}
 
 export async function saveWallpaper(
   file: Blob,
@@ -1042,7 +1010,7 @@ export async function saveWallpaper(
   const wallpaper: Wallpaper = {
     id: createId(),
     kind: "upload",
-    name: cleanTitle(name, "Custom wallpaper"),
+    name: normalizeEntityTitle(name, "Custom wallpaper"),
     mimeType: processed.mimeType,
     blob: processed.blob,
     thumbnail: processed.thumbnail,

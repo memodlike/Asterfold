@@ -245,8 +245,8 @@ test.describe.serial("Asterfold MV3 release", () => {
     expect(probe.manifest.manifest_version).toBe(3);
     expect(probe.manifest.chrome_url_overrides?.newtab).toBe("newtab.html");
     expect(probe.manifest.action?.default_popup).toBe("popup.html");
-    expect(new Set(probe.manifest.permissions)).toEqual(new Set(["activeTab", "alarms", "contextMenus", "favicon"]));
-    expect(probe.manifest.permissions).not.toEqual(expect.arrayContaining(["storage", "tabs", "history", "scripting", "webRequest"]));
+    expect(new Set(probe.manifest.permissions)).toEqual(new Set(["activeTab", "alarms", "contextMenus", "favicon", "storage"]));
+    expect(probe.manifest.permissions).not.toEqual(expect.arrayContaining(["tabs", "history", "scripting", "webRequest"]));
     expect(probe.manifest.host_permissions ?? []).toEqual([]);
   });
 
@@ -282,7 +282,63 @@ test.describe.serial("Asterfold MV3 release", () => {
     }
     expect(externalRequests).toEqual([]);
     await setWorkspaceLocale(page, "en");
+    await page.reload();
+    await expect(page).toHaveTitle("New Tab");
     await page.close();
+  });
+
+  test("shares session Privacy Mode with the popup and clears stale empty-Page destinations", async () => {
+    const workspacePage = await context.newPage();
+    await workspacePage.goto(`chrome-extension://${extensionId}/newtab.html`);
+    await setWorkspaceLocale(workspacePage, "ru");
+    await workspacePage.reload();
+    await workspacePage.evaluate(async () => {
+      await chrome.storage.session.set({ privacySessionEnabled: true });
+    });
+
+    const privatePopup = await context.newPage();
+    await privatePopup.goto(`chrome-extension://${extensionId}/popup.html`);
+    await expect(privatePopup.locator(".tab-preview small")).toHaveText("••••••");
+    await expect(privatePopup.getByText("Скрытая закладка", { exact: true })).toBeVisible();
+    await privatePopup.close();
+
+    await workspacePage.evaluate(async () => {
+      await chrome.storage.session.remove("privacySessionEnabled");
+      const request = indexedDB.open("asterfold");
+      const database = await new Promise<IDBDatabase>((resolvePromise, reject) => {
+        request.onsuccess = () => resolvePromise(request.result);
+        request.onerror = () => reject(request.error ?? new Error("Unable to open IndexedDB"));
+      });
+      const transaction = database.transaction("pages", "readwrite");
+      transaction.objectStore("pages").put({
+        id: "empty-page",
+        userId: null,
+        title: "Empty",
+        icon: "folder",
+        accent: null,
+        position: "zzzzzzzzzzzy",
+        isDefault: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deletedAt: null,
+        deletedBatchId: null,
+        version: 1,
+      });
+      await new Promise<void>((resolvePromise, reject) => {
+        transaction.oncomplete = () => resolvePromise();
+        transaction.onerror = () => reject(transaction.error ?? new Error("Unable to create empty Page"));
+      });
+      database.close();
+    });
+
+    const popup = await context.newPage();
+    await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+    await popup.getByLabel("Страница").selectOption("empty-page");
+    await expect(popup.getByLabel("Блок")).toHaveValue("");
+    await expect(popup.getByRole("button", { name: "Сохранить закладку" })).toBeDisabled();
+    await expect(popup.getByText(/нет блока/iu)).toBeVisible();
+    await popup.close();
+    await workspacePage.close();
   });
 
   test("revalidates navigation messages in the background", async () => {
@@ -342,6 +398,9 @@ test.describe.serial("Asterfold MV3 release", () => {
     page.on("pageerror", (error) => runtimeErrors.push(`newtab: ${error.message}`));
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`chrome-extension://${extensionId}/newtab.html`);
+    await expect(page.locator(".app-shell")).toBeVisible();
+    await setWorkspaceLocale(page, "en");
+    await page.reload();
     await expect(page).toHaveTitle("New Tab");
     await expect(page.locator('link[rel="icon"]')).toHaveAttribute("href", "/icons/new-tab.svg");
     await setWorkspaceLocale(page, "ru");
@@ -494,9 +553,10 @@ test.describe.serial("Asterfold MV3 release", () => {
     await page.getByRole("menuitem", { name: "Настройки" }).click();
     dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    await captureStoreScreenshot(page, "03-settings-1280x800.png");
     const lowPowerToggle = dialog.locator('label.switch:has(input[aria-label="Режим для слабых ПК"])');
     await expect(lowPowerToggle).toHaveCount(1);
+    await lowPowerToggle.scrollIntoViewIfNeeded();
+    await captureStoreScreenshot(page, "03-settings-1280x800.png");
     await lowPowerToggle.click();
     await expect(page.locator(".app-shell")).toHaveClass(/low-power-mode/u);
     await lowPowerToggle.click();

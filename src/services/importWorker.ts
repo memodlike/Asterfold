@@ -9,14 +9,20 @@ async function parseOffThread<T>(kind: "backup" | "html", text: string, fallback
   const worker = new Worker(browser.runtime.getURL("/import-worker.js"));
   const id = crypto.randomUUID();
   return new Promise<T>((resolve, reject) => {
-    const cleanup = (): void => {
-      worker.terminate();
-      signal?.removeEventListener("abort", abort);
-    };
+    let timeout = 0;
     const abort = (): void => {
       cleanup();
       reject(new DOMException("Import cancelled", "AbortError"));
     };
+    const cleanup = (): void => {
+      window.clearTimeout(timeout);
+      worker.terminate();
+      signal?.removeEventListener("abort", abort);
+    };
+    timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new ImportError("Import worker timed out"));
+    }, 30_000);
     signal?.addEventListener("abort", abort, { once: true });
     worker.addEventListener("error", () => {
       cleanup();

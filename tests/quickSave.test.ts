@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AppSettings, Board, Page } from "../src/domain/models";
-import { resolveQuickSaveDestination } from "../src/domain/quickSave";
+import { isValidQuickSaveDestination, resolvePageBoardSelection, resolveQuickSaveDestination } from "../src/domain/quickSave";
 
 const pages = [
   { id: "page-a", deletedAt: null },
@@ -37,4 +37,16 @@ describe("Quick Save destination resolution", () => {
       boardId: "board-a",
     });
   });
+
+  it("clears a stale Board when the selected Page has no Boards", () => {
+    expect(resolvePageBoardSelection("page-b", "board-a", boards.filter((board) => board.id !== "board-b"))).toBe("");
+    expect(isValidQuickSaveDestination("page-b", "board-a", boards)).toBe(false);
+  });
+
+  it("keeps only an active Board that belongs to the selected Page", () => {
+    expect(resolvePageBoardSelection("page-b", "board-b", boards)).toBe("board-b");
+    expect(isValidQuickSaveDestination("page-b", "board-b", boards)).toBe(true);
+    expect(isValidQuickSaveDestination("page-b", "board-a", boards)).toBe(false);
+  });
+
 });

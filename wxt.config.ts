@@ -11,7 +11,7 @@ export default defineConfig({
     description: "A private, local-first visual bookmark workspace.",
     version: packageVersion,
     minimum_chrome_version: "120",
-    permissions: ["activeTab", "favicon", "alarms", "contextMenus"],
+    permissions: ["activeTab", "favicon", "alarms", "contextMenus", "storage"],
     optional_permissions: ["bookmarks"],
     host_permissions: [],
     action: {

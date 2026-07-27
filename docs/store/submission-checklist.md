@@ -1,4 +1,4 @@
-# Chrome Web Store submission checklist — Asterfold 2.2.2
+# Chrome Web Store submission checklist — Asterfold 2.2.3
 
 This checklist separates repository readiness from the owner-only action of submitting through the Chrome Web Store Developer Dashboard. Check an item only after verifying it against the exact ZIP being uploaded.
 
@@ -18,7 +18,7 @@ This checklist separates repository readiness from the owner-only action of subm
 
 - [ ] Public privacy URL opens without authentication on desktop and mobile.
 - [ ] Published policy matches `docs/security/privacy.md` and `docs/store/privacy.html`.
-- [ ] Policy version is 2.2.2 and effective date is 26 July 2026.
+- [ ] Policy version is 2.2.3 and effective date is 27 July 2026.
 - [ ] Exact English Limited Use sentence is present.
 - [ ] Dashboard discloses local processing rather than claiming no data is handled.
 - [ ] **Web history** is disclosed for user-selected bookmark URLs/titles.
@@ -30,12 +30,12 @@ This checklist separates repository readiness from the owner-only action of subm
 
 ## Permissions and MV3
 
-- [ ] Uploaded ZIP has `manifest_version: 3` and version `2.2.2`.
+- [ ] Uploaded ZIP has `manifest_version: 3` and version `2.2.3`.
 - [ ] Background runs as a service worker.
 - [ ] New-tab override, popup and all required icons are present.
-- [ ] Required permissions are exactly `activeTab`, `favicon`, `alarms`, `contextMenus`.
+- [ ] Required permissions are exactly `activeTab`, `favicon`, `alarms`, `contextMenus`, `storage`.
 - [ ] `bookmarks` is optional and requested only from the import action.
-- [ ] `storage` is absent.
+- [ ] `storage` is used only for the transient Privacy Mode flag in `chrome.storage.session`.
 - [ ] `host_permissions` is empty.
 - [ ] No content scripts or unnecessary web-accessible resources exist.
 - [ ] Extension-page CSP remains strict.

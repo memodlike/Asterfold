@@ -1,8 +1,8 @@
 # Asterfold privacy policy
 
-Effective date: 26 July 2026<br>
-Policy version: 2.2.2<br>
-Applies to: Asterfold 2.2.2 for Chrome
+Effective date: 27 July 2026<br>
+Policy version: 2.2.3<br>
+Applies to: Asterfold 2.2.3 for Chrome
 
 Asterfold replaces the Chrome new tab with a local-first visual workspace for organizing and opening bookmarks. It processes the information needed for those features on the user's device. It does not claim that no data is processed.
 
@@ -17,15 +17,15 @@ Asterfold may process and store:
 - bookmark data from a file selected by the user, or the Chrome bookmark tree after the user chooses that import and grants the optional permission;
 - local backup and restore data;
 - a wallpaper image selected by the user, plus a resized local copy, thumbnail and technical metadata such as dimensions and stored size;
-- local custom raster icons selected by the user.
+- legacy custom raster icon values when present in an imported Asterfold backup; version 2.2.3 does not provide a UI for adding or rendering them.
 
 This information may include personal or sensitive content if the user puts such content in bookmark names, URLs, imported files or images. Asterfold uses it only to provide the requested bookmark-workspace features.
 
 ## Where information is stored
 
-Workspace records and uploaded assets are stored locally in the user's Chrome profile, primarily in IndexedDB. Search indexes, import previews and safety snapshots are also created locally.
+Workspace records and uploaded assets are stored locally in the user's Chrome profile, primarily in IndexedDB. Search indexes and import previews are created locally. Older installations may retain legacy diagnostic snapshot records created by an earlier version; version 2.2.3 does not create new snapshots. The temporary Privacy Mode state is stored in `chrome.storage.session` so popup and New Tab stay consistent; Chrome clears that value when the browser session ends.
 
-Asterfold 2.2.2 has no application backend, account system or cloud synchronization. The default build has no host permissions and makes no application network requests. Data is not sent to the developer.
+Asterfold 2.2.3 has no application backend, account system or cloud synchronization. The default build has no host permissions and makes no application network requests. Data is not sent to the developer.
 
 Chrome itself may use the network when the user opens a destination page or when Chrome supplies its browser-owned `_favicon` resource for a saved URL. Those browser actions are separate from an application request by Asterfold. Asterfold does not store or render a remote favicon URL.
 
@@ -38,7 +38,7 @@ Local information is used to:
 - search the local workspace;
 - perform Quick Save after an explicit user action;
 - import, export, restore and diagnose local data;
-- show an optional local wallpaper or custom icon;
+- show an optional local wallpaper;
 - move deleted items to Trash and apply the selected retention period.
 
 The information is not used for advertising, profiling, credit decisions or any purpose unrelated to the extension's single purpose.
@@ -62,7 +62,7 @@ Quick Save reads the active page's URL and title only after the user invokes the
 
 The optional `bookmarks` permission is requested only after the user chooses **Import Chrome bookmarks**. If granted, Asterfold reads the Chrome bookmark tree locally to create an import preview and imports the records the user confirms. Declining the permission does not affect the normal workspace or file import/export.
 
-The required permissions are limited to the functions described in [Permission rationale](permissions.md).
+The required permissions are limited to the functions described in [Permission rationale](permissions.md). The `storage` permission is used only for the transient Privacy Mode flag in `chrome.storage.session`; workspace data is not migrated to Chrome sync storage.
 
 ## Import, backup and deletion
 
@@ -72,9 +72,9 @@ The user can export a versioned JSON backup or bookmark data in supported text f
 
 Users can delete individual items, restore them from Trash, permanently empty Trash, or remove the extension and its local site data. Before removal or replacement, export a backup if the data matters.
 
-## Wallpapers and custom icons
+## Wallpapers and legacy icon values
 
-Uploaded wallpapers and custom icons are decoded, bounded and stored locally. Remote image URLs and SVG custom icons are not accepted as local custom assets. Removing or replacing an asset may remove unreferenced local copies during cleanup.
+Uploaded wallpapers are decoded, bounded and stored locally. Remote wallpaper URLs are not accepted. Legacy custom raster icon values may remain inside imported backups for data compatibility, but version 2.2.3 does not render them or provide a UI for adding them. Removing or replacing a wallpaper may remove unreferenced local copies during cleanup.
 
 ## Privacy Mode
 
@@ -84,7 +84,7 @@ Privacy Mode is shoulder-surfing protection, not encryption. The underlying loca
 
 ## Children
 
-Asterfold is a general-purpose productivity tool and is not directed specifically to children. It does not knowingly collect information through a developer-operated service because no such service exists in version 2.2.2.
+Asterfold is a general-purpose productivity tool and is not directed specifically to children. It does not knowingly collect information through a developer-operated service because no such service exists in version 2.2.3.
 
 ## Limited Use
 

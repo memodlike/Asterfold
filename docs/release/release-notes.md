@@ -1,41 +1,46 @@
-# Asterfold 2.2.2 — final hardening
+# Asterfold 2.2.3 — Chrome Web Store readiness
 
-Patch-релиз делает local-first новую вкладку Chrome надёжнее перед отправкой на проверку Chrome Web Store. Узнаваемый дизайн, Frost Light, Graphite Dark, стекло, launcher снизу слева и структура Pages → Boards → Bookmarks сохранены.
+Asterfold 2.2.3 is a compatibility-preserving patch release focused on data integrity, privacy consistency, and final Chrome Web Store submission readiness. The Pages → Boards → Bookmarks model and visual identity remain unchanged.
 
-## Что изменилось
+## Fixed
 
-- 🧳 Выборочный backup теперь сам проходит строгую проверку и содержит только выбранные закладки и необходимые родительские блоки/страницы.
-- 🔁 Повторный merge удалённых данных изолирует batch ID, а восстановление не задевает соседнюю импортированную копию.
-- 📐 Импорт, дублирование, перемещение блоков и массовые операции используют единый атомарный порядок без конфликтующих ranks.
-- 🔒 Privacy Mode скрывает реальные названия и URL в карточках, редакторе, корзине, drag overlay, toast, popup и accessibility tree.
-- ⚡ Quick Save не может сохранить ссылку в блок другой страницы; без подходящего блока кнопка сохранения отключена.
-- 🖼️ Обои проходят единые ограничения декодирования, размеров и backup; dangling legacy-ссылки безопасно сбрасываются.
-- 🧹 Массовый Undo, Trash и free-grid swap выполняются одной транзакцией и не оставляют частичное состояние при ошибке.
-- 🗂️ Page actions теперь доступны из клавиатурного меню: переименование, дублирование, default, перемещение и удаление.
-- 🧭 Background восстанавливает Trash alarm, обрабатывает rejected tasks и очищает badge устойчивым MV3 alarm.
-- 🧪 Локально выполнены typecheck, lint, 129 unit/integration/component тестов, 5 реальных MV3 E2E, Store validation, воспроизводимый release и production audit с 0 уязвимостей.
+- Quick Save clears an invalid Board when the user selects a Page with no Boards and revalidates the Page/Board pair immediately before writing.
+- Session Privacy Mode is shared between New Tab and popup through `chrome.storage.session` and is cleared automatically with the Chrome session.
+- Scoped Page, Board, and selection backups can only be merged; destructive Replace is accepted only for a complete full backup.
+- Full backups require consistent global settings and theme data, and restore recalculates URL-derived fields from the authoritative bookmark URL.
+- JSON, HTML, and Chrome-bookmark imports have bounded depth, node, and bookmark counts; off-thread parsing supports cancellation and safe timeout handling.
+- Netscape HTML descriptions round-trip correctly even when the conventional optional closing `</DD>` tag is absent.
+- Imported Page titles are validated before any transaction writes; external titles and descriptions are bounded to the current schema.
+- Free-grid placement swaps and Board reordering commit in one Dexie transaction.
+- Settings read-modify-write and uploaded-wallpaper cleanup commit atomically, preventing unrelated concurrent settings from being lost.
+- Changing the default Page also assigns a Board on that Page and updates version metadata for the previous default.
+- Version 2.2.3 stops creating inaccessible diagnostic snapshots. The legacy IndexedDB store remains only for non-destructive migration compatibility.
+- Release validation scans additional remote Worker, SharedWorker, iframe, WASM, executable data-URL, and dynamic-code patterns.
+- Real MV3 E2E tests now isolate locale state between serial scenarios.
 
-**Ready for submission review.** Это не означает, что расширение уже отправлено, одобрено или опубликовано Chrome Web Store.
+## Permissions
 
-## Установка
+Required permissions are `activeTab`, `favicon`, `alarms`, `contextMenus`, and `storage`.
 
-1. Скачайте **`Asterfold-Chrome.zip`** из самого нового GitHub Release.
-2. Распакуйте архив.
-3. Откройте `chrome://extensions`, включите режим разработчика.
-4. Нажмите **Load unpacked / Загрузить распакованное**.
-5. Выберите папку, где `manifest.json` лежит прямо в корне.
+`storage` is used only for the transient Privacy Mode flag in `chrome.storage.session`. Optional `bookmarks` access remains requested only from the explicit Chrome import action. Host permissions and content scripts remain absent.
 
-Перед обновлением рекомендуется экспортировать JSON backup. Автотесты подтверждают lossless update, но downgrade на старую версию автоматически не поддерживается.
+## Validation completed
 
-## Проверка
+The release candidate passed:
 
-Текущие команды, окружение, test IDs, SHA-256 и оставшиеся риски публикуются в `docs/audit/EVIDENCE.md` и `docs/audit/FINDINGS_STATUS.md`. Полный development audit по-прежнему показывает advisories в build-only WXT/ESLint toolchain; production dependencies чисты. Не используйте GitHub **Source code (zip)** как установочный архив.
+- TypeScript type checking;
+- ESLint with zero warnings;
+- unit and integration tests with coverage gates;
+- production dependency audit;
+- dependency review;
+- deterministic Linux and Windows release generation;
+- Chrome Web Store asset validation;
+- real unpacked Manifest V3 Playwright E2E tests;
+- accessibility checks;
+- CodeQL analysis.
 
-## Chrome Web Store documentation
+Release archives include SHA-256 checksums and are generated from the tagged source commit.
 
-The repository contains a privacy policy, Privacy Practices answers, localized listing copy and an owner submission checklist. These materials describe readiness work only; they do not claim that Chrome Web Store review or publication has occurred.
+## Chrome Web Store status
 
-- [Privacy policy](../security/privacy.md)
-- [Privacy Practices answers](../store/privacy-practices.md)
-- [Submission checklist](../store/submission-checklist.md)
-- [Store listing values](../../store-assets/listing/submission-values.md)
+This GitHub Release is prepared for Chrome Web Store submission. Publication or approval by Google is not claimed until it occurs.

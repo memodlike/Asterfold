@@ -41,7 +41,7 @@ Organize bookmarks into Pages and Boards, then open them directly from the new t
 
 ### Privacy by design
 
-Asterfold 2.2.2 is local-first. Workspace data is stored in the local Chrome profile. The default release has no application backend, account, analytics, advertising, telemetry, cloud synchronization, host permissions or content scripts, and it makes no application network requests.
+Asterfold 2.2.3 is local-first. Workspace data is stored in the local Chrome profile. The default release has no application backend, account, analytics, advertising, telemetry, cloud synchronization, host permissions or content scripts, and it makes no application network requests.
 
 Chrome may use the network when you open a destination page or when it supplies its browser-owned favicon resource. Privacy Mode hides bookmark titles in the interface and local search while active, but it is visual protection rather than database encryption.
 
@@ -55,6 +55,7 @@ https://github.com/memodlike/Asterfold/blob/main/docs/security/privacy.md
 - `favicon`: displays Chrome's browser-owned favicon for a URL you saved.
 - `alarms`: schedules local Trash cleanup using your selected retention period.
 - `contextMenus`: adds Save page, Save link and Open Asterfold commands.
+- `storage`: keeps only the temporary Privacy Mode flag in Chrome session storage so popup and New Tab stay consistent; Chrome clears it when the browser session ends.
 - optional `bookmarks`: requested only if you choose Import Chrome bookmarks.
 
 No access to browsing history, cookies, page contents across all sites or host origins is requested.

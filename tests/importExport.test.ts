@@ -85,6 +85,7 @@ describe("safe import and lossless export", () => {
       await Promise.all([database.bookmarks.clear(), database.boards.clear(), database.pages.clear()]);
     });
     await restoreBackup(parsed, "replace", database);
+    expect(await database.snapshots.count()).toBe(0);
     const restored = await getWorkspaceData(database);
     expect(restored.pages).toHaveLength(1);
     expect(restored.boards).toHaveLength(1);
@@ -93,6 +94,23 @@ describe("safe import and lossless export", () => {
     const reexported = await createBackup({}, database);
     expect(reexported.entities).toEqual(parsed.entities);
     expect(reexported.settings).toEqual(parsed.settings);
+  });
+
+  it("round-trips Netscape HTML descriptions without requiring closing DD tags", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    await createBookmark({
+      boardId: workspace.boards[0]!.id,
+      title: "Reference",
+      url: "https://example.com/reference",
+      description: "Preserved description",
+    }, {}, database);
+    const records = parseNetscapeHtml(toNetscapeHtml(await createBackup({}, database)));
+    expect(records).toHaveLength(1);
+    expect(records[0]).toMatchObject({
+      title: "Reference",
+      url: "https://example.com/reference",
+      description: "Preserved description",
+    });
   });
 
   it("escapes adversarial Markdown headings, text, descriptions, and link destinations", async () => {
@@ -187,6 +205,14 @@ describe("safe import and lossless export", () => {
     expect(backup.entities.bookmarks.map((bookmark) => bookmark.id)).toEqual([first.id]);
     expect(backup.settings).toBeUndefined();
     expect(parseBackup(serializeBackup(backup))).toEqual(backup);
+  });
+
+
+  it("rejects deleted selections and inactive ancestors", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const bookmark = await createBookmark({ boardId: workspace.boards[0]!.id, title: "Deleted", url: "https://deleted.example" }, {}, database);
+    await database.bookmarks.update(bookmark.id, { deletedAt: new Date().toISOString() });
+    await expect(createSelectionBackup([bookmark.id], database)).rejects.toThrow(/unavailable/iu);
   });
 
   it("parses and atomically restores a v3 wallpaper backup", async () => {
@@ -310,6 +336,25 @@ describe("safe import and lossless export", () => {
     const records = parseNetscapeHtml('<DL><p><DT><A HREF="javascript:alert(1)">Bad</A><DT><A HREF="https://%75ser@example.com/private">Credentials</A><DT><A HREF="https://safe.example">Safe</A></DL><p>');
     expect(records).toHaveLength(1);
     expect(records[0]?.url).toBe("https://safe.example");
+  });
+
+  it("rejects deeply nested import structures before schema traversal", () => {
+    let nested: Record<string, unknown> = {};
+    for (let index = 0; index < 110; index += 1) nested = { child: nested };
+    expect(() => parseBackup(JSON.stringify(nested))).toThrow(/nesting is too deep/iu);
+  });
+
+  it("recomputes normalized URL fields from the authoritative URL", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    await createBookmark({ boardId: workspace.boards[0]!.id, title: "Safe", url: "https://example.com/path#fragment" }, {}, database);
+    const backup = await createBackup({}, database);
+    backup.entities.bookmarks[0]!.normalizedUrl = "https://spoofed.invalid/";
+    backup.entities.bookmarks[0]!.hostname = "spoofed.invalid";
+    const parsed = parseBackup(serializeBackup(backup));
+    expect(parsed.entities.bookmarks[0]).toMatchObject({
+      normalizedUrl: "https://example.com/path",
+      hostname: "example.com",
+    });
   });
 
   it("rejects unknown backup format versions without attempting repair", async () => {
@@ -461,6 +506,22 @@ describe("safe import and lossless export", () => {
     }
   });
 
+  it("rejects scoped Replace without mutating settings or wallpaper assets", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const wallpaper = uploadedWallpaper("preserved-wallpaper");
+    await database.wallpapers.add(wallpaper);
+    await updateSettings({ theme: { ...workspace.settings.theme, wallpaperId: wallpaper.id, backgroundMode: "wallpaper" } }, database);
+    const scoped = await createBackup({ pageId: workspace.pages[0]!.id }, database);
+    const beforeSettings = await database.settings.get("app");
+    const beforeWallpaper = await database.wallpapers.get(wallpaper.id);
+
+    expect(() => previewBackup(serializeBackup(scoped), "replace")).toThrow(/full backup/iu);
+    await expect(restoreBackup(scoped, "replace", database)).rejects.toThrow(/full backup/iu);
+
+    expect(await database.settings.get("app")).toEqual(beforeSettings);
+    expect(await database.wallpapers.get(wallpaper.id)).toEqual(beforeWallpaper);
+  });
+
   it("clears dangling uploaded wallpaper references in legacy backups", async () => {
     const backup = await createBackup({}, database);
     const legacy = structuredClone(backup);
@@ -479,6 +540,34 @@ describe("safe import and lossless export", () => {
       wallpaperId: null,
       backgroundMode: "auto",
     });
+  });
+
+  it("rejects an overlong imported Page title atomically", async () => {
+    const before = await getWorkspaceData(database);
+    await expect(importRecords([{
+      title: "Imported",
+      url: "https://example.com/imported",
+      description: null,
+      folderPath: ["Imported"],
+    }], { pageTitle: "x".repeat(241) }, "skip", database)).rejects.toThrow(/240/iu);
+    const after = await getWorkspaceData(database);
+    expect(after.pages).toEqual(before.pages);
+    expect(after.boards).toEqual(before.boards);
+    expect(after.bookmarks).toEqual(before.bookmarks);
+  });
+
+  it("rejects direct record imports with excessive folder nesting before writes", async () => {
+    const before = await getWorkspaceData(database);
+    await expect(importRecords([{
+      title: "Deep",
+      url: "https://deep.example",
+      description: null,
+      folderPath: Array.from({ length: 101 }, (_, index) => `Folder ${index}`),
+    }], { pageTitle: "Deep import" }, "skip", database)).rejects.toThrow(/nesting is too deep/iu);
+    const after = await getWorkspaceData(database);
+    expect(after.pages).toEqual(before.pages);
+    expect(after.boards).toEqual(before.boards);
+    expect(after.bookmarks).toEqual(before.bookmarks);
   });
 
   it("reports invalid rows and skips normalized duplicates", async () => {

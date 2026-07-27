@@ -68,3 +68,14 @@ The table below tracks the independent 2.2.1 findings from the 2.2.2 master audi
 | AF-222-031 | FIXED | `a5c2c86` | `tests/importExport.test.ts` | Download anchor is attached/clicked/removed before object URL revocation in a later task | Browser download initiation is still browser-managed |
 | AF-222-COV | OPEN | `12f51ac`, `6df18da` | `npm run test:coverage` | Critical domain/media modules pass 85/85/80/85-class thresholds; full source reports 57.79% lines, 41.98% functions, 46.03% branches, 52.28% statements; resource-heavy suites are serialized for deterministic coverage execution without weaker assertions | The master audit requested the higher threshold globally; this is not falsely marked complete |
 | AF-222-DEV-AUDIT | IN_PROGRESS | `12f51ac` | `npm audit --json`, `npm run audit:production` | Production dependency audit is clean; the full audit keeps development-tool advisories visible | Safe upstream WXT/ESLint fixes are required before the full development audit can be clean |
+
+## Asterfold 2.2.3 Store-readiness patch
+
+| ID | Status | Evidence | Residual risk |
+| --- | --- | --- | --- |
+| AF-223-001 | IN_PROGRESS | Popup validates Page/Board pairs, clears stale destinations and has MV3 E2E coverage | Awaiting branch CI |
+| AF-223-002 | IN_PROGRESS | Privacy Mode uses `chrome.storage.session`, masks by default while session state loads, and is shared by popup/New Tab | Awaiting branch CI and final permission disclosure check |
+| AF-223-003 | IN_PROGRESS | Scoped Replace is rejected in preview, UI and repository boundary | Awaiting branch CI |
+| AF-223-004 | IN_PROGRESS | Import titles, descriptions, nesting, node and bookmark counts are bounded before writes | Awaiting branch CI |
+| AF-223-005 | IN_PROGRESS | Free-grid swap/reorder and settings read-modify-write are transactional | Awaiting branch CI |
+| AF-223-006 | IN_PROGRESS | Runtime snapshot creation removed; legacy store retained for migration compatibility | Awaiting branch CI |
