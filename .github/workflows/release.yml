@@ -1,0 +1,63 @@
+name: Publish GitHub Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-v2.2.3
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify release version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          test "$version" = "2.2.3"
+
+      - name: Build reproducible release archives
+        run: npm run release:repro
+
+      - name: Publish v2.2.3
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view v2.2.3 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "GitHub Release v2.2.3 already exists; no changes were made."
+            exit 0
+          fi
+
+          gh release create v2.2.3 \
+            release/Asterfold-Chrome.zip \
+            release/chrome-unpacked.zip \
+            release/extension-source.zip \
+            release/Asterfold-Store-Assets.zip \
+            release/checksums.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Asterfold 2.2.3 — Chrome Web Store readiness" \
+            --notes-file docs/release/release-notes.md \
+            --latest
