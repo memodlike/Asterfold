@@ -553,10 +553,10 @@ test.describe.serial("Asterfold MV3 release", () => {
     await page.getByRole("menuitem", { name: "Настройки" }).click();
     dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    await dialog.getByText("Производительность", { exact: true }).scrollIntoViewIfNeeded();
-    await captureStoreScreenshot(page, "03-settings-1280x800.png");
     const lowPowerToggle = dialog.locator('label.switch:has(input[aria-label="Режим для слабых ПК"])');
     await expect(lowPowerToggle).toHaveCount(1);
+    await lowPowerToggle.scrollIntoViewIfNeeded();
+    await captureStoreScreenshot(page, "03-settings-1280x800.png");
     await lowPowerToggle.click();
     await expect(page.locator(".app-shell")).toHaveClass(/low-power-mode/u);
     await lowPowerToggle.click();
