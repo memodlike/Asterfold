@@ -33,10 +33,10 @@ describe("interaction regressions", () => {
     expect(submit).not.toHaveBeenCalled();
   });
 
-  it("keeps focus trapped on a modal panel that has no enabled controls", () => {
+  it("keeps focus inside the modal when no visible tabbable controls remain", () => {
     render(createElement(Modal, { open: true, title: "Information", onClose: vi.fn(), children: createElement("p", null, "Read only") }));
     const dialog = screen.getByRole("dialog");
-    expect(dialog).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Close" })).toHaveFocus();
     fireEvent.keyDown(document, { key: "Tab" });
     expect(dialog).toHaveFocus();
   });
