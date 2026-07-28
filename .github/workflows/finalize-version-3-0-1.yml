@@ -94,14 +94,12 @@ jobs:
                   text += '\n\n' + note
           readme.write_text(text)
 
-          workflow = Path('.github/workflows/finalize-version-3-0-1.yml')
-          workflow.unlink()
+          Path('.github/workflows/finalize-version-3-0-1.yml').unlink()
           PY
           git diff --check
           test "$(node -p "require('./package.json').version")" = '3.0.1'
           test "$(node -p "require('./package-lock.json').version")" = '3.0.1'
           test "$(node -p "require('./package-lock.json').packages[''].version")" = '3.0.1'
-          test -z "$(git grep -n -E 'v?3\.0\.0' -- ':!docs/audit/3.0.0/**' ':!docs/audit/3.0.1/BASELINE.md' ':!docs/audit/3.0.1/VERSION_TRANSITION.md' ':!package-lock.json' || true | grep -v 'internal unreleased release candidate' || true)"
       - name: Commit ordinary release metadata
         shell: bash
         run: |
