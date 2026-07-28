@@ -10,7 +10,7 @@ permissions:
 
 concurrency:
   group: apply-v3-hardening-${{ github.event.pull_request.head.ref || github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   apply:
@@ -24,29 +24,14 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
 
-      - name: Decode and record transport digests
+      - name: Decode patch transport
         shell: bash
-        env:
-          BRANCH: ${{ github.head_ref }}
         run: |
           set -euo pipefail
           cat .github/asterfold-v3-patch/part* > /tmp/asterfold-v3.patch.gz.b64
           base64 --decode /tmp/asterfold-v3.patch.gz.b64 | gzip --decompress > /tmp/asterfold-v3.patch
-          {
-            echo 'encoded:'
-            sha256sum /tmp/asterfold-v3.patch.gz.b64
-            wc -c /tmp/asterfold-v3.patch.gz.b64
-            echo 'decoded:'
-            sha256sum /tmp/asterfold-v3.patch
-            wc -c /tmp/asterfold-v3.patch
-          } > .github/asterfold-v3-patch/actual-sha.txt
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .github/asterfold-v3-patch/actual-sha.txt
-          if ! git diff --cached --quiet; then
-            git commit -m 'ci: record patch transport digest'
-            git push origin "HEAD:${BRANCH}"
-          fi
+          sha256sum /tmp/asterfold-v3.patch.gz.b64 /tmp/asterfold-v3.patch
+          wc -c /tmp/asterfold-v3.patch.gz.b64 /tmp/asterfold-v3.patch
 
       - name: Upload decoded patch for byte comparison
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -80,5 +65,7 @@ jobs:
           BRANCH: ${{ github.head_ref }}
         run: |
           set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'release: prepare Asterfold 3.0.0 for Chrome Web Store'
           git push origin "HEAD:${BRANCH}"
