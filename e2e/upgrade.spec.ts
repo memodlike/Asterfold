@@ -10,6 +10,15 @@ const executablePath = process.env.ASTERFOLD_CHROMIUM_PATH || "/usr/bin/chromium
 
 test.skip(!baselinePath || !targetZip, "Exact 2.2.3 upgrade fixture is prepared only in CI/release gates.");
 
+type UpgradeRecord = Record<string, unknown>;
+
+interface UpgradeSeedData {
+  pageRecord: UpgradeRecord;
+  boardRecord: UpgradeRecord;
+  bookmarkRecord: UpgradeRecord;
+  trashRecord: UpgradeRecord;
+}
+
 async function extensionWorker(context: BrowserContext): Promise<Worker> {
   return context.serviceWorkers().find((worker) => worker.url().startsWith("chrome-extension://"))
     ?? context.waitForEvent("serviceworker", { predicate: (worker) => worker.url().startsWith("chrome-extension://"), timeout: 15_000 });
@@ -32,8 +41,8 @@ async function launch(extensionPath: string): Promise<{ context: BrowserContext;
   return { context, page, extensionId, errors };
 }
 
-async function seedVersion223(page: Page): Promise<Record<string, unknown>> {
-  return page.evaluate(async () => {
+async function seedVersion223(page: Page): Promise<UpgradeSeedData> {
+  return page.evaluate<UpgradeSeedData>(async () => {
     const open = indexedDB.open("asterfold");
     const database = await new Promise<IDBDatabase>((resolvePromise, reject) => {
       open.onsuccess = () => resolvePromise(open.result);
@@ -118,10 +127,10 @@ test("preserves a real 2.2.3 profile when the same unpacked extension path is up
       request.onerror = () => reject(request.error ?? new Error(`Unable to read ${store}`));
     });
     const result = {
-      pageRecord: await read("pages", "upgrade-page"),
-      boardRecord: await read("boards", "upgrade-board"),
-      bookmarkRecord: await read("bookmarks", "upgrade-bookmark"),
-      trashRecord: await read("bookmarks", "upgrade-trash"),
+      pageRecord: await read<UpgradeRecord>("pages", "upgrade-page"),
+      boardRecord: await read<UpgradeRecord>("boards", "upgrade-board"),
+      bookmarkRecord: await read<UpgradeRecord>("bookmarks", "upgrade-bookmark"),
+      trashRecord: await read<UpgradeRecord>("bookmarks", "upgrade-trash"),
       settings: await read<Record<string, unknown>>("settings", "app"),
       version: database.version,
     };
