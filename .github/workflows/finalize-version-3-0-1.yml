@@ -5,7 +5,7 @@ on:
     types: [opened, reopened, synchronize]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: finalize-asterfold-3-0-1-version
@@ -13,115 +13,7 @@ concurrency:
 
 jobs:
   finalize:
-    if: github.head_ref == 'agent/asterfold-v3-store-hardening'
+    if: false
     runs-on: ubuntu-latest
-    timeout-minutes: 12
     steps:
-      - name: Check out exact branch
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          ref: agent/asterfold-v3-store-hardening
-          fetch-depth: 0
-      - name: Apply verified test fixes and guarded version transition
-        shell: bash
-        run: |
-          set -euo pipefail
-          if test -f .github/patches/coverage-test-fixes.patch; then
-            test "$(git hash-object .github/patches/coverage-test-fixes.patch)" = '371019272433af3c98fb32ef1dd491f2834be32b'
-            git apply --check .github/patches/coverage-test-fixes.patch
-            git apply .github/patches/coverage-test-fixes.patch
-          fi
-          python - <<'PY'
-          from pathlib import Path
-          import json
-
-          old = '3.0.0'
-          new = '3.0.1'
-          historical_note = '> Version 3.0.0 was an internal unreleased release candidate and was superseded by 3.0.1 before publication.\n\n'
-
-          package_path = Path('package.json')
-          package = json.loads(package_path.read_text())
-          if package.get('version') not in {old, new}:
-              raise SystemExit(f"Unexpected package version: {package.get('version')}")
-          package['version'] = new
-          package_path.write_text(json.dumps(package, indent=2) + '\n')
-
-          lock_path = Path('package-lock.json')
-          lock = json.loads(lock_path.read_text())
-          root_version = lock.get('version')
-          package_version = lock.get('packages', {}).get('', {}).get('version')
-          if root_version not in {old, new} or package_version not in {old, new}:
-              raise SystemExit('Unexpected package-lock root version')
-          lock['version'] = new
-          lock['packages']['']['version'] = new
-          lock_path.write_text(json.dumps(lock, indent=2) + '\n')
-
-          current_paths = [
-              'README.md',
-              'tests/manifestPolicy.test.ts',
-              'e2e/upgrade.spec.ts',
-              'src/db/migrations.ts',
-              'docs/store/privacy.html',
-              'docs/store/privacy-practices.md',
-              'docs/store/submission-checklist.md',
-              'store-assets/listing/store-listing-en.md',
-              'store-assets/listing/store-listing-ru.md',
-              'store-assets/listing/submission-values.md',
-              'docs/release/release-notes.md',
-              'docs/release/versioning.md',
-              'docs/release/install.md',
-              'docs/audit/FINDINGS_STATUS.md',
-              'docs/audit/EVIDENCE.md',
-              'docs/audit/QA_REPORT.md',
-              'docs/security/review.md',
-              'docs/security/permissions.md',
-              'docs/security/threat-model.md',
-              'docs/security/privacy.md',
-          ]
-          for raw_path in current_paths:
-              path = Path(raw_path)
-              text = path.read_text()
-              text = text.replace('v3.0.0', 'v3.0.1').replace(old, new)
-              path.write_text(text)
-
-          for raw_path, marker in [
-              ('README.md', '## Release status\n\n'),
-              ('docs/release/versioning.md', '# Release versioning\n\n'),
-              ('docs/release/release-notes.md', '# Asterfold 3.0.1\n\n'),
-          ]:
-              path = Path(raw_path)
-              text = path.read_text()
-              if historical_note not in text:
-                  text = text.replace(marker, marker + historical_note) if marker in text else text + '\n\n' + historical_note
-              path.write_text(text)
-
-          audit_dir = Path('docs/audit/3.0.1')
-          audit_dir.mkdir(parents=True, exist_ok=True)
-          transition = audit_dir / 'VERSION_TRANSITION.md'
-          transition.write_text(
-              '# Version transition\n\n'
-              '- Published predecessor: `2.2.3`.\n'
-              '- `3.0.0` was an internal unreleased release candidate.\n'
-              '- Final release target: `3.0.1` / `v3.0.1`.\n'
-              '- No `v3.0.0` tag or GitHub Release may be created.\n'
-          )
-          PY
-          rm -rf .github/patches/coverage-test-fixes.patch
-          rm -f .github/patches/coverage-test-fixes.trigger
-          rm -f .github/workflows/apply-coverage-test-fixes.yml
-          rm -f .github/workflows/finalize-version-3-0-1.yml
-          node scripts/validate-version.mjs
-          git diff --check
-          test "$(node -p "require('./package.json').version")" = '3.0.1'
-          test "$(node -p "require('./package-lock.json').version")" = '3.0.1'
-          test "$(node -p "require('./package-lock.json').packages[''].version")" = '3.0.1'
-      - name: Commit ordinary release source tree
-        shell: bash
-        run: |
-          set -euo pipefail
-          git add -A
-          git diff --cached --check
-          git config user.name 'Asterfold Release Automation'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'release: prepare Asterfold 3.0.1'
-          git push origin HEAD:refs/heads/agent/asterfold-v3-store-hardening
+      - run: echo 'Finalization is performed by the verified source commit; this temporary workflow will be removed.'
