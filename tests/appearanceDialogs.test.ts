@@ -130,7 +130,7 @@ describe("MoveDialog", () => {
     fireEvent.change(screen.getByRole("combobox"), { target: { value: boardTwo.id } });
     fireEvent.click(screen.getByRole("button", { name: "Move" }));
     expect(await screen.findByRole("alert")).toBeVisible();
-    await act(async () => {
+    act(() => {
       view.rerender(withI18n(createElement(MoveDialog, { ...props, open: false })));
       view.rerender(withI18n(createElement(MoveDialog, { ...props, open: true })));
     });
