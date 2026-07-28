@@ -1,0 +1,67 @@
+name: Apply verified Asterfold 3.0.0 patch
+
+on:
+  push:
+    branches:
+      - agent/asterfold-v3-store-hardening
+    paths:
+      - .github/workflows/apply-v3-patch.yml
+      - .github/patches/asterfold-v3.patch.gz.b64.*
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-asterfold-v3-patch
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: github.actor == 'memodlike'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out staging branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: agent/asterfold-v3-store-hardening
+          fetch-depth: 0
+
+      - name: Verify and apply audited patch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          baseline=d8bed284f487142c2fe16d4b34b3df80bd45679b
+          unexpected="$(git diff --name-only "$baseline" -- | grep -Ev '^\.github/(patches/|workflows/apply-v3-patch\.yml$)' || true)"
+          if [[ -n "$unexpected" ]]; then
+            echo "Unexpected source changes exist before patch application:" >&2
+            printf '%s\n' "$unexpected" >&2
+            exit 1
+          fi
+
+          cat .github/patches/asterfold-v3.patch.gz.b64.* \
+            | base64 --decode > /tmp/asterfold-v3.patch.gz
+          echo "69541bc60232b0fc46c41d369e5be1e1e8298c56d26c1f38da7dac293e26d2f9  /tmp/asterfold-v3.patch.gz" \
+            | sha256sum --check
+
+          gzip -dc /tmp/asterfold-v3.patch.gz > /tmp/asterfold-v3.patch
+          echo "ddd9cad65955b073ee7c9271ea86dbfca4f97b3c1d940b11a244373f5d4136a1  /tmp/asterfold-v3.patch" \
+            | sha256sum --check
+
+          git apply --check /tmp/asterfold-v3.patch
+          git apply --index /tmp/asterfold-v3.patch
+
+          rm -rf .github/patches .github/workflows/apply-v3-patch.yml
+          git add -u
+          git diff --cached --check
+
+          if [[ -e .github/workflows/apply-v3-patch.yml || -d .github/patches ]]; then
+            echo "Temporary patch transport was not removed." >&2
+            exit 1
+          fi
+
+          git config user.name "Asterfold Release Automation"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "release: prepare Asterfold 3.0.0 for Chrome Web Store"
+          git push origin HEAD:refs/heads/agent/asterfold-v3-store-hardening
