@@ -68,8 +68,8 @@ function openMenu(container: HTMLElement): void {
 describe("BoardColumn behavior", () => {
   it("adds bookmarks from the header and empty state", () => {
     const { callbacks } = renderColumn();
-    fireEvent.click(screen.getByRole("button", { name: "Add bookmark to Inbox" }));
-    fireEvent.click(screen.getByRole("button", { name: "Add your first bookmark" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add a bookmark to Inbox" }));
+    fireEvent.click(screen.getByRole("button", { name: "Drop a link here or press +" }));
     expect(callbacks.onAddBookmark).toHaveBeenCalledTimes(2);
     expect(callbacks.onAddBookmark).toHaveBeenCalledWith(board);
   });
@@ -87,27 +87,27 @@ describe("BoardColumn behavior", () => {
     const { container, callbacks } = renderColumn();
 
     openMenu(container);
-    fireEvent.click(screen.getByRole("button", { name: /Rename/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Rename" }));
     expect(callbacks.onEditBoard).toHaveBeenCalledWith(board);
 
     openMenu(container);
-    fireEvent.click(screen.getByRole("button", { name: /Two columns/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Two columns" }));
     expect(callbacks.onPatchBoard).toHaveBeenCalledWith(board, { bookmarkColumns: 2 });
 
     openMenu(container);
-    fireEvent.click(screen.getByRole("button", { name: /Medium/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Medium" }));
     expect(callbacks.onPatchBoard).toHaveBeenCalledWith(board, { gridSpan: 4 });
 
     openMenu(container);
-    fireEvent.click(screen.getByRole("button", { name: /Move to page/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Move to page" }));
     expect(callbacks.onMoveBoard).toHaveBeenCalledWith(board);
 
     openMenu(container);
-    fireEvent.click(screen.getByRole("button", { name: /Duplicate/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Duplicate" }));
     expect(callbacks.onDuplicateBoard).toHaveBeenCalledWith(board);
 
     openMenu(container);
-    fireEvent.click(screen.getByRole("button", { name: /Move to trash/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Move to trash" }));
     expect(callbacks.onDeleteBoard).toHaveBeenCalledWith(board);
   });
 

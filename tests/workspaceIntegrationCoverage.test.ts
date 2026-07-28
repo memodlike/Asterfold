@@ -169,7 +169,7 @@ describe("workspace integration coverage", () => {
   it("renders loading and recoverable failure states", () => {
     mocks.workspaceState.workspace = undefined;
     const view = render(createElement(WorkspaceApp));
-    expect(screen.getByText("Opening your workspace…")).toBeVisible();
+    expect(screen.getByText("Opening your new tab…")).toBeVisible();
 
     mocks.workspaceState.failed = true;
     view.rerender(createElement(WorkspaceApp));
@@ -203,13 +203,13 @@ describe("workspace integration coverage", () => {
 
     openLauncher();
     fireEvent.click(screen.getByRole("menuitem", { name: "Pages" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "New page" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Create page" }));
     fireEvent.change(screen.getByRole("textbox", { name: "Title" }), { target: { value: "Research" } });
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
     await waitFor(() => expect(mocks.repository.createPage).toHaveBeenCalledWith("Research"));
 
     openBoardContext();
-    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Rename" }));
     fireEvent.change(screen.getByRole("textbox", { name: "Title" }), { target: { value: "Renamed inbox" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(mocks.repository.updateBoard).toHaveBeenCalledWith("b1", { title: "Renamed inbox" }));
@@ -218,36 +218,36 @@ describe("workspace integration coverage", () => {
   it("executes board and bookmark context actions", async () => {
     render(createElement(WorkspaceApp));
     openBoardContext();
-    fireEvent.click(screen.getByRole("button", { name: "Two columns" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Two columns" }));
     expect(mocks.repository.updateBoard).toHaveBeenCalledWith("b1", { bookmarkColumns: 2 });
 
     openBoardContext();
-    fireEvent.click(screen.getByRole("button", { name: "Duplicate" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Duplicate" }));
     expect(mocks.repository.duplicateBoard).toHaveBeenCalledWith("b1");
 
     openBookmarkContext();
-    fireEvent.click(screen.getByRole("button", { name: "Copy URL" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Copy URL" }));
     await waitFor(() => expect(mocks.browser.copyText).toHaveBeenCalledWith("https://example.com/"));
 
     openBookmarkContext();
-    fireEvent.click(screen.getByRole("button", { name: "Duplicate" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Duplicate" }));
     expect(mocks.repository.duplicateBookmark).toHaveBeenCalledWith("m1");
 
     openBookmarkContext();
-    fireEvent.click(screen.getByRole("button", { name: "Move to Trash" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Move to trash" }));
     await waitFor(() => expect(mocks.repository.softDeleteBookmark).toHaveBeenCalledWith("m1"));
   });
 
   it("moves bookmarks and boards through destination dialogs", async () => {
     render(createElement(WorkspaceApp));
     openBookmarkContext();
-    fireEvent.click(screen.getByRole("button", { name: "Move" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Move" }));
     expect(screen.getByRole("combobox")).toHaveValue("b2");
     fireEvent.click(screen.getAllByRole("button", { name: "Move" }).at(-1)!);
     await waitFor(() => expect(mocks.repository.moveBookmarkToIndex).toHaveBeenCalledWith("m1", "b2", Number.MAX_SAFE_INTEGER));
 
     openBoardContext();
-    fireEvent.click(screen.getByRole("button", { name: "Move to page" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Move to page" }));
     expect(screen.getByRole("combobox")).toHaveValue("p2");
     fireEvent.click(screen.getAllByRole("button", { name: "Move" }).at(-1)!);
     await waitFor(() => expect(mocks.repository.moveBoardToIndex).toHaveBeenCalledWith("b1", "p2", Number.MAX_SAFE_INTEGER));
@@ -263,7 +263,7 @@ describe("workspace integration coverage", () => {
     expect(mocks.repository.updateSettings).toHaveBeenCalledWith({ activePageId: "p1" });
     fireEvent.click(screen.getByRole("button", { name: "Close search" }));
 
-    fireEvent.click(screen.getByRole("button", { name: "Add bookmark to Inbox" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add a bookmark to Inbox" }));
     expect(await screen.findByRole("dialog", { name: "Editor double" })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Editor saved" }));
     fireEvent.click(screen.getByRole("button", { name: "Editor error" }));
@@ -290,11 +290,11 @@ describe("workspace integration coverage", () => {
     mocks.privacyState.privacy = true;
     render(createElement(WorkspaceApp));
     openBookmarkContext();
-    expect(screen.getByRole("button", { name: "Copy URL" })).toBeDisabled();
+    expect(screen.getByRole("menuitem", { name: "Copy URL" })).toBeDisabled();
 
     mocks.browser.openUrl.mockRejectedValueOnce(new Error("navigation"));
     fireEvent.click(screen.getByRole("button", { name: "Open hidden bookmark" }));
-    expect(await screen.findByText("The action could not be completed.")).toBeVisible();
+    expect(await screen.findByText("Unable to complete the action")).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Dismiss hint" }));
     await waitFor(() => expect(mocks.repository.updateSettings).toHaveBeenCalledWith({ onboardingComplete: true }));

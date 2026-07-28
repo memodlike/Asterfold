@@ -1,4 +1,6 @@
-# Asterfold 3.0.0
+# Asterfold 3.0.1
+
+> Version 3.0.0 was an internal unreleased release candidate and was superseded by 3.0.1 before publication.
 
 ## Highlights
 

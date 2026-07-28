@@ -1,4 +1,4 @@
-# Chrome Web Store Privacy Practices — Asterfold 3.0.0
+# Chrome Web Store Privacy Practices — Asterfold 3.0.1
 
 Prepared on 28 July 2026. These are proposed dashboard answers for the reviewed default release. Recheck every answer against the final uploaded ZIP before submission.
 
@@ -30,7 +30,7 @@ If the Dashboard wording or examples change, use the broader disclosure when a c
 
 ## Data handling certifications
 
-The owner can certify the following for the reviewed 3.0.0 default build:
+The owner can certify the following for the reviewed 3.0.1 default build:
 
 - data is used only to provide the extension's single bookmark-workspace purpose;
 - workspace data is stored locally in the user's Chrome profile;
@@ -69,7 +69,7 @@ Do not submit the intended Pages URL until it opens publicly without authenticat
 | `storage` | Stores only the temporary Privacy Mode flag in `chrome.storage.session`, allowing popup and New Tab to share the same visual-protection state. Chrome clears session storage when the browser session ends; bookmark workspace data remains in IndexedDB. |
 | optional `bookmarks` | Requested only when the user selects Import Chrome bookmarks. The Chrome bookmark tree is read and processed locally to create an import preview; declining does not affect normal use. |
 
-The final 3.0.0 manifest must list only `activeTab`, `favicon`, `alarms`, `contextMenus`, `storage` and optional `bookmarks`; it must not list host permissions, content scripts, `tabs`, `history`, `identity`, `scripting`, `webRequest`, cookies or clipboard-read. If the final ZIP differs, stop submission and reconcile the manifest and disclosures.
+The final 3.0.1 manifest must list only `activeTab`, `favicon`, `alarms`, `contextMenus`, `storage` and optional `bookmarks`; it must not list host permissions, content scripts, `tabs`, `history`, `identity`, `scripting`, `webRequest`, cookies or clipboard-read. If the final ZIP differs, stop submission and reconcile the manifest and disclosures.
 
 ## Privacy policy URL
 

@@ -214,9 +214,9 @@ describe("WorkspaceApp orchestration", () => {
     expect(mocks.moveBoardToIndex).toHaveBeenCalledWith(board.id, page.id, 1);
 
     act(() => { mocks.canvas?.onAddBookmark(board); });
-    expect(mocks.editor?.initialBoardId).toBe(board.id);
-    mocks.canvas?.onEditBookmark(bookmark);
-    expect(mocks.editor?.bookmark).toEqual(bookmark);
+    await waitFor(() => expect(mocks.editor?.initialBoardId).toBe(board.id));
+    act(() => { mocks.canvas?.onEditBookmark(bookmark); });
+    await waitFor(() => expect(mocks.editor?.bookmark).toEqual(bookmark));
     mocks.canvas?.onDuplicateBookmark(bookmark);
     mocks.canvas?.onDeleteBookmark(bookmark);
     mocks.canvas?.onMoveBookmarkIndex(bookmark.id, boardTwo.id, 0);
@@ -232,7 +232,7 @@ describe("WorkspaceApp orchestration", () => {
     expect(mocks.copyText).toHaveBeenCalledWith(`[${bookmark.title}](${bookmark.url})`);
 
     act(() => { mocks.launcher?.onSearch(); });
-    expect(mocks.search?.open).toBe(true);
+    await waitFor(() => expect(mocks.search?.open).toBe(true));
     mocks.search?.onReveal(bookmark, pageTwo.id);
     mocks.search?.onEdit(bookmark);
     mocks.search?.onMove(bookmark);
@@ -278,7 +278,7 @@ describe("WorkspaceApp orchestration", () => {
     expect(mocks.updateSettings).toHaveBeenCalledWith({ onboardingComplete: true });
 
     fireEvent.keyDown(window, { key: "k", ctrlKey: true });
-    expect(mocks.search?.open).toBe(true);
+    await waitFor(() => expect(mocks.search?.open).toBe(true));
 
     const RequestError = mocks.requestErrorClass!;
     mocks.openUrl.mockRejectedValueOnce(new RequestError("UNSAFE_URL"));

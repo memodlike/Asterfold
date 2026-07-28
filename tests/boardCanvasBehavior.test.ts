@@ -112,7 +112,7 @@ describe("BoardCanvas behavior", () => {
     act(() => {
       mocks.dndProps?.onDragStart({ active: { data: { current: { type: "board", boardId: board.id } } } });
     });
-    expect(screen.getByText(board.title)).toBeVisible();
+    expect(screen.getByText(board.title, { selector: ".drag-overlay span" })).toBeVisible();
     act(() => { mocks.dndProps?.onDragCancel(); });
 
     mocks.dndProps?.onDragEnd({

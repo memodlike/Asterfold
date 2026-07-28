@@ -254,8 +254,9 @@ describe("runtime lifecycle coverage", () => {
 
     vi.useFakeTimers();
     const timedOut = parseHtmlOffThread("timeout");
+    const timeoutRejection = expect(timedOut).rejects.toThrow("Import worker timed out");
     await vi.advanceTimersByTimeAsync(30_001);
-    await expect(timedOut).rejects.toThrow("Import worker timed out");
+    await timeoutRejection;
   });
 });
 
@@ -282,7 +283,7 @@ describe("dialog and semantic coverage", () => {
     submit.mockRejectedValueOnce(new Error("save"));
     view.rerender(createElement(NameDialog, { open: true, title: "Rename", label: "Title", initialValue: "Retry", onClose: close, onSubmit: submit }));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("The action could not be completed.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Unable to complete the action");
   });
 
   it("moves boards and bookmarks, resets destinations and reports failure", async () => {
@@ -297,7 +298,7 @@ describe("dialog and semantic coverage", () => {
     view.rerender(createElement(MoveDialog, { open: true, type: "bookmark", pages, boards, currentId: "b1", onClose: close, onMove: move }));
     expect(screen.getByRole("combobox")).toHaveValue("b2");
     fireEvent.click(screen.getByRole("button", { name: "Move" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("The action could not be completed.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Unable to complete the action");
   });
 
   it("disables movement when no destination exists", () => {

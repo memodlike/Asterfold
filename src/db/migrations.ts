@@ -148,7 +148,7 @@ export async function migrateToV5(transaction: Transaction): Promise<void> {
 /**
  * Marks the legacy onboarding flag complete for existing installations.
  * Fresh databases still use createDefaultSettings() with onboardingComplete=false,
- * so only genuinely new users see the 3.0.0 launcher discovery hint.
+ * so only genuinely new users see the 3.0.1 launcher discovery hint.
  */
 export async function migrateToV6(transaction: Transaction): Promise<void> {
   const settingsTable = transaction.table<V2Settings, string>("settings");

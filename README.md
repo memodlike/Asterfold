@@ -178,7 +178,7 @@ Contribution guidance is available in [docs/development/CONTRIBUTING.md](docs/de
 
 ## Release artifacts
 
-Asterfold 3.0.0 produces a reproducible, cryptographically verifiable release containing:
+Asterfold 3.0.1 produces a reproducible, cryptographically verifiable release containing:
 
 - `Asterfold-Chrome.zip` — upload/install package with `manifest.json` at the ZIP root;
 - `chrome-unpacked.zip` — unpacked folder wrapper;
@@ -192,13 +192,13 @@ The release pipeline verifies Manifest V3 structure, permission policy, CSP, for
 
 ## Current status
 
-**Asterfold 3.0.0** is a local-first Manifest V3 release candidate with CI-gated publishing, deterministic artifacts, SBOM/provenance evidence, and a migration-safe first-use discovery improvement.
+**Asterfold 3.0.1** is a local-first Manifest V3 release candidate with CI-gated publishing, deterministic artifacts, SBOM/provenance evidence, and a migration-safe first-use discovery improvement.
 
 The repository does not claim Chrome Web Store publication, approval, user counts, ratings, awards, or endorsements until those facts exist publicly.
 
 ## Version history
 
-1. **v3.0.0 — Verified release pipeline and first-use hardening.** Adds tag-only CI-gated publishing, exact-SHA workflow checks, deterministic cross-platform packaging, SBOM/provenance/attestations, runtime-only Store ZIP validation, migration-safe launcher discovery, and versioned audit evidence.
+1. **v3.0.1 — Verified release pipeline and first-use hardening.** Adds tag-only CI-gated publishing, exact-SHA workflow checks, deterministic cross-platform packaging, SBOM/provenance/attestations, runtime-only Store ZIP validation, migration-safe launcher discovery, and versioned audit evidence.
 2. **v2.2.3 — Chrome Web Store readiness.** Fixed Quick Save destination validation, cross-context session Privacy Mode, scoped restore safety, bounded imports, HTML description round-trip, atomic free-grid moves, settings races, and release gates.
 3. **v2.2.2 — Data and privacy hardening.** Improved scoped backups, deleted-data merge behavior, Quick Save, atomic moves and Undo, wallpaper handling, Page actions, and background reliability.
 4. **v2.2.1 — Store submission package.** Added verifiable Store collateral, privacy documentation, and backup v3 wallpaper support.
@@ -207,3 +207,5 @@ The repository does not claim Chrome Web Store publication, approval, user count
 7. **v2.0.x — Pages → Boards → Bookmarks redesign and correct Chrome packaging.**
 
 The newest published build is always listed first on the [GitHub Releases page](https://github.com/memodlike/Asterfold/releases).
+
+> Version 3.0.0 was an internal unreleased release candidate and was superseded by 3.0.1 before publication.

@@ -107,8 +107,9 @@ describe("import worker lifecycle", () => {
     vi.useFakeTimers();
     const pending = parseHtmlOffThread("<DL></DL>");
     const worker = FakeWorker.instances[0]!;
+    const timeoutRejection = expect(pending).rejects.toThrow("Import worker timed out");
     await vi.advanceTimersByTimeAsync(30_001);
-    await expect(pending).rejects.toThrow("Import worker timed out");
+    await timeoutRejection;
     expect(worker.terminated).toBe(true);
   });
 });

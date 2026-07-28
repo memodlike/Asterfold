@@ -130,11 +130,10 @@ describe("MoveDialog", () => {
     fireEvent.change(screen.getByRole("combobox"), { target: { value: boardTwo.id } });
     fireEvent.click(screen.getByRole("button", { name: "Move" }));
     expect(await screen.findByRole("alert")).toBeVisible();
-    act(() => {
-      view.rerender(withI18n(createElement(MoveDialog, { ...props, open: false })));
-      view.rerender(withI18n(createElement(MoveDialog, { ...props, open: true })));
-    });
-    expect(screen.queryByRole("alert")).toBeNull();
+    view.rerender(withI18n(createElement(MoveDialog, { ...props, open: false })));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    view.rerender(withI18n(createElement(MoveDialog, { ...props, open: true })));
+    await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
     expect(screen.getByRole("combobox")).toHaveValue(board.id);
   });
 });

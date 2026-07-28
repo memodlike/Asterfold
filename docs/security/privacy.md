@@ -1,8 +1,8 @@
 # Asterfold privacy policy
 
 Effective date: 28 July 2026<br>
-Policy version: 3.0.0<br>
-Applies to: Asterfold 3.0.0 for Chrome
+Policy version: 3.0.1<br>
+Applies to: Asterfold 3.0.1 for Chrome
 
 Asterfold replaces the Chrome new tab with a local-first visual workspace for organizing and opening bookmarks. It processes the information needed for those features on the user's device. It does not claim that no data is processed.
 
@@ -17,15 +17,15 @@ Asterfold may process and store:
 - bookmark data from a file selected by the user, or the Chrome bookmark tree after the user chooses that import and grants the optional permission;
 - local backup and restore data;
 - a wallpaper image selected by the user, plus a resized local copy, thumbnail and technical metadata such as dimensions and stored size;
-- legacy custom raster icon values when present in an imported Asterfold backup; version 3.0.0 does not provide a UI for adding or rendering them.
+- legacy custom raster icon values when present in an imported Asterfold backup; version 3.0.1 does not provide a UI for adding or rendering them.
 
 This information may include personal or sensitive content if the user puts such content in bookmark names, URLs, imported files or images. Asterfold uses it only to provide the requested bookmark-workspace features.
 
 ## Where information is stored
 
-Workspace records and uploaded assets are stored locally in the user's Chrome profile, primarily in IndexedDB. Search indexes and import previews are created locally. Older installations may retain legacy diagnostic snapshot records created by an earlier version; version 3.0.0 does not create new snapshots. The temporary Privacy Mode state is stored in `chrome.storage.session` so popup and New Tab stay consistent; Chrome clears that value when the browser session ends.
+Workspace records and uploaded assets are stored locally in the user's Chrome profile, primarily in IndexedDB. Search indexes and import previews are created locally. Older installations may retain legacy diagnostic snapshot records created by an earlier version; version 3.0.1 does not create new snapshots. The temporary Privacy Mode state is stored in `chrome.storage.session` so popup and New Tab stay consistent; Chrome clears that value when the browser session ends.
 
-Asterfold 3.0.0 has no application backend, account system or cloud synchronization. The default build has no host permissions and makes no application network requests. Data is not sent to the developer.
+Asterfold 3.0.1 has no application backend, account system or cloud synchronization. The default build has no host permissions and makes no application network requests. Data is not sent to the developer.
 
 Chrome itself may use the network when the user opens a destination page or when Chrome supplies its browser-owned `_favicon` resource for a saved URL. Those browser actions are separate from an application request by Asterfold. Asterfold does not store or render a remote favicon URL.
 
@@ -74,7 +74,7 @@ Users can delete individual items, restore them from Trash, permanently empty Tr
 
 ## Wallpapers and legacy icon values
 
-Uploaded wallpapers are decoded, bounded and stored locally. Remote wallpaper URLs are not accepted. Legacy custom raster icon values may remain inside imported backups for data compatibility, but version 3.0.0 does not render them or provide a UI for adding them. Removing or replacing a wallpaper may remove unreferenced local copies during cleanup.
+Uploaded wallpapers are decoded, bounded and stored locally. Remote wallpaper URLs are not accepted. Legacy custom raster icon values may remain inside imported backups for data compatibility, but version 3.0.1 does not render them or provide a UI for adding them. Removing or replacing a wallpaper may remove unreferenced local copies during cleanup.
 
 ## Privacy Mode
 
@@ -84,7 +84,7 @@ Privacy Mode is shoulder-surfing protection, not encryption. The underlying loca
 
 ## Children
 
-Asterfold is a general-purpose productivity tool and is not directed specifically to children. It does not knowingly collect information through a developer-operated service because no such service exists in version 3.0.0.
+Asterfold is a general-purpose productivity tool and is not directed specifically to children. It does not knowingly collect information through a developer-operated service because no such service exists in version 3.0.1.
 
 ## Limited Use
 

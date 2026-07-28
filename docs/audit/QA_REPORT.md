@@ -1,6 +1,6 @@
 # QA report
 
-> Historical evidence notice: sections describing 2.2.3 and earlier are retained as historical records. Current 3.0.0 remediation status is maintained under `docs/audit/3.0.0/`.
+> Historical evidence notice: sections describing 2.2.3 and earlier are retained as historical records. Current 3.0.1 remediation status is maintained under `docs/audit/3.0.1/`.
 
 Machine-generated command evidence belongs in `EVIDENCE.md`; this file is the reviewer summary.
 
