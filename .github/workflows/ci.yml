@@ -1,80 +1,143 @@
-name: Apply verified Asterfold 3.0.0 source patch from PR
+name: CI
 
 on:
+  push:
+    branches: [main]
   pull_request:
-    types: [opened, reopened, synchronize]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: apply-asterfold-v3-pr-patch
-  cancel-in-progress: false
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  apply:
-    if: github.head_ref == 'agent/asterfold-v3-store-hardening'
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Version consistency
+        run: npm run validate:version
+      - name: Production dependency audit
+        run: npm run audit:production
+      - name: Development dependency audit baseline
+        run: npm run audit:development
+      - name: Source security scan
+        run: npm run scan:source
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test:coverage
+      - name: Chrome Web Store asset validation
+        run: npm run validate:store
+      - name: Reproducible release and package validation
+        run: npm run release:repro
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Real MV3, accessibility and visual E2E
+        run: npm run test:e2e
+      - name: Prepare exact 2.2.3 upgrade fixture
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .upgrade && mkdir -p .upgrade/extension
+          gh release download v2.2.3 --repo "$GITHUB_REPOSITORY" --pattern Asterfold-Chrome.zip --dir .upgrade
+          echo "e666c0e40ca2bcd1631b04e3b9087e38b26f71336664ecfc475ee8b4d610920a  .upgrade/Asterfold-Chrome.zip" | sha256sum --check
+          unzip -q .upgrade/Asterfold-Chrome.zip -d .upgrade/extension
+          test "$(node -p "require('./.upgrade/extension/manifest.json').version")" = "2.2.3"
+      - name: Exact 2.2.3 to 3.0.0 upgrade E2E
+        env:
+          ASTERFOLD_UPGRADE_BASELINE_PATH: ${{ github.workspace }}/.upgrade/extension
+          ASTERFOLD_UPGRADE_TARGET_ZIP: ${{ github.workspace }}/release/Asterfold-Chrome.zip
+          ASTERFOLD_UPGRADE_PROFILE_PATH: ${{ github.workspace }}/.upgrade/profile
+        run: npm run test:upgrade
+      - name: Upload failure evidence
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: failure-evidence-linux
+          path: |
+            test-results
+            playwright-report
+            coverage
+          if-no-files-found: ignore
+      - name: Upload Linux reproducibility subjects
+        if: success()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-linux
+          path: |
+            release/Asterfold-Chrome.zip
+            release/chrome-unpacked.zip
+            release/extension-source.zip
+            release/Asterfold-Store-Assets.zip
+            release/sbom.spdx.json
+          if-no-files-found: error
+
+  windows-release:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run release:repro
+      - name: Upload Windows reproducibility subjects
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-windows
+          path: |
+            release/Asterfold-Chrome.zip
+            release/chrome-unpacked.zip
+            release/extension-source.zip
+            release/Asterfold-Store-Assets.zip
+            release/sbom.spdx.json
+          if-no-files-found: error
+
+  cross-platform-reproducibility:
+    needs: [validate, windows-release]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Check out PR branch
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@974686ed5098c7f9c9289ec946b9058e496a2561 # v8
         with:
-          ref: agent/asterfold-v3-store-hardening
-          fetch-depth: 0
-
-      - name: Verify audited baseline scope
+          name: release-linux
+          path: linux
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@974686ed5098c7f9c9289ec946b9058e496a2561 # v8
+        with:
+          name: release-windows
+          path: windows
+      - name: Compare exact bytes
         shell: bash
         run: |
           set -euo pipefail
-          baseline=d8bed284f487142c2fe16d4b34b3df80bd45679b
-          unexpected="$(git diff --name-only "$baseline" -- | grep -Ev '^\.github/(patches/.*|workflows/(apply-v3-patch\.yml|ci\.yml))$' || true)"
-          if [[ -n "$unexpected" ]]; then
-            echo "Unexpected source changes exist before patch application:" >&2
-            printf '%s\n' "$unexpected" >&2
-            exit 1
-          fi
+          for name in Asterfold-Chrome.zip chrome-unpacked.zip extension-source.zip Asterfold-Store-Assets.zip sbom.spdx.json; do
+            cmp "linux/$name" "windows/$name"
+            sha256sum "linux/$name" "windows/$name"
+          done
 
-      - name: Reconstruct and verify patch checksums
-        shell: bash
-        run: |
-          set -euo pipefail
-          cat .github/patches/asterfold-v3.patch.gz.b64.* | base64 --decode > /tmp/asterfold-v3.patch.gz
-          echo "69541bc60232b0fc46c41d369e5be1e1e8298c56d26c1f38da7dac293e26d2f9  /tmp/asterfold-v3.patch.gz" | sha256sum --check
-          gzip -dc /tmp/asterfold-v3.patch.gz > /tmp/asterfold-v3.patch
-          echo "ddd9cad65955b073ee7c9271ea86dbfca4f97b3c1d940b11a244373f5d4136a1  /tmp/asterfold-v3.patch" | sha256sum --check
-
-      - name: Verify non-workflow patch applies to exact baseline
-        shell: bash
-        run: |
-          set -euo pipefail
-          git apply --exclude='.github/workflows/*' --check /tmp/asterfold-v3.patch
-
-      - name: Apply final non-workflow source tree
-        shell: bash
-        run: |
-          set -euo pipefail
-          git apply --exclude='.github/workflows/*' --index /tmp/asterfold-v3.patch
-
-      - name: Remove and verify patch payload
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf .github/patches
-          git add -u .github/patches
-          git diff --cached --check
-          test ! -d .github/patches
-
-      - name: Commit final non-workflow source tree
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "Asterfold Release Automation"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "release: prepare Asterfold 3.0.0 source and audit closure"
-
-      - name: Push final non-workflow source tree
-        shell: bash
-        run: |
-          set -euo pipefail
-          git push origin HEAD:refs/heads/agent/asterfold-v3-store-hardening
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/dependency-review-action@1e966ba708e4b64bb0c9bfb7abb5a232840be16a
+        with:
+          fail-on-severity: high
