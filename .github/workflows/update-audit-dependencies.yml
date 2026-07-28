@@ -27,6 +27,27 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Preserve structural types in the upgrade regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("e2e/upgrade.spec.ts")
+          source = path.read_text()
+          marker = 'test.skip(!baselinePath || !targetZip, "Exact 2.2.3 upgrade fixture is prepared only in CI/release gates.");\n'
+          if "interface UpgradeSeedData" not in source:
+              source = source.replace(marker, marker + '''\ntype UpgradeRecord = Record<string, unknown>;\n\ninterface UpgradeSeedData {\n  pageRecord: UpgradeRecord;\n  boardRecord: UpgradeRecord;\n  bookmarkRecord: UpgradeRecord;\n  trashRecord: UpgradeRecord;\n}\n''')
+          source = source.replace(
+              'async function seedVersion223(page: Page): Promise<Record<string, unknown>> {\n  return page.evaluate(async () => {',
+              'async function seedVersion223(page: Page): Promise<UpgradeSeedData> {\n  return page.evaluate<UpgradeSeedData>(async () => {',
+          )
+          source = source.replace('pageRecord: await read("pages", "upgrade-page")', 'pageRecord: await read<UpgradeRecord>("pages", "upgrade-page")')
+          source = source.replace('boardRecord: await read("boards", "upgrade-board")', 'boardRecord: await read<UpgradeRecord>("boards", "upgrade-board")')
+          source = source.replace('bookmarkRecord: await read("bookmarks", "upgrade-bookmark")', 'bookmarkRecord: await read<UpgradeRecord>("bookmarks", "upgrade-bookmark")')
+          source = source.replace('trashRecord: await read("bookmarks", "upgrade-trash")', 'trashRecord: await read<UpgradeRecord>("bookmarks", "upgrade-trash")')
+          path.write_text(source)
+          PY
       - name: Install audited fixed versions
         shell: bash
         run: |
@@ -50,38 +71,21 @@ jobs:
         run: npm run audit:production
       - name: Development dependency audit baseline
         run: node scripts/check-audit-baseline.mjs npm-audit-after.json
-      - name: Capture typecheck result
-        id: typecheck
-        shell: bash
-        run: |
-          set +e
-          npm run typecheck > typecheck.log 2>&1
-          status=$?
-          cat typecheck.log
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-          exit 0
-      - name: Upload typecheck evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: typecheck-after-toolchain-upgrade
-          path: typecheck.log
-          if-no-files-found: error
-      - name: Enforce typecheck result
-        shell: bash
-        run: test "${{ steps.typecheck.outputs.status }}" = "0"
+      - name: Typecheck upgraded toolchain
+        run: npm run typecheck
       - name: Lint upgraded toolchain
         run: npm run lint
       - name: Coverage upgraded toolchain
         run: npm run test:coverage
       - name: Reproducible release upgraded toolchain
         run: npm run release:repro
-      - name: Commit dependency update when changed
+      - name: Commit dependency and typing update
         shell: bash
         run: |
           set -euo pipefail
-          git add package.json package-lock.json
+          git add package.json package-lock.json e2e/upgrade.spec.ts
           if git diff --cached --quiet; then
-            echo "Dependency files already match the audited fixed versions."
+            echo "Dependency and typing files already match the audited fixed versions."
             exit 0
           fi
           git diff --cached --check
