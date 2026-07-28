@@ -1,0 +1,1 @@
+Temporary checksum-verified transport. The bootstrap workflow removes this directory and itself before normal CI runs.
