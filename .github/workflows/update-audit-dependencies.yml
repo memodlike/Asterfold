@@ -56,11 +56,15 @@ jobs:
           npm ci > install.log 2>&1
           status=$?
           if [ "$status" -eq 0 ]; then
-            npm install --save-dev --save-exact \
-              @eslint/js@10.0.1 \
-              eslint@10.8.0 \
-              typescript-eslint@8.65.0 \
-              wxt@0.21.2 >> install.log 2>&1
+            npm pkg set \
+              'devDependencies.@eslint/js=10.0.1' \
+              'devDependencies.eslint=10.8.0' \
+              'devDependencies.typescript-eslint=8.65.0' \
+              'devDependencies.wxt=0.21.2' >> install.log 2>&1
+            status=$?
+          fi
+          if [ "$status" -eq 0 ]; then
+            npm install >> install.log 2>&1
             status=$?
           fi
           cat install.log
