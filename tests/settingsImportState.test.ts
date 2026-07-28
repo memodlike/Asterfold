@@ -57,9 +57,12 @@ describe("Settings import state", () => {
 
     const input = view.container.querySelector<HTMLInputElement>('input[accept*=".json"]');
     expect(input).not.toBeNull();
-    const file = new File(["<DL><DT><A HREF=\"https://example.com/\">Example</A></DL>"], "bookmarks.html", { type: "text/html" });
+    const html = '<DL><DT><A HREF="https://example.com/">Example</A></DL>';
+    const file = new File([html], "bookmarks.html", { type: "text/html" });
+    Object.defineProperty(file, "text", { value: vi.fn().mockResolvedValue(html) });
     fireEvent.change(input!, { target: { files: [file] } });
 
+    await waitFor(() => expect(mocks.parseHtmlOffThread).toHaveBeenCalledOnce());
     await waitFor(() => expect(screen.getByText("Bookmarks: 1. No changes written yet.")).toBeVisible());
     expect(screen.getByRole("heading", { name: "Data & privacy" })).toBeVisible();
     expect(screen.queryByRole("heading", { name: "Appearance" })).toBeNull();
