@@ -1,0 +1,64 @@
+name: Update audited development dependencies
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-audit-dependencies
+  cancel-in-progress: false
+
+jobs:
+  update:
+    if: github.head_ref == 'agent/asterfold-v3-store-hardening'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: agent/asterfold-v3-store-hardening
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install audited fixed versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm install --save-dev --save-exact \
+            @eslint/js@10.8.0 \
+            eslint@10.8.0 \
+            typescript-eslint@8.65.0 \
+            wxt@0.21.2
+      - name: Verify upgraded toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run audit:production
+          npm audit --json > npm-audit-after.json || true
+          node scripts/check-audit-baseline.mjs npm-audit-after.json
+          npm run typecheck
+          npm run lint
+          npm run test:coverage
+          npm run release:repro
+      - name: Commit dependency update when changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add package.json package-lock.json
+          if git diff --cached --quiet; then
+            echo "Dependency files already match the audited fixed versions."
+            exit 0
+          fi
+          git diff --cached --check
+          git config user.name "Asterfold Release Automation"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "fix(security): update audited development toolchain"
+          git push origin HEAD:refs/heads/agent/asterfold-v3-store-hardening
