@@ -60,22 +60,25 @@ jobs:
           rm -rf node_modules package-lock.json
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund
           npm ci
-      - name: Security and quality gates
+      - name: Capture development audit
+        shell: bash
+        run: npm audit --json > npm-audit-after.json || true
+      - name: Production dependency audit
+        run: npm run audit:production
+      - name: Development dependency audit baseline
+        run: node scripts/check-audit-baseline.mjs npm-audit-after.json
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Coverage
+        run: npm run test:coverage
+      - name: Reproducible release
+        run: npm run release:repro
+      - name: Remove temporary finalizer and commit
         shell: bash
         run: |
           set -euo pipefail
-          npm audit --json > npm-audit-after.json || true
-          npm run audit:production
-          node scripts/check-audit-baseline.mjs npm-audit-after.json
-          npm run typecheck
-          npm run lint
-          npm run test:coverage
-          npm run release:repro
-      - name: Remove temporary updater workflows and commit
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -f .github/workflows/update-audit-dependencies.yml
           rm -f .github/workflows/finalize-toolchain.yml
           git add package.json package-lock.json e2e/upgrade.spec.ts .github/workflows
           git diff --cached --check
