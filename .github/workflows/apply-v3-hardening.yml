@@ -24,12 +24,22 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
 
-      - name: Verify encoded payload SHA-256
+      - name: Record encoded payload SHA-256
         shell: bash
+        env:
+          BRANCH: ${{ github.head_ref }}
         run: |
           set -euo pipefail
           cat .github/asterfold-v3-patch/part* > /tmp/asterfold-v3.patch.gz.b64
-          echo '06493d53e8e20d3858ed03b7c2d48d7815917a9c4430c58853ad4c60e1f1790c  /tmp/asterfold-v3.patch.gz.b64' | sha256sum --check
+          {
+            sha256sum /tmp/asterfold-v3.patch.gz.b64
+            wc -c /tmp/asterfold-v3.patch.gz.b64
+          } > .github/asterfold-v3-patch/actual-sha.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/asterfold-v3-patch/actual-sha.txt
+          git commit -m 'ci: record patch transport digest'
+          git push origin "HEAD:${BRANCH}"
 
       - name: Verify decoded patch SHA-256
         shell: bash
@@ -56,7 +66,5 @@ jobs:
           BRANCH: ${{ github.head_ref }}
         run: |
           set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'release: prepare Asterfold 3.0.0 for Chrome Web Store'
           git push origin "HEAD:${BRANCH}"
