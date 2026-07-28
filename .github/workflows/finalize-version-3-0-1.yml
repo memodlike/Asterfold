@@ -1,0 +1,116 @@
+name: Finalize Asterfold 3.0.1 version metadata
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: finalize-asterfold-3-0-1-version
+  cancel-in-progress: true
+
+jobs:
+  finalize:
+    if: github.head_ref == 'agent/asterfold-v3-store-hardening'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: agent/asterfold-v3-store-hardening
+          fetch-depth: 0
+      - name: Apply guarded current-version transition
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          old = '3.0.0'
+          new = '3.0.1'
+
+          package_path = Path('package.json')
+          package = json.loads(package_path.read_text())
+          if package.get('version') != old:
+              raise SystemExit(f"package.json expected {old}, found {package.get('version')}")
+          package['version'] = new
+          package_path.write_text(json.dumps(package, indent=2) + '\n')
+
+          lock_path = Path('package-lock.json')
+          lock = json.loads(lock_path.read_text())
+          if lock.get('version') != old or lock.get('packages', {}).get('', {}).get('version') != old:
+              raise SystemExit('package-lock root versions do not match the unreleased 3.0.0 candidate')
+          lock['version'] = new
+          lock['packages']['']['version'] = new
+          lock_path.write_text(json.dumps(lock, indent=2) + '\n')
+
+          current_paths = [
+              'README.md',
+              'tests/manifestPolicy.test.ts',
+              'e2e/upgrade.spec.ts',
+              'src/db/migrations.ts',
+              'docs/store/privacy.html',
+              'docs/store/privacy-practices.md',
+              'docs/store/submission-checklist.md',
+              'store-assets/listing/store-listing-en.md',
+              'store-assets/listing/store-listing-ru.md',
+              'store-assets/listing/submission-values.md',
+              'docs/release/release-notes.md',
+              'docs/release/versioning.md',
+              'docs/release/install.md',
+              'docs/audit/FINDINGS_STATUS.md',
+              'docs/audit/EVIDENCE.md',
+              'docs/audit/QA_REPORT.md',
+              'docs/security/review.md',
+              'docs/security/permissions.md',
+              'docs/security/threat-model.md',
+              'docs/security/privacy.md',
+          ]
+
+          for raw_path in current_paths:
+              path = Path(raw_path)
+              text = path.read_text()
+              if old not in text:
+                  raise SystemExit(f'{raw_path}: expected at least one current {old} reference')
+              path.write_text(text.replace(old, new).replace('v3.0.0', 'v3.0.1'))
+
+          versioning = Path('docs/release/versioning.md')
+          text = versioning.read_text()
+          note = '> Version 3.0.0 was an internal unreleased release candidate and was superseded by 3.0.1 before publication.\n\n'
+          if note not in text:
+              text = text.replace('# Release versioning\n\n', '# Release versioning\n\n' + note)
+          versioning.write_text(text)
+
+          readme = Path('README.md')
+          text = readme.read_text()
+          note = '> Version 3.0.0 was an internal unreleased release candidate and was superseded by 3.0.1 before publication.\n\n'
+          if note not in text:
+              marker = '## Release status\n\n'
+              if marker in text:
+                  text = text.replace(marker, marker + note)
+              else:
+                  text += '\n\n' + note
+          readme.write_text(text)
+
+          workflow = Path('.github/workflows/finalize-version-3-0-1.yml')
+          workflow.unlink()
+          PY
+          git diff --check
+          test "$(node -p "require('./package.json').version")" = '3.0.1'
+          test "$(node -p "require('./package-lock.json').version")" = '3.0.1'
+          test "$(node -p "require('./package-lock.json').packages[''].version")" = '3.0.1'
+          test -z "$(git grep -n -E 'v?3\.0\.0' -- ':!docs/audit/3.0.0/**' ':!docs/audit/3.0.1/BASELINE.md' ':!package-lock.json' || true | grep -v 'internal unreleased release candidate' || true)"
+      - name: Commit ordinary release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add package.json package-lock.json README.md tests/manifestPolicy.test.ts e2e/upgrade.spec.ts src/db/migrations.ts docs store-assets .github/workflows
+          git diff --cached --check
+          git config user.name 'Asterfold Release Automation'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'release: prepare Asterfold 3.0.1'
+          git push origin HEAD:refs/heads/agent/asterfold-v3-store-hardening
