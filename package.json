@@ -1,6 +1,6 @@
 {
   "name": "asterfold",
-  "version": "2.2.3",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
   "description": "A premium local-first visual bookmark workspace for Chrome.",
@@ -16,10 +16,16 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "validate:store": "node scripts/validate-store-assets.mjs",
-    "release": "npm run build && npm run validate:store && node scripts/release.mjs",
-    "release:repro": "npm run build && npm run validate:store && node scripts/verify-release.mjs",
+    "release": "npm run validate:version && npm run scan:source && npm run build && REQUIRE_GENERATED_MANIFEST=true npm run validate:version && npm run validate:store && node scripts/release.mjs",
+    "release:repro": "npm run validate:version && npm run scan:source && npm run build && REQUIRE_GENERATED_MANIFEST=true npm run validate:version && npm run validate:store && node scripts/verify-release.mjs",
     "audit:production": "npm audit --omit=dev --audit-level=high",
-    "clean": "node scripts/clean.mjs"
+    "clean": "node scripts/clean.mjs",
+    "validate:version": "node scripts/validate-version.mjs",
+    "validate:package": "node scripts/validate-release-package.mjs",
+    "validate:provenance": "node scripts/verify-provenance.mjs",
+    "scan:source": "node scripts/scan-source.mjs",
+    "audit:development": "npm audit --json > npm-audit.json || true && node scripts/check-audit-baseline.mjs npm-audit.json && rm -f npm-audit.json",
+    "test:upgrade": "playwright test e2e/upgrade.spec.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "6.3.1",

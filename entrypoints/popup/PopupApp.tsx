@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { browser } from "wxt/browser";
 import { AlertTriangle, Check, ExternalLink, FolderPlus, Settings, Sparkles } from "lucide-react";
 import { createBoard, createBookmark, findDuplicate, updateSettings } from "../../src/db/repository";
@@ -30,6 +30,7 @@ export function PopupApp() {
   const [newBoardName, setNewBoardName] = useState("");
   const [showNewBoard, setShowNewBoard] = useState(false);
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [shortcut, setShortcut] = useState("");
@@ -81,11 +82,12 @@ export function PopupApp() {
   }, [boardId, destinationIsValid, tab?.url]);
 
   const save = async (): Promise<void> => {
-    if (!tab?.url) return;
+    if (savingRef.current || !tab?.url) return;
     if (!workspace || !isValidQuickSaveDestination(pageId, boardId, workspace.boards)) {
       setError(t("popup.boardRequired"));
       return;
     }
+    savingRef.current = true;
     setSaving(true); setError(null);
     try {
       await createBookmark({ boardId, title, url: tab.url, description }, { allowDuplicate });
@@ -95,7 +97,7 @@ export function PopupApp() {
     } catch (caught) {
       if (caught instanceof DuplicateError) setDuplicate(await findDuplicate(boardId, tab.url));
       else setError(t("popup.saveFailed"));
-    } finally { setSaving(false); }
+    } finally { savingRef.current = false; setSaving(false); }
   };
 
   const addBoard = async (): Promise<void> => {

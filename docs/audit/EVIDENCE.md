@@ -1,5 +1,7 @@
 # Audit evidence
 
+> Historical evidence notice: sections describing 2.2.3 and earlier are retained as historical records. Current 3.0.0 remediation status is maintained under `docs/audit/3.0.0/`.
+
 ## Baseline identity
 
 - Date: 2026-07-24
