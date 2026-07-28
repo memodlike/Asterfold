@@ -27,7 +27,7 @@ jobs:
         run: |
           set -euo pipefail
           if test -f .github/patches/coverage-test-fixes.patch; then
-            echo '10ac80aedd4e95fa0234e2e2a8c3dfd272e6da0fa9dfdfc9f0fe51640f4df6c6  .github/patches/coverage-test-fixes.patch' | sha256sum --check
+            test "$(git hash-object .github/patches/coverage-test-fixes.patch)" = '371019272433af3c98fb32ef1dd491f2834be32b'
             git apply --check .github/patches/coverage-test-fixes.patch
             git apply .github/patches/coverage-test-fixes.patch
           fi
