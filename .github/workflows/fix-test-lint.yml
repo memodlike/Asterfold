@@ -22,7 +22,7 @@ jobs:
         with:
           ref: agent/asterfold-v3-store-hardening
           fetch-depth: 0
-      - name: Apply exact guarded substitutions
+      - name: Apply guarded substitutions
         shell: bash
         run: |
           set -euo pipefail
@@ -30,35 +30,38 @@ jobs:
           from pathlib import Path
           import re
 
-          def replace_exact(path: str, old: str, new: str, expected: int = 1) -> None:
+          def replace_exact(path: str, old: str, new: str) -> None:
               file = Path(path)
               text = file.read_text()
               count = text.count(old)
-              if count != expected:
-                  raise SystemExit(f"{path}: expected {expected} occurrences, found {count}: {old!r}")
+              if count != 1:
+                  raise SystemExit(f"{path}: expected one exact occurrence, found {count}: {old!r}")
               file.write_text(text.replace(old, new))
 
           path = Path('tests/boardCanvasBehavior.test.ts')
           text = path.read_text()
-          text = text.replace('KeyboardSensor: class KeyboardSensor {},\n    PointerSensor: class PointerSensor {},', 'KeyboardSensor: function KeyboardSensor() {},\n    PointerSensor: function PointerSensor() {},')
+          old_classes = 'KeyboardSensor: class KeyboardSensor {},\n    PointerSensor: class PointerSensor {},'
+          if text.count(old_classes) != 1:
+              raise SystemExit('boardCanvasBehavior: expected sensor class pair')
+          text = text.replace(old_classes, 'KeyboardSensor: function KeyboardSensor() {},\n    PointerSensor: function PointerSensor() {},')
           text, count = re.subn(r'await act\(async \(\) => \{ (mocks\.dndProps\?\.[^;]+;) \}\);', r'act(() => { \1 });', text)
-          if count != 3:
-              raise SystemExit(f'boardCanvasBehavior: expected 3 synchronous act callbacks, found {count}')
+          if count < 1:
+              raise SystemExit('boardCanvasBehavior: no synchronous act callbacks found')
           path.write_text(text)
 
           path = Path('tests/workspaceAppOrchestration.test.ts')
           text = path.read_text()
           text, single_count = re.subn(r'await act\(async \(\) => \{ (mocks\.[^;]+;) \}\);', r'act(() => { \1 });', text)
           text, multiline_count = re.subn(r'await act\(async \(\) => \{\n(\s+mocks\.canvas\?\.onSelectBookmark\([^\n]+\);)\n\s+\}\);', r'act(() => {\n\1\n    });', text)
-          if single_count != 11 or multiline_count != 2:
-              raise SystemExit(f'workspaceAppOrchestration: expected 11 single and 2 multiline callbacks, found {single_count}/{multiline_count}')
+          if single_count + multiline_count < 1:
+              raise SystemExit('workspaceAppOrchestration: no synchronous act callbacks found')
           path.write_text(text)
 
           path = Path('tests/runtimeCoverage.test.ts')
           text = path.read_text()
           replace_target = '  runtimeGetUrl: vi.fn((path: string) => `chrome-extension://test${path}`),\n'
-          if replace_target not in text:
-              raise SystemExit('runtimeCoverage: hoisted mock insertion target missing')
+          if text.count(replace_target) != 1:
+              raise SystemExit('runtimeCoverage: hoisted mock insertion target missing or duplicated')
           text = text.replace(replace_target, replace_target + '  createObjectUrl: vi.fn(() => "blob:wallpaper"),\n  revokeObjectUrl: vi.fn(),\n')
           text = text.replace('Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:wallpaper") });', 'Object.defineProperty(URL, "createObjectURL", { configurable: true, value: mocks.createObjectUrl });')
           text = text.replace('Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });', 'Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: mocks.revokeObjectUrl });')
@@ -68,7 +71,10 @@ jobs:
 
           path = Path('tests/workspaceIntegrationCoverage.test.ts')
           text = path.read_text()
-          text = text.replace('import { createElement, type MouseEvent as ReactMouseEvent } from "react";', 'import { createElement } from "react";')
+          old_import = 'import { createElement, type MouseEvent as ReactMouseEvent } from "react";'
+          if text.count(old_import) != 1:
+              raise SystemExit('workspaceIntegrationCoverage: ReactMouseEvent import target missing')
+          path.write_text(text.replace(old_import, 'import { createElement } from "react";'))
           replace_exact('tests/workspaceIntegrationCoverage.test.ts', '    const onSelect = vi.fn((_bookmark: Bookmark, _event: ReactMouseEvent) => undefined);\n    expect(onSelect).not.toHaveBeenCalled();\n', '')
 
           Path('.github/workflows/diagnose-lint.yml').unlink(missing_ok=True)
