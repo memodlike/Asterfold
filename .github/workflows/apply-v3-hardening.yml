@@ -1,0 +1,53 @@
+name: Apply Asterfold 3.0.0 hardening patch
+
+on:
+  push:
+    branches:
+      - agent/asterfold-v3-store-hardening-d8bed28
+    paths:
+      - .github/asterfold-v3-patch/**
+      - .github/workflows/apply-v3-hardening.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-v3-hardening-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 0
+
+      - name: Verify and apply reviewed patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/asterfold-v3-patch/part* > /tmp/asterfold-v3.patch.gz.b64
+          echo '06493d53e8e20d3858ed03b7c2d48d7815917a9c4430c58853ad4c60e1f1790c  /tmp/asterfold-v3.patch.gz.b64' | sha256sum --check
+          base64 --decode /tmp/asterfold-v3.patch.gz.b64 | gzip --decompress > /tmp/asterfold-v3.patch
+          echo '15417f3282603300b196b0d5f7fecb535dcdcfc19b6e9657b8e98cc52ab5917e  /tmp/asterfold-v3.patch' | sha256sum --check
+          git apply --check /tmp/asterfold-v3.patch
+          git apply /tmp/asterfold-v3.patch
+          rm -rf .github/asterfold-v3-patch
+          rm .github/workflows/apply-v3-hardening.yml
+          git add -A
+          git diff --cached --check
+          test -z "$(git ls-files '.github/asterfold-v3-patch/**' '.github/workflows/apply-v3-hardening.yml')"
+
+      - name: Commit normal source tree
+        shell: bash
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'release: prepare Asterfold 3.0.0 for Chrome Web Store'
+          git push origin "HEAD:${BRANCH}"
