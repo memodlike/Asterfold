@@ -4,6 +4,8 @@
 
 Asterfold 3.0.0 was an internal, unreleased release candidate. It was superseded before publication. The first public 3.x release candidate is 3.0.1.
 
+The finalized ordinary source tree is validated only through owner-authored exact-SHA CI and CodeQL runs. Automation-authored commits are not accepted as release evidence because GitHub suppresses recursive workflow execution for commits pushed with `GITHUB_TOKEN`.
+
 ## Source baseline
 
 - Published predecessor: `v2.2.3`
