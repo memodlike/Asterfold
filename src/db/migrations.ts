@@ -6,7 +6,8 @@ import { createId, nowIso } from "../utils/ids";
 const V2_DB_SCHEMA_VERSION = 2;
 const V3_DB_SCHEMA_VERSION = 3;
 const V4_DB_SCHEMA_VERSION = 4;
-export const CURRENT_DB_SCHEMA_VERSION = 5;
+const V5_DB_SCHEMA_VERSION = 5;
+export const CURRENT_DB_SCHEMA_VERSION = 6;
 
 export const V1_STORES = {
   pages: "id, userId, position, updatedAt, deletedAt, isDefault",
@@ -29,6 +30,7 @@ export const V2_STORES = {
 export const V3_STORES = { ...V2_STORES } as const;
 export const V4_STORES = { ...V3_STORES } as const;
 export const V5_STORES = { ...V4_STORES } as const;
+export const V6_STORES = { ...V5_STORES } as const;
 
 type LegacySettings = Partial<AppSettings> & Pick<AppSettings, "id">;
 
@@ -137,7 +139,27 @@ export async function migrateToV4(transaction: Transaction): Promise<void> {
 export async function migrateToV5(transaction: Transaction): Promise<void> {
   const settingsTable = transaction.table<V2Settings, string>("settings");
   const current = await settingsTable.get("app");
-  if (current && current.schemaVersion !== CURRENT_DB_SCHEMA_VERSION) {
-    await settingsTable.put({ ...current, id: "app", schemaVersion: CURRENT_DB_SCHEMA_VERSION, updatedAt: nowIso() });
+  if (current && current.schemaVersion !== V5_DB_SCHEMA_VERSION) {
+    await settingsTable.put({ ...current, id: "app", schemaVersion: V5_DB_SCHEMA_VERSION, updatedAt: nowIso() });
+  }
+}
+
+
+/**
+ * Marks the legacy onboarding flag complete for existing installations.
+ * Fresh databases still use createDefaultSettings() with onboardingComplete=false,
+ * so only genuinely new users see the 3.0.0 launcher discovery hint.
+ */
+export async function migrateToV6(transaction: Transaction): Promise<void> {
+  const settingsTable = transaction.table<V2Settings, string>("settings");
+  const current = await settingsTable.get("app");
+  if (current) {
+    await settingsTable.put({
+      ...current,
+      id: "app",
+      schemaVersion: CURRENT_DB_SCHEMA_VERSION,
+      onboardingComplete: true,
+      updatedAt: nowIso(),
+    });
   }
 }

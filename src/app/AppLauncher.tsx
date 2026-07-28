@@ -20,6 +20,8 @@ interface AppLauncherProps {
   onPrivacy: () => void;
   onTrash: () => void;
   onSettings: () => void;
+  showFirstRunHint?: boolean;
+  onDismissFirstRunHint?: () => void;
 }
 
 export function AppLauncher(props: AppLauncherProps) {
@@ -71,7 +73,12 @@ export function AppLauncher(props: AppLauncherProps) {
     };
   }, []);
 
+  const discover = (): void => {
+    if (props.showFirstRunHint) props.onDismissFirstRunHint?.();
+  };
+
   const act = (callback: () => void): void => {
+    discover();
     callback();
     setOpen(false);
     setPagesOpen(false);
@@ -79,6 +86,16 @@ export function AppLauncher(props: AppLauncherProps) {
 
   return (
     <div ref={rootRef} className={`app-launcher ${open ? "is-open" : ""}`} onPointerEnter={cancelClose} onPointerLeave={scheduleClose}>
+      {props.showFirstRunHint ? (
+        <aside className="launcher-discovery" aria-label={t("launcher.discoveryTitle")}>
+          <button className="launcher-discovery__dismiss" aria-label={t("launcher.discoveryDismiss")} onClick={props.onDismissFirstRunHint}>×</button>
+          <strong>{t("launcher.discoveryTitle")}</strong>
+          <p>{t("launcher.discoveryBody")}</p>
+          <button className="launcher-discovery__action" onClick={() => { discover(); setOpen(true); }}>
+            {t("launcher.discoveryAction")}
+          </button>
+        </aside>
+      ) : null}
       {open ? (
         <div ref={menuRef} className="launcher-menu" role="menu" aria-label={t("launcher.label")} onKeyDown={(event) => {
           const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>("button:not([disabled])")].filter((item) => item.offsetParent !== null);
@@ -98,7 +115,7 @@ export function AppLauncher(props: AppLauncherProps) {
           <button role="menuitem" onClick={() => act(props.onSettings)}><Settings size={17} /><span>{t("generic.settings")}</span></button>
         </div>
       ) : null}
-      <button ref={triggerRef} className="launcher-trigger" aria-label={t("launcher.label")} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
+      <button ref={triggerRef} className="launcher-trigger" aria-label={t("launcher.label")} aria-haspopup="menu" aria-expanded={open} onClick={() => { discover(); setOpen((value) => !value); }}>
         <img src="/icons/mark-monochrome.svg" alt="" />
         <span>Asterfold</span>
       </button>

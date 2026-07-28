@@ -1,6 +1,6 @@
 # Security review
 
-Review date: 27 July 2026. Target: Asterfold 2.2.3 on `agent/final-store-readiness-v2.2.3`.
+Review date: 28 July 2026. Target: Asterfold 3.0.0 on `agent/final-store-readiness-v3.0.0`.
 
 ## Verified design controls
 
@@ -17,7 +17,7 @@ Review date: 27 July 2026. Target: Asterfold 2.2.3 on `agent/final-store-readine
 
 ## Permission status
 
-The 2.2.3 manifest requests `activeTab`, `favicon`, `alarms`, `contextMenus` and `storage`, with optional `bookmarks`. `storage` is used only for `chrome.storage.session`, which keeps temporary Privacy Mode consistent between New Tab and popup and is cleared by Chrome at the end of the browser session. There are no host permissions or content scripts.
+The 3.0.0 manifest requests `activeTab`, `favicon`, `alarms`, `contextMenus` and `storage`, with optional `bookmarks`. `storage` is used only for `chrome.storage.session`, which keeps temporary Privacy Mode consistent between New Tab and popup and is cleared by Chrome at the end of the browser session. There are no host permissions or content scripts.
 
 ## Dependency status
 

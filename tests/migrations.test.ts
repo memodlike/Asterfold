@@ -11,10 +11,11 @@ import {
   V3_STORES,
   V4_STORES,
   V5_STORES,
+  V6_STORES,
 } from "../src/db/migrations";
 
 interface MigrationFixture {
-  dbVersion: 1 | 2 | 3 | 4 | 5;
+  dbVersion: 1 | 2 | 3 | 4 | 5 | 6;
   stores: Record<string, unknown[]>;
 }
 
@@ -24,6 +25,7 @@ const storesByVersion = {
   3: V3_STORES,
   4: V4_STORES,
   5: V5_STORES,
+  6: V6_STORES,
 } as const;
 
 describe("database migrations", () => {
@@ -91,7 +93,7 @@ describe("database migrations", () => {
     await upgraded.open();
     const settings = await upgraded.settings.get("app");
     const board = await upgraded.boards.get("board");
-    expect(settings).toMatchObject({ schemaVersion: 5, locale: "auto", workspaceLayoutMode: "auto", workspaceRows: 2, workspaceAlignment: "center" });
+    expect(settings).toMatchObject({ schemaVersion: 6, locale: "auto", workspaceLayoutMode: "auto", workspaceRows: 2, workspaceAlignment: "center" });
     expect(settings?.theme).toMatchObject({ glassVariant: "regular", backgroundMode: "auto", lowPowerMode: false, bookmarkHoverMotion: true, menuMotion: true, dragMotion: true });
     expect(board).toMatchObject({ title: "Kept", bookmarkColumns: 2, gridColumn: 1, gridRow: 0, gridSpan: 4 });
     upgraded.close();
@@ -115,6 +117,24 @@ describe("database migrations", () => {
     await upgraded.open();
     expect(await upgraded.bookmarks.get("bookmark")).toMatchObject({ openMode: "new-tab", version: 1, updatedAt: timestamp });
     expect((await upgraded.settings.get("app"))?.schemaVersion).toBe(CURRENT_DB_SCHEMA_VERSION);
+    upgraded.close();
+  });
+
+  it("preserves v5 workspace data and suppresses first-run onboarding after a 2.2.3 upgrade", async () => {
+    const name = `asterfold-upgrade-v5-${crypto.randomUUID()}`;
+    names.push(name);
+    const legacy = new Dexie(name);
+    legacy.version(5).stores(V5_STORES);
+    await legacy.open();
+    const timestamp = "2026-07-27T00:00:00.000Z";
+    await legacy.table("settings").put({ id: "app", schemaVersion: 5, onboardingComplete: false, updatedAt: timestamp });
+    await legacy.table("pages").put({ id: "page", userId: null, title: "Existing page", icon: null, accent: null, position: "hzz", isDefault: true, createdAt: timestamp, updatedAt: timestamp, deletedAt: null, deletedBatchId: null, version: 1 });
+    legacy.close();
+
+    const upgraded = new AsterfoldDatabase(name);
+    await upgraded.open();
+    expect(await upgraded.pages.get("page")).toMatchObject({ title: "Existing page", version: 1 });
+    expect(await upgraded.settings.get("app")).toMatchObject({ schemaVersion: CURRENT_DB_SCHEMA_VERSION, onboardingComplete: true });
     upgraded.close();
   });
 

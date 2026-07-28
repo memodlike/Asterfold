@@ -107,11 +107,11 @@ export function SettingsDialog(props: SettingsDialogProps) {
   useEffect(() => {
     if (!props.open) return;
     setSection(props.initialSection ?? "appearance");
-    if (!importRecordsPreview.length && !backupPreview) setImportPageTitle(t("settings.importedBookmarks"));
+    setImportPageTitle(t("settings.importedBookmarks"));
     if (browser.commands?.getAll) void browser.commands.getAll().then((commands) => setShortcut(commands.find((command) => command.name === "quick-save")?.shortcut || "—")).catch(() => setShortcut("—"));
     if (navigator.storage?.estimate) void navigator.storage.estimate().then(setStorage).catch(() => setStorage(undefined));
     void auditInvariants().then(setInvariants).catch(() => setInvariants([]));
-  }, [backupPreview, importRecordsPreview.length, props.initialSection, props.open, t]);
+  }, [props.initialSection, props.open, t]);
   useEffect(() => {
     if (!props.open || !themeDraft.wallpaperId) { setWallpaperInfo(null); return; }
     void getWallpaper(themeDraft.wallpaperId).then(setWallpaperInfo).catch(() => setWallpaperInfo(null));

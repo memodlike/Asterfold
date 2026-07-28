@@ -4,7 +4,7 @@ interface LogoProps {
 
 export function Logo({ compact = false }: LogoProps) {
   return (
-    <div className="brand" aria-label="Asterfold">
+    <div className="brand" role="img" aria-label="Asterfold">
       <svg className="brand__mark" viewBox="0 0 64 64" aria-hidden="true">
         <g fill="currentColor">
           <path d="M32 3 41 24 35 29 28 24Z" />

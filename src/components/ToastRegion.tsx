@@ -87,7 +87,7 @@ export function useToasts(): ToastController {
             key={toast.id}
             role={toast.tone === "error" ? "alert" : "status"}
             onPointerEnter={() => pause(toast.id)}
-            onPointerLeave={() => resume(toast)}
+            onPointerLeave={(event) => { if (!event.currentTarget.contains(document.activeElement)) resume(toast); }}
             onFocusCapture={() => pause(toast.id)}
             onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) resume(toast); }}
           >

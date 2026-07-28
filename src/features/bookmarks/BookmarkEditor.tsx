@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Bookmark as BookmarkIcon, ExternalLink } from "lucide-react";
 import type { Board, Bookmark, BookmarkOpenMode, Page } from "../../domain/models";
 import { createBookmark, findDuplicate, updateBookmark } from "../../db/repository";
@@ -33,6 +33,7 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
   const [duplicate, setDuplicate] = useState<Bookmark | null>(null);
   const [allowDuplicate, setAllowDuplicate] = useState(false);
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
 
   useEffect(() => {
     if (!props.open) return;
@@ -65,6 +66,8 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
   const formId = "asterfold-bookmark-editor";
 
   const save = async (): Promise<void> => {
+    if (savingRef.current) return;
+    savingRef.current = true;
     setSaving(true);
     performance.mark("asterfold-save-start");
     try {
@@ -82,6 +85,7 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
         props.onError(t("error.saveBookmarkFailed"));
       }
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };

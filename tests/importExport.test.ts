@@ -410,7 +410,7 @@ describe("safe import and lossless export", () => {
     delete legacy.theme.dragMotion;
     const normalized = parseBackup(JSON.stringify(legacy));
     expect(normalized).toMatchObject({ schemaVersion: 1, exportVersion: 1 });
-    expect(normalized.settings).toMatchObject({ schemaVersion: 5, locale: "auto", workspaceLayoutMode: "auto", workspaceRows: 2, workspaceAlignment: "center" });
+    expect(normalized.settings).toMatchObject({ schemaVersion: 6, locale: "auto", workspaceLayoutMode: "auto", workspaceRows: 2, workspaceAlignment: "center" });
     expect(normalized.settings?.theme).toMatchObject({ lowPowerMode: false, bookmarkHoverMotion: true, menuMotion: true, dragMotion: true });
     expect(normalized.entities.boards[0]).toMatchObject({ bookmarkColumns: "auto", gridColumn: 1, gridRow: 0, gridSpan: 3 });
 
