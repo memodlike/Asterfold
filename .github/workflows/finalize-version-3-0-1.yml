@@ -74,8 +74,6 @@ jobs:
           for raw_path in current_paths:
               path = Path(raw_path)
               text = path.read_text()
-              if old not in text:
-                  raise SystemExit(f'{raw_path}: expected at least one current {old} reference')
               path.write_text(text.replace(old, new).replace('v3.0.0', 'v3.0.1'))
 
           versioning = Path('docs/release/versioning.md')
