@@ -27,8 +27,8 @@ vi.mock("@dnd-kit/core", async () => {
   return {
     DndContext: (props: DndProps) => { mocks.dndProps = props; return h(Fragment, null, props.children); },
     DragOverlay: ({ children }: { children: ReactNode }) => h(Fragment, null, children),
-    KeyboardSensor: class KeyboardSensor {},
-    PointerSensor: class PointerSensor {},
+    KeyboardSensor: Symbol("KeyboardSensor"),
+    PointerSensor: Symbol("PointerSensor"),
     closestCorners: mocks.closestCorners,
     useSensor: (sensor: unknown, options?: { coordinateGetter?: (event: KeyboardEvent, args: unknown) => unknown }) => {
       if (options?.coordinateGetter) mocks.keyboardGetter = options.coordinateGetter;
@@ -107,13 +107,13 @@ describe("BoardCanvas behavior", () => {
     expect(handlers.onMoveBoardIndex).toHaveBeenCalledWith(boardTwo.id, 0, board.id);
   });
 
-  it("routes board and bookmark drag completions", async () => {
+  it("routes board and bookmark drag completions", () => {
     const { handlers } = renderCanvas();
-    await act(async () => {
+    act(() => {
       mocks.dndProps?.onDragStart({ active: { data: { current: { type: "board", boardId: board.id } } } });
     });
     expect(screen.getByText(board.title)).toBeVisible();
-    await act(async () => { mocks.dndProps?.onDragCancel(); });
+    act(() => { mocks.dndProps?.onDragCancel(); });
 
     mocks.dndProps?.onDragEnd({
       active: { id: `board:${board.id}`, data: { current: { type: "board", boardId: board.id } } },
@@ -157,9 +157,9 @@ describe("BoardCanvas behavior", () => {
     expect(mocks.keyboardGetter?.({ code: "Enter", preventDefault } as unknown as KeyboardEvent, { context: { active: { data: { current: { type: "board" } } }, droppableRects: rects } })).toBeUndefined();
   });
 
-  it("hides bookmark titles in the drag overlay while privacy mode is active", async () => {
+  it("hides bookmark titles in the drag overlay while privacy mode is active", () => {
     renderCanvas({ privacy: true });
-    await act(async () => {
+    act(() => {
       mocks.dndProps?.onDragStart({ active: { data: { current: { type: "bookmark", bookmarkId: bookmark.id } } } });
     });
     expect(screen.getByText("Hidden bookmark")).toBeVisible();
