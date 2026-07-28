@@ -1,0 +1,23 @@
+name: Diagnose coverage patch
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.head_ref == 'agent/asterfold-v3-store-hardening'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: agent/asterfold-v3-store-hardening
+          fetch-depth: 0
+      - name: Verify exact Git blob
+        run: test "$(git hash-object .github/patches/coverage-test-fixes.patch)" = '371019272433af3c98fb32ef1dd491f2834be32b'
+      - name: Check patch applicability
+        run: git apply --check --verbose .github/patches/coverage-test-fixes.patch
