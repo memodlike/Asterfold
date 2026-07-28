@@ -29,8 +29,17 @@ jobs:
         run: npm run validate:version
       - name: Production dependency audit
         run: npm run audit:production
+      - name: Capture development dependency audit
+        shell: bash
+        run: npm audit --json > npm-audit.json || true
+      - name: Upload development audit evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: npm-audit-development
+          path: npm-audit.json
+          if-no-files-found: error
       - name: Development dependency audit baseline
-        run: npm run audit:development
+        run: node scripts/check-audit-baseline.mjs npm-audit.json
       - name: Source security scan
         run: npm run scan:source
       - run: npm run typecheck
@@ -94,7 +103,19 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run release:repro
+      - name: Windows version consistency
+        run: npm run validate:version
+      - name: Windows source security scan
+        run: npm run scan:source
+      - name: Windows production build
+        run: npm run build
+      - name: Windows generated manifest consistency
+        shell: pwsh
+        run: $env:REQUIRE_GENERATED_MANIFEST='true'; npm run validate:version
+      - name: Windows Store asset validation
+        run: npm run validate:store
+      - name: Windows deterministic release verification
+        run: node scripts/verify-release.mjs
       - name: Upload Windows reproducibility subjects
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
