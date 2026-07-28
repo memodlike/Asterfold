@@ -1,28 +1,27 @@
 name: Apply Asterfold 3.0.0 hardening patch
 
 on:
-  push:
-    branches:
-      - agent/asterfold-v3-store-hardening-d8bed28
-    paths:
-      - .github/asterfold-v3-patch/**
-      - .github/workflows/apply-v3-hardening.yml
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
 
 concurrency:
-  group: apply-v3-hardening-${{ github.ref }}
+  group: apply-v3-hardening-${{ github.event.pull_request.head.ref || github.ref }}
   cancel-in-progress: false
 
 jobs:
   apply:
+    if: github.head_ref == 'agent/asterfold-v3-store-hardening-d8bed28'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Check out exact branch
+      - name: Check out exact source branch
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
+          ref: ${{ github.head_ref }}
           fetch-depth: 0
 
       - name: Verify and apply reviewed patch
@@ -44,7 +43,7 @@ jobs:
       - name: Commit normal source tree
         shell: bash
         env:
-          BRANCH: ${{ github.ref_name }}
+          BRANCH: ${{ github.head_ref }}
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
