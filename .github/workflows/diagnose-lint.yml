@@ -1,0 +1,49 @@
+name: Diagnose current lint
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: diagnose-current-lint
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    if: github.head_ref == 'agent/asterfold-v3-store-hardening'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: agent/asterfold-v3-store-hardening
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - name: Capture lint
+        id: lint
+        shell: bash
+        run: |
+          set +e
+          npm run lint > lint.log 2>&1
+          status=$?
+          cat lint.log
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Upload lint log
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: exact-head-lint
+          path: lint.log
+          if-no-files-found: error
+      - name: Enforce lint
+        shell: bash
+        run: test "${{ steps.lint.outputs.status }}" = "0"
