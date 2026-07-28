@@ -1,0 +1,189 @@
+path,category,manual_review_completed,static_scan_completed,tests,risks,findings,remediation,final_status
+.github/copilot-instructions.md,repository automation,REVIEWED,COMPLETED,,Supply-chain/release behavior reviewed,,None required,PASS
+.github/dependabot.yml,repository automation,REVIEWED,COMPLETED,,Supply-chain/release behavior reviewed,,None required,PASS
+.github/workflows/ci.yml,workflow,REVIEWED,COMPLETED,pull_request and main workflow runs,Confirmed baseline or additional finding remediated; CI evidence pending,AF-SUP-001;AF-COV-001,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+.github/workflows/codeql.yml,workflow,REVIEWED,COMPLETED,,Supply-chain/release behavior reviewed,,None required,PASS
+.github/workflows/release.yml,workflow,REVIEWED,COMPLETED,tests/releaseScripts.test.ts; tag workflow,Confirmed baseline or additional finding remediated; CI evidence pending,AF-REL-001;AF-PROV-001,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+.gitignore,configuration/documentation,N/A,COMPLETED,,No material file-specific risk identified,,None required,N/A
+README.md,configuration/documentation,N/A,COMPLETED,,No material file-specific risk identified,,None required,N/A
+docs/architecture/decisions.md,documentation,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/audit/3.0.0/BASELINE.md,audit evidence,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/audit/3.0.0/FINDINGS.md,audit evidence,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/audit/3.0.0/RELEASE_EVIDENCE.md,audit evidence,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/audit/3.0.0/TEST_MATRIX.md,audit evidence,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/audit/ACCESSIBILITY_MATRIX.md,audit evidence,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/audit/DATA_MIGRATION_MATRIX.md,audit evidence,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/audit/EVIDENCE.md,audit evidence,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/audit/FINDINGS_STATUS.md,audit evidence,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/audit/IMPLEMENTATION_PLAN.md,audit evidence,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/audit/PERFORMANCE_BASELINE.json,audit evidence,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/audit/PERFORMANCE_REPORT.md,audit evidence,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/audit/QA_REPORT.md,audit evidence,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/audit/SETTINGS_MATRIX.md,audit evidence,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/development/CONTRIBUTING.md,documentation,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/diagrams/asterfold-user-flow.bpmn,documentation,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/diagrams/asterfold-user-flow.svg,documentation,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/images/03-settings-1280x800.png,documentation,REVIEWED,N/A binary metadata/asset validation,,No material file-specific risk identified,,None required,PASS
+docs/images/scale-1280x720.png,documentation,REVIEWED,N/A binary metadata/asset validation,,No material file-specific risk identified,,None required,PASS
+docs/images/scale-1920x1080.png,documentation,REVIEWED,N/A binary metadata/asset validation,,No material file-specific risk identified,,None required,PASS
+docs/images/settings.png,documentation,REVIEWED,N/A binary metadata/asset validation,,No material file-specific risk identified,,None required,PASS
+docs/images/workspace.png,documentation,REVIEWED,N/A binary metadata/asset validation,,No material file-specific risk identified,,None required,PASS
+docs/release/install.md,documentation,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/release/release-notes.md,documentation,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/release/versioning.md,documentation,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/security/branch-protection.md,security/privacy documentation,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/security/permissions.md,security/privacy documentation,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/security/privacy.md,security/privacy documentation,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/security/review.md,security/privacy documentation,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/security/third-party-notices.md,security/privacy documentation,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/security/threat-model.md,security/privacy documentation,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/store/privacy-practices.md,Store submission documentation,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/store/privacy.html,Store submission documentation,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+docs/store/submission-checklist.md,Store submission documentation,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+e2e/extension.spec.ts,real-extension E2E,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+e2e/upgrade.spec.ts,real-extension E2E,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+entrypoints/background.ts,service worker entrypoint,YES,COMPLETED,tests/manifestPolicy.test.ts; e2e/extension.spec.ts,No additional defect confirmed during manual review,,None required,PASS
+entrypoints/import-worker.ts,extension entrypoint,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+entrypoints/newtab/index.html,extension entrypoint,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+entrypoints/newtab/main.tsx,extension entrypoint,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+entrypoints/popup/PopupApp.tsx,extension entrypoint,YES,COMPLETED,e2e/extension.spec.ts,Confirmed baseline or additional finding remediated; CI evidence pending,AF-RACE-002,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+entrypoints/popup/index.html,extension entrypoint,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+entrypoints/popup/main.tsx,extension entrypoint,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+entrypoints/popup/popup.css,extension entrypoint,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+eslint.config.js,configuration/documentation,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+package-lock.json,dependency/build manifest,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+package.json,dependency/build manifest,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+playwright.config.ts,configuration/documentation,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+public/icons/icon-128.png,runtime static asset,N/A,N/A binary metadata/asset validation,,No material file-specific risk identified,,None required,N/A
+public/icons/icon-16.png,runtime static asset,N/A,N/A binary metadata/asset validation,,No material file-specific risk identified,,None required,N/A
+public/icons/icon-32.png,runtime static asset,N/A,N/A binary metadata/asset validation,,No material file-specific risk identified,,None required,N/A
+public/icons/icon-48.png,runtime static asset,N/A,N/A binary metadata/asset validation,,No material file-specific risk identified,,None required,N/A
+public/icons/mark-16.svg,runtime static asset,N/A,COMPLETED,,No material file-specific risk identified,,None required,N/A
+public/icons/mark-20.svg,runtime static asset,N/A,COMPLETED,,No material file-specific risk identified,,None required,N/A
+public/icons/mark-24.svg,runtime static asset,N/A,COMPLETED,,No material file-specific risk identified,,None required,N/A
+public/icons/mark-32.svg,runtime static asset,N/A,COMPLETED,,No material file-specific risk identified,,None required,N/A
+public/icons/mark-dark.svg,runtime static asset,N/A,COMPLETED,,No material file-specific risk identified,,None required,N/A
+public/icons/mark-high-contrast.svg,runtime static asset,N/A,COMPLETED,,No material file-specific risk identified,,None required,N/A
+public/icons/mark-light.svg,runtime static asset,N/A,COMPLETED,,No material file-specific risk identified,,None required,N/A
+public/icons/mark-monochrome.svg,runtime static asset,N/A,COMPLETED,,No material file-specific risk identified,,None required,N/A
+public/icons/mark.svg,runtime static asset,N/A,COMPLETED,,No material file-specific risk identified,,None required,N/A
+public/icons/new-tab.svg,runtime static asset,N/A,COMPLETED,,No material file-specific risk identified,,None required,N/A
+public/icons/wordmark-horizontal.svg,runtime static asset,N/A,COMPLETED,,No material file-specific risk identified,,None required,N/A
+public/wallpapers/blue-mesh.webp,runtime static asset,N/A,N/A binary metadata/asset validation,,No material file-specific risk identified,,None required,N/A
+public/wallpapers/dusk.webp,runtime static asset,N/A,N/A binary metadata/asset validation,,No material file-specific risk identified,,None required,N/A
+public/wallpapers/quiet-aurora.webp,runtime static asset,N/A,N/A binary metadata/asset validation,,No material file-specific risk identified,,None required,N/A
+scripts/check-audit-baseline.mjs,build/release/security script,REVIEWED,COMPLETED,npm run audit:development,Confirmed baseline or additional finding remediated; CI evidence pending,AF-SUP-001,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+scripts/clean.mjs,build/release/security script,REVIEWED,COMPLETED,,Supply-chain/release behavior reviewed,,None required,PASS
+scripts/generate-audit-fixtures.mjs,build/release/security script,REVIEWED,COMPLETED,,Supply-chain/release behavior reviewed,,None required,PASS
+scripts/generate-provenance.mjs,build/release/security script,REVIEWED,COMPLETED,npm run release:repro; tag workflow,Confirmed baseline or additional finding remediated; CI evidence pending,AF-PROV-001,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+scripts/generate-sbom.mjs,build/release/security script,REVIEWED,COMPLETED,,Supply-chain/release behavior reviewed,,None required,PASS
+scripts/release-lib.d.mts,build/release/security script,REVIEWED,COMPLETED,,Supply-chain/release behavior reviewed,,None required,PASS
+scripts/release-lib.mjs,build/release/security script,REVIEWED,COMPLETED,tests/releaseScripts.test.ts,Supply-chain/release behavior reviewed,,None required,PASS
+scripts/release.mjs,build/release/security script,REVIEWED,COMPLETED,tests/releaseScripts.test.ts; npm run release:repro,Confirmed baseline or additional finding remediated; CI evidence pending,AF-PKG-001;AF-PROV-001,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+scripts/scan-source.mjs,build/release/security script,REVIEWED,COMPLETED,,Supply-chain/release behavior reviewed,,None required,PASS
+scripts/validate-release-package.mjs,build/release/security script,REVIEWED,COMPLETED,,Supply-chain/release behavior reviewed,,None required,PASS
+scripts/validate-store-assets.mjs,build/release/security script,REVIEWED,COMPLETED,,Supply-chain/release behavior reviewed,,None required,PASS
+scripts/validate-version.mjs,build/release/security script,REVIEWED,COMPLETED,,Supply-chain/release behavior reviewed,,None required,PASS
+scripts/verify-provenance.mjs,build/release/security script,REVIEWED,COMPLETED,npm run release:repro; tag workflow,Confirmed baseline or additional finding remediated; CI evidence pending,AF-PROV-001,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+scripts/verify-release.mjs,build/release/security script,REVIEWED,COMPLETED,,Supply-chain/release behavior reviewed,,None required,PASS
+scripts/verify-required-workflows.d.mts,build/release/security script,REVIEWED,COMPLETED,,Supply-chain/release behavior reviewed,,None required,PASS
+scripts/verify-required-workflows.mjs,build/release/security script,REVIEWED,COMPLETED,,Supply-chain/release behavior reviewed,,None required,PASS
+security/npm-audit-baseline.json,configuration/documentation,N/A,COMPLETED,,No material file-specific risk identified,,None required,N/A
+src/app/AppLauncher.tsx,production UI/source,YES,COMPLETED,tests/launcherDiscovery.test.ts; e2e/extension.spec.ts,Confirmed baseline or additional finding remediated; CI evidence pending,AF-UX-001,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+src/app/WorkspaceApp.tsx,production UI/source,YES,COMPLETED,tests/launcherDiscovery.test.ts; e2e/extension.spec.ts,Confirmed baseline or additional finding remediated; CI evidence pending,AF-UX-001,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+src/app/usePrivacyMode.ts,production UI/source,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/app/useWorkspace.ts,production UI/source,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/browser/api.ts,Chrome API boundary,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/browser/messages.ts,Chrome API boundary,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/browser/platform.ts,Chrome API boundary,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/browser/privacySession.ts,Chrome API boundary,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/components/Button.tsx,production UI/source,YES,COMPLETED,tests/interactionRegressions.test.ts,Confirmed baseline or additional finding remediated; CI evidence pending,AF-INT-001,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+src/components/FloatingContextMenu.tsx,production UI/source,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/components/IconButton.tsx,production UI/source,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/components/Logo.tsx,production UI/source,YES,COMPLETED,tests/accessibility.test.ts; e2e/extension.spec.ts,Confirmed baseline or additional finding remediated; CI evidence pending,AF-A11Y-001,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+src/components/Modal.tsx,production UI/source,YES,COMPLETED,tests/accessibility.test.ts; tests/interactionRegressions.test.ts,Confirmed baseline or additional finding remediated; CI evidence pending,AF-A11Y-002,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+src/components/MoveDialog.tsx,production UI/source,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/components/NameDialog.tsx,production UI/source,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/components/ToastRegion.tsx,production UI/source,YES,COMPLETED,tests/accessibility.test.ts; tests/interactionRegressions.test.ts,Confirmed baseline or additional finding remediated; CI evidence pending,AF-A11Y-003,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+src/db/database.ts,database/migration/repository,YES,COMPLETED,tests/migrations.test.ts; e2e/upgrade.spec.ts,Confirmed baseline or additional finding remediated; CI evidence pending,AF-UX-001,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+src/db/defaults.ts,database/migration/repository,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/db/migrations.ts,database/migration/repository,YES,COMPLETED,tests/migrations.test.ts; e2e/upgrade.spec.ts,Confirmed baseline or additional finding remediated; CI evidence pending,AF-UX-001,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+src/db/repository.ts,database/migration/repository,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/domain/errors.ts,domain/schema/security validation,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/domain/icons.ts,domain/schema/security validation,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/domain/importLimits.ts,domain/schema/security validation,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/domain/mediaLimits.ts,domain/schema/security validation,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/domain/models.ts,domain/schema/security validation,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/domain/ordering.ts,domain/schema/security validation,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/domain/quickSave.ts,domain/schema/security validation,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/domain/schemas.ts,domain/schema/security validation,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/domain/text.ts,domain/schema/security validation,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/domain/themes.ts,domain/schema/security validation,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/domain/urls.ts,domain/schema/security validation,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/features/appearance/themeRuntime.ts,production UI/source,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/features/appearance/useThemeRuntime.ts,production UI/source,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/features/boards/BoardCanvas.tsx,production UI/source,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/features/boards/BoardColumn.tsx,production UI/source,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/features/boards/layout.ts,production UI/source,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/features/bookmarks/BookmarkCard.tsx,production UI/source,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/features/bookmarks/BookmarkEditor.tsx,production UI/source,YES,COMPLETED,tests/bookmarkEditorConcurrency.test.ts; e2e/extension.spec.ts,Confirmed baseline or additional finding remediated; CI evidence pending,AF-RACE-001,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+src/features/search/SearchPalette.tsx,production UI/source,YES,COMPLETED,tests/interactionRegressions.test.ts; tests/search.test.ts; e2e/extension.spec.ts,Confirmed baseline or additional finding remediated; CI evidence pending,AF-INT-002,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+src/features/settings/SettingsDialog.tsx,production UI/source,YES,COMPLETED,tests/settingsImportState.test.ts; e2e/extension.spec.ts,Confirmed baseline or additional finding remediated; CI evidence pending,AF-STATE-001,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+src/features/trash/TrashDialog.tsx,production UI/source,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/i18n/index.tsx,localization,YES,COMPLETED,tests/i18n.test.ts; e2e/extension.spec.ts,Confirmed baseline or additional finding remediated; CI evidence pending,AF-UX-001,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+src/search/searchEngine.ts,production UI/source,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/services/exportImport.ts,import/export/media service,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/services/importWorker.ts,import/export/media service,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/services/wallpaper.ts,import/export/media service,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+src/styles/global.css,production styles,YES,COMPLETED,e2e/extension.spec.ts,Confirmed baseline or additional finding remediated; CI evidence pending,AF-UX-001,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+src/utils/ids.ts,production UI/source,YES,COMPLETED,,No additional defect confirmed during manual review,,None required,PASS
+store-assets/README.md,Chrome Web Store asset/listing,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+store-assets/icon/icon-128.png,Chrome Web Store asset/listing,REVIEWED,N/A binary metadata/asset validation,,No material file-specific risk identified,,None required,PASS
+store-assets/listing/store-listing-en.md,Chrome Web Store asset/listing,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+store-assets/listing/store-listing-ru.md,Chrome Web Store asset/listing,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+store-assets/listing/submission-values.md,Chrome Web Store asset/listing,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+store-assets/promo/marquee-1400x560.png,Chrome Web Store asset/listing,REVIEWED,N/A binary metadata/asset validation,,No material file-specific risk identified,,None required,PASS
+store-assets/promo/marquee-source.svg,Chrome Web Store asset/listing,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+store-assets/promo/small-promo-440x280.png,Chrome Web Store asset/listing,REVIEWED,N/A binary metadata/asset validation,,No material file-specific risk identified,,None required,PASS
+store-assets/promo/small-promo-source.svg,Chrome Web Store asset/listing,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+store-assets/screenshots/01-workspace-1280x800.png,Chrome Web Store asset/listing,REVIEWED,N/A binary metadata/asset validation,,No material file-specific risk identified,,None required,PASS
+store-assets/screenshots/02-search-1280x800.png,Chrome Web Store asset/listing,REVIEWED,N/A binary metadata/asset validation,,No material file-specific risk identified,,None required,PASS
+store-assets/screenshots/03-settings-1280x800.png,Chrome Web Store asset/listing,REVIEWED,N/A binary metadata/asset validation,,No material file-specific risk identified,,None required,PASS
+store-assets/screenshots/04-privacy-1280x800.png,Chrome Web Store asset/listing,REVIEWED,N/A binary metadata/asset validation,,No material file-specific risk identified,,None required,PASS
+store-assets/screenshots/05-trash-1280x800.png,Chrome Web Store asset/listing,REVIEWED,N/A binary metadata/asset validation,,No material file-specific risk identified,,None required,PASS
+tests/accessibility.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/auditFixtures.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/bookmarkEditorConcurrency.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/brand.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/browserApi.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/domain.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/fixtures/audit/backups/backup-v1-golden.json,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/fixtures/audit/backups/backup-v2-golden.json,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/fixtures/audit/migrations/db-v1.json,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/fixtures/audit/migrations/db-v2.json,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/fixtures/audit/migrations/db-v3.json,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/fixtures/audit/migrations/db-v4.json,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/fixtures/audit/migrations/db-v5.json,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/i18n.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/importExport.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/interactionRegressions.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/launcherDiscovery.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/layout.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/manifestPolicy.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/migrations.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/ordering.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/performance.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/privacy.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/privacySearch.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/privacySession.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/quickSave.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/releaseScripts.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/repository.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/search.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/settingsImportState.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/setup.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/trashDialog.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tests/wallpaper.test.ts,unit/integration test or fixture,REVIEWED,COMPLETED,,Test quality and false-positive risk reviewed,,None required,PASS
+tsconfig.json,configuration/documentation,REVIEWED,COMPLETED,,No material file-specific risk identified,,None required,PASS
+vitest.config.ts,configuration/documentation,REVIEWED,COMPLETED,npm run test:coverage,Confirmed baseline or additional finding remediated; CI evidence pending,AF-COV-001,See docs/audit/3.0.0/FINDINGS.md and linked regression/release gates,REMEDIATED_PENDING_CI
+wxt.config.ts,configuration/documentation,YES,COMPLETED,tests/manifestPolicy.test.ts; scripts/validate-version.mjs,No additional defect confirmed during manual review,,None required,PASS

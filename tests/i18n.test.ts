@@ -9,6 +9,14 @@ describe("runtime dictionaries", () => {
     }
   });
 
+  it("localizes the first-run discovery copy for every selectable non-English locale", () => {
+    const english = translate("en", "launcher.discoveryTitle");
+    for (const locale of localeOptions.filter((item) => item.value !== "auto" && item.value !== "en")) {
+      expect(translate(locale.value, "launcher.discoveryTitle"), locale.value).not.toBe(english);
+      expect(translate(locale.value, "launcher.discoveryAction"), locale.value).not.toBe("Open menu");
+    }
+  });
+
   it("provides localized new-tab titles for the core Chrome languages", () => {
     expect(translate("en", "tab.title")).toBe("New Tab");
     expect(translate("ru", "tab.title")).toBe("Новая вкладка");

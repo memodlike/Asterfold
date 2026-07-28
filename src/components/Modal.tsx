@@ -47,10 +47,13 @@ export function Modal({ open, title, description, size = "medium", side = false,
       const items = [...panel.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((item) => item.offsetParent !== null);
       const initial = items[0];
       const last = items.at(-1);
-      if (event.shiftKey && document.activeElement === initial && last) {
+      if (!initial || !last) {
+        event.preventDefault();
+        panel.focus();
+      } else if (event.shiftKey && document.activeElement === initial) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && document.activeElement === last && initial) {
+      } else if (!event.shiftKey && document.activeElement === last) {
         event.preventDefault();
         initial.focus();
       }

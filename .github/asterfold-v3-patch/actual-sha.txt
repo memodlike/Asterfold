@@ -1,2 +1,0 @@
-1c05caad715d4a6895037545168cc28e0bbded2f945daf36e54fb3a7b9255bcd  /tmp/asterfold-v3.patch.gz.b64
-65564 /tmp/asterfold-v3.patch.gz.b64

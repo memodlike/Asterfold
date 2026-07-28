@@ -252,6 +252,8 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
         onPrivacy={togglePrivacy}
         onTrash={() => setTrashOpen(true)}
         onSettings={() => openSettings("appearance")}
+        showFirstRunHint={!workspace.settings.onboardingComplete}
+        onDismissFirstRunHint={() => { void run(() => updateSettings({ onboardingComplete: true })); }}
       />
       {selectedIds.size > 0 ? <div className="bulk-toolbar"><strong>{selectedIds.size}</strong><Button size="small" onClick={() => setMoveIntent({ kind: "bulk" })}>{t("generic.move")}</Button><Button size="small" icon={<Download size={14} />} onClick={exportSelected}>{t("generic.export")}</Button><Button size="small" variant="danger" onClick={bulkDelete}>{t("generic.delete")}</Button><IconButton label={t("generic.close")} onClick={() => setSelectedIds(new Set())}><X size={16} /></IconButton></div> : null}
 
