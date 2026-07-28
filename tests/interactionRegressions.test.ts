@@ -51,8 +51,8 @@ describe("interaction regressions", () => {
     expect(toast).not.toBeNull();
     fireEvent.pointerEnter(toast!);
     fireEvent.pointerLeave(toast!);
-    await act(() => {
-      vi.advanceTimersByTime(2_100);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_100);
     });
     expect(screen.getByText("Removed")).toBeVisible();
   });
