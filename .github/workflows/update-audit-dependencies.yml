@@ -100,6 +100,15 @@ jobs:
       - name: Enforce toolchain install result
         shell: bash
         run: test "${{ steps.install.outputs.status }}" = "0"
+      - name: Upload exact toolchain candidate
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: toolchain-candidate
+          path: |
+            package.json
+            package-lock.json
+            e2e/upgrade.spec.ts
+          if-no-files-found: error
       - name: Capture post-upgrade audit
         shell: bash
         run: npm audit --json > npm-audit-after.json || true
@@ -113,8 +122,25 @@ jobs:
         run: npm run audit:production
       - name: Development dependency audit baseline
         run: node scripts/check-audit-baseline.mjs npm-audit-after.json
-      - name: Typecheck upgraded toolchain
-        run: npm run typecheck
+      - name: Capture typecheck result
+        id: typecheck
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck > typecheck.log 2>&1
+          status=$?
+          cat typecheck.log
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Upload typecheck evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: typecheck-after-toolchain-upgrade
+          path: typecheck.log
+          if-no-files-found: error
+      - name: Enforce typecheck result
+        shell: bash
+        run: test "${{ steps.typecheck.outputs.status }}" = "0"
       - name: Capture lint result
         id: lint
         shell: bash
