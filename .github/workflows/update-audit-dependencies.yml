@@ -53,8 +53,22 @@ jobs:
         shell: bash
         run: |
           set +e
-          npm ci > install.log 2>&1
+          npm config set fetch-retries 2
+          npm config set fetch-timeout 60000
+          {
+            echo '=== peer metadata ==='
+            npm view eslint@10.8.0 version engines --json
+            npm view eslint-plugin-react-hooks@7.1.1 version peerDependencies --json
+            npm view eslint-plugin-react-refresh@0.5.3 version peerDependencies --json
+            npm view typescript-eslint@8.65.0 version peerDependencies --json
+            npm view wxt@0.21.2 version engines peerDependencies --json
+            echo '=== existing clean install ==='
+          } > install.log 2>&1
           status=$?
+          if [ "$status" -eq 0 ]; then
+            npm ci >> install.log 2>&1
+            status=$?
+          fi
           if [ "$status" -eq 0 ]; then
             npm pkg set \
               'devDependencies.@eslint/js=10.0.1' \
@@ -67,7 +81,7 @@ jobs:
           fi
           if [ "$status" -eq 0 ]; then
             rm -rf node_modules package-lock.json
-            npm install --package-lock-only --ignore-scripts >> install.log 2>&1
+            timeout 240s npm install --package-lock-only --ignore-scripts --no-audit --no-fund --loglevel=verbose >> install.log 2>&1
             status=$?
           fi
           if [ "$status" -eq 0 ]; then
