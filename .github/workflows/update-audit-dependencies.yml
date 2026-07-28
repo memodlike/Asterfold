@@ -37,17 +37,27 @@ jobs:
             eslint@10.8.0 \
             typescript-eslint@8.65.0 \
             wxt@0.21.2
-      - name: Verify upgraded toolchain
+      - name: Capture post-upgrade audit
         shell: bash
-        run: |
-          set -euo pipefail
-          npm run audit:production
-          npm audit --json > npm-audit-after.json || true
-          node scripts/check-audit-baseline.mjs npm-audit-after.json
-          npm run typecheck
-          npm run lint
-          npm run test:coverage
-          npm run release:repro
+        run: npm audit --json > npm-audit-after.json || true
+      - name: Upload post-upgrade audit
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: npm-audit-after-toolchain-upgrade
+          path: npm-audit-after.json
+          if-no-files-found: error
+      - name: Production dependency audit
+        run: npm run audit:production
+      - name: Development dependency audit baseline
+        run: node scripts/check-audit-baseline.mjs npm-audit-after.json
+      - name: Typecheck upgraded toolchain
+        run: npm run typecheck
+      - name: Lint upgraded toolchain
+        run: npm run lint
+      - name: Coverage upgraded toolchain
+        run: npm run test:coverage
+      - name: Reproducible release upgraded toolchain
+        run: npm run release:repro
       - name: Commit dependency update when changed
         shell: bash
         run: |
