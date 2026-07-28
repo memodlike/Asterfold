@@ -64,7 +64,12 @@ jobs:
             status=$?
           fi
           if [ "$status" -eq 0 ]; then
-            npm install >> install.log 2>&1
+            rm -rf node_modules
+            npm install --package-lock-only --ignore-scripts >> install.log 2>&1
+            status=$?
+          fi
+          if [ "$status" -eq 0 ]; then
+            npm ci >> install.log 2>&1
             status=$?
           fi
           cat install.log
