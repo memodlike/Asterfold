@@ -54,7 +54,7 @@ jobs:
           set -euo pipefail
           npm ci
           npm install --save-dev --save-exact \
-            @eslint/js@10.8.0 \
+            @eslint/js@10.0.1 \
             eslint@10.8.0 \
             typescript-eslint@8.65.0 \
             wxt@0.21.2
