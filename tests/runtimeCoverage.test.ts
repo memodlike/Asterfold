@@ -81,11 +81,14 @@ class TestWorker {
   }
 }
 
+const createObjectUrlMock = vi.fn(() => "blob:wallpaper");
+const revokeObjectUrlMock = vi.fn();
+
 describe("runtime lifecycle coverage", () => {
   const originalWorker = globalThis.Worker;
   const originalMatchMedia = globalThis.matchMedia;
-  const originalCreateObjectUrl = URL.createObjectURL;
-  const originalRevokeObjectUrl = URL.revokeObjectURL;
+  const originalCreateObjectUrl = URL.createObjectURL.bind(URL);
+  const originalRevokeObjectUrl = URL.revokeObjectURL.bind(URL);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -106,8 +109,10 @@ describe("runtime lifecycle coverage", () => {
         dispatchEvent: vi.fn(() => true),
       })),
     });
-    Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:wallpaper") });
-    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
+    createObjectUrlMock.mockClear();
+    revokeObjectUrlMock.mockClear();
+    Object.defineProperty(URL, "createObjectURL", { configurable: true, value: createObjectUrlMock });
+    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: revokeObjectUrlMock });
   });
 
   afterEach(() => {
@@ -156,12 +161,12 @@ describe("runtime lifecycle coverage", () => {
     const uploaded = theme({ mode: "dark", backgroundMode: "wallpaper", wallpaperId: "upload-1" });
     const view = renderHook(({ value }) => useThemeRuntime(value), { initialProps: { value: uploaded } });
 
-    await waitFor(() => expect(URL.createObjectURL).toHaveBeenCalledOnce());
+    await waitFor(() => expect(createObjectUrlMock).toHaveBeenCalledOnce());
     expect(document.documentElement.dataset.theme).toBe("dark");
     expect(document.documentElement.style.getPropertyValue("--wallpaper-image")).toContain("blob:wallpaper");
 
     view.rerender({ value: theme({ mode: "light", wallpaperId: "builtin-aurora" }) });
-    await waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:wallpaper"));
+    await waitFor(() => expect(revokeObjectUrlMock).toHaveBeenCalledWith("blob:wallpaper"));
     expect(document.documentElement.dataset.theme).toBe("light");
     view.unmount();
     expect(document.documentElement.style.getPropertyValue("--color-canvas")).toBe("");

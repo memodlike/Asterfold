@@ -175,12 +175,12 @@ describe("WorkspaceApp orchestration", () => {
     await waitFor(() => expect(mocks.canvas).not.toBeNull());
     expect(mocks.updateSettings).toHaveBeenCalledWith({ activePageId: pageTwo.id });
 
-    await act(async () => { mocks.launcher?.onCreatePage(); });
+    act(() => { mocks.launcher?.onCreatePage(); });
     expect(mocks.nameDialog?.open).toBe(true);
     await act(async () => { await mocks.nameDialog?.onSubmit("New page"); });
     expect(mocks.createPage).toHaveBeenCalledWith("New page");
 
-    await act(async () => { mocks.launcher?.onRenamePage(page); });
+    act(() => { mocks.launcher?.onRenamePage(page); });
     await act(async () => { await mocks.nameDialog?.onSubmit("Renamed page"); });
     expect(mocks.renamePage).toHaveBeenCalledWith(page.id, "Renamed page");
 
@@ -196,10 +196,10 @@ describe("WorkspaceApp orchestration", () => {
     expect(mocks.movePageToIndex).toHaveBeenCalledWith(pageTwo.id, 0);
     expect(mocks.softDeletePage).toHaveBeenCalledWith(pageTwo.id);
 
-    await act(async () => { mocks.canvas?.onCreateBoard(); });
+    act(() => { mocks.canvas?.onCreateBoard(); });
     await act(async () => { await mocks.nameDialog?.onSubmit("New board"); });
     expect(mocks.createBoard).toHaveBeenCalledWith(page.id, "New board");
-    await act(async () => { mocks.canvas?.onEditBoard(board); });
+    act(() => { mocks.canvas?.onEditBoard(board); });
     await act(async () => { await mocks.nameDialog?.onSubmit("Renamed board"); });
     expect(mocks.updateBoard).toHaveBeenCalledWith(board.id, { title: "Renamed board" });
 
@@ -213,7 +213,7 @@ describe("WorkspaceApp orchestration", () => {
     expect(mocks.softDeleteBoard).toHaveBeenCalledWith(board.id);
     expect(mocks.moveBoardToIndex).toHaveBeenCalledWith(board.id, page.id, 1);
 
-    await act(async () => { mocks.canvas?.onAddBookmark(board); });
+    act(() => { mocks.canvas?.onAddBookmark(board); });
     expect(mocks.editor?.initialBoardId).toBe(board.id);
     mocks.canvas?.onEditBookmark(bookmark);
     expect(mocks.editor?.bookmark).toEqual(bookmark);
@@ -231,7 +231,7 @@ describe("WorkspaceApp orchestration", () => {
     expect(mocks.copyText).toHaveBeenCalledWith(bookmark.url);
     expect(mocks.copyText).toHaveBeenCalledWith(`[${bookmark.title}](${bookmark.url})`);
 
-    await act(async () => { mocks.launcher?.onSearch(); });
+    act(() => { mocks.launcher?.onSearch(); });
     expect(mocks.search?.open).toBe(true);
     mocks.search?.onReveal(bookmark, pageTwo.id);
     mocks.search?.onEdit(bookmark);
@@ -242,11 +242,11 @@ describe("WorkspaceApp orchestration", () => {
     expect(mocks.editor?.bookmark).toEqual(bookmark);
     expect(mocks.moveDialog?.type).toBe("bookmark");
 
-    await act(async () => { mocks.canvas?.onImport(); });
+    act(() => { mocks.canvas?.onImport(); });
     expect(mocks.settings?.initialSection).toBe("data-privacy");
-    await act(async () => { mocks.launcher?.onSettings(); });
+    act(() => { mocks.launcher?.onSettings(); });
     expect(mocks.settings?.initialSection).toBe("appearance");
-    await act(async () => { mocks.launcher?.onTrash(); });
+    act(() => { mocks.launcher?.onTrash(); });
     expect(mocks.trash?.open).toBe(true);
   });
 
@@ -254,7 +254,7 @@ describe("WorkspaceApp orchestration", () => {
     render(createElement(WorkspaceApp));
     await waitFor(() => expect(mocks.canvas).not.toBeNull());
 
-    await act(async () => {
+    act(() => {
       mocks.canvas?.onSelectBookmark(bookmark, { ctrlKey: false, metaKey: false, shiftKey: false } as ReactMouseEvent);
     });
     expect(screen.getByText("1")).toBeVisible();
@@ -265,16 +265,16 @@ describe("WorkspaceApp orchestration", () => {
     await act(async () => { await mocks.moveDialog?.onMove(boardTwo.id); });
     expect(mocks.bulkMoveBookmarks).toHaveBeenCalledWith([bookmark.id], boardTwo.id);
 
-    await act(async () => {
+    act(() => {
       mocks.canvas?.onSelectBookmark(bookmark, { ctrlKey: false, metaKey: false, shiftKey: false } as ReactMouseEvent);
     });
     fireEvent.click(screen.getAllByRole("button").find((item) => item.textContent?.includes("Delete"))!);
     await settle();
     expect(mocks.bulkDeleteBookmarks).toHaveBeenCalled();
 
-    await act(async () => { mocks.launcher?.onPrivacy(); });
+    act(() => { mocks.launcher?.onPrivacy(); });
     expect(mocks.setPrivacy).toHaveBeenCalledWith(true);
-    await act(async () => { mocks.launcher?.onDismissFirstRunHint?.(); });
+    act(() => { mocks.launcher?.onDismissFirstRunHint?.(); });
     expect(mocks.updateSettings).toHaveBeenCalledWith({ onboardingComplete: true });
 
     fireEvent.keyDown(window, { key: "k", ctrlKey: true });

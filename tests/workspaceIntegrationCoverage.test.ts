@@ -1,4 +1,4 @@
-import { createElement, type MouseEvent as ReactMouseEvent } from "react";
+import { createElement } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppSettings, Board, Bookmark, Page, WorkspaceData } from "../src/domain/models";
@@ -300,9 +300,7 @@ describe("workspace integration coverage", () => {
     await waitFor(() => expect(mocks.repository.updateSettings).toHaveBeenCalledWith({ onboardingComplete: true }));
   });
 
-  it("supports board keyboard movement and bookmark selection callbacks", () => {
-    const onSelect = vi.fn((_bookmark: Bookmark, _event: ReactMouseEvent) => undefined);
-    expect(onSelect).not.toHaveBeenCalled();
+  it("supports board keyboard movement and bookmark range selection", () => {
     render(createElement(WorkspaceApp));
     fireEvent.keyDown(screen.getByRole("button", { name: "Actions for Inbox" }), { altKey: true, key: "ArrowRight" });
     fireEvent.click(screen.getByRole("button", { name: "Open Second" }), { shiftKey: true });
