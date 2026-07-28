@@ -30,15 +30,25 @@ jobs:
           from pathlib import Path
           import json
 
-          def replace_once(path_str: str, old: str, new: str) -> None:
+          def replace_count(path_str: str, old: str, new: str, expected: int = 1) -> None:
               path = Path(path_str)
               text = path.read_text()
               count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'{path}: expected one match, found {count}: {old[:80]!r}')
-              path.write_text(text.replace(old, new, 1))
+              if count != expected:
+                  raise SystemExit(f'{path}: expected {expected} matches, found {count}: {old[:80]!r}')
+              path.write_text(text.replace(old, new))
 
-          replace_once('tests/appearanceDialogs.test.ts', '''    act(() => {\n      view.rerender(withI18n(createElement(MoveDialog, { ...props, open: false })));\n      view.rerender(withI18n(createElement(MoveDialog, { ...props, open: true })));\n    });\n    expect(screen.queryByRole("alert")).toBeNull();''', '''    view.rerender(withI18n(createElement(MoveDialog, { ...props, open: false })));\n    expect(screen.queryByRole("dialog")).toBeNull();\n    view.rerender(withI18n(createElement(MoveDialog, { ...props, open: true })));\n    await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());''')
+          def replace_once(path_str: str, old: str, new: str) -> None:
+              replace_count(path_str, old, new, 1)
+
+          replace_once('tests/appearanceDialogs.test.ts', '''    act(() => {
+      view.rerender(withI18n(createElement(MoveDialog, { ...props, open: false })));
+      view.rerender(withI18n(createElement(MoveDialog, { ...props, open: true })));
+    });
+    expect(screen.queryByRole("alert")).toBeNull();''', '''    view.rerender(withI18n(createElement(MoveDialog, { ...props, open: false })));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    view.rerender(withI18n(createElement(MoveDialog, { ...props, open: true })));
+    await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());''')
           replace_once('tests/boardCanvasBehavior.test.ts', 'expect(screen.getByText(board.title)).toBeVisible();', 'expect(screen.getByText(board.title, { selector: ".drag-overlay span" })).toBeVisible();')
           replacements = [
               ('name: "Add bookmark to Inbox"', 'name: "Add a bookmark to Inbox"'),
@@ -53,28 +63,47 @@ jobs:
           for old, new in replacements:
               replace_once('tests/boardColumnBehavior.test.ts', old, new)
 
-          replace_once('tests/importWorkerBehavior.test.ts', '''    const worker = FakeWorker.instances[0]!;\n    await vi.advanceTimersByTimeAsync(30_001);\n    await expect(pending).rejects.toThrow("Import worker timed out");''', '''    const worker = FakeWorker.instances[0]!;\n    const timeoutRejection = expect(pending).rejects.toThrow("Import worker timed out");\n    await vi.advanceTimersByTimeAsync(30_001);\n    await timeoutRejection;''')
-          replace_once('tests/runtimeCoverage.test.ts', '''    const timedOut = parseHtmlOffThread("timeout");\n    await vi.advanceTimersByTimeAsync(30_001);\n    await expect(timedOut).rejects.toThrow("Import worker timed out");''', '''    const timedOut = parseHtmlOffThread("timeout");\n    const timeoutRejection = expect(timedOut).rejects.toThrow("Import worker timed out");\n    await vi.advanceTimersByTimeAsync(30_001);\n    await timeoutRejection;''')
-          runtime = Path('tests/runtimeCoverage.test.ts')
-          runtime.write_text(runtime.read_text().replace('The action could not be completed.', 'Unable to complete the action'))
+          replace_once('tests/importWorkerBehavior.test.ts', '''    const worker = FakeWorker.instances[0]!;
+    await vi.advanceTimersByTimeAsync(30_001);
+    await expect(pending).rejects.toThrow("Import worker timed out");''', '''    const worker = FakeWorker.instances[0]!;
+    const timeoutRejection = expect(pending).rejects.toThrow("Import worker timed out");
+    await vi.advanceTimersByTimeAsync(30_001);
+    await timeoutRejection;''')
+          replace_once('tests/runtimeCoverage.test.ts', '''    const timedOut = parseHtmlOffThread("timeout");
+    await vi.advanceTimersByTimeAsync(30_001);
+    await expect(timedOut).rejects.toThrow("Import worker timed out");''', '''    const timedOut = parseHtmlOffThread("timeout");
+    const timeoutRejection = expect(timedOut).rejects.toThrow("Import worker timed out");
+    await vi.advanceTimersByTimeAsync(30_001);
+    await timeoutRejection;''')
+          replace_count('tests/runtimeCoverage.test.ts', 'The action could not be completed.', 'Unable to complete the action', 2)
 
-          replace_once('tests/workspaceAppOrchestration.test.ts', '''    act(() => { mocks.canvas?.onAddBookmark(board); });\n    expect(mocks.editor?.initialBoardId).toBe(board.id);\n    mocks.canvas?.onEditBookmark(bookmark);\n    expect(mocks.editor?.bookmark).toEqual(bookmark);''', '''    act(() => { mocks.canvas?.onAddBookmark(board); });\n    await waitFor(() => expect(mocks.editor?.initialBoardId).toBe(board.id));\n    act(() => { mocks.canvas?.onEditBookmark(bookmark); });\n    await waitFor(() => expect(mocks.editor?.bookmark).toEqual(bookmark));''')
-          replace_once('tests/workspaceAppOrchestration.test.ts', '''    act(() => { mocks.launcher?.onSearch(); });\n    expect(mocks.search?.open).toBe(true);''', '''    act(() => { mocks.launcher?.onSearch(); });\n    await waitFor(() => expect(mocks.search?.open).toBe(true));''')
-          replace_once('tests/workspaceAppOrchestration.test.ts', '''    fireEvent.keyDown(window, { key: "k", ctrlKey: true });\n    expect(mocks.search?.open).toBe(true);''', '''    fireEvent.keyDown(window, { key: "k", ctrlKey: true });\n    await waitFor(() => expect(mocks.search?.open).toBe(true));''')
+          replace_once('tests/workspaceAppOrchestration.test.ts', '''    act(() => { mocks.canvas?.onAddBookmark(board); });
+    expect(mocks.editor?.initialBoardId).toBe(board.id);
+    mocks.canvas?.onEditBookmark(bookmark);
+    expect(mocks.editor?.bookmark).toEqual(bookmark);''', '''    act(() => { mocks.canvas?.onAddBookmark(board); });
+    await waitFor(() => expect(mocks.editor?.initialBoardId).toBe(board.id));
+    act(() => { mocks.canvas?.onEditBookmark(bookmark); });
+    await waitFor(() => expect(mocks.editor?.bookmark).toEqual(bookmark));''')
+          replace_once('tests/workspaceAppOrchestration.test.ts', '''    act(() => { mocks.launcher?.onSearch(); });
+    expect(mocks.search?.open).toBe(true);''', '''    act(() => { mocks.launcher?.onSearch(); });
+    await waitFor(() => expect(mocks.search?.open).toBe(true));''')
+          replace_once('tests/workspaceAppOrchestration.test.ts', '''    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    expect(mocks.search?.open).toBe(true);''', '''    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    await waitFor(() => expect(mocks.search?.open).toBe(true));''')
 
           integration_replacements = [
-              ('Opening your workspace…', 'Opening your new tab…'),
-              ('screen.getByRole("menuitem", { name: "New page" })', 'await screen.findByRole("menuitem", { name: "Create page" })'),
-              ('screen.getByRole("button", { name: "Rename" })', 'screen.getByRole("menuitem", { name: "Rename" })'),
-              ('screen.getByRole("button", { name: "Two columns" })', 'screen.getByRole("menuitem", { name: "Two columns" })'),
-              ('screen.getByRole("button", { name: "Copy URL" })', 'screen.getByRole("menuitem", { name: "Copy URL" })'),
-              ('screen.getByRole("button", { name: "Move to Trash" })', 'screen.getByRole("menuitem", { name: "Move to trash" })'),
-              ('screen.getByRole("button", { name: "Move to page" })', 'screen.getByRole("menuitem", { name: "Move to page" })'),
-              ('name: "Add bookmark to Inbox"', 'name: "Add a bookmark to Inbox"'),
-              ('The action could not be completed.', 'Unable to complete the action'),
+              ('Opening your workspace…', 'Opening your new tab…', 1),
+              ('screen.getByRole("menuitem", { name: "New page" })', 'await screen.findByRole("menuitem", { name: "Create page" })', 1),
+              ('screen.getByRole("button", { name: "Rename" })', 'screen.getByRole("menuitem", { name: "Rename" })', 1),
+              ('screen.getByRole("button", { name: "Two columns" })', 'screen.getByRole("menuitem", { name: "Two columns" })', 1),
+              ('screen.getByRole("button", { name: "Copy URL" })', 'screen.getByRole("menuitem", { name: "Copy URL" })', 2),
+              ('screen.getByRole("button", { name: "Move to Trash" })', 'screen.getByRole("menuitem", { name: "Move to trash" })', 1),
+              ('screen.getByRole("button", { name: "Move to page" })', 'screen.getByRole("menuitem", { name: "Move to page" })', 1),
+              ('name: "Add bookmark to Inbox"', 'name: "Add a bookmark to Inbox"', 1),
+              ('The action could not be completed.', 'Unable to complete the action', 1),
           ]
-          for old, new in integration_replacements:
-              replace_once('tests/workspaceIntegrationCoverage.test.ts', old, new)
+          for old, new, expected in integration_replacements:
+              replace_count('tests/workspaceIntegrationCoverage.test.ts', old, new, expected)
           integration = Path('tests/workspaceIntegrationCoverage.test.ts')
           text = integration.read_text()
           if text.count('screen.getByRole("button", { name: "Duplicate" })') != 2:
