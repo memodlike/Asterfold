@@ -41,7 +41,7 @@ describe("interaction regressions", () => {
     expect(dialog).toHaveFocus();
   });
 
-  it("does not resume toast expiry while keyboard focus remains inside the toast", () => {
+  it("does not resume toast expiry while keyboard focus remains inside the toast", async () => {
     vi.useFakeTimers();
     render(createElement(I18nProvider, { preference: "en", children: createElement(ToastHarness) }));
     fireEvent.click(screen.getByRole("button", { name: "Show" }));
@@ -51,7 +51,9 @@ describe("interaction regressions", () => {
     expect(toast).not.toBeNull();
     fireEvent.pointerEnter(toast!);
     fireEvent.pointerLeave(toast!);
-    act(() => vi.advanceTimersByTime(2_100));
+    await act(async () => {
+      vi.advanceTimersByTime(2_100);
+    });
     expect(screen.getByText("Removed")).toBeVisible();
   });
 
