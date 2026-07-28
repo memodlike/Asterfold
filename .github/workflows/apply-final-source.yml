@@ -23,7 +23,9 @@ jobs:
           ref: agent/asterfold-v3-store-hardening
           fetch-depth: 0
       - name: Apply deterministic source transition
-        run: node scripts/finalize-3-0-1.mjs
+        run: |
+          node scripts/finalize-3-0-1.mjs
+          node scripts/normalize-final-source.mjs
       - name: Validate final source
         run: |
           node scripts/validate-version.mjs
@@ -39,6 +41,7 @@ jobs:
           rm -f .github/workflows/finalize-source-tree.yml
           rm -f .github/workflows/apply-final-source.yml
           rm -f scripts/finalize-3-0-1.mjs
+          rm -f scripts/normalize-final-source.mjs
           git add -A
           git diff --cached --check
           git config user.name 'Asterfold Release Automation'
