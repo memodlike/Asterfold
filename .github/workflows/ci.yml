@@ -52,17 +52,32 @@ jobs:
           git checkout "$baseline" -- .github/workflows/ci.yml
           git apply --check /tmp/asterfold-v3.patch
 
-      - name: Apply final tree, remove transport and push
+      - name: Apply final source patch
         shell: bash
         run: |
           set -euo pipefail
           git apply --index /tmp/asterfold-v3.patch
+
+      - name: Remove and verify transport files
+        shell: bash
+        run: |
+          set -euo pipefail
           rm -rf .github/patches .github/workflows/apply-v3-patch.yml
           git add -u .github
           git diff --cached --check
           test ! -e .github/workflows/apply-v3-patch.yml
           test ! -d .github/patches
+
+      - name: Commit final source tree
+        shell: bash
+        run: |
+          set -euo pipefail
           git config user.name "Asterfold Release Automation"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "release: prepare Asterfold 3.0.0 for Chrome Web Store"
+
+      - name: Push final source tree
+        shell: bash
+        run: |
+          set -euo pipefail
           git push origin HEAD:refs/heads/agent/asterfold-v3-store-hardening
