@@ -1,0 +1,261 @@
+diff --git a/tests/appearanceDialogs.test.ts b/tests/appearanceDialogs.test.ts
+index 1661544..763ad26 100644
+--- a/tests/appearanceDialogs.test.ts
++++ b/tests/appearanceDialogs.test.ts
+@@ -130,11 +130,10 @@ describe("MoveDialog", () => {
+     fireEvent.change(screen.getByRole("combobox"), { target: { value: boardTwo.id } });
+     fireEvent.click(screen.getByRole("button", { name: "Move" }));
+     expect(await screen.findByRole("alert")).toBeVisible();
+-    act(() => {
+-      view.rerender(withI18n(createElement(MoveDialog, { ...props, open: false })));
+-      view.rerender(withI18n(createElement(MoveDialog, { ...props, open: true })));
+-    });
+-    expect(screen.queryByRole("alert")).toBeNull();
++    view.rerender(withI18n(createElement(MoveDialog, { ...props, open: false })));
++    expect(screen.queryByRole("dialog")).toBeNull();
++    view.rerender(withI18n(createElement(MoveDialog, { ...props, open: true })));
++    await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
+     expect(screen.getByRole("combobox")).toHaveValue(board.id);
+   });
+ });
+diff --git a/tests/boardCanvasBehavior.test.ts b/tests/boardCanvasBehavior.test.ts
+index ac3bc00..778c55f 100644
+--- a/tests/boardCanvasBehavior.test.ts
++++ b/tests/boardCanvasBehavior.test.ts
+@@ -112,7 +112,7 @@ describe("BoardCanvas behavior", () => {
+     act(() => {
+       mocks.dndProps?.onDragStart({ active: { data: { current: { type: "board", boardId: board.id } } } });
+     });
+-    expect(screen.getByText(board.title)).toBeVisible();
++    expect(screen.getByText(board.title, { selector: ".drag-overlay span" })).toBeVisible();
+     act(() => { mocks.dndProps?.onDragCancel(); });
+ 
+     mocks.dndProps?.onDragEnd({
+diff --git a/tests/boardColumnBehavior.test.ts b/tests/boardColumnBehavior.test.ts
+index 4d8e99f..50d1930 100644
+--- a/tests/boardColumnBehavior.test.ts
++++ b/tests/boardColumnBehavior.test.ts
+@@ -68,8 +68,8 @@ function openMenu(container: HTMLElement): void {
+ describe("BoardColumn behavior", () => {
+   it("adds bookmarks from the header and empty state", () => {
+     const { callbacks } = renderColumn();
+-    fireEvent.click(screen.getByRole("button", { name: "Add bookmark to Inbox" }));
+-    fireEvent.click(screen.getByRole("button", { name: "Add your first bookmark" }));
++    fireEvent.click(screen.getByRole("button", { name: "Add a bookmark to Inbox" }));
++    fireEvent.click(screen.getByRole("button", { name: "Drop a link here or press +" }));
+     expect(callbacks.onAddBookmark).toHaveBeenCalledTimes(2);
+     expect(callbacks.onAddBookmark).toHaveBeenCalledWith(board);
+   });
+@@ -87,27 +87,27 @@ describe("BoardColumn behavior", () => {
+     const { container, callbacks } = renderColumn();
+ 
+     openMenu(container);
+-    fireEvent.click(screen.getByRole("button", { name: /Rename/ }));
++    fireEvent.click(screen.getByRole("menuitem", { name: "Rename" }));
+     expect(callbacks.onEditBoard).toHaveBeenCalledWith(board);
+ 
+     openMenu(container);
+-    fireEvent.click(screen.getByRole("button", { name: /Two columns/ }));
++    fireEvent.click(screen.getByRole("menuitem", { name: "Two columns" }));
+     expect(callbacks.onPatchBoard).toHaveBeenCalledWith(board, { bookmarkColumns: 2 });
+ 
+     openMenu(container);
+-    fireEvent.click(screen.getByRole("button", { name: /Medium/ }));
++    fireEvent.click(screen.getByRole("menuitem", { name: "Medium" }));
+     expect(callbacks.onPatchBoard).toHaveBeenCalledWith(board, { gridSpan: 4 });
+ 
+     openMenu(container);
+-    fireEvent.click(screen.getByRole("button", { name: /Move to page/ }));
++    fireEvent.click(screen.getByRole("menuitem", { name: "Move to page" }));
+     expect(callbacks.onMoveBoard).toHaveBeenCalledWith(board);
+ 
+     openMenu(container);
+-    fireEvent.click(screen.getByRole("button", { name: /Duplicate/ }));
++    fireEvent.click(screen.getByRole("menuitem", { name: "Duplicate" }));
+     expect(callbacks.onDuplicateBoard).toHaveBeenCalledWith(board);
+ 
+     openMenu(container);
+-    fireEvent.click(screen.getByRole("button", { name: /Move to trash/ }));
++    fireEvent.click(screen.getByRole("menuitem", { name: "Move to trash" }));
+     expect(callbacks.onDeleteBoard).toHaveBeenCalledWith(board);
+   });
+ 
+diff --git a/tests/importWorkerBehavior.test.ts b/tests/importWorkerBehavior.test.ts
+index 01e3ebb..23c505e 100644
+--- a/tests/importWorkerBehavior.test.ts
++++ b/tests/importWorkerBehavior.test.ts
+@@ -107,8 +107,9 @@ describe("import worker lifecycle", () => {
+     vi.useFakeTimers();
+     const pending = parseHtmlOffThread("<DL></DL>");
+     const worker = FakeWorker.instances[0]!;
++    const timeoutRejection = expect(pending).rejects.toThrow("Import worker timed out");
+     await vi.advanceTimersByTimeAsync(30_001);
+-    await expect(pending).rejects.toThrow("Import worker timed out");
++    await timeoutRejection;
+     expect(worker.terminated).toBe(true);
+   });
+ });
+diff --git a/tests/runtimeCoverage.test.ts b/tests/runtimeCoverage.test.ts
+index 951f813..c79c5e9 100644
+--- a/tests/runtimeCoverage.test.ts
++++ b/tests/runtimeCoverage.test.ts
+@@ -254,8 +254,9 @@ describe("runtime lifecycle coverage", () => {
+ 
+     vi.useFakeTimers();
+     const timedOut = parseHtmlOffThread("timeout");
++    const timeoutRejection = expect(timedOut).rejects.toThrow("Import worker timed out");
+     await vi.advanceTimersByTimeAsync(30_001);
+-    await expect(timedOut).rejects.toThrow("Import worker timed out");
++    await timeoutRejection;
+   });
+ });
+ 
+@@ -282,7 +283,7 @@ describe("dialog and semantic coverage", () => {
+     submit.mockRejectedValueOnce(new Error("save"));
+     view.rerender(createElement(NameDialog, { open: true, title: "Rename", label: "Title", initialValue: "Retry", onClose: close, onSubmit: submit }));
+     fireEvent.click(screen.getByRole("button", { name: "Save" }));
+-    expect(await screen.findByRole("alert")).toHaveTextContent("The action could not be completed.");
++    expect(await screen.findByRole("alert")).toHaveTextContent("Unable to complete the action");
+   });
+ 
+   it("moves boards and bookmarks, resets destinations and reports failure", async () => {
+@@ -297,7 +298,7 @@ describe("dialog and semantic coverage", () => {
+     view.rerender(createElement(MoveDialog, { open: true, type: "bookmark", pages, boards, currentId: "b1", onClose: close, onMove: move }));
+     expect(screen.getByRole("combobox")).toHaveValue("b2");
+     fireEvent.click(screen.getByRole("button", { name: "Move" }));
+-    expect(await screen.findByRole("alert")).toHaveTextContent("The action could not be completed.");
++    expect(await screen.findByRole("alert")).toHaveTextContent("Unable to complete the action");
+   });
+ 
+   it("disables movement when no destination exists", () => {
+diff --git a/tests/workspaceAppOrchestration.test.ts b/tests/workspaceAppOrchestration.test.ts
+index 10a027c..556affb 100644
+--- a/tests/workspaceAppOrchestration.test.ts
++++ b/tests/workspaceAppOrchestration.test.ts
+@@ -214,9 +214,9 @@ describe("WorkspaceApp orchestration", () => {
+     expect(mocks.moveBoardToIndex).toHaveBeenCalledWith(board.id, page.id, 1);
+ 
+     act(() => { mocks.canvas?.onAddBookmark(board); });
+-    expect(mocks.editor?.initialBoardId).toBe(board.id);
+-    mocks.canvas?.onEditBookmark(bookmark);
+-    expect(mocks.editor?.bookmark).toEqual(bookmark);
++    await waitFor(() => expect(mocks.editor?.initialBoardId).toBe(board.id));
++    act(() => { mocks.canvas?.onEditBookmark(bookmark); });
++    await waitFor(() => expect(mocks.editor?.bookmark).toEqual(bookmark));
+     mocks.canvas?.onDuplicateBookmark(bookmark);
+     mocks.canvas?.onDeleteBookmark(bookmark);
+     mocks.canvas?.onMoveBookmarkIndex(bookmark.id, boardTwo.id, 0);
+@@ -232,7 +232,7 @@ describe("WorkspaceApp orchestration", () => {
+     expect(mocks.copyText).toHaveBeenCalledWith(`[${bookmark.title}](${bookmark.url})`);
+ 
+     act(() => { mocks.launcher?.onSearch(); });
+-    expect(mocks.search?.open).toBe(true);
++    await waitFor(() => expect(mocks.search?.open).toBe(true));
+     mocks.search?.onReveal(bookmark, pageTwo.id);
+     mocks.search?.onEdit(bookmark);
+     mocks.search?.onMove(bookmark);
+@@ -278,7 +278,7 @@ describe("WorkspaceApp orchestration", () => {
+     expect(mocks.updateSettings).toHaveBeenCalledWith({ onboardingComplete: true });
+ 
+     fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+-    expect(mocks.search?.open).toBe(true);
++    await waitFor(() => expect(mocks.search?.open).toBe(true));
+ 
+     const RequestError = mocks.requestErrorClass!;
+     mocks.openUrl.mockRejectedValueOnce(new RequestError("UNSAFE_URL"));
+diff --git a/tests/workspaceIntegrationCoverage.test.ts b/tests/workspaceIntegrationCoverage.test.ts
+index e4ae7bf..44f9110 100644
+--- a/tests/workspaceIntegrationCoverage.test.ts
++++ b/tests/workspaceIntegrationCoverage.test.ts
+@@ -169,7 +169,7 @@ describe("workspace integration coverage", () => {
+   it("renders loading and recoverable failure states", () => {
+     mocks.workspaceState.workspace = undefined;
+     const view = render(createElement(WorkspaceApp));
+-    expect(screen.getByText("Opening your workspace…")).toBeVisible();
++    expect(screen.getByText("Opening your new tab…")).toBeVisible();
+ 
+     mocks.workspaceState.failed = true;
+     view.rerender(createElement(WorkspaceApp));
+@@ -203,13 +203,13 @@ describe("workspace integration coverage", () => {
+ 
+     openLauncher();
+     fireEvent.click(screen.getByRole("menuitem", { name: "Pages" }));
+-    fireEvent.click(screen.getByRole("menuitem", { name: "New page" }));
++    fireEvent.click(await screen.findByRole("menuitem", { name: "Create page" }));
+     fireEvent.change(screen.getByRole("textbox", { name: "Title" }), { target: { value: "Research" } });
+     fireEvent.click(screen.getByRole("button", { name: "Create" }));
+     await waitFor(() => expect(mocks.repository.createPage).toHaveBeenCalledWith("Research"));
+ 
+     openBoardContext();
+-    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
++    fireEvent.click(screen.getByRole("menuitem", { name: "Rename" }));
+     fireEvent.change(screen.getByRole("textbox", { name: "Title" }), { target: { value: "Renamed inbox" } });
+     fireEvent.click(screen.getByRole("button", { name: "Save" }));
+     await waitFor(() => expect(mocks.repository.updateBoard).toHaveBeenCalledWith("b1", { title: "Renamed inbox" }));
+@@ -218,36 +218,36 @@ describe("workspace integration coverage", () => {
+   it("executes board and bookmark context actions", async () => {
+     render(createElement(WorkspaceApp));
+     openBoardContext();
+-    fireEvent.click(screen.getByRole("button", { name: "Two columns" }));
++    fireEvent.click(screen.getByRole("menuitem", { name: "Two columns" }));
+     expect(mocks.repository.updateBoard).toHaveBeenCalledWith("b1", { bookmarkColumns: 2 });
+ 
+     openBoardContext();
+-    fireEvent.click(screen.getByRole("button", { name: "Duplicate" }));
++    fireEvent.click(screen.getByRole("menuitem", { name: "Duplicate" }));
+     expect(mocks.repository.duplicateBoard).toHaveBeenCalledWith("b1");
+ 
+     openBookmarkContext();
+-    fireEvent.click(screen.getByRole("button", { name: "Copy URL" }));
++    fireEvent.click(screen.getByRole("menuitem", { name: "Copy URL" }));
+     await waitFor(() => expect(mocks.browser.copyText).toHaveBeenCalledWith("https://example.com/"));
+ 
+     openBookmarkContext();
+-    fireEvent.click(screen.getByRole("button", { name: "Duplicate" }));
++    fireEvent.click(screen.getByRole("menuitem", { name: "Duplicate" }));
+     expect(mocks.repository.duplicateBookmark).toHaveBeenCalledWith("m1");
+ 
+     openBookmarkContext();
+-    fireEvent.click(screen.getByRole("button", { name: "Move to Trash" }));
++    fireEvent.click(screen.getByRole("menuitem", { name: "Move to trash" }));
+     await waitFor(() => expect(mocks.repository.softDeleteBookmark).toHaveBeenCalledWith("m1"));
+   });
+ 
+   it("moves bookmarks and boards through destination dialogs", async () => {
+     render(createElement(WorkspaceApp));
+     openBookmarkContext();
+-    fireEvent.click(screen.getByRole("button", { name: "Move" }));
++    fireEvent.click(screen.getByRole("menuitem", { name: "Move" }));
+     expect(screen.getByRole("combobox")).toHaveValue("b2");
+     fireEvent.click(screen.getAllByRole("button", { name: "Move" }).at(-1)!);
+     await waitFor(() => expect(mocks.repository.moveBookmarkToIndex).toHaveBeenCalledWith("m1", "b2", Number.MAX_SAFE_INTEGER));
+ 
+     openBoardContext();
+-    fireEvent.click(screen.getByRole("button", { name: "Move to page" }));
++    fireEvent.click(screen.getByRole("menuitem", { name: "Move to page" }));
+     expect(screen.getByRole("combobox")).toHaveValue("p2");
+     fireEvent.click(screen.getAllByRole("button", { name: "Move" }).at(-1)!);
+     await waitFor(() => expect(mocks.repository.moveBoardToIndex).toHaveBeenCalledWith("b1", "p2", Number.MAX_SAFE_INTEGER));
+@@ -263,7 +263,7 @@ describe("workspace integration coverage", () => {
+     expect(mocks.repository.updateSettings).toHaveBeenCalledWith({ activePageId: "p1" });
+     fireEvent.click(screen.getByRole("button", { name: "Close search" }));
+ 
+-    fireEvent.click(screen.getByRole("button", { name: "Add bookmark to Inbox" }));
++    fireEvent.click(screen.getByRole("button", { name: "Add a bookmark to Inbox" }));
+     expect(await screen.findByRole("dialog", { name: "Editor double" })).toBeVisible();
+     fireEvent.click(screen.getByRole("button", { name: "Editor saved" }));
+     fireEvent.click(screen.getByRole("button", { name: "Editor error" }));
+@@ -290,11 +290,11 @@ describe("workspace integration coverage", () => {
+     mocks.privacyState.privacy = true;
+     render(createElement(WorkspaceApp));
+     openBookmarkContext();
+-    expect(screen.getByRole("button", { name: "Copy URL" })).toBeDisabled();
++    expect(screen.getByRole("menuitem", { name: "Copy URL" })).toBeDisabled();
+ 
+     mocks.browser.openUrl.mockRejectedValueOnce(new Error("navigation"));
+     fireEvent.click(screen.getByRole("button", { name: "Open hidden bookmark" }));
+-    expect(await screen.findByText("The action could not be completed.")).toBeVisible();
++    expect(await screen.findByText("Unable to complete the action")).toBeVisible();
+ 
+     fireEvent.click(screen.getByRole("button", { name: "Dismiss hint" }));
+     await waitFor(() => expect(mocks.repository.updateSettings).toHaveBeenCalledWith({ onboardingComplete: true }));
