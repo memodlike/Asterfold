@@ -1,0 +1,48 @@
+name: Apply final coverage fixes
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-final-coverage-fixes
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: github.head_ref == 'agent/asterfold-v3-store-hardening'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: agent/asterfold-v3-store-hardening
+          fetch-depth: 0
+      - name: Apply exact corrections
+        run: node scripts/fix-final-coverage-tests.mjs
+      - name: Install dependencies
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Validate changed tests
+        run: |
+          npm run typecheck
+          npm run lint
+      - name: Remove temporary applier and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f scripts/fix-final-coverage-tests.mjs
+          rm -f .github/workflows/apply-final-coverage-fixes.yml
+          git add -A
+          git diff --cached --check
+          git config user.name 'Asterfold Release Automation'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'test: fix final coverage regressions'
+          git push origin HEAD:refs/heads/agent/asterfold-v3-store-hardening
