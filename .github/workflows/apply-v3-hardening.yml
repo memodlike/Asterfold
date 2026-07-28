@@ -24,28 +24,42 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
 
-      - name: Record encoded payload SHA-256
+      - name: Decode and record transport digests
         shell: bash
         env:
           BRANCH: ${{ github.head_ref }}
         run: |
           set -euo pipefail
           cat .github/asterfold-v3-patch/part* > /tmp/asterfold-v3.patch.gz.b64
+          base64 --decode /tmp/asterfold-v3.patch.gz.b64 | gzip --decompress > /tmp/asterfold-v3.patch
           {
+            echo 'encoded:'
             sha256sum /tmp/asterfold-v3.patch.gz.b64
             wc -c /tmp/asterfold-v3.patch.gz.b64
+            echo 'decoded:'
+            sha256sum /tmp/asterfold-v3.patch
+            wc -c /tmp/asterfold-v3.patch
           } > .github/asterfold-v3-patch/actual-sha.txt
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add .github/asterfold-v3-patch/actual-sha.txt
-          git commit -m 'ci: record patch transport digest'
-          git push origin "HEAD:${BRANCH}"
+          if ! git diff --cached --quiet; then
+            git commit -m 'ci: record patch transport digest'
+            git push origin "HEAD:${BRANCH}"
+          fi
+
+      - name: Upload decoded patch for byte comparison
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: decoded-v3-patch
+          path: /tmp/asterfold-v3.patch
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Verify decoded patch SHA-256
         shell: bash
         run: |
           set -euo pipefail
-          base64 --decode /tmp/asterfold-v3.patch.gz.b64 | gzip --decompress > /tmp/asterfold-v3.patch
           echo '15417f3282603300b196b0d5f7fecb535dcdcfc19b6e9657b8e98cc52ab5917e  /tmp/asterfold-v3.patch' | sha256sum --check
 
       - name: Apply reviewed patch
