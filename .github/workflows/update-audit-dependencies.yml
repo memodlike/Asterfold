@@ -64,7 +64,7 @@ jobs:
             status=$?
           fi
           if [ "$status" -eq 0 ]; then
-            rm -rf node_modules
+            rm -rf node_modules package-lock.json
             npm install --package-lock-only --ignore-scripts >> install.log 2>&1
             status=$?
           fi
