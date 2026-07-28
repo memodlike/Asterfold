@@ -243,7 +243,7 @@ describe("WorkspaceApp orchestration", () => {
     expect(mocks.moveDialog?.type).toBe("bookmark");
 
     act(() => { mocks.canvas?.onImport(); });
-    expect(mocks.settings?.initialSection).toBe("data-privacy");
+    await waitFor(() => expect(mocks.settings?.initialSection).toBe("data-privacy"));
     act(() => { mocks.launcher?.onSettings(); });
     expect(mocks.settings?.initialSection).toBe("appearance");
     act(() => { mocks.launcher?.onTrash(); });

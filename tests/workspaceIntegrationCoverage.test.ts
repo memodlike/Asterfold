@@ -293,7 +293,7 @@ describe("workspace integration coverage", () => {
     expect(screen.getByRole("menuitem", { name: "Copy URL" })).toBeDisabled();
 
     mocks.browser.openUrl.mockRejectedValueOnce(new Error("navigation"));
-    fireEvent.click(screen.getByRole("button", { name: "Open hidden bookmark" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Open hidden bookmark" })[0]!);
     expect(await screen.findByText("Unable to complete the action")).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Dismiss hint" }));
