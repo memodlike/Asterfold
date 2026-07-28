@@ -62,6 +62,7 @@ jobs:
             npm view eslint-plugin-react-refresh@0.5.3 version peerDependencies --json
             npm view typescript-eslint@8.65.0 version peerDependencies --json
             npm view wxt@0.21.2 version engines peerDependencies --json
+            npm view @playwright/test@1.62.0 version engines --json
             echo '=== existing clean install ==='
           } > install.log 2>&1
           status=$?
@@ -72,6 +73,7 @@ jobs:
           if [ "$status" -eq 0 ]; then
             npm pkg set \
               'devDependencies.@eslint/js=10.0.1' \
+              'devDependencies.@playwright/test=1.62.0' \
               'devDependencies.eslint=10.8.0' \
               'devDependencies.eslint-plugin-react-hooks=7.1.1' \
               'devDependencies.eslint-plugin-react-refresh=0.5.3' \
