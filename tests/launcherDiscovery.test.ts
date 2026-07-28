@@ -1,6 +1,6 @@
 import { createElement } from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { AppLauncher } from "../src/app/AppLauncher";
 import type { Page } from "../src/domain/models";
 import { I18nProvider } from "../src/i18n";
@@ -20,6 +20,10 @@ function renderLauncher(overrides: Partial<Parameters<typeof AppLauncher>[0]> = 
   render(createElement(I18nProvider, { preference: "en", children: createElement(AppLauncher, props) }));
   return props;
 }
+
+afterEach(() => {
+  cleanup();
+});
 
 describe("first-use launcher discovery", () => {
   it("renders a non-modal localized hint and opens the launcher from its primary action", () => {
