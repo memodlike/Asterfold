@@ -24,14 +24,24 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
 
-      - name: Verify and apply reviewed patch
+      - name: Verify encoded payload SHA-256
         shell: bash
         run: |
           set -euo pipefail
           cat .github/asterfold-v3-patch/part* > /tmp/asterfold-v3.patch.gz.b64
           echo '06493d53e8e20d3858ed03b7c2d48d7815917a9c4430c58853ad4c60e1f1790c  /tmp/asterfold-v3.patch.gz.b64' | sha256sum --check
+
+      - name: Verify decoded patch SHA-256
+        shell: bash
+        run: |
+          set -euo pipefail
           base64 --decode /tmp/asterfold-v3.patch.gz.b64 | gzip --decompress > /tmp/asterfold-v3.patch
           echo '15417f3282603300b196b0d5f7fecb535dcdcfc19b6e9657b8e98cc52ab5917e  /tmp/asterfold-v3.patch' | sha256sum --check
+
+      - name: Apply reviewed patch
+        shell: bash
+        run: |
+          set -euo pipefail
           git apply --check /tmp/asterfold-v3.patch
           git apply /tmp/asterfold-v3.patch
           rm -rf .github/asterfold-v3-patch
