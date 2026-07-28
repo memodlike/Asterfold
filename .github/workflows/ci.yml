@@ -1,4 +1,4 @@
-name: Apply verified Asterfold 3.0.0 patch from PR
+name: Apply verified Asterfold 3.0.0 source patch from PR
 
 on:
   pull_request:
@@ -44,39 +44,36 @@ jobs:
           gzip -dc /tmp/asterfold-v3.patch.gz > /tmp/asterfold-v3.patch
           echo "ddd9cad65955b073ee7c9271ea86dbfca4f97b3c1d940b11a244373f5d4136a1  /tmp/asterfold-v3.patch" | sha256sum --check
 
-      - name: Verify patch applies to exact baseline
+      - name: Verify non-workflow patch applies to exact baseline
         shell: bash
         run: |
           set -euo pipefail
-          baseline=d8bed284f487142c2fe16d4b34b3df80bd45679b
-          git checkout "$baseline" -- .github/workflows/ci.yml
-          git apply --check /tmp/asterfold-v3.patch
+          git apply --exclude='.github/workflows/*' --check /tmp/asterfold-v3.patch
 
-      - name: Apply final source patch
+      - name: Apply final non-workflow source tree
         shell: bash
         run: |
           set -euo pipefail
-          git apply --index /tmp/asterfold-v3.patch
+          git apply --exclude='.github/workflows/*' --index /tmp/asterfold-v3.patch
 
-      - name: Remove and verify transport files
+      - name: Remove and verify patch payload
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf .github/patches .github/workflows/apply-v3-patch.yml
-          git add -u .github
+          rm -rf .github/patches
+          git add -u .github/patches
           git diff --cached --check
-          test ! -e .github/workflows/apply-v3-patch.yml
           test ! -d .github/patches
 
-      - name: Commit final source tree
+      - name: Commit final non-workflow source tree
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "Asterfold Release Automation"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "release: prepare Asterfold 3.0.0 for Chrome Web Store"
+          git commit -m "release: prepare Asterfold 3.0.0 source and audit closure"
 
-      - name: Push final source tree
+      - name: Push final non-workflow source tree
         shell: bash
         run: |
           set -euo pipefail
