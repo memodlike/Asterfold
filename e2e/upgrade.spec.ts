@@ -157,6 +157,10 @@ test("preserves a real 2.2.3 profile when the same unpacked extension path is up
     onboardingComplete: true,
   });
   expect(snapshot.settings.theme).toMatchObject({ mode: "dark", wallpaperId: "builtin-dusk", backgroundMode: "wallpaper", wallpaperDim: 0.55, wallpaperBlur: 3, wallpaperSaturation: 0.8 });
+  await expect(after.page.getByText("Preserved link", { exact: true })).toHaveCount(0);
+  await expect(after.page.getByRole("button", { name: "Open hidden bookmark" })).toBeVisible();
+  await after.page.getByRole("button", { name: "Open Asterfold menu" }).click();
+  await after.page.getByRole("menuitem", { name: "Turn privacy off" }).click();
   await expect(after.page.getByText("Preserved link", { exact: true })).toBeVisible();
   await after.page.keyboard.press("Control+K");
   await after.page.getByPlaceholder(/Title, URL/i).fill("Preserved");
