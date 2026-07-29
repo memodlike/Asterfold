@@ -1,0 +1,77 @@
+name: Check Asterfold 3.0.1 release status
+
+on:
+  push:
+    branches: [release/asterfold-v3.0.1-authorized]
+    paths:
+      - .github/release-status/**
+      - .github/workflows/check-v3.0.1-release.yml
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out observer branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: release/asterfold-v3.0.1-authorized
+
+      - name: Capture release status
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLISH_BRANCH: release/asterfold-v3.0.1-authorized
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs?per_page=100" > /tmp/runs.json
+          release_json='{}'
+          if gh release view v3.0.1 --repo "$GITHUB_REPOSITORY" --json tagName,targetCommitish,isDraft,isPrerelease,url,assets >/tmp/release.json 2>/dev/null; then
+            release_json="$(cat /tmp/release.json)"
+          fi
+          RELEASE_JSON="$release_json" node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const payload = JSON.parse(fs.readFileSync('/tmp/runs.json', 'utf8'));
+          const release = JSON.parse(process.env.RELEASE_JSON || '{}');
+          const relevant = (payload.workflow_runs || [])
+            .filter((run) => ['Publish GitHub Release', 'Publish authorized Asterfold 3.0.1', 'Tag verified main release'].includes(run.name))
+            .map((run) => ({
+              id: run.id,
+              name: run.name,
+              event: run.event,
+              status: run.status,
+              conclusion: run.conclusion,
+              headSha: run.head_sha,
+              headBranch: run.head_branch,
+              url: run.html_url,
+              createdAt: run.created_at,
+              updatedAt: run.updated_at
+            }));
+          const report = {
+            observedAt: new Date().toISOString(),
+            tag: 'v3.0.1',
+            relevantRuns: relevant,
+            release: {
+              exists: Boolean(release.url),
+              url: release.url || '',
+              targetCommitish: release.targetCommitish || '',
+              isDraft: release.isDraft ?? null,
+              isPrerelease: release.isPrerelease ?? null,
+              assets: Array.isArray(release.assets) ? release.assets.map((asset) => ({ name: asset.name, size: asset.size, url: asset.url })) : []
+            }
+          };
+          fs.mkdirSync('.release-status', { recursive: true });
+          fs.writeFileSync('.release-status/v3.0.1.json', `${JSON.stringify(report, null, 2)}\n`);
+NODE
+          path='docs/audit/observer/release-status-v3.0.1.json'
+          content="$(base64 -w0 .release-status/v3.0.1.json)"
+          current_sha="$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=$PUBLISH_BRANCH" --jq .sha 2>/dev/null || true)"
+          if test -n "$current_sha"; then
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='docs: update Asterfold 3.0.1 release status' -f content="$content" -f branch="$PUBLISH_BRANCH" -f sha="$current_sha" >/dev/null
+          else
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='docs: record Asterfold 3.0.1 release status' -f content="$content" -f branch="$PUBLISH_BRANCH" >/dev/null
+          fi
