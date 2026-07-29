@@ -149,11 +149,20 @@ describe("repository branch coverage", () => {
 
   it("handles missing settings, disabled retention, and an empty database audit", async () => {
     await expect(getWorkspaceData(database, false)).rejects.toThrow("Application settings are unavailable");
-    await expect(purgeTrash(null, database)).resolves.toBe(0);
     expect(await auditInvariants(database)).toEqual(expect.arrayContaining([
       "No active Page exists",
       "Exactly one active default Page is required",
       "App settings are missing",
+    ]));
+    const settings = createDefaultSettings();
+    await database.settings.add(settings);
+    await expect(getWorkspaceData(database, false)).resolves.toEqual({ pages: [], boards: [], bookmarks: [], settings });
+    await expect(purgeTrash(null, database)).resolves.toBe(0);
+    expect(await auditInvariants(database)).toEqual(expect.arrayContaining([
+      "No active Page exists",
+      "Exactly one active default Page is required",
+      "Quick Save default Page points to a missing Page",
+      "Quick Save last Page points to a missing Page",
     ]));
   });
 
@@ -186,6 +195,12 @@ describe("repository branch coverage", () => {
     expect(await database.bookmarks.where("boardId").equals(copiedBoards[0]!.id).count()).toBe(1);
     await expect(duplicatePage("missing", database)).rejects.toThrow("Page not found");
 
+    const detached = await createPage("Detached", {}, database);
+    await softDeletePage(detached.id, database);
+    await database.pages.update(detached.id, { deletedBatchId: null });
+    await restorePage(detached.id, database);
+    expect(await database.pages.get(detached.id)).toMatchObject({ deletedAt: null, deletedBatchId: null });
+
     await database.pages.update(configured.id, { deletedAt: timestamp });
     await expect(renamePage(configured.id, "Name", database)).rejects.toThrow("Page not found");
   });
@@ -211,7 +226,7 @@ describe("repository branch coverage", () => {
     await updateBoard(second.id, { gridColumn: 8, gridRow: 1, gridSpan: 5 }, database);
     await moveBoardWithGridSwap(first.id, second.id, page.id, 1, database);
     expect(await database.boards.get(first.id)).toMatchObject({ gridColumn: 8, gridRow: 1, gridSpan: 5 });
-    expect(await database.boards.get(third.id)).toMatchObject({ version: thirdBefore?.version });
+    expect(await database.boards.get(third.id)).toMatchObject({ version: (thirdBefore?.version ?? 0) + 1 });
     await expect(moveBoardWithGridSwap(first.id, "missing", page.id, 0, database)).rejects.toThrow();
 
     await moveBoardToIndex(first.id, page.id, 0, database);
