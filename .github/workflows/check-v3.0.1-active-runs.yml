@@ -1,6 +1,6 @@
 name: Inspect active Asterfold 3.0.1 release runs
 
-# Second commit activates the newly registered diagnostic workflow.
+# Read-only observer for the final authorized publisher.
 on:
   push:
     branches: [main]
@@ -19,7 +19,7 @@ jobs:
       - name: Capture relevant workflow runs
         env:
           GH_TOKEN: ${{ github.token }}
-          REPORT_BRANCH: release/v3.0.1-main-publisher
+          REPORT_BRANCH: ops/v3.0.1-release-status
         shell: bash
         run: |
           set -euo pipefail
@@ -36,6 +36,7 @@ jobs:
             'Publish GitHub Release',
             'Publish authorized Asterfold 3.0.1',
             'Publish authorized Asterfold 3.0.1 from tag',
+            'Publish authorized Asterfold 3.0.1 from verified artifacts',
             'Tag verified main release'
           ]);
           const runs = (payload.workflow_runs || [])
@@ -59,6 +60,8 @@ jobs:
               exists: Boolean(release.url),
               url: release.url || '',
               targetCommitish: release.targetCommitish || '',
+              isDraft: release.isDraft ?? null,
+              isPrerelease: release.isPrerelease ?? null,
               assets: Array.isArray(release.assets) ? release.assets.map((a) => ({ name: a.name, size: a.size, url: a.url })) : []
             }
           };
