@@ -6,7 +6,7 @@ Asterfold 3.0.0 was an internal, unreleased release candidate. It was superseded
 
 The finalized ordinary source tree is validated only through owner-authored exact-SHA CI and CodeQL runs. Automation-authored commits are not accepted as release evidence because GitHub suppresses recursive workflow execution for commits pushed with `GITHUB_TOKEN`.
 
-The final coverage regression corrections were independently typechecked and linted before this owner-authored exact-SHA validation trigger.
+The final coverage regression corrections were independently typechecked and linted before this owner-authored exact-SHA validation trigger. The remaining Trash dialog orchestration assertion now waits for the React state commit before reading lazy-dialog props.
 
 ## Source baseline
 
