@@ -22,7 +22,12 @@ repository_path = Path("tests/repositoryBranchCoverage.test.ts")
 replace_exact(
     repository_path,
     '''    await expect(getWorkspaceData(database, false)).rejects.toThrow("Application settings are unavailable");
-    await expect(purgeTrash(null, database)).resolves.toBe(0);''',
+    await expect(purgeTrash(null, database)).resolves.toBe(0);
+    expect(await auditInvariants(database)).toEqual(expect.arrayContaining([
+      "No active Page exists",
+      "Exactly one active default Page is required",
+      "App settings are missing",
+    ]));''',
     '''    await expect(getWorkspaceData(database, false)).rejects.toThrow("Application settings are unavailable");
     expect(await auditInvariants(database)).toEqual(expect.arrayContaining([
       "No active Page exists",
@@ -32,23 +37,14 @@ replace_exact(
     const settings = createDefaultSettings();
     await database.settings.add(settings);
     await expect(getWorkspaceData(database, false)).resolves.toEqual({ pages: [], boards: [], bookmarks: [], settings });
-    await expect(purgeTrash(null, database)).resolves.toBe(0);''',
-    "missing settings branch",
-)
-replace_exact(
-    repository_path,
-    '''    expect(await auditInvariants(database)).toEqual(expect.arrayContaining([
-      "No active Page exists",
-      "Exactly one active default Page is required",
-      "App settings are missing",
-    ]));''',
-    '''    expect(await auditInvariants(database)).toEqual(expect.arrayContaining([
+    await expect(purgeTrash(null, database)).resolves.toBe(0);
+    expect(await auditInvariants(database)).toEqual(expect.arrayContaining([
       "No active Page exists",
       "Exactly one active default Page is required",
       "Quick Save default Page points to a missing Page",
       "Quick Save last Page points to a missing Page",
     ]));''',
-    "settings-present audit branch",
+    "missing settings branches",
 )
 replace_exact(
     repository_path,
