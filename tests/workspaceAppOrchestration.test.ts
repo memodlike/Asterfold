@@ -247,7 +247,7 @@ describe("WorkspaceApp orchestration", () => {
     act(() => { mocks.launcher?.onSettings(); });
     expect(mocks.settings?.initialSection).toBe("appearance");
     act(() => { mocks.launcher?.onTrash(); });
-    expect(mocks.trash?.open).toBe(true);
+    await waitFor(() => expect(mocks.trash?.open).toBe(true));
   });
 
   it("handles privacy, selection, bulk actions, keyboard search, and request errors", async () => {
