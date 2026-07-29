@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { readZipEntries, writeDeterministicZip } from "../scripts/release-lib.mjs";
+import { readZipEntries, shouldIncludeSourceFile, writeDeterministicZip } from "../scripts/release-lib.mjs";
 import { verifyRequiredWorkflowRuns } from "../scripts/verify-required-workflows.mjs";
 
 const directories: string[] = [];
@@ -40,6 +40,15 @@ describe("release supply-chain gates", () => {
     await writeDeterministicZip(linuxZip, [{ path: linuxText, name: ".editorconfig" }, { path: linuxHtml, name: "newtab.html" }], writeFile);
     await writeDeterministicZip(windowsZip, [{ path: windowsText, name: ".editorconfig" }, { path: windowsHtml, name: "newtab.html" }], writeFile);
     expect(await readFile(windowsZip)).toEqual(await readFile(linuxZip));
+  });
+
+  it("excludes transient CI evidence from the source archive", () => {
+    const excludedRoots = new Set(["release", "coverage"]);
+    expect(shouldIncludeSourceFile("src/index.ts", excludedRoots)).toBe(true);
+    expect(shouldIncludeSourceFile("npm-audit.json", excludedRoots)).toBe(false);
+    expect(shouldIncludeSourceFile("typecheck.log", excludedRoots)).toBe(false);
+    expect(shouldIncludeSourceFile("release/Asterfold-Chrome.zip", excludedRoots)).toBe(false);
+    expect(shouldIncludeSourceFile("src/.env.production", excludedRoots)).toBe(false);
   });
 
   it("rejects duplicate and traversal ZIP entries", async () => {
