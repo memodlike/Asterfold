@@ -24,6 +24,24 @@ describe("release supply-chain gates", () => {
     expect(readZipEntries(firstBytes).map((entry) => entry.name)).toEqual(["a.txt", "b.txt"]);
   });
 
+  it("canonicalizes checkout line endings and generated HTML whitespace", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "asterfold-release-text-test-"));
+    directories.push(directory);
+    const linuxText = join(directory, "linux.txt");
+    const windowsText = join(directory, "windows.txt");
+    const linuxHtml = join(directory, "linux.html");
+    const windowsHtml = join(directory, "windows.html");
+    await writeFile(linuxText, "alpha\nbeta\n");
+    await writeFile(windowsText, "alpha\r\nbeta\r\n");
+    await writeFile(linuxHtml, "<body>\n  <div></div>\n</body>\n");
+    await writeFile(windowsHtml, "<body>\r\n  <div></div>\r\n\r\n</body>\r\n");
+    const linuxZip = join(directory, "linux.zip");
+    const windowsZip = join(directory, "windows.zip");
+    await writeDeterministicZip(linuxZip, [{ path: linuxText, name: ".editorconfig" }, { path: linuxHtml, name: "newtab.html" }], writeFile);
+    await writeDeterministicZip(windowsZip, [{ path: windowsText, name: ".editorconfig" }, { path: windowsHtml, name: "newtab.html" }], writeFile);
+    expect(await readFile(windowsZip)).toEqual(await readFile(linuxZip));
+  });
+
   it("rejects duplicate and traversal ZIP entries", async () => {
     const directory = await mkdtemp(join(tmpdir(), "asterfold-release-test-"));
     directories.push(directory);
