@@ -1,31 +1,26 @@
-name: Inspect active Asterfold 3.0.1 release runs
+name: Reply with Asterfold 3.0.1 release status
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/check-v3.0.1-active-runs.yml
   issue_comment:
     types: [created]
 
 permissions:
-  contents: write
   actions: read
+  issues: write
+  pull-requests: write
 
 jobs:
   inspect:
     if: >-
-      github.event_name == 'push' ||
-      (github.event_name == 'issue_comment' &&
-       github.event.comment.user.login == 'memodlike' &&
-       github.event.comment.body == '/status-v3.0.1')
+      github.event.comment.user.login == 'memodlike' &&
+      github.event.comment.body == '/status-v3.0.1-now'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Capture relevant workflow runs
+      - name: Reply with relevant workflow runs and Release metadata
         env:
           GH_TOKEN: ${{ github.token }}
-          REPORT_BRANCH: ops/v3.0.1-release-status
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
         shell: bash
         run: |
           set -euo pipefail
@@ -47,37 +42,24 @@ jobs:
           ]);
           const runs = (payload.workflow_runs || [])
             .filter((run) => names.has(run.name))
-            .map((run) => ({
-              id: run.id,
-              name: run.name,
-              status: run.status,
-              conclusion: run.conclusion,
-              event: run.event,
-              headSha: run.head_sha,
-              headBranch: run.head_branch,
-              url: run.html_url,
-              createdAt: run.created_at,
-              updatedAt: run.updated_at
-            }));
-          const report = {
-            observedAt: new Date().toISOString(),
-            runs,
-            release: {
-              exists: Boolean(release.url),
-              url: release.url || '',
-              targetCommitish: release.targetCommitish || '',
-              isDraft: release.isDraft ?? null,
-              isPrerelease: release.isPrerelease ?? null,
-              assets: Array.isArray(release.assets) ? release.assets.map((a) => ({ name: a.name, size: a.size, url: a.url })) : []
-            }
-          };
-          fs.writeFileSync('/tmp/active-release-runs-v3.0.1.json', `${JSON.stringify(report, null, 2)}\n`);
+            .slice(0, 12);
+          const lines = ['## Asterfold 3.0.1 release status', ''];
+          if (runs.length === 0) lines.push('- Relevant workflow runs: none found');
+          for (const run of runs) {
+            const result = run.conclusion ?? run.status;
+            lines.push(`- [${run.name} #${run.run_number}](${run.html_url}) — **${run.status} / ${result}** — event \`${run.event}\` — branch \`${run.head_branch ?? ''}\` — SHA \`${run.head_sha}\``);
+          }
+          lines.push('');
+          if (release.url) {
+            lines.push(`**Release:** [${release.tagName}](${release.url})`);
+            lines.push(`- Target: \`${release.targetCommitish}\``);
+            lines.push(`- Draft: \`${release.isDraft}\`; prerelease: \`${release.isPrerelease}\``);
+            lines.push(`- Assets: ${Array.isArray(release.assets) ? release.assets.length : 0}`);
+            for (const asset of release.assets ?? []) lines.push(`  - ${asset.name} — ${asset.size} bytes`);
+          } else {
+            lines.push('**Release:** not published yet');
+          }
+          lines.push('', `_Observed: ${new Date().toISOString()}_`);
+          fs.writeFileSync('/tmp/release-status-comment.md', `${lines.join('\n')}\n`);
 NODE
-          path='docs/audit/observer/active-release-runs-v3.0.1.json'
-          content="$(base64 -w0 /tmp/active-release-runs-v3.0.1.json)"
-          current_sha="$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=$REPORT_BRANCH" --jq .sha 2>/dev/null || true)"
-          if test -n "$current_sha"; then
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='docs: update active v3.0.1 release runs' -f content="$content" -f branch="$REPORT_BRANCH" -f sha="$current_sha" >/dev/null
-          else
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='docs: record active v3.0.1 release runs' -f content="$content" -f branch="$REPORT_BRANCH" >/dev/null
-          fi
+          gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments" -f body="$(cat /tmp/release-status-comment.md)" >/dev/null
