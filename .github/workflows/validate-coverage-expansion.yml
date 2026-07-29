@@ -52,6 +52,16 @@ jobs:
           tar -tzf /tmp/coverage-expansion.tar.gz | LC_ALL=C sort > /tmp/actual-files
           diff -u /tmp/expected-files /tmp/actual-files
           tar -xzf /tmp/coverage-expansion.tar.gz
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tests/searchPaletteCoverage.test.ts')
+          source = path.read_text()
+          old = '  const input = screen.getByRole("textbox");'
+          new = '  const input = screen.getByRole("textbox") as HTMLInputElement;'
+          if source.count(old) != 1:
+              raise SystemExit('Expected one SearchPalette textbox helper')
+          path.write_text(source.replace(old, new, 1))
+          PY
           git diff --check
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
