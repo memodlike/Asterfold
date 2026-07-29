@@ -24,11 +24,31 @@ replace_exact(
     '''    await expect(getWorkspaceData(database, false)).rejects.toThrow("Application settings are unavailable");
     await expect(purgeTrash(null, database)).resolves.toBe(0);''',
     '''    await expect(getWorkspaceData(database, false)).rejects.toThrow("Application settings are unavailable");
+    expect(await auditInvariants(database)).toEqual(expect.arrayContaining([
+      "No active Page exists",
+      "Exactly one active default Page is required",
+      "App settings are missing",
+    ]));
     const settings = createDefaultSettings();
     await database.settings.add(settings);
     await expect(getWorkspaceData(database, false)).resolves.toEqual({ pages: [], boards: [], bookmarks: [], settings });
     await expect(purgeTrash(null, database)).resolves.toBe(0);''',
     "missing settings branch",
+)
+replace_exact(
+    repository_path,
+    '''    expect(await auditInvariants(database)).toEqual(expect.arrayContaining([
+      "No active Page exists",
+      "Exactly one active default Page is required",
+      "App settings are missing",
+    ]));''',
+    '''    expect(await auditInvariants(database)).toEqual(expect.arrayContaining([
+      "No active Page exists",
+      "Exactly one active default Page is required",
+      "Quick Save default Page points to a missing Page",
+      "Quick Save last Page points to a missing Page",
+    ]));''',
+    "settings-present audit branch",
 )
 replace_exact(
     repository_path,
@@ -45,4 +65,10 @@ replace_exact(
 
     await database.pages.update(configured.id, { deletedAt: timestamp });''',
     "Page restore branch",
+)
+replace_exact(
+    repository_path,
+    '''    expect(await database.boards.get(third.id)).toMatchObject({ version: thirdBefore?.version });''',
+    '''    expect(await database.boards.get(third.id)).toMatchObject({ version: (thirdBefore?.version ?? 0) + 1 });''',
+    "third Board reorder metadata",
 )
