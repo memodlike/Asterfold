@@ -1,5 +1,6 @@
 name: Publish authorized Asterfold 3.0.1 from tag
 
+# This second commit activates the newly registered one-shot workflow.
 on:
   push:
     branches: [main]
