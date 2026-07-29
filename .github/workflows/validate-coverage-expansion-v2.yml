@@ -38,6 +38,7 @@ jobs:
           echo '228b76611c27cfa4ffc2d828ebeeea74a48e8067f556e48531bdfc166082377c  /tmp/coverage-expansion.tar.gz' | sha256sum --check
           tar -xzf /tmp/coverage-expansion.tar.gz
           python .github/coverage-expansion/normalize-and-fix.py
+          python .github/coverage-expansion/fix-final-four.py
           git diff --check
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
