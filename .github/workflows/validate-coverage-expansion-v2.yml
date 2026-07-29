@@ -42,49 +42,7 @@ jobs:
           python .github/coverage-expansion/fix-unused-import.py
           python .github/coverage-expansion/fix-final-two.py
           python .github/coverage-expansion/fix-last-two.py
-          python - <<'PY'
-          from pathlib import Path
-
-          settings_path = Path('tests/settingsDialogBehavior.test.ts')
-          settings_text = settings_path.read_text()
-          old_label = 'screen.getByRole("button", { name: "Russian" })'
-          new_label = 'screen.getByRole("button", { name: "Русский" })'
-          if old_label in settings_text:
-              if settings_text.count(old_label) != 1:
-                  raise SystemExit(f'Unexpected localized-label match count: {settings_text.count(old_label)}')
-              settings_path.write_text(settings_text.replace(old_label, new_label))
-          elif new_label not in settings_text:
-              raise SystemExit('Localized Settings language assertion is missing')
-
-          repository_path = Path('tests/repositoryBranchCoverage.test.ts')
-          repository_text = repository_path.read_text()
-          missing_fragment = '''    await expect(getWorkspaceData(database, false)).rejects.toThrow("Application settings are unavailable");
-    await expect(purgeTrash(null, database)).resolves.toBe(0);'''
-          missing_replacement = '''    await expect(getWorkspaceData(database, false)).rejects.toThrow("Application settings are unavailable");
-    const settings = createDefaultSettings();
-    await database.settings.add(settings);
-    await expect(getWorkspaceData(database, false)).resolves.toEqual({ pages: [], boards: [], bookmarks: [], settings });
-    await expect(purgeTrash(null, database)).resolves.toBe(0);'''
-          if repository_text.count(missing_fragment) != 1:
-              raise SystemExit('Expected missing-settings branch fragment exactly once')
-          repository_text = repository_text.replace(missing_fragment, missing_replacement, 1)
-
-          page_fragment = '''    await expect(duplicatePage("missing", database)).rejects.toThrow("Page not found");
-
-    await database.pages.update(configured.id, { deletedAt: timestamp });'''
-          page_replacement = '''    await expect(duplicatePage("missing", database)).rejects.toThrow("Page not found");
-
-    const detached = await createPage("Detached", {}, database);
-    await softDeletePage(detached.id, database);
-    await database.pages.update(detached.id, { deletedBatchId: null });
-    await restorePage(detached.id, database);
-    expect(await database.pages.get(detached.id)).toMatchObject({ deletedAt: null, deletedBatchId: null });
-
-    await database.pages.update(configured.id, { deletedAt: timestamp });'''
-          if repository_text.count(page_fragment) != 1:
-              raise SystemExit('Expected Page restore branch fragment exactly once')
-          repository_path.write_text(repository_text.replace(page_fragment, page_replacement, 1))
-          PY
+          python .github/coverage-expansion/fix-repository-branches.py
           git diff --check
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
