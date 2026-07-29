@@ -1,0 +1,57 @@
+{
+  "repository": "memodlike/Asterfold",
+  "sourceCommit": "1ba41271bd09028cbc081ee5791b8ab1a3a64c2e",
+  "tag": "v3.0.1",
+  "observedAt": "2026-07-29T06:04:42.046Z",
+  "status": "FAIL",
+  "mainRuns": {
+    "CI": {
+      "id": 30426262359,
+      "status": "completed",
+      "conclusion": "success",
+      "event": "push",
+      "headSha": "1ba41271bd09028cbc081ee5791b8ab1a3a64c2e",
+      "headBranch": "main",
+      "url": "https://github.com/memodlike/Asterfold/actions/runs/30426262359",
+      "createdAt": "2026-07-29T05:50:30Z",
+      "updatedAt": "2026-07-29T05:54:00Z"
+    },
+    "CodeQL": {
+      "id": 30426262424,
+      "status": "completed",
+      "conclusion": "success",
+      "event": "push",
+      "headSha": "1ba41271bd09028cbc081ee5791b8ab1a3a64c2e",
+      "headBranch": "main",
+      "url": "https://github.com/memodlike/Asterfold/actions/runs/30426262424",
+      "createdAt": "2026-07-29T05:50:30Z",
+      "updatedAt": "2026-07-29T05:52:09Z"
+    }
+  },
+  "privacyPolicy": {
+    "url": "https://memodlike.github.io/Asterfold/store/privacy.html",
+    "desktop": {
+      "httpStatus": 404,
+      "versionFound": false,
+      "limitedUseFound": false,
+      "unauthenticated": true
+    },
+    "mobile": {
+      "httpStatus": 404,
+      "versionFound": false,
+      "limitedUseFound": false,
+      "unauthenticated": true
+    }
+  },
+  "tagVerification": {},
+  "release": {},
+  "assets": [],
+  "checksumsVerified": false,
+  "provenanceVerified": false,
+  "attestationsVerified": false,
+  "packageScanPassed": false,
+  "blockers": [
+    "Public Privacy Policy desktop/mobile verification failed"
+  ],
+  "observerRunId": "30426989097"
+}
