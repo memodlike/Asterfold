@@ -5,6 +5,8 @@ import { createDefaultSettings } from "../src/db/defaults";
 import type { AppSettings, Board, Bookmark, Page, WorkspaceData } from "../src/domain/models";
 import type { AsterfoldBackup } from "../src/services/exportImport";
 
+const confirmMock = vi.fn(() => true);
+
 const mocks = vi.hoisted(() => ({
   auditInvariants: vi.fn(),
   getWallpaper: vi.fn(),
@@ -152,12 +154,15 @@ beforeEach(() => {
   mocks.permissionsRequest.mockResolvedValue(false);
   mocks.bookmarksGetTree.mockResolvedValue([]);
   Object.defineProperty(navigator, "storage", { configurable: true, value: { estimate: vi.fn().mockResolvedValue({ usage: 1536, quota: 10_000 }) } });
-  vi.spyOn(window, "confirm").mockReturnValue(true);
+  confirmMock.mockReset();
+  confirmMock.mockReturnValue(true);
+  vi.stubGlobal("confirm", confirmMock);
 });
 
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("SettingsDialog behavior", () => {
@@ -239,11 +244,9 @@ describe("SettingsDialog behavior", () => {
     fireEvent.click(screen.getByRole("button", { name: /HTML bookmarks/ }));
     fireEvent.click(screen.getByRole("button", { name: /Markdown/ }));
     await waitFor(() => expect(mocks.downloadText).toHaveBeenCalledTimes(3));
-    expect(mocks.downloadText.mock.calls.map((call) => call[0])).toEqual(expect.arrayContaining([
-      expect.stringMatching(/^asterfold-backup-v3-/),
-      "asterfold-bookmarks.html",
-      "asterfold-bookmarks.md",
-    ]));
+    expect(mocks.downloadText).toHaveBeenNthCalledWith(1, expect.stringMatching(/^asterfold-backup-v3-/), "{\"backup\":true}", "application/json");
+    expect(mocks.downloadText).toHaveBeenNthCalledWith(2, "asterfold-bookmarks.html", "<DL></DL>", "text/html");
+    expect(mocks.downloadText).toHaveBeenNthCalledWith(3, "asterfold-bookmarks.md", "# Bookmarks", "text/markdown");
 
     fireEvent.click(screen.getByRole("button", { name: /Import from Chrome/ }));
     await waitFor(() => expect(mocks.bookmarksGetTree).toHaveBeenCalledOnce());
@@ -285,10 +288,10 @@ describe("SettingsDialog behavior", () => {
 
     fireEvent.change(input, { target: { files: [json] } });
     expect(await screen.findByRole("button", { name: "Replace" })).toBeVisible();
-    vi.mocked(window.confirm).mockReturnValueOnce(false);
+    confirmMock.mockReturnValueOnce(false);
     fireEvent.click(screen.getByRole("button", { name: "Replace" }));
     expect(mocks.restoreBackup).toHaveBeenCalledTimes(1);
-    vi.mocked(window.confirm).mockReturnValueOnce(true);
+    confirmMock.mockReturnValueOnce(true);
     fireEvent.click(screen.getByRole("button", { name: "Replace" }));
     await waitFor(() => expect(mocks.restoreBackup).toHaveBeenCalledWith(expect.objectContaining({ scope: "full" }), "replace"));
 
