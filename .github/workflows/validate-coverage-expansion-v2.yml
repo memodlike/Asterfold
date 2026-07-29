@@ -39,6 +39,7 @@ jobs:
           tar -xzf /tmp/coverage-expansion.tar.gz
           python .github/coverage-expansion/normalize-and-fix.py
           python .github/coverage-expansion/fix-final-four.py
+          python .github/coverage-expansion/fix-unused-import.py
           git diff --check
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
