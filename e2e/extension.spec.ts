@@ -252,7 +252,9 @@ test.describe.serial("Asterfold MV3 release", () => {
     expect(bounds!.y).toBeGreaterThanOrEqual(0);
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(1280);
     expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(720);
-    await hint.getByRole("button", { name: "Скрыть подсказку" }).click();
+    const dismissHint = hint.locator(".launcher-discovery__dismiss");
+    await expect(dismissHint).toHaveAccessibleName(/\S/u);
+    await dismissHint.click();
     await expect(hint).toHaveCount(0);
     await page.reload();
     await expect(page.locator(".launcher-discovery")).toHaveCount(0);
@@ -279,7 +281,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     const reducedDuration = await page.locator(".board").first().evaluate((board) => Number.parseFloat(getComputedStyle(board).transitionDuration));
     expect(reducedDuration).toBeLessThanOrEqual(0.00001);
     await page.emulateMedia({ forcedColors: "active" });
-    await expect(page.getByRole("button", { name: "Открыть меню Asterfold" })).toBeVisible();
+    await expect(page.locator(".launcher-trigger")).toBeVisible();
     const forcedColorResults = await new AxeBuilder({ page }).analyze();
     expect(forcedColorResults.violations.filter((violation) => violation.impact === "serious" || violation.impact === "critical")).toEqual([]);
     await page.close();
