@@ -42,6 +42,19 @@ jobs:
           python .github/coverage-expansion/fix-unused-import.py
           python .github/coverage-expansion/fix-final-two.py
           python .github/coverage-expansion/fix-last-two.py
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tests/settingsDialogBehavior.test.ts')
+          text = path.read_text()
+          old = 'screen.getByRole("button", { name: "Russian" })'
+          new = 'screen.getByRole("button", { name: "Русский" })'
+          if old in text:
+              if text.count(old) != 1:
+                  raise SystemExit(f'Unexpected localized-label match count: {text.count(old)}')
+              path.write_text(text.replace(old, new))
+          elif new not in text:
+              raise SystemExit('Localized Settings language assertion is missing')
+          PY
           git diff --check
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -81,6 +94,8 @@ jobs:
           rm -rf .github/coverage-expansion
           rm -f .github/workflows/validate-coverage-expansion.yml
           rm -f .github/workflows/validate-coverage-expansion-v2.yml
+          rm -f .github/workflows/fix-settings-language-expectation.yml
+          rm -f .github/fix-settings-language-expectation.trigger
           git add tests .github
           git diff --cached --check
           git config user.name 'Asterfold Release Automation'
