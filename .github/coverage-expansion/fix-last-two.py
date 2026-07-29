@@ -53,6 +53,11 @@ replace_exact(
     '    actOnSecondary(',
     expected=6,
 )
+replace_exact(
+    "tests/appLauncherCoverage.test.ts",
+    '    actOnSecondary("Move to Trash");',
+    '    actOnSecondary("Move to trash");',
+)
 
 replace_exact(
     "tests/componentLifecycleCoverage.test.ts",
@@ -85,6 +90,6 @@ replace_exact(
     await act(async () => { await Promise.resolve(); });
     expect(screen.getByRole("menu", { name: "Actions" })).toHaveStyle({ left: "132px", top: "112px" });
     expect(screen.getByRole("menuitem", { name: "Alpha" })).toHaveFocus();
-    expect(screen.getByRole("button", { name: "Disabled" })).toBeDisabled();
+    expect(screen.getByRole("menuitem", { name: "Disabled" })).toBeDisabled();
   });''',
 )
