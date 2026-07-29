@@ -1,0 +1,93 @@
+name: Tag verified main release
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: write
+  actions: read
+  checks: read
+
+concurrency:
+  group: tag-verified-main-release
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact verified main commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Verify main, CodeQL, version, Privacy Policy and conflicts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+          PRIVACY_URL: https://memodlike.github.io/Asterfold/store/privacy.html
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ github.event.workflow_run.head_branch }}" = "main"
+          git fetch origin main --tags
+          test "$(git rev-parse origin/main)" = "$EXPECTED_SOURCE_SHA"
+          version="$(node -p "require('./package.json').version")"
+          test "$version" = "3.0.1"
+          tag="v$version"
+
+          codeql_ok=false
+          for attempt in $(seq 1 40); do
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$EXPECTED_SOURCE_SHA&status=completed&per_page=100" > workflow-runs.json
+            if EXPECTED_SOURCE_SHA="$EXPECTED_SOURCE_SHA" REQUIRED_WORKFLOWS=CodeQL node scripts/verify-required-workflows.mjs workflow-runs.json; then
+              codeql_ok=true
+              break
+            fi
+            sleep 15
+          done
+          test "$codeql_ok" = true
+          rm workflow-runs.json
+
+          privacy_ok=false
+          desktop_user_agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/150 Safari/537.36'
+          mobile_user_agent='Mozilla/5.0 (iPhone; CPU iPhone OS 26_5 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1'
+          for attempt in $(seq 1 40); do
+            desktop_status="$(curl --location --silent --show-error --max-time 20 --user-agent "$desktop_user_agent" --header 'Cache-Control: no-cache' --output privacy-desktop.html --write-out '%{http_code}' "$PRIVACY_URL" || true)"
+            mobile_status="$(curl --location --silent --show-error --max-time 20 --user-agent "$mobile_user_agent" --header 'Cache-Control: no-cache' --output privacy-mobile.html --write-out '%{http_code}' "$PRIVACY_URL" || true)"
+            if test "$desktop_status" = 200 \
+              && test "$mobile_status" = 200 \
+              && grep -Fq 'Policy version 3.0.1' privacy-desktop.html \
+              && grep -Fq 'Policy version 3.0.1' privacy-mobile.html \
+              && grep -Fq 'Chrome Web Store User Data Policy, including the Limited Use requirements' privacy-desktop.html \
+              && grep -Fq 'Chrome Web Store User Data Policy, including the Limited Use requirements' privacy-mobile.html; then
+              privacy_ok=true
+              echo "Privacy Policy verified unauthenticated: desktop HTTP $desktop_status; mobile HTTP $mobile_status."
+              break
+            fi
+            sleep 15
+          done
+          test "$privacy_ok" = true
+          rm -f privacy-desktop.html privacy-mobile.html
+
+          if git rev-parse --verify "refs/tags/$tag" >/dev/null 2>&1; then
+            test "$(git cat-file -t "$tag")" = tag
+            test "$(git rev-list -n 1 "$tag")" = "$EXPECTED_SOURCE_SHA"
+            echo "Annotated tag $tag already targets the verified main commit."
+            exit 0
+          fi
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $tag exists without the expected annotated tag." >&2
+            exit 1
+          fi
+
+          git config user.name 'Asterfold Release Automation'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -a "$tag" "$EXPECTED_SOURCE_SHA" -m "Asterfold $version"
+          git push origin "refs/tags/$tag"

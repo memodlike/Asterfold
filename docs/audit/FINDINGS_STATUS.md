@@ -1,5 +1,7 @@
 # Findings status
 
+> Historical evidence notice: sections describing 2.2.3 and earlier are retained as historical records. Current 3.0.1 remediation status is maintained under `docs/audit/3.0.1/`.
+
 Statuses are limited to `OPEN`, `IN_PROGRESS`, `FIXED`, `ACCEPTED_RISK`, and `NOT_APPLICABLE`. No finding is accepted as risk without an owner decision and a residual-behavior test.
 
 | ID | Status | Commit | Tests | Evidence | Residual risk |

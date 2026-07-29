@@ -240,6 +240,27 @@ test.describe.serial("Asterfold MV3 release", () => {
 
   test.afterAll(async () => { await context.close(); });
 
+  test("shows a localized, non-blocking first-use hint once and keeps it within a 1280×720 viewport", async () => {
+    const page = await context.newPage();
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto(`chrome-extension://${extensionId}/newtab.html`);
+    const hint = page.locator(".launcher-discovery");
+    await expect(hint).toBeVisible();
+    const bounds = await hint.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.y).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(1280);
+    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(720);
+    const dismissHint = hint.locator(".launcher-discovery__dismiss");
+    await expect(dismissHint).toHaveAccessibleName(/\S/u);
+    await dismissHint.click();
+    await expect(hint).toHaveCount(0);
+    await page.reload();
+    await expect(page.locator(".launcher-discovery")).toHaveCount(0);
+    await page.close();
+  });
+
   test("loads the unpacked MV3 worker with least privilege", async () => {
     const probe = await worker.evaluate(async () => ({ manifest: chrome.runtime.getManifest(), commands: await chrome.commands.getAll() }));
     expect(probe.manifest.manifest_version).toBe(3);
@@ -259,6 +280,10 @@ test.describe.serial("Asterfold MV3 release", () => {
     expect(results.violations.filter((violation) => violation.impact === "serious" || violation.impact === "critical")).toEqual([]);
     const reducedDuration = await page.locator(".board").first().evaluate((board) => Number.parseFloat(getComputedStyle(board).transitionDuration));
     expect(reducedDuration).toBeLessThanOrEqual(0.00001);
+    await page.emulateMedia({ forcedColors: "active" });
+    await expect(page.locator(".launcher-trigger")).toBeVisible();
+    const forcedColorResults = await new AxeBuilder({ page }).analyze();
+    expect(forcedColorResults.violations.filter((violation) => violation.impact === "serious" || violation.impact === "critical")).toEqual([]);
     await page.close();
   });
 

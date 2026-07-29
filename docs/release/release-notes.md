@@ -1,46 +1,43 @@
-# Asterfold 2.2.3 — Chrome Web Store readiness
+# Asterfold 3.0.1
 
-Asterfold 2.2.3 is a compatibility-preserving patch release focused on data integrity, privacy consistency, and final Chrome Web Store submission readiness. The Pages → Boards → Bookmarks model and visual identity remain unchanged.
+> Version 3.0.0 was an internal unreleased release candidate and was superseded by 3.0.1 before publication.
 
-## Fixed
+## Highlights
 
-- Quick Save clears an invalid Board when the user selects a Page with no Boards and revalidates the Page/Board pair immediately before writing.
-- Session Privacy Mode is shared between New Tab and popup through `chrome.storage.session` and is cleared automatically with the Chrome session.
-- Scoped Page, Board, and selection backups can only be merged; destructive Replace is accepted only for a complete full backup.
-- Full backups require consistent global settings and theme data, and restore recalculates URL-derived fields from the authoritative bookmark URL.
-- JSON, HTML, and Chrome-bookmark imports have bounded depth, node, and bookmark counts; off-thread parsing supports cancellation and safe timeout handling.
-- Netscape HTML descriptions round-trip correctly even when the conventional optional closing `</DD>` tag is absent.
-- Imported Page titles are validated before any transaction writes; external titles and descriptions are bounded to the current schema.
-- Free-grid placement swaps and Board reordering commit in one Dexie transaction.
-- Settings read-modify-write and uploaded-wallpaper cleanup commit atomically, preventing unrelated concurrent settings from being lost.
-- Changing the default Page also assigns a Board on that Page and updates version metadata for the previous default.
-- Version 2.2.3 stops creating inaccessible diagnostic snapshots. The legacy IndexedDB store remains only for non-destructive migration compatibility.
-- Release validation scans additional remote Worker, SharedWorker, iframe, WASM, executable data-URL, and dynamic-code patterns.
-- Real MV3 E2E tests now isolate locale state between serial scenarios.
+- CI-gated, tag-only GitHub Release publishing from the exact verified `main` commit.
+- Deterministic Linux and Windows runtime, source, Store-assets, and SPDX SBOM packaging.
+- Source-to-artifact linkage through `provenance.json`, SHA-256 checksums, and GitHub artifact attestations.
+- Audit closure evidence for release, documentation, dependency, package-hygiene, validation, coverage, and UX findings.
+- A non-modal, localized first-use launcher hint for new installations; existing 2.2.3 workspaces are migrated without showing it.
+- A runtime-only Chrome Web Store ZIP; installation guidance remains only in the unpacked distribution.
 
-## Permissions
+## Security and privacy
 
-Required permissions are `activeTab`, `favicon`, `alarms`, `contextMenus`, and `storage`.
+- No host permissions.
+- No content scripts.
+- No remote executable code.
+- The optional `bookmarks` permission remains user-invoked from the Chrome-bookmark import flow.
+- Workspace records remain local-first in the user's Chrome profile.
+- The single purpose remains: a visual bookmark workspace for the Chrome New Tab page.
+- Privacy Mode remains visual shoulder-surfing protection, not encryption.
 
-`storage` is used only for the transient Privacy Mode flag in `chrome.storage.session`. Optional `bookmarks` access remains requested only from the explicit Chrome import action. Host permissions and content scripts remain absent.
+## Reliability
 
-## Validation completed
+- Database schema 6 preserves data from 2.2.3 and marks legacy installations as already onboarded.
+- Release archives use stable file ordering, timestamps, permissions, separators, and uncompressed deterministic ZIP entries.
+- CI compares Linux and Windows release subjects byte-for-byte.
+- Development dependency advisories are checked against an explicit expiring baseline; production high/critical vulnerabilities remain a hard failure.
 
-The release candidate passed:
+## Chrome Web Store package
 
-- TypeScript type checking;
-- ESLint with zero warnings;
-- unit and integration tests with coverage gates;
-- production dependency audit;
-- dependency review;
-- deterministic Linux and Windows release generation;
-- Chrome Web Store asset validation;
-- real unpacked Manifest V3 Playwright E2E tests;
-- accessibility checks;
-- CodeQL analysis.
+Upload **`Asterfold-Chrome.zip`**. It contains `manifest.json` at the root and only runtime-required extension files.
 
-Release archives include SHA-256 checksums and are generated from the tagged source commit.
+`chrome-unpacked.zip` is for Developer mode installation. GitHub-generated source archives are not extension upload packages.
 
-## Chrome Web Store status
+## Upgrade notes
 
-This GitHub Release is prepared for Chrome Web Store submission. Publication or approval by Google is not claimed until it occurs.
+Updating from 2.2.3 does not reset Pages, Boards, bookmarks, opening modes, Trash, theme, language, wallpaper, Quick Save settings, or Privacy settings. The schema-6 migration changes only the schema marker and legacy onboarding state.
+
+## Verification
+
+Use `checksums.txt` and `provenance.json` to verify the attached assets. GitHub artifact attestations provide an additional cryptographic statement linking the release subjects to the GitHub Actions workflow and source commit.
