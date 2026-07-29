@@ -213,7 +213,7 @@ describe("SettingsDialog behavior", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Language" }));
-    fireEvent.click(screen.getByRole("button", { name: "Russian" }));
+    fireEvent.click(screen.getByRole("button", { name: "Русский" }));
     await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ locale: "ru" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Quick Save" }));
