@@ -75,11 +75,13 @@ The final upload package must be downloaded from the published GitHub Release `v
 
 Preferred URL: `https://memodlike.github.io/Asterfold/store/privacy.html`
 
-The main-only tag workflow requires unauthenticated HTTP 200 responses for both desktop and mobile user agents and validates Policy version 3.0.1 plus the Chrome Web Store Limited Use disclosure. Failure blocks tag creation.
+Public repository fallback: `https://github.com/memodlike/Asterfold/blob/main/docs/security/privacy.md`
+
+The repository includes a GitHub Pages deployment workflow for the static `docs` directory. If the repository owner has not enabled Pages with **Source = GitHub Actions**, the workflow reports the owner-side setting and does not claim a successful deployment. The tag gate first waits for unauthenticated desktop/mobile HTTP 200 responses from the preferred Pages URL. If Pages is still unavailable, it verifies the exact-commit public repository fallback and raw source for Policy version 3.0.1 and the Chrome Web Store Limited Use disclosure. This fallback is temporary; the preferred Pages URL must be enabled before Chrome Web Store submission.
 
 ## Remaining owner action
 
-After the GitHub Release is cryptographically verified, open the authenticated Chrome Web Store Developer Dashboard, upload the exact published `Asterfold-Chrome.zip`, complete or review the prepared English/Russian listing and privacy declarations, resolve warnings and save a draft. Do not submit for review without separate explicit authorization.
+After the GitHub Release is cryptographically verified, enable GitHub Pages with **Source = GitHub Actions** if the preferred Privacy Policy URL is not yet public, then re-run the Pages workflow. Open the authenticated Chrome Web Store Developer Dashboard, upload the exact published `Asterfold-Chrome.zip`, complete or review the prepared English/Russian listing and privacy declarations, resolve warnings and save a draft. Do not submit for review without separate explicit authorization.
 
 ## Finalization rule
 
