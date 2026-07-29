@@ -56,17 +56,25 @@ jobs:
           rm workflow-runs.json
 
           privacy_ok=false
+          desktop_user_agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/150 Safari/537.36'
+          mobile_user_agent='Mozilla/5.0 (iPhone; CPU iPhone OS 26_5 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1'
           for attempt in $(seq 1 40); do
-            if curl --fail --location --silent --show-error --max-time 20 "$PRIVACY_URL" -o privacy.html \
-              && grep -Fq 'Policy version 3.0.1' privacy.html \
-              && grep -Fq 'Chrome Web Store User Data Policy, including the Limited Use requirements' privacy.html; then
+            desktop_status="$(curl --location --silent --show-error --max-time 20 --user-agent "$desktop_user_agent" --header 'Cache-Control: no-cache' --output privacy-desktop.html --write-out '%{http_code}' "$PRIVACY_URL" || true)"
+            mobile_status="$(curl --location --silent --show-error --max-time 20 --user-agent "$mobile_user_agent" --header 'Cache-Control: no-cache' --output privacy-mobile.html --write-out '%{http_code}' "$PRIVACY_URL" || true)"
+            if test "$desktop_status" = 200 \
+              && test "$mobile_status" = 200 \
+              && grep -Fq 'Policy version 3.0.1' privacy-desktop.html \
+              && grep -Fq 'Policy version 3.0.1' privacy-mobile.html \
+              && grep -Fq 'Chrome Web Store User Data Policy, including the Limited Use requirements' privacy-desktop.html \
+              && grep -Fq 'Chrome Web Store User Data Policy, including the Limited Use requirements' privacy-mobile.html; then
               privacy_ok=true
+              echo "Privacy Policy verified unauthenticated: desktop HTTP $desktop_status; mobile HTTP $mobile_status."
               break
             fi
             sleep 15
           done
           test "$privacy_ok" = true
-          rm privacy.html
+          rm -f privacy-desktop.html privacy-mobile.html
 
           if git rev-parse --verify "refs/tags/$tag" >/dev/null 2>&1; then
             test "$(git cat-file -t "$tag")" = tag
