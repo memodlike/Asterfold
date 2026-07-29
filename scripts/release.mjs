@@ -90,7 +90,7 @@ for (const entry of (await readdir(root, { withFileTypes: true })).sort((a, b) =
 const filteredSourceFiles = sourceFiles.filter((path) => {
   const rel = relative(root, path).replaceAll("\\", "/");
   const first = rel.split("/")[0];
-  return !excludedRoots.has(first) && !basename(path).startsWith(".env") && !path.endsWith(".log") && !path.endsWith(".DS_Store");
+  return rel !== "npm-audit.json" && !excludedRoots.has(first) && !basename(path).startsWith(".env") && !path.endsWith(".log") && !path.endsWith(".DS_Store");
 });
 await writeDeterministicZip(join(release, "extension-source.zip"), filteredSourceFiles.map((path) => ({ path, name: relative(root, path).replaceAll("\\", "/") })), writeFile);
 
