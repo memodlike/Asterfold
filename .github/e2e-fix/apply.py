@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# Separate trigger commit ensures GitHub registers the newly added one-shot workflow.
 path = Path("e2e/extension.spec.ts")
 source = path.read_text()
 old = '''    await page.goto(`chrome-extension://${extensionId}/newtab.html`);
