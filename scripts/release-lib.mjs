@@ -11,6 +11,15 @@ export function crc32(data) {
   return (crc ^ 0xffffffff) >>> 0;
 }
 
+function canonicalizeZipData(data, name) {
+  if (data.includes(0)) return data;
+  const decoded = data.toString("utf8");
+  if (!Buffer.from(decoded, "utf8").equals(data)) return data;
+  let normalized = decoded.replace(/\r\n?/gu, "\n");
+  if (/\.html$/iu.test(name)) normalized = normalized.replace(/\n(?:[ \t]*\n)+([ \t]*<\/body>)/gu, "\n$1");
+  return Buffer.from(normalized, "utf8");
+}
+
 export async function writeDeterministicZip(destination, entries, writeFile) {
   const localParts = [];
   const centralParts = [];
@@ -25,7 +34,7 @@ export async function writeDeterministicZip(destination, entries, writeFile) {
     if (names.has(normalized)) throw new Error(`Duplicate ZIP entry: ${normalized}`);
     names.add(normalized);
     const name = Buffer.from(normalized);
-    const data = await readFile(entry.path);
+    const data = canonicalizeZipData(await readFile(entry.path), normalized);
     const crc = crc32(data);
     const local = Buffer.alloc(30);
     local.writeUInt32LE(0x04034b50, 0);
