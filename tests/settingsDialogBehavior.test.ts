@@ -103,9 +103,9 @@ function renderSettings(options: { workspace?: WorkspaceData; initialSection?: "
     preference: "en",
     children: createElement(SettingsDialog, {
       open: true,
-      initialSection: options.initialSection,
       workspace: options.workspace ?? workspace(),
       ...callbacks,
+      ...(options.initialSection ? { initialSection: options.initialSection } : {}),
     }),
   }));
   return { ...view, callbacks };
