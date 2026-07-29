@@ -22,8 +22,24 @@ The release coverage expansion was validated before it was committed to the ordi
 | Functions | 91.10% | 85% | PASS |
 | Lines | 95.50% | 85% | PASS |
 
-The workflow committed the validated behavior suites and removed the temporary coverage transport. The final release decision still requires the same tests and thresholds to pass through ordinary CI and CodeQL on the exact owner-authored Pull Request head SHA.
+The workflow committed the validated behavior suites and removed the temporary coverage transport.
 
-## Release blockers
+## Locale-independent real MV3 validation
 
-Merge, tag, and release remain blocked until ordinary exact-SHA CI completes Store validation, deterministic Linux and Windows packaging, real Manifest V3 E2E, accessibility and visual validation, exact `2.2.3 → 3.0.1` upgrade validation, cross-platform byte comparison, and CodeQL.
+The first exact-SHA E2E run exposed a test-only localization assumption: a fresh Chromium profile selected English while the selector expected a Russian accessible name. The rendered first-use hint itself was visible, fully inside the 1280×720 viewport, and correctly localized.
+
+The E2E test now targets stable semantic CSS hooks while separately requiring a non-empty accessible name. The same correction was applied to the forced-colors launcher visibility check.
+
+- Validation workflow: `Fix locale-independent MV3 E2E selectors`
+- Workflow run: `https://github.com/memodlike/Asterfold/actions/runs/30423714971`
+- Validated source tree before ordinary commit: `ec1b853ee208565d52bb4e335291b5f8e414cf2c`
+- Ordinary E2E fix commit: `9f323da596efbc054fdb5d60c7c178cfd0d5d855`
+- Static validation: PASS
+- Production extension build: PASS
+- First-use real MV3 flow: PASS
+- Accessibility/reduced-motion/forced-colors flow: PASS
+- Temporary fix workflow, script, and trigger: removed
+
+## Final release gate
+
+The final release decision requires all ordinary CI and CodeQL checks to pass on the exact owner-authored Pull Request head SHA, including the complete real MV3 suite, exact `2.2.3 → 3.0.1` same-profile upgrade, and Linux/Windows byte comparison.
