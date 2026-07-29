@@ -1,0 +1,91 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/**
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.pages.outputs.enabled }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Detect or enable GitHub Pages
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh api "repos/$GITHUB_REPOSITORY/pages" >/dev/null 2>&1; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if gh api --method POST "repos/$GITHUB_REPOSITORY/pages" -f build_type=workflow >/dev/null 2>&1; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "::warning::GitHub Pages is not enabled and GITHUB_TOKEN cannot change repository administration settings. Enable Pages with Source=GitHub Actions, then re-run this workflow."
+          echo "enabled=false" >> "$GITHUB_OUTPUT"
+
+      - name: Configure GitHub Pages
+        if: steps.pages.outputs.enabled == 'true'
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+
+      - name: Upload static documentation
+        if: steps.pages.outputs.enabled == 'true'
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: docs
+
+  deploy:
+    if: needs.prepare.outputs.enabled == 'true'
+    needs: prepare
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+
+      - name: Verify public Privacy Policy
+        env:
+          PRIVACY_URL: https://memodlike.github.io/Asterfold/store/privacy.html
+        shell: bash
+        run: |
+          set -euo pipefail
+          desktop_user_agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/150 Safari/537.36'
+          mobile_user_agent='Mozilla/5.0 (iPhone; CPU iPhone OS 26_5 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1'
+          for attempt in $(seq 1 40); do
+            desktop_status="$(curl --location --silent --show-error --max-time 20 --user-agent "$desktop_user_agent" --header 'Cache-Control: no-cache' --output privacy-desktop.html --write-out '%{http_code}' "$PRIVACY_URL" || true)"
+            mobile_status="$(curl --location --silent --show-error --max-time 20 --user-agent "$mobile_user_agent" --header 'Cache-Control: no-cache' --output privacy-mobile.html --write-out '%{http_code}' "$PRIVACY_URL" || true)"
+            if test "$desktop_status" = 200 \
+              && test "$mobile_status" = 200 \
+              && grep -Fq 'Policy version: 3.0.1' privacy-desktop.html \
+              && grep -Fq 'Policy version: 3.0.1' privacy-mobile.html \
+              && grep -Fq 'Chrome Web Store User Data Policy, including the Limited Use requirements' privacy-desktop.html \
+              && grep -Fq 'Chrome Web Store User Data Policy, including the Limited Use requirements' privacy-mobile.html; then
+              echo "Privacy Policy verified unauthenticated: desktop HTTP $desktop_status; mobile HTTP $mobile_status."
+              exit 0
+            fi
+            sleep 15
+          done
+          exit 1
