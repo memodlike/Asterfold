@@ -1,36 +1,30 @@
-name: Publish authorized Asterfold 3.0.1 from verified artifacts
+name: Finalize Asterfold 3.0.1 GitHub Release
 
 on:
   push:
     branches: [main]
     paths:
       - .github/workflows/publish-v3.0.1-authorized-main.yml
-  issue_comment:
-    types: [created]
 
 permissions:
   contents: write
   actions: read
   attestations: write
   id-token: write
+  issues: write
 
 concurrency:
-  group: authorized-release-v3.0.1-final
+  group: finalize-asterfold-v3.0.1
   cancel-in-progress: false
 
 env:
   SOURCE_SHA: 642e921ca0fd47e56d0d82c5b9609e8986915c3c
   SOURCE_CI_RUN: "30427609096"
   RELEASE_TAG: v3.0.1
-  REPORT_BRANCH: release/v3.0.1-final-trigger
 
 jobs:
   publish:
-    if: >-
-      github.event_name == 'push' ||
-      (github.event_name == 'issue_comment' &&
-       github.event.comment.user.login == 'memodlike' &&
-       github.event.comment.body == '/publish-v3.0.1')
+    if: github.repository == 'memodlike/Asterfold' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -41,7 +35,12 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Verify tag and exact source checks
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+
+      - name: Verify exact tag and completed source gates
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -56,9 +55,8 @@ jobs:
           gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$SOURCE_SHA&status=completed&per_page=100" > workflow-runs.json
           EXPECTED_SOURCE_SHA="$SOURCE_SHA" REQUIRED_WORKFLOWS=CI,CodeQL node scripts/verify-required-workflows.mjs workflow-runs.json
           rm workflow-runs.json
-          npm run validate:version
 
-      - name: Download exact Linux and Windows release subjects
+      - name: Download and compare verified Linux and Windows artifacts
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -74,7 +72,7 @@ jobs:
           done
           unzip -q release/chrome-unpacked.zip -d release
 
-      - name: Generate and verify provenance and checksums
+      - name: Generate and validate provenance and checksums
         shell: bash
         run: |
           set -euo pipefail
@@ -86,17 +84,16 @@ jobs:
           const names = ['Asterfold-Chrome.zip', 'chrome-unpacked.zip', 'extension-source.zip', 'Asterfold-Store-Assets.zip', 'sbom.spdx.json', 'provenance.json'];
           const lines = await Promise.all(names.map((name) => checksumLine(resolve('release', name))));
           await writeFile('release/checksums.txt', `${lines.join('\n')}\n`, 'utf8');
-NODE
+          NODE
           node scripts/validate-release-package.mjs
           EXPECTED_SOURCE_SHA="$SOURCE_SHA" EXPECTED_TAG="$RELEASE_TAG" node scripts/verify-provenance.mjs release
 
-      - name: Detect existing release
+      - name: Detect existing Release
         id: existing
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          set -euo pipefail
           if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
@@ -109,12 +106,6 @@ NODE
         with:
           subject-checksums: release/checksums.txt
 
-      - name: Attest checksums manifest
-        if: steps.existing.outputs.exists != 'true'
-        uses: actions/attest@c32b4b8b198b65d0bd9d63490e847ff7b53989d4 # v4.0.0
-        with:
-          subject-path: release/checksums.txt
-
       - name: Attest Store package SBOM
         if: steps.existing.outputs.exists != 'true'
         uses: actions/attest@c32b4b8b198b65d0bd9d63490e847ff7b53989d4 # v4.0.0
@@ -122,20 +113,16 @@ NODE
           subject-path: release/Asterfold-Chrome.zip
           sbom-path: release/sbom.spdx.json
 
-      - name: Publish GitHub Release
+      - name: Publish Asterfold 3.0.1 as Latest
         if: steps.existing.outputs.exists != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "Release was published concurrently; continuing with verification."
-            exit 0
-          fi
           store_sha="$(sha256sum release/Asterfold-Chrome.zip | cut -d' ' -f1)"
           cp docs/release/release-notes.md release-notes.md
-          printf '\n### Verification\n\n`Asterfold-Chrome.zip` SHA-256: `%s`\n\nBuild provenance, SBOM and checksums are attached. GitHub-generated source archives are not the Chrome Web Store upload package.\n' "$store_sha" >> release-notes.md
+          printf '\n### Verification\n\n`Asterfold-Chrome.zip` SHA-256: `%s`\n\nChecksums, provenance and SBOM attestations are attached.\n' "$store_sha" >> release-notes.md
           gh release create "$RELEASE_TAG" \
             release/Asterfold-Chrome.zip \
             release/chrome-unpacked.zip \
@@ -145,12 +132,11 @@ NODE
             release/provenance.json \
             release/sbom.spdx.json \
             --repo "$GITHUB_REPOSITORY" \
-            --target "$SOURCE_SHA" \
             --title "Asterfold 3.0.1" \
             --notes-file release-notes.md \
             --latest
 
-      - name: Download and verify published Release
+      - name: Verify published Release independently
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -166,18 +152,10 @@ NODE
           (cd published-release && sha256sum --check checksums.txt)
           EXPECTED_SOURCE_SHA="$SOURCE_SHA" EXPECTED_TAG="$RELEASE_TAG" node scripts/verify-provenance.mjs published-release
           gh attestation verify published-release/Asterfold-Chrome.zip --repo "$GITHUB_REPOSITORY"
-          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json tagName,targetCommitish,isDraft,isPrerelease,url,assets > release-result.json
+          test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = "false"
+          test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isPrerelease --jq .isPrerelease)" = "false"
 
-      - name: Upload verification evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: verified-github-release-v3.0.1
-          path: |
-            published-release
-            release-result.json
-          if-no-files-found: error
-
-      - name: Record publisher result
+      - name: Report final publication result
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
@@ -185,46 +163,11 @@ NODE
         shell: bash
         run: |
           set -euo pipefail
-          release_json='{}'
-          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json tagName,targetCommitish,isDraft,isPrerelease,url,assets >/tmp/release.json 2>/dev/null; then
-            release_json="$(cat /tmp/release.json)"
-          fi
-          checksum_file='release/checksums.txt'
-          test -f published-release/checksums.txt && checksum_file='published-release/checksums.txt'
-          CHECKSUM_FILE="$checksum_file" JOB_STATUS="$JOB_STATUS" RELEASE_JSON="$release_json" SOURCE_SHA="$SOURCE_SHA" RELEASE_TAG="$RELEASE_TAG" node --input-type=module <<'NODE'
-          import fs from 'node:fs';
-          const release = JSON.parse(process.env.RELEASE_JSON || '{}');
-          const checksums = {};
-          if (fs.existsSync(process.env.CHECKSUM_FILE)) {
-            for (const line of fs.readFileSync(process.env.CHECKSUM_FILE, 'utf8').trim().split(/\n/u)) {
-              const match = line.match(/^([a-f0-9]{64})  (.+)$/u);
-              if (match) checksums[match[2]] = match[1];
-            }
-          }
-          const report = {
-            repository: process.env.GITHUB_REPOSITORY,
-            sourceCommit: process.env.SOURCE_SHA,
-            tag: process.env.RELEASE_TAG,
-            workflowRunId: process.env.GITHUB_RUN_ID,
-            observedAt: new Date().toISOString(),
-            jobStatus: process.env.JOB_STATUS,
-            release: {
-              exists: Boolean(release.url),
-              url: release.url || '',
-              targetCommitish: release.targetCommitish || '',
-              isDraft: release.isDraft ?? null,
-              isPrerelease: release.isPrerelease ?? null,
-              assets: Array.isArray(release.assets) ? release.assets.map((asset) => ({ name: asset.name, size: asset.size, url: asset.url })) : []
-            },
-            checksums
-          };
-          fs.writeFileSync('/tmp/final-release-v3.0.1.json', `${JSON.stringify(report, null, 2)}\n`);
-NODE
-          path='docs/audit/observer/final-published-release-v3.0.1.json'
-          content="$(base64 -w0 /tmp/final-release-v3.0.1.json)"
-          current_sha="$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=$REPORT_BRANCH" --jq .sha 2>/dev/null || true)"
-          if test -n "$current_sha"; then
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='docs: record final published Asterfold 3.0.1 release' -f content="$content" -f branch="$REPORT_BRANCH" -f sha="$current_sha" >/dev/null
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          if release_url="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url --jq .url 2>/dev/null)"; then
+            asset_count="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets | length')"
+            body="## Asterfold 3.0.1 publication result\n\n- Status: **$JOB_STATUS**\n- Executor: $run_url\n- Release: $release_url\n- Tag source: \`$SOURCE_SHA\`\n- Assets: **$asset_count**"
           else
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='docs: record final published Asterfold 3.0.1 release' -f content="$content" -f branch="$REPORT_BRANCH" >/dev/null
+            body="## Asterfold 3.0.1 publication result\n\n- Status: **$JOB_STATUS**\n- Executor: $run_url\n- Release: **not published**\n- Tag source: \`$SOURCE_SHA\`"
           fi
+          gh api --method POST "repos/$GITHUB_REPOSITORY/issues/22/comments" -f body="$(printf '%b' "$body")" >/dev/null
