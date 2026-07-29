@@ -20,6 +20,17 @@ function canonicalizeZipData(data, name) {
   return Buffer.from(normalized, "utf8");
 }
 
+export function shouldIncludeSourceFile(relativePath, excludedRoots) {
+  const normalized = relativePath.replaceAll("\\", "/");
+  const first = normalized.split("/")[0];
+  const name = basename(normalized);
+  return !excludedRoots.has(first)
+    && name !== "npm-audit.json"
+    && !name.startsWith(".env")
+    && !normalized.endsWith(".log")
+    && !normalized.endsWith(".DS_Store");
+}
+
 export async function writeDeterministicZip(destination, entries, writeFile) {
   const localParts = [];
   const centralParts = [];
