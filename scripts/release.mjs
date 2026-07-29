@@ -1,6 +1,6 @@
 import { cp, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
-import { checksumLine, writeDeterministicZip } from "./release-lib.mjs";
+import { checksumLine, shouldIncludeSourceFile, writeDeterministicZip } from "./release-lib.mjs";
 
 const root = resolve(process.cwd());
 const output = resolve(root, ".output/chrome-mv3");
@@ -87,11 +87,7 @@ for (const entry of (await readdir(root, { withFileTypes: true })).sort((a, b) =
   if (entry.isDirectory()) sourceFiles.push(...await walk(path));
   else sourceFiles.push(path);
 }
-const filteredSourceFiles = sourceFiles.filter((path) => {
-  const rel = relative(root, path).replaceAll("\\", "/");
-  const first = rel.split("/")[0];
-  return rel !== "npm-audit.json" && !excludedRoots.has(first) && !basename(path).startsWith(".env") && !path.endsWith(".log") && !path.endsWith(".DS_Store");
-});
+const filteredSourceFiles = sourceFiles.filter((path) => shouldIncludeSourceFile(relative(root, path), excludedRoots));
 await writeDeterministicZip(join(release, "extension-source.zip"), filteredSourceFiles.map((path) => ({ path, name: relative(root, path).replaceAll("\\", "/") })), writeFile);
 
 const storeFiles = await walk(storeAssets);
