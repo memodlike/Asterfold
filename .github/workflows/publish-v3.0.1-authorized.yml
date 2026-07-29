@@ -1,0 +1,234 @@
+name: Publish authorized Asterfold 3.0.1
+
+on:
+  push:
+    branches: [release/asterfold-v3.0.1-authorized]
+    paths:
+      - .github/release-publisher/**
+      - .github/workflows/publish-v3.0.1-authorized.yml
+
+permissions:
+  contents: write
+  actions: read
+  checks: read
+  attestations: write
+  id-token: write
+
+concurrency:
+  group: release-v3.0.1
+  cancel-in-progress: false
+
+env:
+  SOURCE_SHA: 642e921ca0fd47e56d0d82c5b9609e8986915c3c
+  RELEASE_TAG: v3.0.1
+  PUBLISH_BRANCH: release/asterfold-v3.0.1-authorized
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Check out exact annotated tag
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: v3.0.1
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Verify tag, main and exact-SHA checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --tags
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(git rev-parse origin/main)" = "$SOURCE_SHA"
+          test "$(git cat-file -t refs/tags/$RELEASE_TAG)" = tag
+          test "$(git rev-list -n 1 refs/tags/$RELEASE_TAG)" = "$SOURCE_SHA"
+          version="$(node -p "require('./package.json').version")"
+          test "$RELEASE_TAG" = "v$version"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$SOURCE_SHA&status=completed&per_page=100" > workflow-runs.json
+          EXPECTED_SOURCE_SHA="$SOURCE_SHA" REQUIRED_WORKFLOWS=CI,CodeQL node scripts/verify-required-workflows.mjs workflow-runs.json
+          rm workflow-runs.json
+          npm run validate:version
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run release gates and build exact assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run audit:production
+          npm run audit:development
+          npm run typecheck
+          npm run lint
+          npm run test:coverage
+          env -u GITHUB_SHA RELEASE_TAG="$RELEASE_TAG" npm run release:repro
+          npx playwright install --with-deps chromium
+          npm run test:e2e
+          rm -rf .upgrade && mkdir -p .upgrade/extension
+          gh release download v2.2.3 --repo "$GITHUB_REPOSITORY" --pattern Asterfold-Chrome.zip --dir .upgrade
+          echo "e666c0e40ca2bcd1631b04e3b9087e38b26f71336664ecfc475ee8b4d610920a  .upgrade/Asterfold-Chrome.zip" | sha256sum --check
+          unzip -q .upgrade/Asterfold-Chrome.zip -d .upgrade/extension
+          ASTERFOLD_UPGRADE_BASELINE_PATH="$GITHUB_WORKSPACE/.upgrade/extension" \
+          ASTERFOLD_UPGRADE_TARGET_ZIP="$GITHUB_WORKSPACE/release/Asterfold-Chrome.zip" \
+          ASTERFOLD_UPGRADE_PROFILE_PATH="$GITHUB_WORKSPACE/.upgrade/profile" \
+          npm run test:upgrade
+
+      - name: Detect an existing identical or conflicting release
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "verified=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          release_json="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json tagName,targetCommitish,isDraft,isPrerelease,url,assets)"
+          RELEASE_JSON="$release_json" EXPECTED_SHA="$SOURCE_SHA" EXPECTED_TAG="$RELEASE_TAG" node --input-type=module <<'NODE'
+          const release = JSON.parse(process.env.RELEASE_JSON);
+          if (release.tagName !== process.env.EXPECTED_TAG) throw new Error(`Existing release tag mismatch: ${release.tagName}`);
+          if (release.isDraft || release.isPrerelease) throw new Error('Existing release must be final and published.');
+          const target = release.targetCommitish;
+          if (target !== process.env.EXPECTED_SHA && target !== process.env.EXPECTED_TAG && target !== 'main') {
+            throw new Error(`Existing release target mismatch: ${target}`);
+          }
+NODE
+          rm -rf existing-release && mkdir existing-release
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir existing-release
+          expected=(Asterfold-Chrome.zip chrome-unpacked.zip extension-source.zip Asterfold-Store-Assets.zip checksums.txt provenance.json sbom.spdx.json)
+          deterministic=(Asterfold-Chrome.zip chrome-unpacked.zip extension-source.zip Asterfold-Store-Assets.zip sbom.spdx.json)
+          mapfile -t actual < <(find existing-release -maxdepth 1 -type f -printf '%f\n' | sort)
+          mapfile -t sorted_expected < <(printf '%s\n' "${expected[@]}" | sort)
+          test "${actual[*]}" = "${sorted_expected[*]}"
+          for name in "${deterministic[@]}"; do cmp "release/$name" "existing-release/$name"; done
+          (cd existing-release && sha256sum --check checksums.txt)
+          EXPECTED_SOURCE_SHA="$SOURCE_SHA" EXPECTED_TAG="$RELEASE_TAG" node scripts/verify-provenance.mjs existing-release
+          echo "verified=true" >> "$GITHUB_OUTPUT"
+
+      - name: Attest release assets
+        if: steps.existing.outputs.verified != 'true'
+        uses: actions/attest@c32b4b8b198b65d0bd9d63490e847ff7b53989d4 # v4.0.0
+        with:
+          subject-checksums: release/checksums.txt
+
+      - name: Attest checksums manifest
+        if: steps.existing.outputs.verified != 'true'
+        uses: actions/attest@c32b4b8b198b65d0bd9d63490e847ff7b53989d4 # v4.0.0
+        with:
+          subject-path: release/checksums.txt
+
+      - name: Attest Store package SBOM
+        if: steps.existing.outputs.verified != 'true'
+        uses: actions/attest@c32b4b8b198b65d0bd9d63490e847ff7b53989d4 # v4.0.0
+        with:
+          subject-path: release/Asterfold-Chrome.zip
+          sbom-path: release/sbom.spdx.json
+
+      - name: Publish verified GitHub Release
+        if: steps.existing.outputs.verified != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          store_sha="$(sha256sum release/Asterfold-Chrome.zip | cut -d' ' -f1)"
+          cp docs/release/release-notes.md release-notes.md
+          printf '\n### Verification\n\n`Asterfold-Chrome.zip` SHA-256: `%s`\n\nBuild provenance, SBOM and checksums are attached. GitHub-generated source archives are not the Chrome Web Store upload package.\n' "$store_sha" >> release-notes.md
+          gh release create "$RELEASE_TAG" \
+            release/Asterfold-Chrome.zip \
+            release/chrome-unpacked.zip \
+            release/extension-source.zip \
+            release/Asterfold-Store-Assets.zip \
+            release/checksums.txt \
+            release/provenance.json \
+            release/sbom.spdx.json \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$SOURCE_SHA" \
+            --title "Asterfold 3.0.1" \
+            --notes-file release-notes.md \
+            --latest
+
+      - name: Download and verify published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf published-release && mkdir published-release
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir published-release
+          expected=(Asterfold-Chrome.zip chrome-unpacked.zip extension-source.zip Asterfold-Store-Assets.zip checksums.txt provenance.json sbom.spdx.json)
+          mapfile -t actual < <(find published-release -maxdepth 1 -type f -printf '%f\n' | sort)
+          mapfile -t sorted_expected < <(printf '%s\n' "${expected[@]}" | sort)
+          test "${actual[*]}" = "${sorted_expected[*]}"
+          for name in "${expected[@]}"; do cmp "release/$name" "published-release/$name"; done
+          (cd published-release && sha256sum --check checksums.txt)
+          EXPECTED_SOURCE_SHA="$SOURCE_SHA" EXPECTED_TAG="$RELEASE_TAG" node scripts/verify-provenance.mjs published-release
+          gh attestation verify published-release/Asterfold-Chrome.zip --repo "$GITHUB_REPOSITORY"
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json tagName,targetCommitish,isDraft,isPrerelease,url,assets > release-result.json
+
+      - name: Upload release verification evidence
+        if: success()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: authorized-release-verification-v3.0.1
+          path: |
+            published-release
+            release-result.json
+          if-no-files-found: error
+
+      - name: Record publisher result
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .publisher-report
+          release_json='{}'
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json tagName,targetCommitish,isDraft,isPrerelease,url,assets >/tmp/release.json 2>/dev/null; then
+            release_json="$(cat /tmp/release.json)"
+          fi
+          JOB_STATUS="$JOB_STATUS" RELEASE_JSON="$release_json" SOURCE_SHA="$SOURCE_SHA" RELEASE_TAG="$RELEASE_TAG" node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const release = JSON.parse(process.env.RELEASE_JSON || '{}');
+          const assets = Array.isArray(release.assets) ? release.assets.map((asset) => ({ name: asset.name, size: asset.size, url: asset.url })) : [];
+          const report = {
+            repository: process.env.GITHUB_REPOSITORY,
+            sourceCommit: process.env.SOURCE_SHA,
+            tag: process.env.RELEASE_TAG,
+            workflowRunId: process.env.GITHUB_RUN_ID,
+            observedAt: new Date().toISOString(),
+            jobStatus: process.env.JOB_STATUS,
+            release: {
+              exists: Boolean(release.url),
+              url: release.url || '',
+              targetCommitish: release.targetCommitish || '',
+              isDraft: release.isDraft ?? null,
+              isPrerelease: release.isPrerelease ?? null,
+              assets
+            }
+          };
+          fs.writeFileSync('.publisher-report/authorized-release-v3.0.1.json', `${JSON.stringify(report, null, 2)}\n`);
+NODE
+          path='docs/audit/observer/authorized-release-v3.0.1.json'
+          content="$(base64 -w0 .publisher-report/authorized-release-v3.0.1.json)"
+          current_sha="$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=$PUBLISH_BRANCH" --jq .sha 2>/dev/null || true)"
+          if test -n "$current_sha"; then
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='docs: record authorized Asterfold 3.0.1 release' -f content="$content" -f branch="$PUBLISH_BRANCH" -f sha="$current_sha" >/dev/null
+          else
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" -f message='docs: record authorized Asterfold 3.0.1 release' -f content="$content" -f branch="$PUBLISH_BRANCH" >/dev/null
+          fi
