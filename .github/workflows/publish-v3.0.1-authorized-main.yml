@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - .github/workflows/publish-v3.0.1-authorized-main.yml
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: write
@@ -24,6 +26,11 @@ env:
 
 jobs:
   publish:
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'issue_comment' &&
+       github.event.comment.user.login == 'memodlike' &&
+       github.event.comment.body == '/publish-v3.0.1')
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
