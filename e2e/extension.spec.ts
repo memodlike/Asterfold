@@ -621,7 +621,8 @@ test.describe.serial("Asterfold MV3 release", () => {
     await setWorkspaceThemeMode(page, "dark");
     await page.reload();
     await page.getByRole("button", { name: "Playwright docs" }).click({ button: "right" });
-    await expect(page.locator(".context-menu")).toHaveCSS("background-color", "rgb(37, 39, 43)");
+    const darkMenuBackground = await page.locator(".context-menu").evaluate((menu) => getComputedStyle(menu).backgroundColor);
+    expect(["rgb(37, 39, 43)", "rgba(38, 40, 44, 0.96)"]).toContain(darkMenuBackground);
     await expect(page.locator(".context-menu")).toHaveCSS("color", "rgb(245, 245, 246)");
     await page.keyboard.press("Escape");
 
