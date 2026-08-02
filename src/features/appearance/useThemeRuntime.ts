@@ -9,7 +9,7 @@ interface WallpaperUrls { normal: string | null; compatibility: string | null }
 export function useThemeRuntime(theme: ThemeConfig | undefined): ResolvedPerformanceMode {
   const [wallpaperUrls, setWallpaperUrls] = useState<WallpaperUrls>({ normal: null, compatibility: null });
   const [systemDark, setSystemDark] = useState(() => matchMedia("(prefers-color-scheme: dark)").matches);
-  const signals = useMemo(browserPerformanceSignals, []);
+  const signals = useMemo(() => browserPerformanceSignals(), []);
   const previousVariables = useRef(new Map<string, string>());
   const performanceMode = useMemo(() => theme
     ? classifyPerformanceMode(theme.performanceMode, theme.lowPowerMode, signals)
