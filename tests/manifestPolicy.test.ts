@@ -20,7 +20,7 @@ describe("Chrome Web Store manifest policy", () => {
       readFile(join(process.cwd(), "entrypoints", "background.ts"), "utf8"),
     ]);
 
-    expect(packageVersion).toBe("3.0.1");
+    expect(packageVersion).toBe("3.1.0");
     expect(config).toContain("version: packageVersion");
     expect(config).toMatch(/permissions:\s*\[[^\]]*["']storage["']/su);
     expect(releaseValidator).toContain("storage");

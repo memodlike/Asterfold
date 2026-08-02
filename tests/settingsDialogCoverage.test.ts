@@ -97,7 +97,7 @@ function workspace(overrides: Partial<WorkspaceData["settings"]> = {}): Workspac
 const backup = {
   format: "asterfold-backup",
   formatVersion: 3,
-  exportVersion: "3.0.1",
+  exportVersion: "3.1.0",
   scope: "full",
   entities: { pages: [pages[0]], boards: [boards[0]], bookmarks: [bookmarks[0]], settings: [workspace().settings], wallpapers: [] },
 } as unknown as AsterfoldBackup;
@@ -180,7 +180,8 @@ describe("SettingsDialog appearance and navigation", () => {
       expect(slider).not.toBeNull();
       fireEvent.change(slider!, { target: { value } });
     }
-    for (const name of ["Low-power mode", "Bookmark hover", "Menus and dialogs", "Board rearranging", "All animations"] as const) {
+    fireEvent.click(screen.getByRole("button", { name: "Smooth glass" }));
+    for (const name of ["Bookmark hover", "Menus and dialogs", "Board rearranging", "All animations"] as const) {
       const control = screen.getByRole("checkbox", { name });
       fireEvent.click(control);
     }

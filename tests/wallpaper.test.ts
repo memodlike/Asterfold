@@ -66,7 +66,7 @@ describe("wallpaper pipeline", () => {
     }
     vi.stubGlobal("OffscreenCanvas", CanvasMock);
     const processed = await processWallpaper(new Blob([pngHeader], { type: "image/png" }));
-    expect(processed).toMatchObject({ mimeType: "image/webp", width: 3840, height: 2160, storedBytes: 64 });
+    expect(processed).toMatchObject({ mimeType: "image/webp", width: 1920, height: 1080, storedBytes: 64 });
     expect(processed.thumbnail.type).toBe("image/webp");
     expect(close).toHaveBeenCalledTimes(2);
     vi.unstubAllGlobals();
