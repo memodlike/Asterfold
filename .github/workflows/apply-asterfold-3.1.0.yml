@@ -37,7 +37,7 @@ jobs:
           gzip --decompress --stdout /tmp/asterfold-3.1.0.patch.gz > /tmp/asterfold-3.1.0.patch
           printf '%s  %s\n' 'd6c1e7717674f6785aa28752721475a92141c077bcd976f90430d7813fa38a54' /tmp/asterfold-3.1.0.patch | sha256sum --check
           git apply --index --whitespace=error /tmp/asterfold-3.1.0.patch
-          rm -f docs/audit/3.1.0/.branch-ready docs/audit/3.1.0/CONNECTOR_WRITE_CHECK.md
+          rm -f docs/audit/3.1.0/.branch-ready docs/audit/3.1.0/CONNECTOR_WRITE_CHECK.md docs/audit/3.1.0/APPLY_TRIGGER.md
           rm -rf .github/patches
           rm -f .github/workflows/apply-asterfold-3.1.0.yml
           git add -A
