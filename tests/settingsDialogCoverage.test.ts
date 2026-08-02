@@ -297,7 +297,7 @@ describe("SettingsDialog exports and file imports", () => {
     const file = new File(["{}"], "backup.json", { type: "application/json" });
     Object.defineProperty(file, "text", { value: vi.fn().mockResolvedValue("{}") });
     fireEvent.change(importInput(container), { target: { files: [file] } });
-    expect(await screen.findByText(/v3\.0\.1 · 1 \/ 1 \/ 1/)).toBeVisible();
+    expect(await screen.findByText(/v3\.1\.0 · 1 \/ 1 \/ 1/)).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Merge" }));
     await waitFor(() => expect(mocks.restoreBackup).toHaveBeenCalledWith(backup, "merge"));
     expect(handlers.onUpdated).toHaveBeenCalledWith("Backup restored");
