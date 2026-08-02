@@ -1,9 +1,13 @@
 name: Apply Asterfold 3.1.0 implementation
 
 on:
-  push:
+  pull_request:
     branches:
-      - perf/windows11-compat-glass-3.1.0
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
   workflow_dispatch:
 
 permissions:
@@ -15,7 +19,7 @@ concurrency:
 
 jobs:
   apply:
-    if: ${{ !contains(github.event.head_commit.message || '', '[3.1.0 applied]') }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.head_ref == 'perf/windows11-compat-glass-3.1.0' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
