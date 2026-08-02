@@ -431,7 +431,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await setWorkspaceLocale(page, "ru");
     await page.reload();
     await expect(page).toHaveTitle("Новая вкладка");
-    await expect(page.locator(".app-shell")).not.toHaveClass(/low-power-mode/u);
+    await expect(page.locator("html")).toHaveAttribute("data-performance", /^(quality|compatibility|software)$/u);
     await expect(page.getByRole("button", { name: "Открыть меню Asterfold" })).toBeVisible();
 
     await openLauncher(page);

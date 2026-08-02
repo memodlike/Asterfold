@@ -47,7 +47,7 @@ async function seedStressFixture(page: Page): Promise<void> {
         transaction.objectStore("bookmarks").put({ id: `stress-${boardIndex}-${index}`, userId: null, boardId, title: `Bookmark ${boardIndex + 1}.${index + 1}`, url, normalizedUrl: url, hostname: "example.com", description: null, faviconUrl: null, customIcon: null, position: `m${String(index).padStart(3, "0")}`, openMode: "new-tab", pinned: false, createdAt: timestamp, updatedAt: timestamp, deletedAt: null, deletedBatchId: null, version: 1 });
       }
     }
-    settingsStore.put({ ...settings, workspaceRows: 2, workspaceLayoutMode: "auto", workspaceAlignment: "center", theme: { ...settings.theme, mode: "dark", performanceMode: "compatibility", lowPowerMode: true, backgroundMode: "wallpaper", wallpaperId: "builtin-aurora", surfaceOpacity: 0.62, wallpaperBlur: 18, wallpaperSaturation: 1.15 }, updatedAt: timestamp });
+    settingsStore.put({ ...settings, onboardingComplete: true, workspaceRows: 2, workspaceLayoutMode: "auto", workspaceAlignment: "center", theme: { ...settings.theme, mode: "dark", performanceMode: "compatibility", lowPowerMode: true, backgroundMode: "wallpaper", wallpaperId: "builtin-aurora", surfaceOpacity: 0.62, wallpaperBlur: 18, wallpaperSaturation: 1.15 }, updatedAt: timestamp });
     await new Promise<void>((resolvePromise, reject) => {
       transaction.oncomplete = () => resolvePromise();
       transaction.onerror = () => reject(transaction.error ?? new Error("Unable to seed stress fixture"));
