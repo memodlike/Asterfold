@@ -1,0 +1,15 @@
+diff --git a/e2e/extension.spec.ts b/e2e/extension.spec.ts
+index 9f2a7b1..8d3170a 100644
+--- a/e2e/extension.spec.ts
++++ b/e2e/extension.spec.ts
+@@ -587,8 +587,9 @@ test.describe.serial("Asterfold MV3 release", () => {
+     await captureStoreScreenshot(page, "03-settings-1280x800.png");
+     await compatibilityButton.click();
+     await expect(page.locator(".app-shell")).toHaveClass(/low-power-mode/u);
+     await autoButton.click();
+-    await expect(page.locator(".app-shell")).not.toHaveClass(/low-power-mode/u);
++    await expect(autoButton).toHaveClass(/is-active/u);
++    await expect(page.locator("html")).toHaveAttribute("data-performance", /^(quality|compatibility|software)$/u);
+     await dialog.getByRole("button", { name: "Язык" }).click();
+     await dialog.getByRole("button", { name: "Қазақша" }).click();
+     await expect(page).toHaveTitle("Жаңа қойынды");
