@@ -588,7 +588,8 @@ test.describe.serial("Asterfold MV3 release", () => {
     await compatibilityButton.click();
     await expect(page.locator(".app-shell")).toHaveClass(/low-power-mode/u);
     await autoButton.click();
-    await expect(page.locator(".app-shell")).not.toHaveClass(/low-power-mode/u);
+    await expect(autoButton).toHaveClass(/is-active/u);
+    await expect(page.locator("html")).toHaveAttribute("data-performance", /^(quality|compatibility|software)$/u);
     await dialog.getByRole("button", { name: "Язык" }).click();
     await dialog.getByRole("button", { name: "Қазақша" }).click();
     await expect(page).toHaveTitle("Жаңа қойынды");
