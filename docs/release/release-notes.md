@@ -1,43 +1,36 @@
-# Asterfold 3.0.1
+# Asterfold 3.1.0
 
-> Version 3.0.0 was an internal unreleased release candidate and was superseded by 3.0.1 before publication.
+## Windows 11 performance update
 
-## Highlights
+- Adds Adaptive Compatibility Glass for legacy and software-rendered GPUs.
+- Automatically recognizes AMD Radeon R5 230 / Caicos-class renderers and selects the compatibility path.
+- Keeps transparency, gradients, glass highlights, hover motion, menu motion and drag-and-drop while removing live `backdrop-filter` from the compatibility renderer.
+- Adds pre-rendered local variants for built-in wallpapers and uses the bounded thumbnail as the compatibility variant for uploaded wallpapers.
+- Caps uploaded wallpaper output to a 1920-pixel long edge, reducing decoded texture memory from roughly 31.6 MiB at 4K to roughly 7.9 MiB at Full HD before compositor copies.
+- Removes layout-sized `width`/`margin` transitions and paint-heavy animated board shadows.
+- Replaces per-bookmark privacy blur with a lightweight visual placeholder.
+- Avoids rewriting unchanged CSS custom properties.
+- Measures dnd-kit droppable layouts before dragging and disables desktop auto-scroll.
 
-- CI-gated, tag-only GitHub Release publishing from the exact verified `main` commit.
-- Deterministic Linux and Windows runtime, source, Store-assets, and SPDX SBOM packaging.
-- Source-to-artifact linkage through `provenance.json`, SHA-256 checksums, and GitHub artifact attestations.
-- Audit closure evidence for release, documentation, dependency, package-hygiene, validation, coverage, and UX findings.
-- A non-modal, localized first-use launcher hint for new installations; existing 2.2.3 workspaces are migrated without showing it.
-- A runtime-only Chrome Web Store ZIP; installation guidance remains only in the unpacked distribution.
+## Stress and release gates
 
-## Security and privacy
+- Adds a 600-bookmark real-extension stress scenario at 1280×720.
+- Verifies the compatibility renderer has no live wallpaper filter or menu backdrop blur.
+- Samples animation frames and rejects extreme frame stalls in CI.
+- Runs stress checks in normal CI and again from the exact release tag.
+- Preserves deterministic Linux/Windows release subjects, checksums, provenance, SBOM and GitHub attestations.
 
-- No host permissions.
-- No content scripts.
-- No remote executable code.
-- The optional `bookmarks` permission remains user-invoked from the Chrome-bookmark import flow.
-- Workspace records remain local-first in the user's Chrome profile.
-- The single purpose remains: a visual bookmark workspace for the Chrome New Tab page.
-- Privacy Mode remains visual shoulder-surfing protection, not encryption.
+## Data compatibility
 
-## Reliability
+- Database schema 7 adds the `performanceMode` preference.
+- Existing Low Power users migrate to Compatibility Glass.
+- Existing Pages, Boards, bookmarks, Trash, Quick Save, privacy, wallpaper and animation preferences are preserved.
+- Backup formats remain backward compatible; missing `performanceMode` values normalize to `auto`.
 
-- Database schema 6 preserves data from 2.2.3 and marks legacy installations as already onboarded.
-- Release archives use stable file ordering, timestamps, permissions, separators, and uncompressed deterministic ZIP entries.
-- CI compares Linux and Windows release subjects byte-for-byte.
-- Development dependency advisories are checked against an explicit expiring baseline; production high/critical vulnerabilities remain a hard failure.
+## Target hardware
+
+The primary compatibility target is Windows 11 with Ryzen 5 5600, 32 GB RAM and AMD Radeon R5 230. CI cannot reproduce that exact physical GPU, so the release includes deterministic renderer classification and automated compatibility-path stress gates; final physical-GPU FPS remains a device-side verification item.
 
 ## Chrome Web Store package
 
-Upload **`Asterfold-Chrome.zip`**. It contains `manifest.json` at the root and only runtime-required extension files.
-
-`chrome-unpacked.zip` is for Developer mode installation. GitHub-generated source archives are not extension upload packages.
-
-## Upgrade notes
-
-Updating from 2.2.3 does not reset Pages, Boards, bookmarks, opening modes, Trash, theme, language, wallpaper, Quick Save settings, or Privacy settings. The schema-6 migration changes only the schema marker and legacy onboarding state.
-
-## Verification
-
-Use `checksums.txt` and `provenance.json` to verify the attached assets. GitHub artifact attestations provide an additional cryptographic statement linking the release subjects to the GitHub Actions workflow and source commit.
+Upload **`Asterfold-Chrome.zip`**. `chrome-unpacked.zip` is for Developer mode. GitHub-generated source archives are not extension packages.

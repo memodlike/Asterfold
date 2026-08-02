@@ -12,10 +12,11 @@ import {
   V4_STORES,
   V5_STORES,
   V6_STORES,
+  V7_STORES,
 } from "../src/db/migrations";
 
 interface MigrationFixture {
-  dbVersion: 1 | 2 | 3 | 4 | 5 | 6;
+  dbVersion: 1 | 2 | 3 | 4 | 5 | 6 | 7;
   stores: Record<string, unknown[]>;
 }
 
@@ -26,6 +27,7 @@ const storesByVersion = {
   4: V4_STORES,
   5: V5_STORES,
   6: V6_STORES,
+  7: V7_STORES,
 } as const;
 
 describe("database migrations", () => {
@@ -93,8 +95,8 @@ describe("database migrations", () => {
     await upgraded.open();
     const settings = await upgraded.settings.get("app");
     const board = await upgraded.boards.get("board");
-    expect(settings).toMatchObject({ schemaVersion: 6, locale: "auto", workspaceLayoutMode: "auto", workspaceRows: 2, workspaceAlignment: "center" });
-    expect(settings?.theme).toMatchObject({ glassVariant: "regular", backgroundMode: "auto", lowPowerMode: false, bookmarkHoverMotion: true, menuMotion: true, dragMotion: true });
+    expect(settings).toMatchObject({ schemaVersion: CURRENT_DB_SCHEMA_VERSION, locale: "auto", workspaceLayoutMode: "auto", workspaceRows: 2, workspaceAlignment: "center" });
+    expect(settings?.theme).toMatchObject({ glassVariant: "regular", backgroundMode: "auto", performanceMode: "auto", lowPowerMode: false, bookmarkHoverMotion: true, menuMotion: true, dragMotion: true });
     expect(board).toMatchObject({ title: "Kept", bookmarkColumns: 2, gridColumn: 1, gridRow: 0, gridSpan: 4 });
     upgraded.close();
   });
