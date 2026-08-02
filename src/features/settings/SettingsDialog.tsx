@@ -286,8 +286,8 @@ export function SettingsDialog(props: SettingsDialogProps) {
             <input ref={wallpaperInputRef} hidden type="file" accept="image/png,image/jpeg,image/webp,image/avif" onChange={(event) => { const file = event.target.files?.[0]; if (file) void saveUploadedWallpaper(file); event.currentTarget.value = ""; }} />
             <div className="settings-control-group">
               <h3>{t("settings.performance")}</h3>
-              <SettingRow label={t("settings.lowPower")}><Switch label={t("settings.lowPower")} checked={themeDraft.lowPowerMode} onChange={(lowPowerMode) => patchTheme({ lowPowerMode })} /></SettingRow>
-              <p>{t("settings.lowPowerDescription")}</p>
+              <SettingRow label={t("settings.performanceMode")}><Segmented value={themeDraft.performanceMode} items={[{ value: "auto", label: t("settings.performanceAuto") }, { value: "quality", label: t("settings.performanceQuality") }, { value: "compatibility", label: t("settings.performanceCompatibility") }]} onChange={(value) => patchTheme({ performanceMode: value as ThemeConfig["performanceMode"], lowPowerMode: value === "compatibility" })} /></SettingRow>
+              <p>{t("settings.performanceDescription")}</p>
             </div>
             <div className="settings-control-group">
               <h3>{t("settings.animations")}</h3>

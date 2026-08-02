@@ -92,7 +92,7 @@ function backup(scope: AsterfoldBackup["scope"] = "full"): AsterfoldBackup {
     schemaVersion: 3,
     exportVersion: 3,
     exportedAt: timestamp,
-    appVersion: "3.0.1",
+    appVersion: "3.1.0",
     scope,
     entities: { pages: [page], boards: [board], bookmarks: [bookmark] },
     ...(scope === "full" ? { settings: current, theme: current.theme, assets: { wallpapers: [] } } : { assets: { wallpapers: [] } }),
@@ -186,7 +186,8 @@ describe("SettingsDialog behavior", () => {
     await waitFor(() => expect(mocks.getWallpaper).toHaveBeenCalledWith("builtin-aurora"));
     expect(await screen.findByText(/1920 × 1080/)).toBeVisible();
 
-    fireEvent.click(screen.getByLabelText("Low-power mode"));
+    fireEvent.click(screen.getByRole("button", { name: "Smooth glass" }));
+    await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ theme: expect.objectContaining({ performanceMode: "compatibility", lowPowerMode: true }) }));
     fireEvent.click(screen.getByLabelText("All animations"));
     await waitFor(() => expect(screen.queryByLabelText("Bookmark hover")).toBeNull());
 

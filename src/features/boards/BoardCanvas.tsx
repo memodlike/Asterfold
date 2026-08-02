@@ -2,6 +2,7 @@ import {
   DndContext,
   DragOverlay,
   KeyboardSensor,
+  MeasuringStrategy,
   PointerSensor,
   closestCorners,
   useSensor,
@@ -148,7 +149,7 @@ export function BoardCanvas(props: BoardCanvasProps) {
 
   return (
     <main className="canvas">
-      <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragStart={handleStart} onDragCancel={() => setActive(null)} onDragEnd={handleEnd}>
+      <DndContext sensors={sensors} autoScroll={false} measuring={{ droppable: { strategy: MeasuringStrategy.BeforeDragging } }} collisionDetection={collisionDetection} onDragStart={handleStart} onDragCancel={() => setActive(null)} onDragEnd={handleEnd}>
         <SortableContext items={props.boards.map((board) => `board:${board.id}`)} strategy={rectSortingStrategy}>
           <div className={`board-track board-track--${props.settings.workspaceAlignment}`} style={trackStyle}>
             {props.boards.map((board) => {

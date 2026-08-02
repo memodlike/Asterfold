@@ -73,6 +73,7 @@ export type Density = "compact" | "comfortable" | "spacious";
 export type CardVariant = "minimal" | "standard" | "visual";
 export type GlassVariant = "regular" | "clear";
 export type BackgroundMode = "auto" | "solid" | "wallpaper";
+export type PerformanceMode = "auto" | "quality" | "compatibility";
 export type LocalePreference =
   | "auto"
   | "ru"
@@ -106,6 +107,8 @@ export interface ThemeConfig {
   showDescription: boolean;
   faviconSize: number;
   motion: boolean;
+  performanceMode: PerformanceMode;
+  /** Legacy backup compatibility. New UI writes performanceMode instead. */
   lowPowerMode: boolean;
   bookmarkHoverMotion: boolean;
   menuMotion: boolean;

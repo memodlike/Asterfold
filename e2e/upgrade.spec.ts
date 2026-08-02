@@ -143,7 +143,7 @@ test("preserves a real 2.2.3 profile when the same unpacked extension path is up
   expect(snapshot.bookmarkRecord).toMatchObject(seeded.bookmarkRecord);
   expect(snapshot.trashRecord).toMatchObject(seeded.trashRecord);
   expect(snapshot.settings).toMatchObject({
-    schemaVersion: 6,
+    schemaVersion: 7,
     activePageId: "upgrade-page",
     locale: "en",
     workspaceLayoutMode: "free",
@@ -156,7 +156,7 @@ test("preserves a real 2.2.3 profile when the same unpacked extension path is up
     privacyEnabled: true,
     onboardingComplete: true,
   });
-  expect(snapshot.settings.theme).toMatchObject({ mode: "dark", wallpaperId: "builtin-dusk", backgroundMode: "wallpaper", wallpaperDim: 0.55, wallpaperBlur: 3, wallpaperSaturation: 0.8 });
+  expect(snapshot.settings.theme).toMatchObject({ performanceMode: "auto", mode: "dark", wallpaperId: "builtin-dusk", backgroundMode: "wallpaper", wallpaperDim: 0.55, wallpaperBlur: 3, wallpaperSaturation: 0.8 });
   await expect(after.page.getByText("Preserved link", { exact: true })).toHaveCount(0);
   await expect(after.page.getByRole("button", { name: "Open hidden bookmark" })).toBeVisible();
   await after.page.getByRole("button", { name: "Open Asterfold menu" }).click();

@@ -431,7 +431,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await setWorkspaceLocale(page, "ru");
     await page.reload();
     await expect(page).toHaveTitle("Новая вкладка");
-    await expect(page.locator(".app-shell")).not.toHaveClass(/low-power-mode/u);
+    await expect(page.locator("html")).toHaveAttribute("data-performance", /^(quality|compatibility|software)$/u);
     await expect(page.getByRole("button", { name: "Открыть меню Asterfold" })).toBeVisible();
 
     await openLauncher(page);
@@ -525,7 +525,8 @@ test.describe.serial("Asterfold MV3 release", () => {
       const style = getComputedStyle(menu);
       return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, isTopmost: target === menu || menu.contains(target), background: style.backgroundColor, color: style.color, zIndex: style.zIndex };
     });
-    expect(sourceMenuBounds).toMatchObject({ isTopmost: true, background: "rgb(251, 251, 252)", color: "rgb(25, 26, 29)", zIndex: "2147483647" });
+    expect(sourceMenuBounds).toMatchObject({ isTopmost: true, color: "rgb(25, 26, 29)", zIndex: "2147483647" });
+    expect(["rgb(251, 251, 252)", "rgba(255, 255, 255, 0.96)"]).toContain(sourceMenuBounds.background);
     expect(sourceMenuBounds.left).toBeGreaterThanOrEqual(8);
     expect(sourceMenuBounds.top).toBeGreaterThanOrEqual(8);
     expect(sourceMenuBounds.right).toBeLessThanOrEqual(1440 - 8);
@@ -578,14 +579,17 @@ test.describe.serial("Asterfold MV3 release", () => {
     await page.getByRole("menuitem", { name: "Настройки" }).click();
     dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    const lowPowerToggle = dialog.locator('label.switch:has(input[aria-label="Режим для слабых ПК"])');
-    await expect(lowPowerToggle).toHaveCount(1);
-    await lowPowerToggle.scrollIntoViewIfNeeded();
+    const performanceRow = dialog.locator(".setting-row").filter({ hasText: "Режим рендеринга" });
+    const compatibilityButton = performanceRow.getByRole("button", { name: "Плавное стекло", exact: true });
+    const autoButton = performanceRow.getByRole("button", { name: "Авто", exact: true });
+    await expect(compatibilityButton).toHaveCount(1);
+    await compatibilityButton.scrollIntoViewIfNeeded();
     await captureStoreScreenshot(page, "03-settings-1280x800.png");
-    await lowPowerToggle.click();
+    await compatibilityButton.click();
     await expect(page.locator(".app-shell")).toHaveClass(/low-power-mode/u);
-    await lowPowerToggle.click();
-    await expect(page.locator(".app-shell")).not.toHaveClass(/low-power-mode/u);
+    await autoButton.click();
+    await expect(autoButton).toHaveClass(/is-active/u);
+    await expect(page.locator("html")).toHaveAttribute("data-performance", /^(quality|compatibility|software)$/u);
     await dialog.getByRole("button", { name: "Язык" }).click();
     await dialog.getByRole("button", { name: "Қазақша" }).click();
     await expect(page).toHaveTitle("Жаңа қойынды");
@@ -617,7 +621,8 @@ test.describe.serial("Asterfold MV3 release", () => {
     await setWorkspaceThemeMode(page, "dark");
     await page.reload();
     await page.getByRole("button", { name: "Playwright docs" }).click({ button: "right" });
-    await expect(page.locator(".context-menu")).toHaveCSS("background-color", "rgb(37, 39, 43)");
+    const darkMenuBackground = await page.locator(".context-menu").evaluate((menu) => getComputedStyle(menu).backgroundColor);
+    expect(["rgb(37, 39, 43)", "rgba(38, 40, 44, 0.96)"]).toContain(darkMenuBackground);
     await expect(page.locator(".context-menu")).toHaveCSS("color", "rgb(245, 245, 246)");
     await page.keyboard.press("Escape");
 

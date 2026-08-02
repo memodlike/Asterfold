@@ -12,9 +12,11 @@ Asterfold follows `MAJOR.MINOR.PATCH`.
 
 `2.2.2` fixes selection backups, merge isolation, privacy presentation, Quick Save pairing, bounded media, Page actions and transactional bulk operations.
 
-`3.0.1` is the final Store-readiness patch. It fixes popup destination state, cross-context session Privacy Mode, scoped restore safety, authoritative URL normalization, bounded/cancellable imports, HTML description round-trips, atomic free-grid moves, transactional settings, default-Page metadata and removal of inaccessible runtime snapshots while retaining the legacy store for migration compatibility.
+`3.1.0` is the adaptive Windows 11 performance release. It follows 3.0.1, the verified Store-readiness release, and adds a schema-7 rendering preference without changing extension permissions or the local-first data model.
 
-Git tags and GitHub Releases use a `v` prefix, for example `v3.0.1`. Package and MV3 manifest use the numeric version `3.0.1`.
+`3.0.1` was the final Store-readiness patch. It fixes popup destination state, cross-context session Privacy Mode, scoped restore safety, authoritative URL normalization, bounded/cancellable imports, HTML description round-trips, atomic free-grid moves, transactional settings, default-Page metadata and removal of inaccessible runtime snapshots while retaining the legacy store for migration compatibility.
+
+Git tags and GitHub Releases use a `v` prefix, for example `v3.1.0`. Package and MV3 manifest use the numeric version `3.1.0`.
 
 
 > Version 3.0.0 was an internal unreleased release candidate and was superseded by 3.0.1 before publication.
