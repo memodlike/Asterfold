@@ -2,7 +2,7 @@ diff --git a/e2e/extension.spec.ts b/e2e/extension.spec.ts
 index 8d3170a..f19ec9b 100644
 --- a/e2e/extension.spec.ts
 +++ b/e2e/extension.spec.ts
-@@ -621,7 +621,8 @@ test.describe.serial("Asterfold MV3 release", () => {
+@@ -621,6 +621,7 @@ test.describe.serial("Asterfold MV3 release", () => {
      await setWorkspaceThemeMode(page, "dark");
      await page.reload();
      await page.getByRole("button", { name: "Playwright docs" }).click({ button: "right" });
