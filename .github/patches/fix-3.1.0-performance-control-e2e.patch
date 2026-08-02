@@ -1,0 +1,25 @@
+diff --git a/e2e/extension.spec.ts b/e2e/extension.spec.ts
+index d59a40e..9f2a7b1 100644
+--- a/e2e/extension.spec.ts
++++ b/e2e/extension.spec.ts
+@@ -579,13 +579,15 @@ test.describe.serial("Asterfold MV3 release", () => {
+     await page.getByRole("menuitem", { name: "Настройки" }).click();
+     dialog = page.getByRole("dialog");
+     await expect(dialog).toBeVisible();
+-    const lowPowerToggle = dialog.locator('label.switch:has(input[aria-label="Режим для слабых ПК"])');
+-    await expect(lowPowerToggle).toHaveCount(1);
+-    await lowPowerToggle.scrollIntoViewIfNeeded();
++    const performanceRow = dialog.locator(".setting-row").filter({ hasText: "Режим рендеринга" });
++    const compatibilityButton = performanceRow.getByRole("button", { name: "Плавное стекло", exact: true });
++    const autoButton = performanceRow.getByRole("button", { name: "Авто", exact: true });
++    await expect(compatibilityButton).toHaveCount(1);
++    await compatibilityButton.scrollIntoViewIfNeeded();
+     await captureStoreScreenshot(page, "03-settings-1280x800.png");
+-    await lowPowerToggle.click();
++    await compatibilityButton.click();
+     await expect(page.locator(".app-shell")).toHaveClass(/low-power-mode/u);
+-    await lowPowerToggle.click();
++    await autoButton.click();
+     await expect(page.locator(".app-shell")).not.toHaveClass(/low-power-mode/u);
+     await dialog.getByRole("button", { name: "Язык" }).click();
+     await dialog.getByRole("button", { name: "Қазақша" }).click();
