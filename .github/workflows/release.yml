@@ -3,6 +3,7 @@ name: Publish GitHub Release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -67,6 +68,7 @@ jobs:
           npm run release:repro
           npx playwright install --with-deps chromium
           npm run test:e2e
+          npm run test:stress
           rm -rf .upgrade && mkdir -p .upgrade/extension
           gh release download v2.2.3 --repo "$GITHUB_REPOSITORY" --pattern Asterfold-Chrome.zip --dir .upgrade
           echo "e666c0e40ca2bcd1631b04e3b9087e38b26f71336664ecfc475ee8b4d610920a  .upgrade/Asterfold-Chrome.zip" | sha256sum --check
@@ -97,7 +99,7 @@ jobs:
           if (target !== process.env.EXPECTED_SHA && target !== process.env.EXPECTED_TAG && target !== 'main') {
             throw new Error(`Existing release target mismatch: ${target}`);
           }
-NODE
+          NODE
           mkdir existing-release
           gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir existing-release
           expected=(Asterfold-Chrome.zip chrome-unpacked.zip extension-source.zip Asterfold-Store-Assets.zip checksums.txt provenance.json sbom.spdx.json)
@@ -117,7 +119,7 @@ NODE
           if (JSON.stringify(normalize(candidate.artifacts)) !== JSON.stringify(normalize(existing.artifacts))) {
             throw new Error('Existing release provenance does not bind the same deterministic assets.');
           }
-NODE
+          NODE
           echo "An existing release has the same target and deterministic assets. It will not be modified."
           echo "verified=true" >> "$GITHUB_OUTPUT"
 

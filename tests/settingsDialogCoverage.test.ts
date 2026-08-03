@@ -48,7 +48,7 @@ vi.mock("../src/db/repository", () => ({
   updateSettings: mocks.updateSettings,
 }));
 vi.mock("../src/services/exportImport", () => ({
-  CURRENT_BACKUP_FORMAT_VERSION: 3,
+  CURRENT_BACKUP_FORMAT_VERSION: 4,
   createBackup: mocks.createBackup,
   downloadText: mocks.downloadText,
   importRecords: mocks.importRecords,
@@ -97,7 +97,7 @@ function workspace(overrides: Partial<WorkspaceData["settings"]> = {}): Workspac
 const backup = {
   format: "asterfold-backup",
   formatVersion: 3,
-  exportVersion: "3.0.1",
+  exportVersion: "3.1.2",
   scope: "full",
   entities: { pages: [pages[0]], boards: [boards[0]], bookmarks: [bookmarks[0]], settings: [workspace().settings], wallpapers: [] },
 } as unknown as AsterfoldBackup;
@@ -123,7 +123,7 @@ function importInput(container: HTMLElement): HTMLInputElement {
 }
 
 function wallpaperInput(container: HTMLElement): HTMLInputElement {
-  return container.querySelector<HTMLInputElement>('input[accept*="image/png"]')!;
+  return container.querySelector<HTMLInputElement>('input[accept*=".webp"]')!;
 }
 
 beforeEach(() => {
@@ -180,7 +180,8 @@ describe("SettingsDialog appearance and navigation", () => {
       expect(slider).not.toBeNull();
       fireEvent.change(slider!, { target: { value } });
     }
-    for (const name of ["Low-power mode", "Bookmark hover", "Menus and dialogs", "Board rearranging", "All animations"] as const) {
+    fireEvent.click(screen.getByRole("button", { name: "Smooth glass" }));
+    for (const name of ["Bookmark hover", "Menus and dialogs", "Board rearranging", "All animations"] as const) {
       const control = screen.getByRole("checkbox", { name });
       fireEvent.click(control);
     }
@@ -249,7 +250,7 @@ describe("SettingsDialog exports and file imports", () => {
       fireEvent.click(screen.getByRole("button", { name: new RegExp(name) }));
       await waitFor(() => expect(mocks.createBackup).toHaveBeenCalled());
     }
-    expect(mocks.downloadText).toHaveBeenCalledWith(expect.stringMatching(/^asterfold-backup-v3-/), "backup-json", "application/json");
+    expect(mocks.downloadText).toHaveBeenCalledWith(expect.stringMatching(/^asterfold-backup-v4-/), "backup-json", "application/json");
     expect(mocks.downloadText).toHaveBeenCalledWith("asterfold-bookmarks.html", "bookmarks-html", "text/html");
     expect(mocks.downloadText).toHaveBeenCalledWith("asterfold-bookmarks.md", "bookmarks-markdown", "text/markdown");
     expect(handlers.onUpdated).toHaveBeenCalledWith("JSON exported");
@@ -296,7 +297,7 @@ describe("SettingsDialog exports and file imports", () => {
     const file = new File(["{}"], "backup.json", { type: "application/json" });
     Object.defineProperty(file, "text", { value: vi.fn().mockResolvedValue("{}") });
     fireEvent.change(importInput(container), { target: { files: [file] } });
-    expect(await screen.findByText(/v3\.0\.1 · 1 \/ 1 \/ 1/)).toBeVisible();
+    expect(await screen.findByText(/v3\.1\.2 · 1 \/ 1 \/ 1/)).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Merge" }));
     await waitFor(() => expect(mocks.restoreBackup).toHaveBeenCalledWith(backup, "merge"));
     expect(handlers.onUpdated).toHaveBeenCalledWith("Backup restored");
@@ -328,9 +329,9 @@ describe("SettingsDialog exports and file imports", () => {
   it("rejects oversized and invalid files while ignoring deliberate aborts", async () => {
     const { container, handlers } = renderSettings({ initialSection: "data-privacy" });
     const tooLarge = new File(["x"], "large.html", { type: "text/html" });
-    Object.defineProperty(tooLarge, "size", { value: 30 * 1024 * 1024 });
+    Object.defineProperty(tooLarge, "size", { value: 129 * 1024 * 1024 });
     fireEvent.change(importInput(container), { target: { files: [tooLarge] } });
-    expect(handlers.onError).toHaveBeenCalledWith("Import file must be 25 MB or smaller");
+    expect(handlers.onError).toHaveBeenCalledWith("Import file must be 128 MB or smaller");
 
     const invalid = new File(["bad"], "bad.html", { type: "text/html" });
     Object.defineProperty(invalid, "text", { value: vi.fn().mockResolvedValue("bad") });

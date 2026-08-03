@@ -44,7 +44,7 @@ vi.mock("../src/db/repository", () => ({
   updateSettings: mocks.updateSettings,
 }));
 vi.mock("../src/services/exportImport", () => ({
-  CURRENT_BACKUP_FORMAT_VERSION: 3,
+  CURRENT_BACKUP_FORMAT_VERSION: 4,
   createBackup: mocks.createBackup,
   downloadText: mocks.downloadText,
   importRecords: mocks.importRecords,
@@ -89,10 +89,10 @@ function workspace(overrides: Partial<AppSettings> = {}): WorkspaceData {
 function backup(scope: AsterfoldBackup["scope"] = "full"): AsterfoldBackup {
   const current = settings();
   return {
-    schemaVersion: 3,
-    exportVersion: 3,
+    schemaVersion: 4,
+    exportVersion: 4,
     exportedAt: timestamp,
-    appVersion: "3.0.1",
+    appVersion: "3.1.2",
     scope,
     entities: { pages: [page], boards: [board], bookmarks: [bookmark] },
     ...(scope === "full" ? { settings: current, theme: current.theme, assets: { wallpapers: [] } } : { assets: { wallpapers: [] } }),
@@ -120,7 +120,7 @@ function importInput(container: HTMLElement): HTMLInputElement {
 }
 
 function wallpaperInput(container: HTMLElement): HTMLInputElement {
-  const input = container.querySelector<HTMLInputElement>('input[accept*="image/webp"]');
+  const input = container.querySelector<HTMLInputElement>('input[accept*=".webp"]');
   if (!input) throw new Error("Wallpaper input missing");
   return input;
 }
@@ -186,7 +186,8 @@ describe("SettingsDialog behavior", () => {
     await waitFor(() => expect(mocks.getWallpaper).toHaveBeenCalledWith("builtin-aurora"));
     expect(await screen.findByText(/1920 × 1080/)).toBeVisible();
 
-    fireEvent.click(screen.getByLabelText("Low-power mode"));
+    fireEvent.click(screen.getByRole("button", { name: "Smooth glass" }));
+    await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ theme: expect.objectContaining({ performanceMode: "compatibility", lowPowerMode: true }) }));
     fireEvent.click(screen.getByLabelText("All animations"));
     await waitFor(() => expect(screen.queryByLabelText("Bookmark hover")).toBeNull());
 
@@ -244,7 +245,7 @@ describe("SettingsDialog behavior", () => {
     fireEvent.click(screen.getByRole("button", { name: /HTML bookmarks/ }));
     fireEvent.click(screen.getByRole("button", { name: /Markdown/ }));
     await waitFor(() => expect(mocks.downloadText).toHaveBeenCalledTimes(3));
-    expect(mocks.downloadText).toHaveBeenNthCalledWith(1, expect.stringMatching(/^asterfold-backup-v3-/), "{\"backup\":true}", "application/json");
+    expect(mocks.downloadText).toHaveBeenNthCalledWith(1, expect.stringMatching(/^asterfold-backup-v4-/), "{\"backup\":true}", "application/json");
     expect(mocks.downloadText).toHaveBeenNthCalledWith(2, "asterfold-bookmarks.html", "<DL></DL>", "text/html");
     expect(mocks.downloadText).toHaveBeenNthCalledWith(3, "asterfold-bookmarks.md", "# Bookmarks", "text/markdown");
 
@@ -256,6 +257,7 @@ describe("SettingsDialog behavior", () => {
     fireEvent.change(container.querySelector<HTMLSelectElement>(".import-preview select")!, { target: { value: "allow" } });
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
     await waitFor(() => expect(mocks.importRecords).toHaveBeenCalledWith(expect.any(Array), { pageTitle: "Chrome import" }, "allow"));
+    expect(callbacks.onClose).toHaveBeenCalledOnce();
 
     fireEvent.click(screen.getByRole("checkbox"));
     await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ privacyPersist: true, privacyEnabled: true }));
@@ -282,7 +284,7 @@ describe("SettingsDialog behavior", () => {
 
     const json = fileWithText("backup.json", "{}", "application/json");
     fireEvent.change(input, { target: { files: [json] } });
-    expect(await screen.findByText("v3 · 1 / 1 / 1")).toBeVisible();
+    expect(await screen.findByText("v4 · 1 / 1 / 1")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Merge" }));
     await waitFor(() => expect(mocks.restoreBackup).toHaveBeenCalledWith(expect.objectContaining({ scope: "full" }), "merge"));
 
@@ -296,9 +298,9 @@ describe("SettingsDialog behavior", () => {
     await waitFor(() => expect(mocks.restoreBackup).toHaveBeenCalledWith(expect.objectContaining({ scope: "full" }), "replace"));
 
     const oversized = fileWithText("large.html", "x", "text/html");
-    Object.defineProperty(oversized, "size", { value: 26 * 1024 * 1024 });
+    Object.defineProperty(oversized, "size", { value: 129 * 1024 * 1024 });
     fireEvent.change(input, { target: { files: [oversized] } });
-    expect(callbacks.onError).toHaveBeenCalledWith("Import file must be 25 MB or smaller");
+    expect(callbacks.onError).toHaveBeenCalledWith("Import file must be 128 MB or smaller");
   });
 
   it("surfaces update, export, import, Chrome, wallpaper, restore, and diagnostics failures", async () => {
@@ -331,7 +333,7 @@ describe("SettingsDialog behavior", () => {
 
     mocks.parseBackupOffThread.mockResolvedValueOnce(backup());
     fireEvent.change(importInput(container), { target: { files: [fileWithText("backup.json", "{}", "application/json")] } });
-    expect(await screen.findByText("v3 · 1 / 1 / 1")).toBeVisible();
+    expect(await screen.findByText("v4 · 1 / 1 / 1")).toBeVisible();
     mocks.restoreBackup.mockRejectedValueOnce(new Error("restore"));
     fireEvent.click(screen.getByRole("button", { name: "Merge" }));
     await waitFor(() => expect(callbacks.onError).toHaveBeenCalledWith("Restore failed"));

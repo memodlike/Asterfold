@@ -28,6 +28,7 @@ vi.mock("@dnd-kit/core", async () => {
     DndContext: (props: DndProps) => { mocks.dndProps = props; return h(Fragment, null, props.children); },
     DragOverlay: ({ children }: { children: ReactNode }) => h(Fragment, null, children),
     KeyboardSensor: Symbol("KeyboardSensor"),
+    MeasuringStrategy: { BeforeDragging: "BeforeDragging" },
     PointerSensor: Symbol("PointerSensor"),
     closestCorners: mocks.closestCorners,
     useSensor: (sensor: unknown, options?: { coordinateGetter?: (event: KeyboardEvent, args: unknown) => unknown }) => {

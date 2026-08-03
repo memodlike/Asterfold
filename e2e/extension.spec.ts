@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { chromium, expect, test, type BrowserContext, type Page, type Worker } from "@playwright/test";
@@ -431,7 +431,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await setWorkspaceLocale(page, "ru");
     await page.reload();
     await expect(page).toHaveTitle("Новая вкладка");
-    await expect(page.locator(".app-shell")).not.toHaveClass(/low-power-mode/u);
+    await expect(page.locator("html")).toHaveAttribute("data-performance", /^(quality|compatibility|software)$/u);
     await expect(page.getByRole("button", { name: "Открыть меню Asterfold" })).toBeVisible();
 
     await openLauncher(page);
@@ -525,7 +525,8 @@ test.describe.serial("Asterfold MV3 release", () => {
       const style = getComputedStyle(menu);
       return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, isTopmost: target === menu || menu.contains(target), background: style.backgroundColor, color: style.color, zIndex: style.zIndex };
     });
-    expect(sourceMenuBounds).toMatchObject({ isTopmost: true, background: "rgb(251, 251, 252)", color: "rgb(25, 26, 29)", zIndex: "2147483647" });
+    expect(sourceMenuBounds).toMatchObject({ isTopmost: true, color: "rgb(25, 26, 29)", zIndex: "2147483647" });
+    expect(["rgb(251, 251, 252)", "rgba(255, 255, 255, 0.96)"]).toContain(sourceMenuBounds.background);
     expect(sourceMenuBounds.left).toBeGreaterThanOrEqual(8);
     expect(sourceMenuBounds.top).toBeGreaterThanOrEqual(8);
     expect(sourceMenuBounds.right).toBeLessThanOrEqual(1440 - 8);
@@ -578,14 +579,65 @@ test.describe.serial("Asterfold MV3 release", () => {
     await page.getByRole("menuitem", { name: "Настройки" }).click();
     dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    const lowPowerToggle = dialog.locator('label.switch:has(input[aria-label="Режим для слабых ПК"])');
-    await expect(lowPowerToggle).toHaveCount(1);
-    await lowPowerToggle.scrollIntoViewIfNeeded();
+    const performanceRow = dialog.locator(".setting-row").filter({ hasText: "Режим рендеринга" });
+    const compatibilityButton = performanceRow.getByRole("button", { name: "Плавное стекло", exact: true });
+    const autoButton = performanceRow.getByRole("button", { name: "Авто", exact: true });
+    await expect(compatibilityButton).toHaveCount(1);
+    await compatibilityButton.scrollIntoViewIfNeeded();
     await captureStoreScreenshot(page, "03-settings-1280x800.png");
-    await lowPowerToggle.click();
+
+    const wallpaperPath = resolve("public/wallpapers/quiet-aurora.webp");
+    const wallpaperSourceBytes = statSync(wallpaperPath).size;
+    await dialog.locator('input[type="file"][accept*=".webp"]').setInputFiles(wallpaperPath);
+    await expect(dialog.getByText(/3840 × 2160/u)).toBeVisible({ timeout: 15_000 });
+    await page.waitForTimeout(350);
+    const uploadedWallpaper = await page.evaluate(async () => {
+      const request = indexedDB.open("asterfold");
+      const database = await new Promise<IDBDatabase>((resolvePromise, reject) => {
+        request.onsuccess = () => resolvePromise(request.result);
+        request.onerror = () => reject(request.error ?? new Error("Unable to open IndexedDB"));
+      });
+      const transaction = database.transaction(["settings", "wallpapers"], "readonly");
+      const settings = await new Promise<{ theme: { wallpaperId: string | null } }>((resolvePromise, reject) => {
+        const get = transaction.objectStore("settings").get("app");
+        get.onsuccess = () => resolvePromise(get.result as { theme: { wallpaperId: string | null } });
+        get.onerror = () => reject(get.error ?? new Error("Unable to read settings"));
+      });
+      const record = await new Promise<{ blob: Blob; thumbnail: Blob; width: number; height: number; sourceBytes: number; storedBytes: number }>((resolvePromise, reject) => {
+        const get = transaction.objectStore("wallpapers").get(settings.theme.wallpaperId!);
+        get.onsuccess = () => resolvePromise(get.result as { blob: Blob; thumbnail: Blob; width: number; height: number; sourceBytes: number; storedBytes: number });
+        get.onerror = () => reject(get.error ?? new Error("Unable to read wallpaper"));
+      });
+      database.close();
+      return {
+        type: record.blob.type, size: record.blob.size, compatibilityType: record.thumbnail.type, compatibilitySize: record.thumbnail.size,
+        width: record.width, height: record.height, sourceBytes: record.sourceBytes, storedBytes: record.storedBytes,
+      };
+    });
+    expect(uploadedWallpaper).toMatchObject({
+      type: "image/webp", size: wallpaperSourceBytes, width: 3840, height: 2160, sourceBytes: wallpaperSourceBytes, compatibilityType: "image/webp",
+    });
+    expect(uploadedWallpaper.storedBytes).toBe(uploadedWallpaper.size + uploadedWallpaper.compatibilitySize);
+
+    await compatibilityButton.click();
     await expect(page.locator(".app-shell")).toHaveClass(/low-power-mode/u);
-    await lowPowerToggle.click();
-    await expect(page.locator(".app-shell")).not.toHaveClass(/low-power-mode/u);
+    await expect.poll(() => page.evaluate(() => {
+      const style = document.documentElement.style;
+      return { original: style.getPropertyValue("--wallpaper-image"), compatibility: style.getPropertyValue("--wallpaper-compat-image") };
+    })).toEqual(expect.objectContaining({ original: expect.stringContaining("blob:"), compatibility: expect.stringContaining("blob:") }));
+    const wallpaperVariables = await page.evaluate(() => {
+      const style = document.documentElement.style;
+      return {
+        original: style.getPropertyValue("--wallpaper-image"),
+        compatibility: style.getPropertyValue("--wallpaper-compat-image"),
+        software: style.getPropertyValue("--wallpaper-software-image"),
+      };
+    });
+    expect(wallpaperVariables.compatibility).toBe(wallpaperVariables.original);
+    expect(wallpaperVariables.software).not.toBe(wallpaperVariables.original);
+    await autoButton.click();
+    await expect(autoButton).toHaveClass(/is-active/u);
+    await expect(page.locator("html")).toHaveAttribute("data-performance", /^(quality|compatibility|software)$/u);
     await dialog.getByRole("button", { name: "Язык" }).click();
     await dialog.getByRole("button", { name: "Қазақша" }).click();
     await expect(page).toHaveTitle("Жаңа қойынды");
@@ -594,7 +646,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await dialog.getByRole("button", { name: "Данные и приватность" }).click();
     const downloadPromise = page.waitForEvent("download");
     await dialog.getByRole("button", { name: /Резервная копия JSON/u }).click();
-    expect((await downloadPromise).suggestedFilename()).toMatch(/^asterfold-backup-v3-\d{4}-\d{2}-\d{2}\.json$/u);
+    expect((await downloadPromise).suggestedFilename()).toMatch(/^asterfold-backup-v4-\d{4}-\d{2}-\d{2}\.json$/u);
     await dialog.getByRole("button", { name: "Закрыть" }).click();
 
     await page.getByRole("button", { name: "Playwright docs" }).click({ button: "right" });
@@ -617,7 +669,8 @@ test.describe.serial("Asterfold MV3 release", () => {
     await setWorkspaceThemeMode(page, "dark");
     await page.reload();
     await page.getByRole("button", { name: "Playwright docs" }).click({ button: "right" });
-    await expect(page.locator(".context-menu")).toHaveCSS("background-color", "rgb(37, 39, 43)");
+    const darkMenuBackground = await page.locator(".context-menu").evaluate((menu) => getComputedStyle(menu).backgroundColor);
+    expect(["rgb(37, 39, 43)", "rgba(38, 40, 44, 0.96)"]).toContain(darkMenuBackground);
     await expect(page.locator(".context-menu")).toHaveCSS("color", "rgb(245, 245, 246)");
     await page.keyboard.press("Escape");
 

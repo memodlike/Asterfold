@@ -29,7 +29,7 @@ export const BookmarkCard = memo(function BookmarkCard(props: BookmarkCardProps)
   // Legacy customIcon values remain in backups for lossless compatibility, but
   // are not rendered until they have a bounded decode-and-resize pipeline.
   const source = faviconUrl(props.bookmark.url, 20);
-  const displayTitle = props.privacy ? t("privacy.hiddenBookmark") : props.bookmark.title;
+  const displayTitle = props.privacy ? "••••••••" : props.bookmark.title;
   const openLabel = props.privacy ? t("privacy.openHiddenBookmark") : t("bookmark.open", { name: props.bookmark.title });
   const menuLabel = props.privacy ? t("privacy.hiddenBookmarkActions") : t("bookmark.actions", { name: props.bookmark.title });
   const monogram = props.privacy ? "•" : (props.bookmark.hostname[0] || props.bookmark.title[0] || "?").toUpperCase();
@@ -76,7 +76,7 @@ export const BookmarkCard = memo(function BookmarkCard(props: BookmarkCardProps)
         {...sortable.listeners}
       >
         <span className="favicon" aria-hidden="true">{source && !iconFailed ? <img src={source} alt="" onError={() => setIconFailed(true)} /> : <span>{monogram}</span>}</span>
-        <strong className={props.privacy ? "private-content" : ""}>{displayTitle}</strong>
+        <strong className={props.privacy ? "private-content private-placeholder" : ""}>{displayTitle}</strong>
       </button>
       {menuPoint ? <FloatingContextMenu label={menuLabel} point={menuPoint} onClose={() => setMenuPoint(null)}>
         <button onClick={() => action(() => props.onOpen(props.bookmark))}><ExternalLink size={15} />{t("bookmark.open", { name: "" }).trim()}</button>

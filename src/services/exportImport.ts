@@ -5,15 +5,17 @@ import { ensureStarterWorkspace } from "../db/repository";
 import { CURRENT_DB_SCHEMA_VERSION } from "../db/migrations";
 import type { Board, Bookmark, Page, Wallpaper } from "../domain/models";
 import { ImportError, ValidationError } from "../domain/errors";
-import { allocateManyAtEnd, compareRanks } from "../domain/ordering";
+import { allocateBetween, allocateManyAtEnd, compareRanks } from "../domain/ordering";
 import { backupSchema, type AsterfoldBackup } from "../domain/schemas";
 import { normalizeUrl } from "../domain/urls";
 import { normalizeDescription, normalizeEntityTitle } from "../domain/text";
 import { IMPORT_LIMITS } from "../domain/importLimits";
+import { WALLPAPER_LIMITS } from "../domain/mediaLimits";
+import { isWallpaperMimeType, type WallpaperMimeType } from "../domain/wallpaperFormats";
 import { createId, nowIso } from "../utils/ids";
 import { inspectWallpaperSource } from "./wallpaper";
 
-export const CURRENT_BACKUP_FORMAT_VERSION = 3;
+export const CURRENT_BACKUP_FORMAT_VERSION = 4;
 export { backupSchema, type AsterfoldBackup } from "../domain/schemas";
 
 export interface ImportRecord {
@@ -74,7 +76,7 @@ async function encodeBlob(blob: Blob): Promise<string> {
   return btoa(binary);
 }
 
-function decodeBlob(value: string, mimeType: "image/webp"): Blob {
+function decodeBlob(value: string, mimeType: WallpaperMimeType | "image/webp"): Blob {
   const binary = atob(value);
   const bytes = new Uint8Array(binary.length);
   for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
@@ -85,11 +87,13 @@ async function serializeActiveWallpaper(settings: { theme: { wallpaperId: string
   const wallpaperId = settings.theme.wallpaperId;
   if (!wallpaperId || wallpaperId.startsWith("builtin-")) return [];
   const wallpaper = await database.wallpapers.get(wallpaperId);
-  if (!wallpaper || wallpaper.kind !== "upload" || wallpaper.mimeType !== "image/webp" || !wallpaper.blob || !wallpaper.thumbnail
+  if (!wallpaper || wallpaper.kind !== "upload" || !isWallpaperMimeType(wallpaper.mimeType) || !wallpaper.blob || !wallpaper.thumbnail
     || !wallpaper.width || !wallpaper.height || !wallpaper.sourceBytes || !wallpaper.storedBytes) {
     throw new ImportError("The active uploaded wallpaper is unavailable for a complete backup");
   }
   const [data, thumbnail] = await Promise.all([encodeBlob(wallpaper.blob), encodeBlob(wallpaper.thumbnail)]);
+  const sourceBytes = wallpaper.blob.size;
+  const storedBytes = sourceBytes + wallpaper.thumbnail.size;
   return [{
     id: wallpaper.id,
     name: wallpaper.name,
@@ -97,8 +101,8 @@ async function serializeActiveWallpaper(settings: { theme: { wallpaperId: string
     mimeType: wallpaper.mimeType,
     width: wallpaper.width,
     height: wallpaper.height,
-    sourceBytes: wallpaper.sourceBytes,
-    storedBytes: wallpaper.storedBytes,
+    sourceBytes,
+    storedBytes,
     data,
     thumbnail,
     createdAt: wallpaper.createdAt,
@@ -211,7 +215,7 @@ function normalizeValidatedBackup(validated: AsterfoldBackup): AsterfoldBackup {
 }
 
 export function parseBackup(text: string): AsterfoldBackup {
-  if (new Blob([text]).size > IMPORT_LIMITS.fileBytes) throw new ImportError("Backup must be 25 MB or smaller");
+  if (new Blob([text]).size > IMPORT_LIMITS.fileBytes) throw new ImportError("Backup must be 128 MB or smaller");
   let raw: unknown;
   try {
     raw = JSON.parse(text) as unknown;
@@ -247,16 +251,22 @@ export function previewBackup(text: string, strategy: "merge" | "replace"): { ba
 }
 
 async function prepareWallpaperAssets(backup: AsterfoldBackup): Promise<Wallpaper[]> {
-  if (backup.exportVersion !== 3) return [];
+  if (backup.exportVersion < 3) return [];
   return Promise.all((backup.assets?.wallpapers ?? []).map(async (asset) => {
-    const blob = decodeBlob(asset.data, "image/webp");
+    const blob = decodeBlob(asset.data, asset.mimeType);
     const thumbnail = decodeBlob(asset.thumbnail, "image/webp");
-    const [imageInfo] = await Promise.all([
+    const [imageInfo, compatibilityInfo] = await Promise.all([
       inspectWallpaperSource(blob),
       inspectWallpaperSource(thumbnail),
     ]);
     if (imageInfo.width !== asset.width || imageInfo.height !== asset.height) {
       throw new ImportError("Wallpaper dimensions do not match the backup metadata");
+    }
+    if (backup.exportVersion >= 4 && imageInfo.sourceBytes !== asset.sourceBytes) {
+      throw new ImportError("Wallpaper source size does not match the backup metadata");
+    }
+    if (Math.max(compatibilityInfo.width, compatibilityInfo.height) > WALLPAPER_LIMITS.outputDimension) {
+      throw new ImportError("Wallpaper compatibility copy exceeds the rendering limit");
     }
     if (blob.size + thumbnail.size !== asset.storedBytes) {
       throw new ImportError("Wallpaper size does not match the backup metadata");
@@ -271,7 +281,7 @@ async function prepareWallpaperAssets(backup: AsterfoldBackup): Promise<Wallpape
       value: null,
       width: asset.width,
       height: asset.height,
-      sourceBytes: asset.sourceBytes,
+      sourceBytes: backup.exportVersion >= 4 ? asset.sourceBytes : blob.size,
       storedBytes: asset.storedBytes,
       createdAt: asset.createdAt,
       updatedAt: asset.updatedAt,
@@ -411,7 +421,7 @@ export function downloadText(filename: string, content: string, mimeType: string
 }
 
 export function parseNetscapeHtml(text: string): ImportRecord[] {
-  if (new Blob([text]).size > IMPORT_LIMITS.fileBytes) throw new ImportError("Bookmark file must be 25 MB or smaller");
+  if (new Blob([text]).size > IMPORT_LIMITS.fileBytes) throw new ImportError("Bookmark file must be 128 MB or smaller");
   const records: ImportRecord[] = [];
   const folders: string[] = [];
   let pendingFolder: string | null = null;
@@ -507,7 +517,7 @@ export async function importRecords(
       const existingPages = (await database.pages.toArray()).filter((page) => page.deletedAt === null).sort((a, b) => compareRanks(a.position, b.position));
       pageId = createId();
       const timestamp = nowIso();
-      const allocation = allocateManyAtEnd(existingPages, 1);
+      const allocation = allocateBetween(existingPages, null, existingPages[0]?.id ?? null);
       const previousPositions = new Map(existingPages.map((page) => [page.id, page.position]));
       const rebalancedPages = allocation.scope
         .filter((page) => previousPositions.get(page.id) !== page.position)
@@ -519,7 +529,7 @@ export async function importRecords(
         title: normalizeEntityTitle(destination.pageTitle, "Imported"),
         icon: "download",
         accent: null,
-        position: allocation.positions[0]!,
+        position: allocation.position,
         isDefault: false,
         createdAt: timestamp,
         updatedAt: timestamp,
@@ -589,6 +599,7 @@ export async function importRecords(
       }
       imported += accepted.length;
     }
+    await database.settings.update("app", { activePageId: pageId, updatedAt: nowIso() });
     return { imported, skippedDuplicates, invalid };
   });
 }
