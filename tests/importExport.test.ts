@@ -621,10 +621,12 @@ describe("safe import and lossless export", () => {
     }], { pageTitle: "Chrome import" }, "skip", database);
 
     const after = await getWorkspaceData(database);
-    expect(after.pages[0]?.title).toBe("Chrome import");
-    expect(after.pages[0]?.id).toBe(after.settings.activePageId);
-    expect(after.pages[0]?.position < previousFirst.position).toBe(true);
-    expect(after.boards.some((board) => board.pageId === after.pages[0]?.id)).toBe(true);
+    const importedPage = after.pages[0];
+    expect(importedPage).toBeDefined();
+    expect(importedPage?.title).toBe("Chrome import");
+    expect(importedPage?.id).toBe(after.settings.activePageId);
+    expect(importedPage!.position < previousFirst.position).toBe(true);
+    expect(after.boards.some((board) => board.pageId === importedPage?.id)).toBe(true);
   });
 
   it("imports 10,000 Unicode bookmarks in bounded bulk transactions", async () => {
