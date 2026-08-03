@@ -15,7 +15,15 @@ function decodedBitmap(width: number, height: number, close = vi.fn()): ImageBit
 }
 
 async function bytes(blob: Blob): Promise<number[]> {
-  return [...new Uint8Array(await blob.arrayBuffer())];
+  const buffer = typeof blob.arrayBuffer === "function"
+    ? await blob.arrayBuffer()
+    : await new Promise<ArrayBuffer>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.addEventListener("load", () => resolve(reader.result as ArrayBuffer), { once: true });
+      reader.addEventListener("error", () => reject(reader.error ?? new Error("Blob could not be read")), { once: true });
+      reader.readAsArrayBuffer(blob);
+    });
+  return [...new Uint8Array(buffer)];
 }
 
 afterEach(() => {
