@@ -610,6 +610,23 @@ describe("safe import and lossless export", () => {
     expect(bookmarks.find((item) => item.id === second.id)?.version).toBe(2);
   });
 
+  it("puts a newly imported Page first and activates it", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const previousFirst = workspace.pages[0]!;
+    await importRecords([{
+      title: "Imported first",
+      url: "https://import-first.example/",
+      description: null,
+      folderPath: ["Imported"],
+    }], { pageTitle: "Chrome import" }, "skip", database);
+
+    const after = await getWorkspaceData(database);
+    expect(after.pages[0]?.title).toBe("Chrome import");
+    expect(after.pages[0]?.id).toBe(after.settings.activePageId);
+    expect(after.pages[0]?.position < previousFirst.position).toBe(true);
+    expect(after.boards.some((board) => board.pageId === after.pages[0]?.id)).toBe(true);
+  });
+
   it("imports 10,000 Unicode bookmarks in bounded bulk transactions", async () => {
     const records = Array.from({ length: 10_000 }, (_, index) => ({
       title: `Зерттеу · Исследование · Research ${index}`,

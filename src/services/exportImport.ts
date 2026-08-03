@@ -5,7 +5,7 @@ import { ensureStarterWorkspace } from "../db/repository";
 import { CURRENT_DB_SCHEMA_VERSION } from "../db/migrations";
 import type { Board, Bookmark, Page, Wallpaper } from "../domain/models";
 import { ImportError, ValidationError } from "../domain/errors";
-import { allocateManyAtEnd, compareRanks } from "../domain/ordering";
+import { allocateBetween, allocateManyAtEnd, compareRanks } from "../domain/ordering";
 import { backupSchema, type AsterfoldBackup } from "../domain/schemas";
 import { normalizeUrl } from "../domain/urls";
 import { normalizeDescription, normalizeEntityTitle } from "../domain/text";
@@ -507,7 +507,7 @@ export async function importRecords(
       const existingPages = (await database.pages.toArray()).filter((page) => page.deletedAt === null).sort((a, b) => compareRanks(a.position, b.position));
       pageId = createId();
       const timestamp = nowIso();
-      const allocation = allocateManyAtEnd(existingPages, 1);
+      const allocation = allocateBetween(existingPages, null, existingPages[0]?.id ?? null);
       const previousPositions = new Map(existingPages.map((page) => [page.id, page.position]));
       const rebalancedPages = allocation.scope
         .filter((page) => previousPositions.get(page.id) !== page.position)
@@ -519,7 +519,7 @@ export async function importRecords(
         title: normalizeEntityTitle(destination.pageTitle, "Imported"),
         icon: "download",
         accent: null,
-        position: allocation.positions[0]!,
+        position: allocation.position,
         isDefault: false,
         createdAt: timestamp,
         updatedAt: timestamp,
@@ -589,6 +589,7 @@ export async function importRecords(
       }
       imported += accepted.length;
     }
+    await database.settings.update("app", { activePageId: pageId, updatedAt: nowIso() });
     return { imported, skippedDuplicates, invalid };
   });
 }

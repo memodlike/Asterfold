@@ -17,6 +17,14 @@ describe("runtime dictionaries", () => {
     }
   });
 
+
+  it("pairs every language with a visible emoji flag", () => {
+    expect(localeOptions.find((item) => item.value === "auto")?.flag).toBe("🌐");
+    expect(localeOptions.find((item) => item.value === "ru")?.flag).toBe("🇷🇺");
+    expect(localeOptions.find((item) => item.value === "kk")?.flag).toBe("🇰🇿");
+    for (const locale of localeOptions) expect(locale.flag.trim(), locale.value).not.toBe("");
+  });
+
   it("provides localized new-tab titles for the core Chrome languages", () => {
     expect(translate("en", "tab.title")).toBe("New Tab");
     expect(translate("ru", "tab.title")).toBe("Новая вкладка");

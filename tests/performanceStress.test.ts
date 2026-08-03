@@ -35,6 +35,18 @@ describe("Windows 11 adaptive rendering stress gates", () => {
     expect(css).not.toContain(".private-content { filter:");
   });
 
+
+  it("uses raster compatibility wallpapers and keeps Settings opaque", () => {
+    const css = readFileSync(`${process.cwd()}/src/styles/global.css`, "utf8");
+    const runtime = readFileSync(`${process.cwd()}/src/features/appearance/themeRuntime.ts`, "utf8");
+    expect(runtime).toContain("quiet-aurora-compat.webp");
+    expect(runtime).toContain("blue-mesh-compat.webp");
+    expect(runtime).toContain("dusk-compat.webp");
+    expect(runtime).not.toContain("-compat.svg");
+    expect(css).toMatch(/\.settings-modal\s*\{[^}]*background:\s*var\(--color-surface-elevated\)/u);
+    expect(css).toMatch(/\.settings-modal\s*\{[^}]*backdrop-filter:\s*none/u);
+  });
+
   it("caps decoded uploaded wallpapers at a Full HD long edge", async () => {
     const { WALLPAPER_LIMITS } = await import("../src/domain/mediaLimits");
     expect(WALLPAPER_LIMITS.outputDimension).toBe(1_920);

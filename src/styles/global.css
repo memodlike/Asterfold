@@ -108,6 +108,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .modal--small { width: min(430px, calc(100vw - 32px)); }
 .modal--large { width: min(820px, calc(100vw - 32px)); }
 .modal--fullscreen { width: min(1080px, calc(100vw - 48px)); height: min(780px, calc(100vh - 48px)); max-height: none; }
+.settings-modal { background: var(--color-surface-elevated); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: 0 36px 110px rgb(0 0 0 / .38), inset 0 1px 0 rgb(255 255 255 / .08); }
 .modal__header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 17px 19px 13px; border-bottom: 1px solid var(--color-border); }
 .modal__header h2 { margin: 0; font-size: 17px; letter-spacing: -.015em; }
 .modal__header p { margin: 4px 0 0; color: var(--color-text-secondary); font-size: 12px; }
@@ -147,7 +148,10 @@ input[type="range"] { width: 100%; accent-color: var(--color-accent); }
 .wallpaper-upload { background: rgb(var(--border-rgb) / .05) !important; }
 .language-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
 .language-options button { display: flex; min-width: 0; align-items: center; justify-content: space-between; min-height: 48px; gap: 10px; padding: 11px 14px; border: 1px solid var(--color-border); border-radius: 13px; text-align: left; background: transparent; }
-.language-options button > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.language-options button > span { min-width: 0; }
+.language-option__label { display: flex; align-items: center; gap: 11px; overflow: hidden; }
+.language-option__label > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.language-option__flag { display: inline-flex; width: 26px; flex: 0 0 26px; align-items: center; justify-content: center; font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif; font-size: 20px; line-height: 1; filter: drop-shadow(0 1px 1px rgb(0 0 0 / .16)); }
 .language-options button:hover, .language-options button.is-active { background: rgb(var(--border-rgb) / .06); border-color: color-mix(in srgb, var(--color-accent) 48%, transparent); }
 .shortcut-value { display: flex; align-items: center; gap: 9px; }
 kbd { padding: 5px 8px; border: 1px solid var(--color-border); border-radius: 7px; background: rgb(var(--border-rgb) / .06); font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; }
@@ -221,6 +225,9 @@ html[data-performance="software"] :is(.board, .modal, .launcher-menu, .launcher-
   background-color: rgb(var(--surface-rgb) / .96);
   box-shadow: inset 0 1px 0 var(--glass-highlight), 0 6px 18px rgb(0 0 0 / .16);
 }
+html[data-performance="compatibility"] .settings-modal,
+html[data-performance="software"] .settings-modal,
+.low-power-mode .settings-modal { background: var(--color-surface-elevated); box-shadow: 0 24px 70px rgb(0 0 0 / .34), inset 0 1px 0 rgb(255 255 255 / .08); }
 .motion-disabled *, .motion-disabled *::before, .motion-disabled *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 .motion-hover-disabled .bookmark-card, .motion-hover-disabled .favicon { transition: none; }
 .motion-hover-disabled .bookmark-card:hover, .motion-hover-disabled .bookmark-card:focus-within, .motion-hover-disabled .bookmark-card:hover .favicon, .motion-hover-disabled .bookmark-card:focus-within .favicon { transform: none; }

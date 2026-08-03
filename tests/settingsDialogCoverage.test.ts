@@ -97,7 +97,7 @@ function workspace(overrides: Partial<WorkspaceData["settings"]> = {}): Workspac
 const backup = {
   format: "asterfold-backup",
   formatVersion: 3,
-  exportVersion: "3.1.0",
+  exportVersion: "3.1.1",
   scope: "full",
   entities: { pages: [pages[0]], boards: [boards[0]], bookmarks: [bookmarks[0]], settings: [workspace().settings], wallpapers: [] },
 } as unknown as AsterfoldBackup;

@@ -92,7 +92,7 @@ function backup(scope: AsterfoldBackup["scope"] = "full"): AsterfoldBackup {
     schemaVersion: 3,
     exportVersion: 3,
     exportedAt: timestamp,
-    appVersion: "3.1.0",
+    appVersion: "3.1.1",
     scope,
     entities: { pages: [page], boards: [board], bookmarks: [bookmark] },
     ...(scope === "full" ? { settings: current, theme: current.theme, assets: { wallpapers: [] } } : { assets: { wallpapers: [] } }),
@@ -257,6 +257,7 @@ describe("SettingsDialog behavior", () => {
     fireEvent.change(container.querySelector<HTMLSelectElement>(".import-preview select")!, { target: { value: "allow" } });
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
     await waitFor(() => expect(mocks.importRecords).toHaveBeenCalledWith(expect.any(Array), { pageTitle: "Chrome import" }, "allow"));
+    expect(callbacks.onClose).toHaveBeenCalledOnce();
 
     fireEvent.click(screen.getByRole("checkbox"));
     await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ privacyPersist: true, privacyEnabled: true }));

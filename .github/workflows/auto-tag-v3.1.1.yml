@@ -1,4 +1,4 @@
-name: Tag verified Asterfold 3.1.0
+name: Tag verified Asterfold 3.1.1
 
 on:
   workflow_run:
@@ -10,7 +10,7 @@ permissions:
   actions: write
 
 concurrency:
-  group: tag-v3.1.0
+  group: tag-v3.1.1
   cancel-in-progress: false
 
 jobs:
@@ -34,7 +34,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(node -p 'require("./package.json").version')" = "3.1.0"
+          test "$(node -p 'require("./package.json").version')" = "3.1.1"
           git fetch origin main --tags
           test "$(git rev-parse origin/main)" = "$SOURCE_SHA"
           gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$SOURCE_SHA&status=completed&per_page=100" > workflow-runs.json
@@ -52,7 +52,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
-          RELEASE_TAG: v3.1.0
+          RELEASE_TAG: v3.1.1
         shell: bash
         run: |
           set -euo pipefail
@@ -66,7 +66,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "$RELEASE_TAG" "$SOURCE_SHA" -m "Asterfold 3.1.0 Windows 11 adaptive performance release"
+          git tag -a "$RELEASE_TAG" "$SOURCE_SHA" -m "Asterfold 3.1.1 Windows 11 adaptive performance release"
           git push origin "$RELEASE_TAG"
           sleep 2
           gh workflow run release.yml --repo "$GITHUB_REPOSITORY" --ref "$RELEASE_TAG"

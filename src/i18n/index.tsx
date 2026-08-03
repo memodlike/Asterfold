@@ -567,8 +567,20 @@ const europeanLocales: Record<Exclude<AppLocale, "ru" | "kk" | "en">, Record<Mes
 
 export type AppLocale = Exclude<LocalePreference, "auto">;
 
-export const localeOptions: ReadonlyArray<{ value: LocalePreference; label: string }> = [
-  { value: "auto", label: "Auto (Chrome language)" }, { value: "ru", label: "Русский" }, { value: "kk", label: "Қазақша" }, { value: "en", label: "English" }, { value: "es", label: "Español" }, { value: "de", label: "Deutsch" }, { value: "fr", label: "Français" }, { value: "it", label: "Italiano" }, { value: "pt", label: "Português" }, { value: "pl", label: "Polski" }, { value: "uk", label: "Українська" }, { value: "tr", label: "Türkçe" }, { value: "nl", label: "Nederlands" },
+export const localeOptions: ReadonlyArray<{ value: LocalePreference; label: string; flag: string }> = [
+  { value: "auto", label: "Auto (Chrome language)", flag: "🌐" },
+  { value: "ru", label: "Русский", flag: "🇷🇺" },
+  { value: "kk", label: "Қазақша", flag: "🇰🇿" },
+  { value: "en", label: "English", flag: "🇬🇧" },
+  { value: "es", label: "Español", flag: "🇪🇸" },
+  { value: "de", label: "Deutsch", flag: "🇩🇪" },
+  { value: "fr", label: "Français", flag: "🇫🇷" },
+  { value: "it", label: "Italiano", flag: "🇮🇹" },
+  { value: "pt", label: "Português", flag: "🇵🇹" },
+  { value: "pl", label: "Polski", flag: "🇵🇱" },
+  { value: "uk", label: "Українська", flag: "🇺🇦" },
+  { value: "tr", label: "Türkçe", flag: "🇹🇷" },
+  { value: "nl", label: "Nederlands", flag: "🇳🇱" },
 ];
 
 const dictionaries: Record<AppLocale, Record<MessageKey, string>> = { ru, kk, en, ...europeanLocales };
