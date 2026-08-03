@@ -1,0 +1,34 @@
+name: Cleanup Asterfold 3.1.2 bootstrap files
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.head_ref == 'perf/asterfold-3.1.2-original-wallpaper-quality'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: perf/asterfold-3.1.2-original-wallpaper-quality
+          fetch-depth: 0
+      - name: Remove obsolete patch transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .github/patches/3.1.2 .github/patches/3.1.2-gzip
+          if git diff --quiet; then
+            echo 'Bootstrap files are already absent.'
+            exit 0
+          fi
+          git add -A
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'chore: remove obsolete Asterfold 3.1.2 bootstrap files'
+          git push origin HEAD:perf/asterfold-3.1.2-original-wallpaper-quality
