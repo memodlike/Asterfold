@@ -40,8 +40,16 @@ describe("appearance runtime", () => {
     expect(builtin["--density-space"]).toBe("16px");
     expect(builtin["--glass-highlight"]).toContain(".14");
 
-    const custom = themeStyle({ ...base, backgroundMode: "wallpaper", wallpaperId: "custom", wallpaperBlur: 0, wallpaperSaturation: 1, wallpaperZoom: 1, glassVariant: "clear" }, "blob:wallpaper", false) as Record<string, string | number>;
+    const custom = themeStyle(
+      { ...base, backgroundMode: "wallpaper", wallpaperId: "custom", wallpaperBlur: 0, wallpaperSaturation: 1, wallpaperZoom: 1, glassVariant: "clear" },
+      "blob:wallpaper",
+      "blob:compatibility",
+      false,
+      "compatibility",
+    ) as Record<string, string | number>;
     expect(custom["--wallpaper-image"]).toBe('url("blob:wallpaper")');
+    expect(custom["--wallpaper-compat-image"]).toBe('url("blob:wallpaper")');
+    expect(custom["--wallpaper-software-image"]).toBe('url("blob:compatibility")');
     expect(custom["--wallpaper-filter"]).toBe("none");
     expect(custom["--wallpaper-transform"]).toBe("none");
     expect(custom["--glass-sheen"]).toBe(".09");

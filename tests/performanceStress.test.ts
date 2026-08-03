@@ -31,6 +31,7 @@ describe("Windows 11 adaptive rendering stress gates", () => {
     const compatibilityRule = /html\[data-performance="compatibility"\][\s\S]+?\.motion-disabled/u.exec(css)?.[0] ?? "";
     expect(compatibilityRule).toContain("backdrop-filter: none");
     expect(compatibilityRule).toContain("--wallpaper-compat-image");
+    expect(css).toContain("--wallpaper-software-image");
     expect(css).not.toMatch(/transition:\s*[^;]*(?:width|margin|box-shadow)/u);
     expect(css).not.toContain(".private-content { filter:");
   });
@@ -47,8 +48,12 @@ describe("Windows 11 adaptive rendering stress gates", () => {
     expect(css).toMatch(/\.settings-modal\s*\{[^}]*backdrop-filter:\s*none/u);
   });
 
-  it("caps decoded uploaded wallpapers at a Full HD long edge", async () => {
+  it("preserves original uploads and limits only the software fallback", async () => {
     const { WALLPAPER_LIMITS } = await import("../src/domain/mediaLimits");
+    const pipeline = readFileSync(`${process.cwd()}/src/services/wallpaper.ts`, "utf8");
+    expect(WALLPAPER_LIMITS.sourceDimension).toBe(16_384);
     expect(WALLPAPER_LIMITS.outputDimension).toBe(1_920);
+    expect(pipeline).toContain("const original = file.slice(0, file.size, info.mimeType)");
+    expect(pipeline).not.toMatch(/const scale[\s\S]{0,240}blob:\s*encoded\.blob/u);
   });
 });

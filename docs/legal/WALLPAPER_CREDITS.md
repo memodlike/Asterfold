@@ -1,6 +1,6 @@
 # Built-in wallpaper credits
 
-Asterfold 3.1.1 includes three locally bundled wallpapers. They are downloaded at build-preparation time, cropped to a 16:9 desktop composition, and encoded as WebP. No wallpaper is fetched at extension runtime.
+Asterfold 3.1.2 includes three locally bundled wallpapers. They are downloaded at build-preparation time, cropped to a 16:9 desktop composition, and encoded as WebP. No wallpaper is fetched at extension runtime.
 
 - **Blue Mesh** — Steve Johnson, Pexels photo 14053647.
 - **Dusk** — Anni Roenkae, Pexels photo 3109807.

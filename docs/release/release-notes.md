@@ -1,36 +1,36 @@
-# Asterfold 3.1.1
+# Asterfold 3.1.2
 
-## Windows 11 performance update
+## Original-quality uploaded wallpapers
 
-- Adds Adaptive Compatibility Glass for legacy and software-rendered GPUs.
-- Automatically recognizes AMD Radeon R5 230 / Caicos-class renderers and selects the compatibility path.
-- Keeps transparency, gradients, glass highlights, hover motion, menu motion and drag-and-drop while removing live `backdrop-filter` from the compatibility renderer.
-- Adds pre-rendered local variants for built-in wallpapers and uses the bounded thumbnail as the compatibility variant for uploaded wallpapers.
-- Caps uploaded wallpaper output to a 1920-pixel long edge, reducing decoded texture memory from roughly 31.6 MiB at 4K to roughly 7.9 MiB at Full HD before compositor copies.
-- Removes layout-sized `width`/`margin` transitions and paint-heavy animated board shadows.
-- Replaces per-bookmark privacy blur with a lightweight visual placeholder.
-- Avoids rewriting unchanged CSS custom properties.
-- Measures dnd-kit droppable layouts before dragging and disables desktop auto-scroll.
+- Stores the exact user-selected raster file without resizing, recompression or format conversion.
+- Preserves the original pixel dimensions, MIME type and byte-for-byte image payload.
+- Uses the original asset in Quality and Compatibility Glass, including the Radeon R5 230 path.
+- Generates a separate high-quality WebP fallback capped at a 1920-pixel long edge only for software rendering.
+- Accepts Chrome-decodable JPG/JPEG/JFIF, PNG, WebP, AVIF, GIF, BMP and ICO files using content-signature validation instead of unreliable operating-system MIME labels.
+- Raises safe local limits to 64 MiB per original image, 16,384 pixels per side and 120 megapixels.
 
-## Stress and release gates
+## Backup compatibility
 
-- Adds a 600-bookmark real-extension stress scenario at 1280×720.
-- Verifies the compatibility renderer has no live wallpaper filter or menu backdrop blur.
-- Samples animation frames and rejects extreme frame stalls in CI.
-- Runs stress checks in normal CI and again from the exact release tag.
-- Preserves deterministic Linux/Windows release subjects, checksums, provenance, SBOM and GitHub attestations.
+- Backup format 4 preserves the original uploaded raster format and exact source bytes.
+- Restore validates the original signature, dimensions, byte count and separate WebP compatibility asset.
+- Backup formats 1–3 remain readable; version 3 WebP wallpaper backups continue to restore.
+- File import capacity is raised to 128 MiB for backups containing a large original wallpaper.
 
-## Data compatibility
+## Verification
 
-- Database schema 7 adds the `performanceMode` preference.
-- Existing Low Power users migrate to Compatibility Glass.
-- Existing Pages, Boards, bookmarks, Trash, Quick Save, privacy, wallpaper and animation preferences are preserved.
-- Backup formats remain backward compatible; missing `performanceMode` values normalize to `auto`.
+- Adds unit coverage for JPG, PNG, WebP, AVIF, GIF, BMP and ICO signatures.
+- Verifies that a 7680×4320 source remains byte-identical while only its software fallback is resized.
+- Adds real unpacked-MV3 E2E coverage for a 3840×2160 upload, IndexedDB source-size equality and renderer-specific CSS asset selection.
+- Retains typecheck, lint, coverage, Store validation, deterministic Linux/Windows packaging, CodeQL, 600-card stress and exact 2.2.3 upgrade gates.
 
-## Target hardware
+## Compatibility note
 
-The primary compatibility target is Windows 11 with Ryzen 5 5600, 32 GB RAM and AMD Radeon R5 230. CI cannot reproduce that exact physical GPU, so the release includes deterministic renderer classification and automated compatibility-path stress gates; final physical-GPU FPS remains a device-side verification item.
+Wallpapers uploaded by 3.1.0 or 3.1.1 were already converted before storage, so their discarded original pixels cannot be reconstructed automatically. Re-upload the original file once in 3.1.2 to recover full source quality.
 
-## Chrome Web Store package
 
-Upload **`Asterfold-Chrome.zip`**. `chrome-unpacked.zip` is for Developer mode. GitHub-generated source archives are not extension packages.
+## Previous releases
+
+- **3.1.1 — Wallpaper, Settings and import polish:** licensed 4K built-in wallpapers, opaque Settings, language flags and immediate navigation to imported Pages.
+- **3.1.0 — Windows 11 adaptive performance:** Radeon R5 230/Caicos detection, Compatibility Glass, compositor-safe motion and 600-bookmark stress gates.
+- **3.0.1 — Verified release pipeline:** exact-SHA tag gating, deterministic Linux/Windows packaging, SBOM, provenance and attestations.
+- **3.0.0** was an internal release candidate and was superseded by 3.0.1 before publication.

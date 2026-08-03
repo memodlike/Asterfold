@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { browser } from "wxt/browser";
 import { readSessionPrivacy, writeSessionPrivacy } from "../../browser/privacySession";
 import { IMPORT_LIMITS } from "../../domain/importLimits";
+import { WALLPAPER_FILE_ACCEPT } from "../../domain/wallpaperFormats";
 import { Brush, Check, CheckCircle2, Database, Download, FileJson, FileText, Grid2X2, Languages, Shield, Trash2, Upload, Zap } from "lucide-react";
 import type { AppSettings, ThemeConfig, Wallpaper, WorkspaceData } from "../../domain/models";
 import { ImportError } from "../../domain/errors";
@@ -284,7 +285,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
             </div>
             <div className="wallpaper-grid"><button className={!themeDraft.wallpaperId ? "is-active" : ""} onClick={() => patchTheme({ wallpaperId: null, backgroundMode: "auto" })}><span className="wallpaper-none" />{t("settings.noWallpaper")}</button>{BUILTIN_WALLPAPERS.map((item) => <button key={item.id} className={themeDraft.wallpaperId === item.id ? "is-active" : ""} onClick={() => patchTheme({ wallpaperId: item.id, backgroundMode: "wallpaper" })}><span style={{ background: item.value }} />{t(item.labelKey)}</button>)}<button onClick={() => wallpaperInputRef.current?.click()}><span className="wallpaper-upload"><Upload size={19} /></span>{t("settings.uploadWallpaper")}</button></div>
             {wallpaperInfo?.width && wallpaperInfo.height ? <p>{wallpaperInfo.width} × {wallpaperInfo.height} · {formatBytes(wallpaperInfo.storedBytes)}</p> : null}
-            <input ref={wallpaperInputRef} hidden type="file" accept="image/png,image/jpeg,image/webp,image/avif" onChange={(event) => { const file = event.target.files?.[0]; if (file) void saveUploadedWallpaper(file); event.currentTarget.value = ""; }} />
+            <input ref={wallpaperInputRef} hidden type="file" accept={WALLPAPER_FILE_ACCEPT} onChange={(event) => { const file = event.target.files?.[0]; if (file) void saveUploadedWallpaper(file); event.currentTarget.value = ""; }} />
             <div className="settings-control-group">
               <h3>{t("settings.performance")}</h3>
               <SettingRow label={t("settings.performanceMode")}><Segmented value={themeDraft.performanceMode} items={[{ value: "auto", label: t("settings.performanceAuto") }, { value: "quality", label: t("settings.performanceQuality") }, { value: "compatibility", label: t("settings.performanceCompatibility") }]} onChange={(value) => patchTheme({ performanceMode: value as ThemeConfig["performanceMode"], lowPowerMode: value === "compatibility" })} /></SettingRow>

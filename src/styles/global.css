@@ -186,14 +186,17 @@ kbd { padding: 5px 8px; border: 1px solid var(--color-border); border-radius: 7p
 .toast { display: flex; min-width: 260px; max-width: 410px; align-items: center; gap: 9px; padding: 9px 10px; border: 1px solid var(--color-border); border-radius: 13px; background: rgb(var(--surface-rgb) / .92); box-shadow: var(--shadow-panel); backdrop-filter: blur(20px); font-size: 12px; }
 
 /* Adaptive Compatibility Glass: keep transparency and motion while removing live blur. */
-.low-power-mode .wallpaper,
 .performance-compatibility .wallpaper,
-.performance-software .wallpaper,
-html[data-performance="compatibility"] .wallpaper,
-html[data-performance="software"] .wallpaper {
+html[data-performance="compatibility"] .wallpaper {
   filter: none;
   transform: none;
   background-image: linear-gradient(rgb(0 0 0 / var(--wallpaper-dim)), rgb(0 0 0 / var(--wallpaper-dim))), var(--wallpaper-compat-image);
+}
+.performance-software .wallpaper,
+html[data-performance="software"] .wallpaper {
+  filter: none;
+  transform: none;
+  background-image: linear-gradient(rgb(0 0 0 / var(--wallpaper-dim)), rgb(0 0 0 / var(--wallpaper-dim))), var(--wallpaper-software-image);
 }
 .low-power-mode .wallpaper::after,
 .performance-compatibility .wallpaper::after,

@@ -29,7 +29,10 @@ export function themeStyle(
   const builtin = BUILTIN_WALLPAPERS.find((item) => item.id === theme.wallpaperId);
   const wallpaperImage = theme.backgroundMode === "wallpaper" ? wallpaperUrl ? `url("${wallpaperUrl}")` : builtin?.value ?? "none" : "none";
   const compatibilityImage = theme.backgroundMode === "wallpaper"
-    ? compatibilityWallpaperUrl ? `url("${compatibilityWallpaperUrl}")` : builtin?.compatibilityValue ?? wallpaperImage
+    ? wallpaperUrl ? wallpaperImage : builtin?.compatibilityValue ?? wallpaperImage
+    : "none";
+  const softwareImage = theme.backgroundMode === "wallpaper"
+    ? compatibilityWallpaperUrl ? `url("${compatibilityWallpaperUrl}")` : builtin?.compatibilityValue ?? compatibilityImage
     : "none";
   const canvas = theme.backgroundMode === "solid" ? theme.canvas : palette.canvas;
   const wallpaperFilter = performanceMode === "quality" && (theme.wallpaperBlur > 0 || theme.wallpaperSaturation !== 1)
@@ -43,7 +46,7 @@ export function themeStyle(
     "--color-success": palette.success, "--shadow-panel": palette.shadow, "--glass-blur": `${Math.min(32, theme.blur)}px`,
     "--glass-highlight": dark ? "rgb(255 255 255 / .14)" : "rgb(255 255 255 / .70)", "--glass-sheen": theme.glassVariant === "clear" ? ".09" : ".18",
     "--radius-card": `${theme.radius}px`, "--font-scale": theme.fontScale, "--board-width": `${theme.boardWidth}px`, "--favicon-size": `${theme.faviconSize}px`,
-    "--wallpaper-image": wallpaperImage, "--wallpaper-compat-image": compatibilityImage, "--wallpaper-dim": wallpaperImage === "none" ? 0 : theme.wallpaperDim,
+    "--wallpaper-image": wallpaperImage, "--wallpaper-compat-image": compatibilityImage, "--wallpaper-software-image": softwareImage, "--wallpaper-dim": wallpaperImage === "none" ? 0 : theme.wallpaperDim,
     "--wallpaper-filter": wallpaperFilter, "--wallpaper-position": theme.wallpaperPosition, "--wallpaper-transform": wallpaperTransform,
     "--density-space": theme.density === "compact" ? "8px" : theme.density === "spacious" ? "16px" : "12px",
   } as CSSProperties;

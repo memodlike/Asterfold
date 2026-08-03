@@ -22,24 +22,33 @@ import {
 const webpBytes = new Uint8Array([
   0x52, 0x49, 0x46, 0x46, 0x04, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
 ]);
+const jpegBytes = new Uint8Array([
+  0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01,
+]);
 
 function uploadedWallpaper(id = "wallpaper-upload") {
-  const blob = new Blob([webpBytes], { type: "image/webp" });
+  const blob = new Blob([jpegBytes], { type: "image/jpeg" });
+  const thumbnail = new Blob([webpBytes], { type: "image/webp" });
   return {
     id,
     kind: "upload" as const,
     name: "Local wallpaper",
-    mimeType: "image/webp",
+    mimeType: "image/jpeg",
     blob,
-    thumbnail: blob,
+    thumbnail,
     value: null,
     width: 64,
     height: 64,
     sourceBytes: blob.size,
-    storedBytes: blob.size * 2,
+    storedBytes: blob.size + thumbnail.size,
     createdAt: "2026-07-26T00:00:00.000Z",
     updatedAt: "2026-07-26T00:00:00.000Z",
   };
+}
+
+function legacyWebpWallpaper(id = "wallpaper-legacy") {
+  const blob = new Blob([webpBytes], { type: "image/webp" });
+  return { ...uploadedWallpaper(id), mimeType: "image/webp", blob, thumbnail: blob, sourceBytes: blob.size, storedBytes: blob.size * 2 };
 }
 
 async function blobBytes(blob: Blob | null | undefined): Promise<Uint8Array> {
@@ -152,7 +161,7 @@ describe("safe import and lossless export", () => {
     vi.useRealTimers();
   });
 
-  it("exports backup v3 with the package version and only the active uploaded wallpaper", async () => {
+  it("exports backup v4 with the package version, original raster, and only the active uploaded wallpaper", async () => {
     const workspace = await ensureStarterWorkspace(database);
     const active = uploadedWallpaper();
     await database.wallpapers.bulkAdd([active, uploadedWallpaper("orphan-wallpaper")]);
@@ -162,14 +171,14 @@ describe("safe import and lossless export", () => {
 
     const backup = await createBackup({}, database);
     expect(backup).toMatchObject({
-      schemaVersion: 3,
-      exportVersion: 3,
+      schemaVersion: 4,
+      exportVersion: 4,
       appVersion: packageVersion,
       assets: {
         wallpapers: [{
           id: active.id,
           kind: "upload",
-          mimeType: "image/webp",
+          mimeType: "image/jpeg",
           width: 64,
           height: 64,
           sourceBytes: active.sourceBytes,
@@ -178,7 +187,7 @@ describe("safe import and lossless export", () => {
       },
     });
     expect(backup.assets?.wallpapers[0]?.data).toMatch(/^[A-Za-z0-9+/]+={0,2}$/u);
-    expect(backup.assets?.wallpapers[0]?.thumbnail).toBe(backup.assets?.wallpapers[0]?.data);
+    expect(backup.assets?.wallpapers[0]?.thumbnail).not.toBe(backup.assets?.wallpapers[0]?.data);
     expect(backup.assets?.wallpapers).toHaveLength(1);
 
     const scoped = await createBackup({ pageId: workspace.pages[0]!.id }, database);
@@ -216,7 +225,7 @@ describe("safe import and lossless export", () => {
     await expect(createSelectionBackup([bookmark.id], database)).rejects.toThrow(/unavailable/iu);
   });
 
-  it("parses and atomically restores a v3 wallpaper backup", async () => {
+  it("parses and atomically restores a v4 wallpaper backup", async () => {
     const workspace = await ensureStarterWorkspace(database);
     const active = uploadedWallpaper();
     await database.wallpapers.add(active);
@@ -243,19 +252,33 @@ describe("safe import and lossless export", () => {
     expect(reexported.assets).toEqual(parseBackup(serialized).assets);
   });
 
-  it("rejects unsafe or unbounded v3 wallpaper assets", async () => {
+  it("continues to parse and restore legacy backup v3 WebP wallpaper assets", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const active = legacyWebpWallpaper();
+    await database.wallpapers.add(active);
+    await updateSettings({ theme: { ...workspace.settings.theme, wallpaperId: active.id, backgroundMode: "wallpaper" } }, database);
+    const current = await createBackup({}, database);
+    const legacy = parseBackup(JSON.stringify({ ...current, schemaVersion: 3, exportVersion: 3 }));
+    vi.stubGlobal("createImageBitmap", vi.fn(() => Promise.resolve({ width: 64, height: 64, close: vi.fn() })));
+    await database.wallpapers.clear();
+    await restoreBackup(legacy, "replace", database);
+    expect((await database.wallpapers.get(active.id))?.mimeType).toBe("image/webp");
+  });
+
+  it("rejects unsafe or unbounded v4 wallpaper assets", async () => {
     const backup = await createBackup({}, database);
     const encodedWebp = btoa(String.fromCharCode(...webpBytes));
+    const encodedJpeg = btoa(String.fromCharCode(...jpegBytes));
     const wallpaper = {
       id: "wallpaper-upload",
       name: "Wallpaper",
       kind: "upload",
-      mimeType: "image/webp",
+      mimeType: "image/jpeg",
       width: 64,
       height: 64,
-      sourceBytes: webpBytes.length,
-      storedBytes: webpBytes.length * 2,
-      data: encodedWebp,
+      sourceBytes: jpegBytes.length,
+      storedBytes: jpegBytes.length + webpBytes.length,
+      data: encodedJpeg,
       thumbnail: encodedWebp,
       createdAt: "2026-07-26T00:00:00.000Z",
       updatedAt: "2026-07-26T00:00:00.000Z",
@@ -269,6 +292,10 @@ describe("safe import and lossless export", () => {
     expect(() => parseBackup(JSON.stringify({
       ...withAsset,
       assets: { wallpapers: [{ ...wallpaper, mimeType: "image/svg+xml" }] },
+    }))).toThrow(/validation failed/iu);
+    expect(() => parseBackup(JSON.stringify({
+      ...withAsset,
+      assets: { wallpapers: [{ ...wallpaper, mimeType: "image/png" }] },
     }))).toThrow(/validation failed/iu);
     expect(() => parseBackup(JSON.stringify({
       ...withAsset,
@@ -288,7 +315,7 @@ describe("safe import and lossless export", () => {
     }))).toThrow(/validation failed/iu);
   });
 
-  it("does not mutate the workspace when v3 wallpaper restore validation fails", async () => {
+  it("does not mutate the workspace when v4 wallpaper restore validation fails", async () => {
     const existing = await ensureStarterWorkspace(database);
     const source = new AsterfoldDatabase(`asterfold-import-source-${crypto.randomUUID()}`);
     await source.open();
