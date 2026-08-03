@@ -1,4 +1,4 @@
-# Asterfold 3.1.0
+# Asterfold 3.1.1
 
 ## Windows 11 performance update
 
