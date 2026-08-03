@@ -1,0 +1,53 @@
+name: Fix Asterfold 3.1.1 import test typing
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: ${{ github.head_ref == 'perf/asterfold-3.1.1-wallpaper-import-polish' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: perf/asterfold-3.1.1-wallpaper-import-polish
+          fetch-depth: 0
+      - name: Apply reviewed strict typing fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('tests/importExport.test.ts')
+          text = path.read_text()
+          old = '''    const after = await getWorkspaceData(database);
+              expect(after.pages[0]?.title).toBe("Chrome import");
+              expect(after.pages[0]?.id).toBe(after.settings.activePageId);
+              expect(after.pages[0]?.position < previousFirst.position).toBe(true);
+              expect(after.boards.some((board) => board.pageId === after.pages[0]?.id)).toBe(true);'''
+          # Preserve the source's actual four-space indentation.
+          old = old.replace('        expect', '    expect')
+          new = '''    const after = await getWorkspaceData(database);
+              const importedPage = after.pages[0];
+              expect(importedPage).toBeDefined();
+              expect(importedPage?.title).toBe("Chrome import");
+              expect(importedPage?.id).toBe(after.settings.activePageId);
+              expect(importedPage!.position < previousFirst.position).toBe(true);
+              expect(after.boards.some((board) => board.pageId === importedPage?.id)).toBe(true);'''
+          new = new.replace('        const', '    const').replace('        expect', '    expect')
+          if old not in text:
+              raise SystemExit('reviewed import test block not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          git add tests/importExport.test.ts
+          git diff --cached --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'test: narrow imported page before ordering assertion'
+          git push origin HEAD:perf/asterfold-3.1.1-wallpaper-import-polish
