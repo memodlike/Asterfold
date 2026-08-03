@@ -1,0 +1,102 @@
+name: Verify published Asterfold 3.1.2 release
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  verify-release:
+    if: github.head_ref == 'ops/verify-v3.1.2-release'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Verify exact annotated tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: 9927203904e8af58b52d07b68bdad752148a65a4
+          RELEASE_TAG: v3.1.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          ref_json="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG")"
+          object_type="$(node -e 'const x=JSON.parse(process.argv[1]); process.stdout.write(x.object.type)' "$ref_json")"
+          object_sha="$(node -e 'const x=JSON.parse(process.argv[1]); process.stdout.write(x.object.sha)' "$ref_json")"
+          if [ "$object_type" = "tag" ]; then
+            tag_json="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$object_sha")"
+            target_sha="$(node -e 'const x=JSON.parse(process.argv[1]); process.stdout.write(x.object.sha)' "$tag_json")"
+          else
+            target_sha="$object_sha"
+          fi
+          test "$target_sha" = "$EXPECTED_SHA"
+          echo "Verified $RELEASE_TAG -> $target_sha"
+
+      - name: Ensure release workflow is running
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: v3.1.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Release is not visible yet; dispatching the idempotent release workflow."
+            gh workflow run release.yml --repo "$GITHUB_REPOSITORY" --ref "$RELEASE_TAG"
+          fi
+
+      - name: Wait for complete published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: v3.1.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected=(
+            Asterfold-Chrome.zip
+            chrome-unpacked.zip
+            extension-source.zip
+            Asterfold-Store-Assets.zip
+            checksums.txt
+            provenance.json
+            sbom.spdx.json
+          )
+
+          for attempt in $(seq 1 50); do
+            if gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > release.json 2>/dev/null; then
+              if node --input-type=module - "${expected[@]}" <<'NODE'
+          import fs from 'node:fs';
+          const expected = process.argv.slice(2);
+          const release = JSON.parse(fs.readFileSync('release.json', 'utf8'));
+          const assets = new Map((release.assets ?? []).map((asset) => [asset.name, asset]));
+          const missing = expected.filter((name) => !assets.has(name));
+          const empty = expected.filter((name) => (assets.get(name)?.size ?? 0) <= 0);
+          if (release.draft || release.prerelease || missing.length || empty.length) process.exit(1);
+          NODE
+              then
+                node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const release = JSON.parse(fs.readFileSync('release.json', 'utf8'));
+          console.log(JSON.stringify({
+            name: release.name,
+            tag_name: release.tag_name,
+            target_commitish: release.target_commitish,
+            draft: release.draft,
+            prerelease: release.prerelease,
+            published_at: release.published_at,
+            html_url: release.html_url,
+            assets: (release.assets ?? []).map(({ name, size, browser_download_url }) => ({ name, size, browser_download_url })),
+          }, null, 2));
+          NODE
+                exit 0
+              fi
+            fi
+            echo "Attempt $attempt: release assets are not complete yet."
+            sleep 15
+          done
+
+          echo "Timed out waiting for the complete Asterfold 3.1.2 release." >&2
+          if [ -f release.json ]; then cat release.json; fi
+          exit 1
