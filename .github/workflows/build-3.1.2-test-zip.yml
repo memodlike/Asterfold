@@ -1,0 +1,76 @@
+name: Build Asterfold 3.1.2 test ZIP
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  verify-and-package:
+    if: github.head_ref == 'perf/asterfold-3.1.2-original-wallpaper-quality'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: perf/asterfold-3.1.2-original-wallpaper-quality
+          fetch-depth: 0
+      - name: Check whether package is already published to the test branch
+        id: state
+        shell: bash
+        run: |
+          if [ -f test-builds/Asterfold-3.1.2-Chrome.zip ] || [ -f test-builds/Asterfold-3.1.2-FAILURE.txt ]; then
+            echo 'done=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'done=false' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        if: steps.state.outputs.done == 'false'
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        if: steps.state.outputs.done == 'false'
+        run: npm ci
+      - name: Verify version, source, types, lint and tests
+        if: steps.state.outputs.done == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run validate:version
+          npm run audit:production
+          npm run scan:source
+          npm run typecheck
+          npm run lint
+          npm run test:coverage
+          npm run validate:store
+          npm run release:repro
+      - name: Install Chromium
+        if: steps.state.outputs.done == 'false'
+        run: npx playwright install --with-deps chromium
+      - name: Verify real MV3 and Windows compatibility stress
+        if: steps.state.outputs.done == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:e2e
+          npm run test:stress
+      - name: Publish verified ZIP to temporary test path
+        if: steps.state.outputs.done == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$(find . -type f -name 'Asterfold-Chrome.zip' -not -path './test-builds/*' -print -quit)"
+          test -n "$archive"
+          test "$(unzip -p "$archive" manifest.json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).version))')" = '3.1.2'
+          mkdir -p test-builds
+          cp "$archive" test-builds/Asterfold-3.1.2-Chrome.zip
+          sha256sum test-builds/Asterfold-3.1.2-Chrome.zip > test-builds/Asterfold-3.1.2-Chrome.sha256
+          git add test-builds/Asterfold-3.1.2-Chrome.zip test-builds/Asterfold-3.1.2-Chrome.sha256
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'test-build: verified Asterfold 3.1.2 Chrome package'
+          git push origin HEAD:perf/asterfold-3.1.2-original-wallpaper-quality
