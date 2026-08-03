@@ -29,7 +29,18 @@ jobs:
             exit 0
           fi
 
-          cat .github/transport/final-3.1.2/chunk-{00..09}.b64 \
+          cat \
+            .github/transport/final-3.1.2/chunk-00.b64 \
+            .github/transport/final-3.1.2/chunk-01.b64 \
+            .github/transport/final-3.1.2/chunk-02.b64 \
+            .github/transport/final-3.1.2/chunk-03.b64 \
+            .github/transport/final-3.1.2/chunk-04.b64 \
+            .github/transport/final-3.1.2/chunk-05.b64 \
+            .github/transport/final-3.1.2/chunk-06.b64 \
+            .github/transport/final-3.1.2/chunk-07a.b64 \
+            .github/transport/final-3.1.2/chunk-07b.b64 \
+            .github/transport/final-3.1.2/chunk-08.b64 \
+            .github/transport/final-3.1.2/chunk-09.b64 \
             | tr -d '\n' | base64 -d > /tmp/asterfold-3.1.2.patch.gz
           echo 'f671cf14c6044893027118fe7288844fff492b0224e4c96ef1603e209bf3a10c  /tmp/asterfold-3.1.2.patch.gz' | sha256sum --check
           gzip -dc /tmp/asterfold-3.1.2.patch.gz > /tmp/asterfold-3.1.2.patch
