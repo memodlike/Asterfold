@@ -23,18 +23,15 @@ jobs:
         run: |
           set -euo pipefail
           cat \
-            .github/patches/3.1.2/part-00.b64 \
-            .github/patches/3.1.2/part-01.b64 \
-            .github/patches/3.1.2/part-02.b64 \
-            .github/patches/3.1.2/part-03.b64 \
-            .github/patches/3.1.2/part-04.b64 \
-            .github/patches/3.1.2/part-05.b64 \
-            .github/patches/3.1.2/part-06.b64 \
-            .github/patches/3.1.2/part-07a.b64 \
-            .github/patches/3.1.2/part-07b.b64 \
-            .github/patches/3.1.2/part-08a.b64 \
-            .github/patches/3.1.2/part-08b.b64 \
-            | tr -d '\n' | base64 -d > /tmp/asterfold-3.1.2.patch
+            .github/patches/3.1.2-gzip/gzip-00.b64 \
+            .github/patches/3.1.2-gzip/gzip-01.b64 \
+            .github/patches/3.1.2-gzip/gzip-02.b64 \
+            .github/patches/3.1.2-gzip/gzip-03.b64 \
+            .github/patches/3.1.2-gzip/gzip-04.b64 \
+            .github/patches/3.1.2-gzip/gzip-05.b64 \
+            | tr -d '\n' | base64 -d > /tmp/asterfold-3.1.2.patch.gz
+          echo '4e8e318f8daa99865d908cac743c8d71b752757252ae77f0ebc320581ef87d87  /tmp/asterfold-3.1.2.patch.gz' | sha256sum --check
+          gzip -dc /tmp/asterfold-3.1.2.patch.gz > /tmp/asterfold-3.1.2.patch
           echo '03b12180f7e743efbeef1322ebf1b619d8fb9943e242306df5f23ed14521808a  /tmp/asterfold-3.1.2.patch' | sha256sum --check
           git apply --check /tmp/asterfold-3.1.2.patch
           git apply /tmp/asterfold-3.1.2.patch
