@@ -122,6 +122,7 @@ describe("runtime lifecycle coverage", () => {
     Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: originalRevokeObjectUrl });
     vi.useRealTimers();
     document.documentElement.removeAttribute("data-theme");
+    document.documentElement.removeAttribute("data-performance");
     document.documentElement.removeAttribute("style");
   });
 
@@ -176,7 +177,7 @@ describe("runtime lifecycle coverage", () => {
     mocks.wallpaperGet.mockResolvedValue(undefined);
     const view = renderHook(() => useThemeRuntime(theme({ backgroundMode: "wallpaper", wallpaperId: "missing" })));
     await waitFor(() => expect(mocks.wallpaperGet).toHaveBeenCalledWith("missing"));
-    expect(view.result.current?.["--wallpaper-image" as keyof typeof view.result.current]).toBe("none");
+    expect(document.documentElement.style.getPropertyValue("--wallpaper-image")).toBe("none");
 
     mocks.wallpaperGet.mockRejectedValueOnce(new Error("read failed"));
     view.rerender();

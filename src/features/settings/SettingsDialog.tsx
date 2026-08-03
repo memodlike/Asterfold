@@ -228,6 +228,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
       props.onUpdated(t("settings.imported", { count: summary.imported }));
       setImportRecordsPreview([]);
       setImportSource("");
+      closeSettings();
     } catch { props.onError(t("error.importFailed")); }
     finally { setImportBusy(false); }
   };
@@ -265,7 +266,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
   };
 
   return (
-    <Modal open={props.open} size="fullscreen" title={t("settings.title")} onClose={closeSettings}>
+    <Modal open={props.open} size="fullscreen" className="settings-modal" title={t("settings.title")} onClose={closeSettings}>
       <div className="settings-layout">
         <nav className="settings-nav" aria-label={t("settings.title")}>{sections.map((item) => <button key={item.id} className={section === item.id ? "is-active" : ""} onClick={() => setSection(item.id)}><item.icon size={17} />{item.label}</button>)}</nav>
         <div className="settings-content">
@@ -286,8 +287,8 @@ export function SettingsDialog(props: SettingsDialogProps) {
             <input ref={wallpaperInputRef} hidden type="file" accept="image/png,image/jpeg,image/webp,image/avif" onChange={(event) => { const file = event.target.files?.[0]; if (file) void saveUploadedWallpaper(file); event.currentTarget.value = ""; }} />
             <div className="settings-control-group">
               <h3>{t("settings.performance")}</h3>
-              <SettingRow label={t("settings.lowPower")}><Switch label={t("settings.lowPower")} checked={themeDraft.lowPowerMode} onChange={(lowPowerMode) => patchTheme({ lowPowerMode })} /></SettingRow>
-              <p>{t("settings.lowPowerDescription")}</p>
+              <SettingRow label={t("settings.performanceMode")}><Segmented value={themeDraft.performanceMode} items={[{ value: "auto", label: t("settings.performanceAuto") }, { value: "quality", label: t("settings.performanceQuality") }, { value: "compatibility", label: t("settings.performanceCompatibility") }]} onChange={(value) => patchTheme({ performanceMode: value as ThemeConfig["performanceMode"], lowPowerMode: value === "compatibility" })} /></SettingRow>
+              <p>{t("settings.performanceDescription")}</p>
             </div>
             <div className="settings-control-group">
               <h3>{t("settings.animations")}</h3>
@@ -308,7 +309,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
           </SettingsSection> : null}
 
           {section === "language" ? <SettingsSection title={t("settings.language")} description={t("settings.languageDescription")}>
-            <div className="language-options">{localeOptions.map((item) => <button key={item.value} className={settings.locale === item.value ? "is-active" : ""} onClick={() => void patchSettings({ locale: item.value })}><span>{item.value === "auto" ? t("settings.languageAuto") : item.label}</span>{settings.locale === item.value ? <Check size={17} /> : null}</button>)}</div>
+            <div className="language-options">{localeOptions.map((item) => <button key={item.value} className={settings.locale === item.value ? "is-active" : ""} onClick={() => void patchSettings({ locale: item.value })}><span className="language-option__label"><span className="language-option__flag" aria-hidden="true">{item.flag}</span><span>{item.value === "auto" ? t("settings.languageAuto") : item.label}</span></span>{settings.locale === item.value ? <Check size={17} /> : null}</button>)}</div>
           </SettingsSection> : null}
 
           {section === "quick-save" ? <SettingsSection title={t("settings.quickSave")} description={t("settings.quickSaveDescription")}>

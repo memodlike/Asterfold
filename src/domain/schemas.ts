@@ -74,6 +74,7 @@ export const themeSchema: z.ZodType<ThemeConfig> = z.object({
   showDescription: z.boolean(),
   faviconSize: finite.min(8).max(64),
   motion: z.boolean(),
+  performanceMode: z.enum(["auto", "quality", "compatibility"]).default("auto"),
   lowPowerMode: z.boolean().default(false),
   bookmarkHoverMotion: z.boolean().default(true),
   menuMotion: z.boolean().default(true),

@@ -109,6 +109,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Real MV3, accessibility and visual E2E
         run: npm run test:e2e
+      - name: Windows 11 compatibility stress gate
+        run: npm run test:stress
       - name: Prepare exact 2.2.3 upgrade fixture
         env:
           GH_TOKEN: ${{ github.token }}

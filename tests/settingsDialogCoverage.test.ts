@@ -97,7 +97,7 @@ function workspace(overrides: Partial<WorkspaceData["settings"]> = {}): Workspac
 const backup = {
   format: "asterfold-backup",
   formatVersion: 3,
-  exportVersion: "3.0.1",
+  exportVersion: "3.1.1",
   scope: "full",
   entities: { pages: [pages[0]], boards: [boards[0]], bookmarks: [bookmarks[0]], settings: [workspace().settings], wallpapers: [] },
 } as unknown as AsterfoldBackup;
@@ -180,7 +180,8 @@ describe("SettingsDialog appearance and navigation", () => {
       expect(slider).not.toBeNull();
       fireEvent.change(slider!, { target: { value } });
     }
-    for (const name of ["Low-power mode", "Bookmark hover", "Menus and dialogs", "Board rearranging", "All animations"] as const) {
+    fireEvent.click(screen.getByRole("button", { name: "Smooth glass" }));
+    for (const name of ["Bookmark hover", "Menus and dialogs", "Board rearranging", "All animations"] as const) {
       const control = screen.getByRole("checkbox", { name });
       fireEvent.click(control);
     }
@@ -296,7 +297,7 @@ describe("SettingsDialog exports and file imports", () => {
     const file = new File(["{}"], "backup.json", { type: "application/json" });
     Object.defineProperty(file, "text", { value: vi.fn().mockResolvedValue("{}") });
     fireEvent.change(importInput(container), { target: { files: [file] } });
-    expect(await screen.findByText(/v3\.0\.1 · 1 \/ 1 \/ 1/)).toBeVisible();
+    expect(await screen.findByText(/v3\.1\.1 · 1 \/ 1 \/ 1/)).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Merge" }));
     await waitFor(() => expect(mocks.restoreBackup).toHaveBeenCalledWith(backup, "merge"));
     expect(handlers.onUpdated).toHaveBeenCalledWith("Backup restored");

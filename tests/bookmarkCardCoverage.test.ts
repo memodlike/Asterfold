@@ -156,7 +156,7 @@ describe("BookmarkCard complete behavior", () => {
     mocks.faviconUrl.mockReturnValue("");
     renderCard({ privacy: true });
     expect(screen.getByRole("button", { name: "Open hidden bookmark" })).toBeVisible();
-    expect(screen.getByText("Hidden bookmark")).toHaveClass("private-content");
+    expect(screen.getByText("••••••••")).toHaveClass("private-content", "private-placeholder");
     expect(screen.getByText("•")).toBeVisible();
     fireEvent.contextMenu(document.querySelector("article")!);
     expect(screen.getByRole("menu", { name: "Hidden bookmark actions" })).toBeVisible();

@@ -5,7 +5,7 @@ export const WALLPAPER_LIMITS = Object.freeze({
   aggregateBytes: 10 * 1024 * 1024,
   sourceDimension: 8_192,
   sourcePixels: 40_000_000,
-  outputDimension: 3_840,
+  outputDimension: 1_920,
   thumbnailDimension: 480,
   minimumOutputDimension: 640,
   minimumThumbnailDimension: 96,

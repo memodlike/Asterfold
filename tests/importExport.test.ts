@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Blob as NodeBlob } from "node:buffer";
 import { version as packageVersion } from "../package.json";
 import { AsterfoldDatabase } from "../src/db/database";
+import { CURRENT_DB_SCHEMA_VERSION } from "../src/db/migrations";
 import { createBoard, createBookmark, ensureStarterWorkspace, getWorkspaceData, updateSettings } from "../src/db/repository";
 import { isValidRank, validateScope } from "../src/domain/ordering";
 import {
@@ -398,20 +399,22 @@ describe("safe import and lossless export", () => {
     delete legacy.settings.workspaceAlignment;
     delete (legacy.settings.theme as Record<string, unknown>).glassVariant;
     delete (legacy.settings.theme as Record<string, unknown>).backgroundMode;
+    delete (legacy.settings.theme as Record<string, unknown>).performanceMode;
     delete (legacy.settings.theme as Record<string, unknown>).lowPowerMode;
     delete (legacy.settings.theme as Record<string, unknown>).bookmarkHoverMotion;
     delete (legacy.settings.theme as Record<string, unknown>).menuMotion;
     delete (legacy.settings.theme as Record<string, unknown>).dragMotion;
     delete legacy.theme.glassVariant;
     delete legacy.theme.backgroundMode;
+    delete legacy.theme.performanceMode;
     delete legacy.theme.lowPowerMode;
     delete legacy.theme.bookmarkHoverMotion;
     delete legacy.theme.menuMotion;
     delete legacy.theme.dragMotion;
     const normalized = parseBackup(JSON.stringify(legacy));
     expect(normalized).toMatchObject({ schemaVersion: 1, exportVersion: 1 });
-    expect(normalized.settings).toMatchObject({ schemaVersion: 6, locale: "auto", workspaceLayoutMode: "auto", workspaceRows: 2, workspaceAlignment: "center" });
-    expect(normalized.settings?.theme).toMatchObject({ lowPowerMode: false, bookmarkHoverMotion: true, menuMotion: true, dragMotion: true });
+    expect(normalized.settings).toMatchObject({ schemaVersion: CURRENT_DB_SCHEMA_VERSION, locale: "auto", workspaceLayoutMode: "auto", workspaceRows: 2, workspaceAlignment: "center" });
+    expect(normalized.settings?.theme).toMatchObject({ performanceMode: "auto", lowPowerMode: false, bookmarkHoverMotion: true, menuMotion: true, dragMotion: true });
     expect(normalized.entities.boards[0]).toMatchObject({ bookmarkColumns: "auto", gridColumn: 1, gridRow: 0, gridSpan: 3 });
 
     const v2 = { ...backup, schemaVersion: 2, exportVersion: 2 };
@@ -605,6 +608,25 @@ describe("safe import and lossless export", () => {
     expect(new Set(bookmarks.map((item) => item.position)).size).toBe(bookmarks.length);
     expect(bookmarks.find((item) => item.id === first.id)?.version).toBe(2);
     expect(bookmarks.find((item) => item.id === second.id)?.version).toBe(2);
+  });
+
+  it("puts a newly imported Page first and activates it", async () => {
+    const workspace = await ensureStarterWorkspace(database);
+    const previousFirst = workspace.pages[0]!;
+    await importRecords([{
+      title: "Imported first",
+      url: "https://import-first.example/",
+      description: null,
+      folderPath: ["Imported"],
+    }], { pageTitle: "Chrome import" }, "skip", database);
+
+    const after = await getWorkspaceData(database);
+    const importedPage = after.pages[0];
+    expect(importedPage).toBeDefined();
+    expect(importedPage?.title).toBe("Chrome import");
+    expect(importedPage?.id).toBe(after.settings.activePageId);
+    expect(importedPage!.position < previousFirst.position).toBe(true);
+    expect(after.boards.some((board) => board.pageId === importedPage?.id)).toBe(true);
   });
 
   it("imports 10,000 Unicode bookmarks in bounded bulk transactions", async () => {

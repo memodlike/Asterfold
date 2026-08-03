@@ -1,6 +1,6 @@
 {
   "name": "asterfold",
-  "version": "3.0.1",
+  "version": "3.1.1",
   "private": true,
   "type": "module",
   "description": "A premium local-first visual bookmark workspace for Chrome.",
@@ -25,7 +25,8 @@
     "validate:provenance": "node scripts/verify-provenance.mjs",
     "scan:source": "node scripts/scan-source.mjs",
     "audit:development": "npm audit --json > npm-audit.json || true && node scripts/check-audit-baseline.mjs npm-audit.json && rm -f npm-audit.json",
-    "test:upgrade": "playwright test e2e/upgrade.spec.ts"
+    "test:upgrade": "playwright test e2e/upgrade.spec.ts",
+    "test:stress": "vitest run tests/performanceStress.test.ts && playwright test e2e/performance.spec.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "6.3.1",

@@ -72,7 +72,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
   const initialSettingsSeen = useRef(false);
-  const appStyle = useThemeRuntime(workspace.settings.theme);
+  const performanceMode = useThemeRuntime(workspace.settings.theme);
   const { privacy, setPrivacy } = usePrivacyMode(workspace.settings);
 
   useEffect(() => {
@@ -207,7 +207,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   };
 
   return (
-    <div className={`app-shell ${workspace.settings.theme.lowPowerMode ? "low-power-mode" : ""} ${privacy ? "privacy-mode" : ""} ${workspace.settings.theme.motion ? "" : "motion-disabled"} ${workspace.settings.theme.bookmarkHoverMotion ? "" : "motion-hover-disabled"} ${workspace.settings.theme.menuMotion ? "" : "motion-menu-disabled"} ${workspace.settings.theme.dragMotion ? "" : "motion-drag-disabled"}`} style={appStyle}>
+    <div className={`app-shell performance-${performanceMode} ${performanceMode !== "quality" ? "low-power-mode" : ""} ${privacy ? "privacy-mode" : ""} ${workspace.settings.theme.motion ? "" : "motion-disabled"} ${workspace.settings.theme.bookmarkHoverMotion ? "" : "motion-hover-disabled"} ${workspace.settings.theme.menuMotion ? "" : "motion-menu-disabled"} ${workspace.settings.theme.dragMotion ? "" : "motion-drag-disabled"}`}>
       <div className="wallpaper" aria-hidden="true" />
       <BoardCanvas
         boards={boards}

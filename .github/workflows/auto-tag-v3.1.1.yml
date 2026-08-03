@@ -1,0 +1,72 @@
+name: Tag verified Asterfold 3.1.1
+
+on:
+  workflow_run:
+    workflows: [CI, CodeQL]
+    types: [completed]
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: tag-v3.1.1
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    if: github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact completed SHA
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Verify both exact-SHA workflows are green
+        id: gates
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node -p 'require("./package.json").version')" = "3.1.1"
+          git fetch origin main --tags
+          test "$(git rev-parse origin/main)" = "$SOURCE_SHA"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$SOURCE_SHA&status=completed&per_page=100" > workflow-runs.json
+          ready="$(node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const runs = JSON.parse(fs.readFileSync('workflow-runs.json', 'utf8')).workflow_runs ?? [];
+          const success = new Set(runs.filter((run) => run.event === 'push' && run.conclusion === 'success').map((run) => run.name));
+          process.stdout.write(success.has('CI') && success.has('CodeQL') ? 'true' : 'false');
+          NODE
+          )"
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+
+      - name: Create exact annotated tag
+        if: steps.gates.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+          RELEASE_TAG: v3.1.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git rev-parse "$RELEASE_TAG" >/dev/null 2>&1; then
+            test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$SOURCE_SHA"
+            exit 0
+          fi
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release exists without a matching local tag" >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$RELEASE_TAG" "$SOURCE_SHA" -m "Asterfold 3.1.1 Windows 11 adaptive performance release"
+          git push origin "$RELEASE_TAG"
+          sleep 2
+          gh workflow run release.yml --repo "$GITHUB_REPOSITORY" --ref "$RELEASE_TAG"
