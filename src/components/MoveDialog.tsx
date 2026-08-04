@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Board, Page } from "../domain/models";
 import { Button } from "./Button";
 import { Modal } from "./Modal";
+import { SelectField, type SelectOption } from "./SelectField";
 import { useI18n } from "../i18n";
 
 interface MoveDialogProps {
@@ -16,9 +17,12 @@ interface MoveDialogProps {
 
 export function MoveDialog(props: MoveDialogProps) {
   const { t } = useI18n();
-  const destinations = props.type === "board" ? props.pages : props.boards;
-  const available = destinations.filter((item) => item.id !== props.currentId);
-  const firstDestinationId = available[0]?.id ?? "";
+  const options = useMemo<ReadonlyArray<SelectOption>>(() => props.type === "board"
+    ? props.pages.filter((page) => page.id !== props.currentId).map((page) => ({ value: page.id, label: page.title }))
+    : props.pages.flatMap((page) => props.boards
+      .filter((board) => board.pageId === page.id && board.id !== props.currentId)
+      .map((board) => ({ value: board.id, label: board.title, group: page.title }))), [props.boards, props.currentId, props.pages, props.type]);
+  const firstDestinationId = options[0]?.value ?? "";
   const [destination, setDestination] = useState(firstDestinationId);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
@@ -38,11 +42,7 @@ export function MoveDialog(props: MoveDialogProps) {
   };
   return (
     <Modal open={props.open} size="small" title={t(props.type === "board" ? "move.board" : "move.bookmarks")} onClose={props.onClose} footer={<><Button onClick={props.onClose}>{t("generic.cancel")}</Button><Button variant="primary" disabled={!destination || busy} onClick={() => void move()}>{t("generic.move")}</Button></>}>
-      <div className="form-stack"><label>{t("generic.destination")}<select autoFocus value={destination} onChange={(event) => setDestination(event.target.value)}>
-        {props.type === "board"
-          ? props.pages.filter((page) => page.id !== props.currentId).map((page) => <option key={page.id} value={page.id}>{page.title}</option>)
-          : props.pages.map((page) => <optgroup key={page.id} label={page.title}>{props.boards.filter((board) => board.pageId === page.id && board.id !== props.currentId).map((board) => <option key={board.id} value={board.id}>{board.title}</option>)}</optgroup>)}
-      </select></label>{error ? <p className="inline-error" role="alert">{t("error.actionFailed")}</p> : null}</div>
+      <div className="form-stack"><label>{t("generic.destination")}<SelectField autoFocus value={destination} options={options} label={t("generic.destination")} onChange={setDestination} /></label>{error ? <p className="inline-error" role="alert">{t("error.actionFailed")}</p> : null}</div>
     </Modal>
   );
 }
