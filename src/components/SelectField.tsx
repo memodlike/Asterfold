@@ -59,7 +59,7 @@ function findTypeaheadMatch(options: ReadonlyArray<SelectOption>, query: string,
   for (let offset = 1; offset <= options.length; offset += 1) {
     const index = (start + offset + options.length) % options.length;
     const option = options[index];
-    if (!option?.disabled && option.label.toLocaleLowerCase().startsWith(query)) return index;
+    if (option && !option.disabled && option.label.toLocaleLowerCase().startsWith(query)) return index;
   }
   return -1;
 }
