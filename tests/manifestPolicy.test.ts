@@ -13,14 +13,18 @@ describe("Chrome Web Store manifest policy", () => {
     await execFileAsync(npmExecutable, ["run", "build"], { cwd: process.cwd() });
   }, 30_000);
 
-  it("keeps package, WXT and release validation on one least-privilege version policy", async () => {
-    const [config, releaseValidator, background] = await Promise.all([
+  it("keeps package, lock, WXT and release validation on one least-privilege version policy", async () => {
+    const [config, releaseValidator, background, lockText] = await Promise.all([
       readFile(join(process.cwd(), "wxt.config.ts"), "utf8"),
       readFile(join(process.cwd(), "scripts/release.mjs"), "utf8"),
       readFile(join(process.cwd(), "entrypoints", "background.ts"), "utf8"),
+      readFile(join(process.cwd(), "package-lock.json"), "utf8"),
     ]);
+    const lock = JSON.parse(lockText) as { version?: string; packages?: Record<string, { version?: string }> };
 
-    expect(packageVersion).toBe("3.1.3");
+    expect(packageVersion).toMatch(/^\d+\.\d+\.\d+$/u);
+    expect(lock.version).toBe(packageVersion);
+    expect(lock.packages?.[""]?.version).toBe(packageVersion);
     expect(config).toContain("version: packageVersion");
     expect(config).toMatch(/permissions:\s*\[[^\]]*["']storage["']/su);
     expect(releaseValidator).toContain("storage");
