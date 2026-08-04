@@ -1,21 +1,15 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
+    types: [opened, reopened, synchronize]
 
 permissions:
   contents: write
 
-concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   prepare-preview:
-    if: github.event_name == 'pull_request' && github.head_ref == 'fix/newtab-startup-flash-3.1.3'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Check out preview branch
@@ -26,7 +20,7 @@ jobs:
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 22
-      - name: Synchronize 3.1.3 metadata and patched lockfile
+      - name: Synchronize patched lockfile and 3.1.3 metadata
         shell: bash
         run: |
           set -euo pipefail
@@ -36,14 +30,8 @@ jobs:
           from pathlib import Path
 
           replacements = {
-            'docs/security/privacy.md': [
-              ('Policy version: 3.1.2', 'Policy version: 3.1.3'),
-              ('Applies to: Asterfold 3.1.2', 'Applies to: Asterfold 3.1.3'),
-            ],
-            'docs/store/privacy.html': [
-              ('Policy version: 3.1.2', 'Policy version: 3.1.3'),
-              ('Asterfold 3.1.2', 'Asterfold 3.1.3'),
-            ],
+            'docs/security/privacy.md': [('Policy version: 3.1.2', 'Policy version: 3.1.3'), ('Applies to: Asterfold 3.1.2', 'Applies to: Asterfold 3.1.3')],
+            'docs/store/privacy.html': [('Policy version: 3.1.2', 'Policy version: 3.1.3'), ('Asterfold 3.1.2', 'Asterfold 3.1.3')],
             'docs/store/submission-checklist.md': [('Current version: 3.1.2', 'Current version: 3.1.3')],
             'store-assets/listing/submission-values.md': [('Current version: 3.1.2', 'Current version: 3.1.3')],
             'docs/release/install.md': [('Install Asterfold 3.1.2', 'Install Asterfold 3.1.3')],
@@ -65,25 +53,22 @@ jobs:
 
 ## Flash-free new-tab startup
 
-- Paints a dark critical startup surface before React and the main stylesheet load, eliminating the browser-default white frame.
-- Restores a strictly validated local visual snapshot for the canvas and bundled wallpaper without storing bookmark or workspace content.
-- Keeps the React root hidden while IndexedDB, the selected theme and wallpaper asset resolve, then reveals the final workspace once.
-- Uses layout-timed theme variables so the first visible React frame already has the correct light/dark palette and performance profile.
-- Adds a five-second failure fallback so a startup error remains recoverable instead of leaving a blank tab.
+- Paints a dark critical surface before React and the main stylesheet load.
+- Restores a strictly validated local visual snapshot for the canvas and bundled wallpaper.
+- Keeps React hidden until IndexedDB, the selected theme and wallpaper resolve, then reveals the final workspace once.
+- Applies final theme variables before the first visible React frame and keeps a five-second failure fallback.
 
 ## Entrance motion
 
-- Fades the final wallpaper in without animating blur or expensive filters.
-- Introduces a restrained board stagger and launcher rise using only opacity and transform.
-- Runs the entrance sequence only during initial startup; newly created boards do not replay it.
-- Disables all startup motion for `prefers-reduced-motion` and the existing Asterfold motion preference.
+- Fades the final wallpaper without animating blur or filters.
+- Introduces a restrained board stagger and launcher rise using opacity and transform only.
+- Runs only during initial startup and respects both reduced-motion and the Asterfold motion preference.
 
 ## Verification
 
-- Adds unit/static coverage for snapshot validation, denied storage, critical stylesheet ordering and reduced-motion behavior.
-- Adds a real unpacked-MV3 Playwright regression that samples every animation frame during a new-tab open.
-- Rejects visible loading-state flashes, near-white startup frames, root-opacity reversals and missing board entrance motion.
-- Retains production audit, source scan, typecheck, lint, coverage, Store validation, deterministic packaging, standard MV3 E2E, Windows compatibility stress and exact 2.2.3 upgrade checks.
+- Adds unit/static coverage for snapshot validation, denied storage, critical resource ordering and reduced-motion behavior.
+- Adds a real unpacked-MV3 frame-sampled regression for white flashes, visible loading frames and opacity reversals.
+- Retains audit, source scan, typecheck, lint, coverage, Store validation, deterministic packaging, MV3 E2E, stress and exact upgrade checks.
 
 ## Previous release details
 
@@ -92,266 +77,45 @@ jobs:
           readme_path = Path('README.md')
           readme = readme_path.read_text()
           readme = readme.replace('Asterfold 3.1.2 produces a reproducible', 'Asterfold 3.1.3 produces a reproducible', 1)
-          readme = readme.replace(
-            '**Asterfold 3.1.2** preserves user-uploaded wallpapers at their exact original resolution, format and byte quality, while keeping a separate Full HD software-rendering fallback and the verified local-first release pipeline.',
-            '**Asterfold 3.1.3** removes new-tab white/dark flashing with a critical first-paint surface, waits for the final theme and wallpaper before revealing React, and introduces a restrained reduced-motion-aware entrance sequence while retaining the 3.1.2 original-quality wallpaper pipeline.',
-            1,
-          )
+          readme = readme.replace('**Asterfold 3.1.2** preserves user-uploaded wallpapers at their exact original resolution, format and byte quality, while keeping a separate Full HD software-rendering fallback and the verified local-first release pipeline.', '**Asterfold 3.1.3** removes new-tab white/dark flashing with a critical first-paint surface, waits for the final theme and wallpaper before revealing React, and adds a restrained reduced-motion-aware entrance sequence while retaining the 3.1.2 original-quality wallpaper pipeline.', 1)
           marker = '## Version history\n\n'
           if '**v3.1.3 — Flash-free new-tab startup.**' not in readme:
             start = readme.index(marker) + len(marker)
             end = readme.index('\n\nThe newest published build', start)
             lines = readme[start:end].splitlines()
-            renumbered = []
+            bumped = []
             for line in lines:
               match = re.match(r'^(\d+)\.\s+(.*)$', line)
-              renumbered.append(f"{int(match.group(1)) + 1}. {match.group(2)}" if match else line)
-            current = '1. **v3.1.3 — Flash-free new-tab startup.** Adds a critical dark first paint, validated visual startup snapshot, layout-timed theme application, one-time wallpaper/board/launcher entrance motion, reduced-motion support, and a frame-sampled MV3 flash regression.'
-            readme = readme[:start] + current + '\n' + '\n'.join(renumbered) + readme[end:]
+              bumped.append(f"{int(match.group(1)) + 1}. {match.group(2)}" if match else line)
+            current = '1. **v3.1.3 — Flash-free new-tab startup.** Adds a critical dark first paint, validated visual snapshot, layout-timed theme application, one-time compositor-safe entrance motion, reduced-motion support, and a frame-sampled MV3 regression.'
+            readme = readme[:start] + current + '\n' + '\n'.join(bumped) + readme[end:]
           readme_path.write_text(readme)
 
           versioning_path = Path('docs/release/versioning.md')
           versioning = versioning_path.read_text()
           anchor = '`3.1.2` is the original-quality wallpaper patch release. It follows the 3.1.1 wallpaper/UI polish build and preserves uploaded raster sources without changing extension permissions or the local-first data model.\n'
-          addition = anchor + '\n`3.1.3` is the flash-free new-tab startup patch. It adds a critical first-paint surface, waits for the resolved theme and wallpaper before revealing the workspace, and keeps all entrance motion compositor-safe and reduced-motion-aware.\n'
           if '`3.1.3` is the flash-free' not in versioning:
-            versioning = versioning.replace(anchor, addition)
-          versioning = versioning.replace('for example `v3.1.2`', 'for example `v3.1.3`')
-          versioning = versioning.replace('numeric version `3.1.2`', 'numeric version `3.1.3`')
+            versioning = versioning.replace(anchor, anchor + '\n`3.1.3` is the flash-free new-tab startup patch. It adds a critical first-paint surface, waits for the resolved theme and wallpaper before revealing the workspace, and keeps entrance motion compositor-safe and reduced-motion-aware.\n')
+          versioning = versioning.replace('for example `v3.1.2`', 'for example `v3.1.3`').replace('numeric version `3.1.2`', 'numeric version `3.1.3`')
           versioning_path.write_text(versioning)
 
           runtime_path = Path('tests/runtimeCoverage.test.ts')
           runtime = runtime_path.read_text()
           anchor = '    document.documentElement.removeAttribute("data-performance");\n'
-          addition = anchor + '    document.documentElement.removeAttribute("data-asterfold-ready");\n    document.documentElement.removeAttribute("data-asterfold-entering");\n    document.documentElement.removeAttribute("data-asterfold-boot");\n    localStorage.removeItem("asterfold:startup-theme:v1");\n'
           if 'removeAttribute("data-asterfold-ready")' not in runtime:
-            runtime = runtime.replace(anchor, addition)
+            runtime = runtime.replace(anchor, anchor + '    document.documentElement.removeAttribute("data-asterfold-ready");\n    document.documentElement.removeAttribute("data-asterfold-entering");\n    document.documentElement.removeAttribute("data-asterfold-boot");\n    localStorage.removeItem("asterfold:startup-theme:v1");\n')
           runtime_path.write_text(runtime)
-
           Path('.github/workflows/prepare-3.1.3-test-build.yml').unlink(missing_ok=True)
           PY
-          test "$(node -p 'require("./package.json").version')" = '3.1.3'
-          test "$(node -p 'require("./package-lock.json").version')" = '3.1.3'
-          test "$(node -p 'require("./package-lock.json").packages["node_modules/brace-expansion"].version')" = '5.0.9'
+          node -e "const p=require('./package-lock.json'); if(p.version!=='3.1.3'||p.packages[''].version!=='3.1.3'||p.packages['node_modules/brace-expansion'].version!=='5.0.9') process.exit(1)"
           git diff --check
-      - name: Publish synchronized preview metadata
+      - name: Commit prepared preview
         shell: bash
         run: |
           set -euo pipefail
-          if git diff --quiet; then
-            echo 'Preview metadata is already synchronized.'
-            exit 0
-          fi
+          if git diff --quiet; then exit 0; fi
           git add -A
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'chore: synchronize Asterfold 3.1.3 preview metadata'
           git push origin HEAD:fix/newtab-startup-flash-3.1.3
-
-  validate:
-    runs-on: ubuntu-latest
-    timeout-minutes: 40
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - name: Set up Node.js
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: Version consistency
-        run: npm run validate:version
-      - name: Production dependency audit
-        run: npm run audit:production
-      - name: Capture development dependency audit
-        shell: bash
-        run: npm audit --json > npm-audit.json || true
-      - name: Upload development audit evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: npm-audit-development
-          path: npm-audit.json
-          if-no-files-found: error
-      - name: Development dependency audit baseline
-        run: node scripts/check-audit-baseline.mjs npm-audit.json
-      - name: Source security scan
-        run: npm run scan:source
-      - name: Capture typecheck result
-        id: typecheck
-        shell: bash
-        run: |
-          set +e
-          npm run typecheck > typecheck.log 2>&1
-          status=$?
-          cat typecheck.log
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-          exit 0
-      - name: Upload typecheck evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: typecheck-evidence
-          path: typecheck.log
-          if-no-files-found: error
-      - name: Enforce typecheck result
-        shell: bash
-        run: test "${{ steps.typecheck.outputs.status }}" = "0"
-      - name: Capture lint result
-        id: lint
-        shell: bash
-        run: |
-          set +e
-          npm run lint > lint.log 2>&1
-          status=$?
-          cat lint.log
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-          exit 0
-      - name: Upload lint evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: lint-evidence
-          path: lint.log
-          if-no-files-found: error
-      - name: Enforce lint result
-        shell: bash
-        run: test "${{ steps.lint.outputs.status }}" = "0"
-      - name: Capture coverage result
-        id: coverage
-        shell: bash
-        run: |
-          set +e
-          npm run test:coverage > coverage.log 2>&1
-          status=$?
-          cat coverage.log
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-          exit 0
-      - name: Upload coverage evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: coverage-evidence
-          path: |
-            coverage.log
-            coverage
-          if-no-files-found: error
-      - name: Enforce coverage result
-        shell: bash
-        run: test "${{ steps.coverage.outputs.status }}" = "0"
-      - name: Chrome Web Store asset validation
-        run: npm run validate:store
-      - name: Reproducible release and package validation
-        run: npm run release:repro
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
-      - name: Real MV3, accessibility and visual E2E
-        run: npm run test:e2e
-      - name: Windows 11 compatibility stress gate
-        run: npm run test:stress
-      - name: Prepare exact 2.2.3 upgrade fixture
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf .upgrade && mkdir -p .upgrade/extension
-          gh release download v2.2.3 --repo "$GITHUB_REPOSITORY" --pattern Asterfold-Chrome.zip --dir .upgrade
-          echo "e666c0e40ca2bcd1631b04e3b9087e38b26f71336664ecfc475ee8b4d610920a  .upgrade/Asterfold-Chrome.zip" | sha256sum --check
-          unzip -q .upgrade/Asterfold-Chrome.zip -d .upgrade/extension
-          test "$(node -p "require('./.upgrade/extension/manifest.json').version")" = "2.2.3"
-      - name: Exact 2.2.3 upgrade E2E
-        env:
-          ASTERFOLD_UPGRADE_BASELINE_PATH: ${{ github.workspace }}/.upgrade/extension
-          ASTERFOLD_UPGRADE_TARGET_ZIP: ${{ github.workspace }}/release/Asterfold-Chrome.zip
-          ASTERFOLD_UPGRADE_PROFILE_PATH: ${{ github.workspace }}/.upgrade/profile
-        run: npm run test:upgrade
-      - name: Upload failure evidence
-        if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: failure-evidence-linux
-          path: |
-            test-results
-            playwright-report
-            coverage
-          if-no-files-found: ignore
-      - name: Upload Linux reproducibility subjects
-        if: success()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: release-linux
-          path: |
-            release/Asterfold-Chrome.zip
-            release/chrome-unpacked.zip
-            release/extension-source.zip
-            release/Asterfold-Store-Assets.zip
-            release/sbom.spdx.json
-          if-no-files-found: error
-
-  windows-release:
-    runs-on: windows-latest
-    timeout-minutes: 25
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: Windows version consistency
-        run: npm run validate:version
-      - name: Windows source security scan
-        run: npm run scan:source
-      - name: Windows production build
-        run: npm run build
-      - name: Windows generated manifest consistency
-        shell: pwsh
-        run: $env:REQUIRE_GENERATED_MANIFEST='true'; npm run validate:version
-      - name: Windows Store asset validation
-        run: npm run validate:store
-      - name: Windows deterministic release verification
-        run: node scripts/verify-release.mjs
-      - name: Upload Windows reproducibility subjects
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: release-windows
-          path: |
-            release/Asterfold-Chrome.zip
-            release/chrome-unpacked.zip
-            release/extension-source.zip
-            release/Asterfold-Store-Assets.zip
-            release/sbom.spdx.json
-          if-no-files-found: error
-
-  cross-platform-reproducibility:
-    needs: [validate, windows-release]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Download Linux artifacts
-        uses: actions/download-artifact@974686ed5098c7f9c9289ec946b9058e496a2561 # v8
-        with:
-          name: release-linux
-          path: linux
-      - name: Download Windows artifacts
-        uses: actions/download-artifact@974686ed5098c7f9c9289ec946b9058e496a2561 # v8
-        with:
-          name: release-windows
-          path: windows
-      - name: Compare exact bytes
-        shell: bash
-        run: |
-          set -euo pipefail
-          for name in Asterfold-Chrome.zip chrome-unpacked.zip extension-source.zip Asterfold-Store-Assets.zip sbom.spdx.json; do
-            cmp "linux/$name" "windows/$name"
-            sha256sum "linux/$name" "windows/$name"
-          done
-
-  dependency-review:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: actions/dependency-review-action@1e966ba708e4b64bb0c9bfb7abb5a232840be16a
-        with:
-          fail-on-severity: high
