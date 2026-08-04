@@ -3,6 +3,7 @@ import { db } from "../../db/database";
 import type { ThemeConfig } from "../../domain/models";
 import { browserPerformanceSignals, classifyPerformanceMode, type ResolvedPerformanceMode } from "../performance/performanceProfile";
 import { extractCssImageUrl, storeStartupThemeSnapshot } from "./startupSnapshot";
+import { THEME_PREVIEW_EVENT, themePreviewFromEvent } from "./themePreview";
 import { themeStyle } from "./themeRuntime";
 
 interface WallpaperUrls {
@@ -35,6 +36,8 @@ function nextFrame(callback: () => void): number {
 }
 
 export function useThemeRuntime(theme: ThemeConfig | undefined): ResolvedPerformanceMode {
+  const [previewTheme, setPreviewTheme] = useState<ThemeConfig | null>(null);
+  const activeTheme = previewTheme ?? theme;
   const [wallpaperUrls, setWallpaperUrls] = useState<WallpaperUrls>(() => ({
     normal: null,
     compatibility: null,
@@ -45,10 +48,16 @@ export function useThemeRuntime(theme: ThemeConfig | undefined): ResolvedPerform
   const signals = useMemo(() => browserPerformanceSignals(), []);
   const previousVariables = useRef(new Map<string, string>());
   const revealTimer = useRef<number | null>(null);
-  const performanceMode = useMemo(() => theme
-    ? classifyPerformanceMode(theme.performanceMode, theme.lowPowerMode, signals)
-    : "quality", [signals, theme]);
-  const dark = Boolean(theme && (theme.mode === "dark" || (theme.mode === "system" && systemDark)));
+  const performanceMode = useMemo(() => activeTheme
+    ? classifyPerformanceMode(activeTheme.performanceMode, activeTheme.lowPowerMode, signals)
+    : "quality", [activeTheme, signals]);
+  const dark = Boolean(activeTheme && (activeTheme.mode === "dark" || (activeTheme.mode === "system" && systemDark)));
+
+  useEffect(() => {
+    const handlePreview = (event: Event): void => setPreviewTheme(themePreviewFromEvent(event));
+    window.addEventListener(THEME_PREVIEW_EVENT, handlePreview);
+    return () => window.removeEventListener(THEME_PREVIEW_EVENT, handlePreview);
+  }, []);
 
   useEffect(() => {
     const query = matchMedia("(prefers-color-scheme: dark)");
@@ -60,7 +69,7 @@ export function useThemeRuntime(theme: ThemeConfig | undefined): ResolvedPerform
   useEffect(() => {
     let active = true;
     const objectUrls: string[] = [];
-    const wallpaperId = theme?.wallpaperId ?? null;
+    const wallpaperId = activeTheme?.wallpaperId ?? null;
     if (!isUploadedWallpaper(wallpaperId)) {
       setWallpaperUrls({ normal: null, compatibility: null, resolved: true, sourceId: wallpaperId });
       return;
@@ -80,15 +89,15 @@ export function useThemeRuntime(theme: ThemeConfig | undefined): ResolvedPerform
       active = false;
       for (const url of objectUrls) URL.revokeObjectURL(url);
     };
-  }, [theme?.wallpaperId]);
+  }, [activeTheme?.wallpaperId]);
 
-  const style = useMemo(() => theme ? themeStyle(
-    theme, wallpaperUrls.normal, wallpaperUrls.compatibility,
+  const style = useMemo(() => activeTheme ? themeStyle(
+    activeTheme, wallpaperUrls.normal, wallpaperUrls.compatibility,
     dark, performanceMode,
-  ) : undefined, [dark, performanceMode, theme, wallpaperUrls.compatibility, wallpaperUrls.normal]);
+  ) : undefined, [activeTheme, dark, performanceMode, wallpaperUrls.compatibility, wallpaperUrls.normal]);
 
   useLayoutEffect(() => {
-    if (!theme || !style) return;
+    if (!activeTheme || !style) return;
     const root = document.documentElement;
     root.dataset.theme = dark ? "dark" : "light";
     root.dataset.performance = performanceMode;
@@ -102,10 +111,10 @@ export function useThemeRuntime(theme: ThemeConfig | undefined): ResolvedPerform
     }
     for (const name of previousVariables.current.keys()) if (!next.has(name)) root.style.removeProperty(name);
     previousVariables.current = next;
-  }, [dark, performanceMode, style, theme]);
+  }, [activeTheme, dark, performanceMode, style]);
 
   useEffect(() => {
-    if (!theme || !style || !wallpaperUrls.resolved || wallpaperUrls.sourceId !== (theme.wallpaperId ?? null)) return;
+    if (!activeTheme || !style || !wallpaperUrls.resolved || wallpaperUrls.sourceId !== (activeTheme.wallpaperId ?? null)) return;
     let active = true;
     let firstFrame: number | null = null;
     let secondFrame: number | null = null;
@@ -119,7 +128,7 @@ export function useThemeRuntime(theme: ThemeConfig | undefined): ResolvedPerform
     ]).then(() => {
       if (!active) return;
       const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (theme.motion && !reducedMotion) root.dataset.asterfoldEntering = "true";
+      if (activeTheme.motion && !reducedMotion) root.dataset.asterfoldEntering = "true";
       else delete root.dataset.asterfoldEntering;
       firstFrame = nextFrame(() => {
         secondFrame = nextFrame(() => {
@@ -143,7 +152,7 @@ export function useThemeRuntime(theme: ThemeConfig | undefined): ResolvedPerform
       if (firstFrame !== null && typeof cancelAnimationFrame === "function") cancelAnimationFrame(firstFrame);
       if (secondFrame !== null && typeof cancelAnimationFrame === "function") cancelAnimationFrame(secondFrame);
     };
-  }, [dark, style, theme, wallpaperUrls.resolved, wallpaperUrls.sourceId]);
+  }, [activeTheme, dark, style, wallpaperUrls.resolved, wallpaperUrls.sourceId]);
 
   useEffect(() => () => {
     const root = document.documentElement;
