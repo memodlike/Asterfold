@@ -32,7 +32,6 @@ interface PopoverPosition {
 
 const VIEWPORT_MARGIN = 8;
 const POPOVER_GAP = 6;
-const MIN_POPOVER_HEIGHT = 120;
 const MAX_POPOVER_HEIGHT = 300;
 
 function nextEnabledIndex(options: ReadonlyArray<SelectOption>, start: number, direction: 1 | -1): number {
@@ -51,6 +50,16 @@ function firstEnabledIndex(options: ReadonlyArray<SelectOption>): number {
 function lastEnabledIndex(options: ReadonlyArray<SelectOption>): number {
   for (let index = options.length - 1; index >= 0; index -= 1) {
     if (!options[index]?.disabled) return index;
+  }
+  return -1;
+}
+
+function findTypeaheadMatch(options: ReadonlyArray<SelectOption>, query: string, start: number): number {
+  if (!query || options.length === 0) return -1;
+  for (let offset = 1; offset <= options.length; offset += 1) {
+    const index = (start + offset + options.length) % options.length;
+    const option = options[index];
+    if (!option?.disabled && option.label.toLocaleLowerCase().startsWith(query)) return index;
   }
   return -1;
 }
@@ -83,6 +92,8 @@ export function SelectField({ value, options, onChange, label, className = "", d
   const popoverRef = useRef<HTMLDivElement>(null);
   const typeaheadRef = useRef("");
   const typeaheadTimerRef = useRef<number | null>(null);
+  const focusTimerRef = useRef<number | null>(null);
+  const scrollFrameRef = useRef<number | null>(null);
   const triggerId = useId();
   const listboxId = useId();
   const [open, setOpen] = useState(false);
@@ -105,7 +116,7 @@ export function SelectField({ value, options, onChange, label, className = "", d
     const availableAbove = rect.top - VIEWPORT_MARGIN - POPOVER_GAP;
     const placement = availableBelow < 176 && availableAbove > availableBelow ? "top" : "bottom";
     const available = placement === "top" ? availableAbove : availableBelow;
-    const maxHeight = Math.max(MIN_POPOVER_HEIGHT, Math.min(MAX_POPOVER_HEIGHT, available));
+    const maxHeight = Math.max(0, Math.min(MAX_POPOVER_HEIGHT, available));
     setPosition({
       left,
       width,
@@ -118,13 +129,35 @@ export function SelectField({ value, options, onChange, label, className = "", d
   }, [compact]);
 
   const close = useCallback((restoreFocus = false) => {
+    typeaheadRef.current = "";
+    if (typeaheadTimerRef.current !== null) {
+      window.clearTimeout(typeaheadTimerRef.current);
+      typeaheadTimerRef.current = null;
+    }
+    if (focusTimerRef.current !== null) {
+      window.clearTimeout(focusTimerRef.current);
+      focusTimerRef.current = null;
+    }
+    if (scrollFrameRef.current !== null) {
+      window.cancelAnimationFrame(scrollFrameRef.current);
+      scrollFrameRef.current = null;
+    }
     setOpen(false);
     setPosition(null);
-    if (restoreFocus) window.setTimeout(() => triggerRef.current?.focus(), 0);
+    if (restoreFocus) {
+      focusTimerRef.current = window.setTimeout(() => {
+        focusTimerRef.current = null;
+        triggerRef.current?.focus();
+      }, 0);
+    }
   }, []);
 
   const openMenu = useCallback((preferredIndex?: number) => {
     if (unavailable) return;
+    if (focusTimerRef.current !== null) {
+      window.clearTimeout(focusTimerRef.current);
+      focusTimerRef.current = null;
+    }
     const fallback = selectedIndex >= 0 && !options[selectedIndex]?.disabled ? selectedIndex : firstEnabledIndex(options);
     setActiveIndex(preferredIndex ?? fallback);
     setOpen(true);
@@ -155,9 +188,13 @@ export function SelectField({ value, options, onChange, label, className = "", d
   }, [triggerId]);
 
   useEffect(() => {
-    if (open) return;
-    setActiveIndex(selectedIndex >= 0 ? selectedIndex : firstEnabledIndex(options));
-  }, [open, options, selectedIndex]);
+    const fallback = selectedIndex >= 0 && !options[selectedIndex]?.disabled ? selectedIndex : firstEnabledIndex(options);
+    setActiveIndex(unavailable ? -1 : fallback);
+  }, [options, selectedIndex, unavailable]);
+
+  useEffect(() => {
+    if (open && unavailable) close(false);
+  }, [close, open, unavailable]);
 
   useEffect(() => {
     const trigger = triggerRef.current;
@@ -196,14 +233,25 @@ export function SelectField({ value, options, onChange, label, className = "", d
   useLayoutEffect(() => {
     if (!open) return;
     updatePosition();
-    window.requestAnimationFrame(() => {
+    if (scrollFrameRef.current !== null) window.cancelAnimationFrame(scrollFrameRef.current);
+    const frame = window.requestAnimationFrame(() => {
+      if (scrollFrameRef.current === frame) scrollFrameRef.current = null;
       const option = popoverRef.current?.querySelector<HTMLElement>(`[data-option-index="${activeIndex}"]`);
       option?.scrollIntoView?.({ block: "nearest" });
     });
+    scrollFrameRef.current = frame;
+    return () => {
+      if (scrollFrameRef.current === frame) {
+        window.cancelAnimationFrame(frame);
+        scrollFrameRef.current = null;
+      }
+    };
   }, [activeIndex, open, updatePosition]);
 
   useEffect(() => () => {
     if (typeaheadTimerRef.current !== null) window.clearTimeout(typeaheadTimerRef.current);
+    if (focusTimerRef.current !== null) window.clearTimeout(focusTimerRef.current);
+    if (scrollFrameRef.current !== null) window.cancelAnimationFrame(scrollFrameRef.current);
   }, []);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>): void => {
@@ -230,10 +278,14 @@ export function SelectField({ value, options, onChange, label, className = "", d
     if (event.key === "Escape" && open) { event.preventDefault(); close(true); return; }
     if (event.key === "Tab") { close(false); return; }
     if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.length === 1) {
-      typeaheadRef.current += event.key.toLocaleLowerCase();
+      const key = event.key.toLocaleLowerCase();
+      const previous = typeaheadRef.current;
+      const repeatedCharacter = previous.length > 0 && Array.from(previous).every((character) => character === key);
+      const query = repeatedCharacter ? key : `${previous}${key}`;
+      typeaheadRef.current = query;
       if (typeaheadTimerRef.current !== null) window.clearTimeout(typeaheadTimerRef.current);
       typeaheadTimerRef.current = window.setTimeout(() => { typeaheadRef.current = ""; typeaheadTimerRef.current = null; }, 500);
-      const match = options.findIndex((option) => !option.disabled && option.label.toLocaleLowerCase().startsWith(typeaheadRef.current));
+      const match = findTypeaheadMatch(options, query, open ? activeIndex : selectedIndex);
       if (match >= 0) {
         event.preventDefault();
         if (open) setActiveIndex(match);
@@ -241,6 +293,10 @@ export function SelectField({ value, options, onChange, label, className = "", d
       }
     }
   };
+
+  const activeOptionId = open && activeIndex >= 0 && activeIndex < options.length && !options[activeIndex]?.disabled
+    ? `${listboxId}-option-${activeIndex}`
+    : undefined;
 
   const popoverStyle: CSSProperties | undefined = position ? {
     left: position.left,
@@ -287,12 +343,13 @@ export function SelectField({ value, options, onChange, label, className = "", d
             id={`${listboxId}-option-${index}`}
             type="button"
             role="option"
+            tabIndex={-1}
             aria-selected={option.value === value}
             aria-disabled={option.disabled || undefined}
             disabled={option.disabled}
             className={`${option.value === value ? "is-selected" : ""} ${index === activeIndex ? "is-active" : ""}`}
             data-option-index={index}
-            onMouseEnter={() => setActiveIndex(index)}
+            onMouseEnter={() => { if (!option.disabled) setActiveIndex(index); }}
             onClick={() => commit(index)}
           >
             {option.icon ? <span className="select-field__icon" aria-hidden="true">{option.icon}</span> : null}
@@ -316,7 +373,7 @@ export function SelectField({ value, options, onChange, label, className = "", d
       aria-haspopup="listbox"
       aria-expanded={open}
       aria-controls={open ? listboxId : undefined}
-      aria-activedescendant={open && activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
+      aria-activedescendant={activeOptionId}
       disabled={unavailable}
       onClick={() => open ? close(false) : openMenu()}
       onKeyDown={handleKeyDown}
