@@ -361,7 +361,9 @@ test.describe.serial("Asterfold MV3 release", () => {
     const pageSelect = popup.getByRole("combobox", { name: "Страница" });
     await pageSelect.click();
     await popup.getByRole("option", { name: "Empty", exact: true }).click();
-    await expect(popup.getByLabel("Блок")).toHaveValue("");
+    const boardSelect = popup.getByRole("combobox", { name: "Блок" });
+    await expect(boardSelect).toBeDisabled();
+    await expect(boardSelect).toContainText("—");
     await expect(popup.getByRole("button", { name: "Сохранить закладку" })).toBeDisabled();
     await expect(popup.getByText(/нет блока/iu)).toBeVisible();
     await popup.close();
@@ -535,7 +537,9 @@ test.describe.serial("Asterfold MV3 release", () => {
     expect(sourceMenuBounds.bottom).toBeLessThanOrEqual(900 - 8);
     await page.getByRole("menuitem", { name: "Переместить", exact: true }).click();
     dialog = page.getByRole("dialog");
-    await dialog.getByLabel("Назначение").selectOption({ label: "Later" });
+    const destinationSelect = dialog.getByRole("combobox", { name: "Назначение" });
+    await destinationSelect.click();
+    await page.getByRole("option", { name: "Later", exact: true }).click();
     await dialog.getByRole("button", { name: "Переместить", exact: true }).click();
     await expect(target.getByText("Playwright docs", { exact: true })).toBeVisible();
     await page.reload();
