@@ -10,6 +10,12 @@ export interface StartupThemeSnapshot {
 const SAFE_CANVAS = /^#[0-9a-f]{6}$/i;
 const SAFE_WALLPAPER = /^url\(["']?\/wallpapers\/(?:quiet-aurora|blue-mesh|dusk)(?:-compat)?\.webp["']?\)$/i;
 
+function stringStyleValue(value: unknown, fallback: string): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return fallback;
+}
+
 export function parseStartupThemeSnapshot(raw: string | null): StartupThemeSnapshot | null {
   if (!raw) return null;
   try {
@@ -43,9 +49,9 @@ export function storeStartupThemeSnapshot(
   style: Record<string, unknown>,
   storage: Pick<Storage, "setItem"> = localStorage,
 ): void {
-  const rawCanvas = String(style["--color-canvas"] ?? "");
+  const rawCanvas = stringStyleValue(style["--color-canvas"], "");
   const canvas = SAFE_CANVAS.test(rawCanvas) ? rawCanvas : dark ? "#16171a" : "#f1f2f4";
-  const rawWallpaper = String(style["--wallpaper-image"] ?? "none");
+  const rawWallpaper = stringStyleValue(style["--wallpaper-image"], "none");
   const wallpaper = SAFE_WALLPAPER.test(rawWallpaper) ? rawWallpaper : "none";
   const snapshot: StartupThemeSnapshot = { version: 1, theme: dark ? "dark" : "light", canvas, wallpaper };
   try {
@@ -56,6 +62,7 @@ export function storeStartupThemeSnapshot(
 }
 
 export function extractCssImageUrl(value: unknown): string | null {
-  const match = /^url\(["']?(.*?)["']?\)$/.exec(String(value ?? "").trim());
+  if (typeof value !== "string") return null;
+  const match = /^url\(["']?(.*?)["']?\)$/.exec(value.trim());
   return match?.[1] || null;
 }
