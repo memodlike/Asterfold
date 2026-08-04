@@ -66,7 +66,7 @@ export function SelectField({ value, options, onChange, label, className = "", d
   const selectedOption = selectedIndex >= 0 ? options[selectedIndex] : undefined;
   const [activeIndex, setActiveIndex] = useState(() => selectedIndex >= 0 ? selectedIndex : firstEnabledIndex(options));
   const [position, setPosition] = useState<PopoverPosition | null>(null);
-  const unavailable = disabled || options.every((option) => option.disabled);
+  const unavailable = disabled || options.length === 0 || options.every((option) => option.disabled);
 
   const updatePosition = useCallback(() => {
     const trigger = triggerRef.current;
@@ -117,6 +117,11 @@ export function SelectField({ value, options, onChange, label, className = "", d
   }, [autoFocus]);
 
   useEffect(() => {
+    if (open) return;
+    setActiveIndex(selectedIndex >= 0 ? selectedIndex : firstEnabledIndex(options));
+  }, [open, options, selectedIndex]);
+
+  useEffect(() => {
     if (!open) return;
     const onPointerDown = (event: PointerEvent): void => {
       const target = event.target as Node;
@@ -142,7 +147,8 @@ export function SelectField({ value, options, onChange, label, className = "", d
     if (!open) return;
     updatePosition();
     window.requestAnimationFrame(() => {
-      popoverRef.current?.querySelector<HTMLElement>(`[data-option-index="${activeIndex}"]`)?.scrollIntoView({ block: "nearest" });
+      const option = popoverRef.current?.querySelector<HTMLElement>(`[data-option-index="${activeIndex}"]`);
+      option?.scrollIntoView?.({ block: "nearest" });
     });
   }, [activeIndex, open, updatePosition]);
 
@@ -211,6 +217,7 @@ export function SelectField({ value, options, onChange, label, className = "", d
         return <div className="select-popover__entry" key={`${option.group ?? ""}:${option.value}`}>
           {showGroup ? <div className="select-popover__group" role="presentation">{option.group}</div> : null}
           <button
+            id={`${listboxId}-option-${index}`}
             type="button"
             role="option"
             aria-selected={option.value === value}
