@@ -1,0 +1,47 @@
+name: Fix remaining custom select E2E
+
+on:
+  push:
+    branches: [fix/opaque-settings-controls-3.1.4]
+    paths: [.github/workflows/fix-custom-select-e2e-2.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: fix/opaque-settings-controls-3.1.4
+      - name: Replace stale native select assertions
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('e2e/extension.spec.ts')
+          text = path.read_text()
+          replacements = {
+              '    await expect(popup.getByLabel("Блок")).toHaveValue("");': '''    const boardSelect = popup.getByRole("combobox", { name: "Блок" });
+              await expect(boardSelect).toBeDisabled();
+              await expect(boardSelect).toContainText("—");'''.replace('              ', '    '),
+              '    await dialog.getByLabel("Назначение").selectOption({ label: "Later" });': '''    const destinationSelect = dialog.getByRole("combobox", { name: "Назначение" });
+              await destinationSelect.click();
+              await page.getByRole("option", { name: "Later", exact: true }).click();'''.replace('              ', '    '),
+          }
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f'Missing stale E2E line: {old}')
+              text = text.replace(old, new)
+          if '.selectOption(' in text:
+              raise SystemExit('A stale selectOption call remains in extension.spec.ts')
+          path.write_text(text)
+          PY
+          rm .github/workflows/fix-custom-select-e2e-2.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add e2e/extension.spec.ts .github/workflows/fix-custom-select-e2e-2.yml
+          git commit -m "test: complete custom dropdown MV3 coverage"
+          git push origin HEAD:fix/opaque-settings-controls-3.1.4
