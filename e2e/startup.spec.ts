@@ -76,7 +76,7 @@ async function useDarkWallpaper(pageUrl: string, context: BrowserContext): Promi
   });
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-asterfold-ready", "true");
-  await expect.poll(() => page.evaluate(() => localStorage.getItem("asterfold:startup-theme:v1"))).toContain("builtin");
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("asterfold:startup-theme:v1"))).toContain("dusk.webp");
   await page.close();
 }
 
