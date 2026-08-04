@@ -530,7 +530,7 @@ test.describe.serial("Asterfold MV3 release", () => {
       return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, isTopmost: target === menu || menu.contains(target), background: style.backgroundColor, color: style.color, zIndex: style.zIndex };
     });
     expect(sourceMenuBounds).toMatchObject({ isTopmost: true, color: "rgb(25, 26, 29)", zIndex: "2147483647" });
-    expect(["rgb(251, 251, 252)", "rgba(255, 255, 255, 0.96)"]).toContain(sourceMenuBounds.background);
+    expect(sourceMenuBounds.background).toBe("rgb(255, 255, 255)");
     expect(sourceMenuBounds.left).toBeGreaterThanOrEqual(8);
     expect(sourceMenuBounds.top).toBeGreaterThanOrEqual(8);
     expect(sourceMenuBounds.right).toBeLessThanOrEqual(1440 - 8);
@@ -676,7 +676,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await page.reload();
     await page.getByRole("button", { name: "Playwright docs" }).click({ button: "right" });
     const darkMenuBackground = await page.locator(".context-menu").evaluate((menu) => getComputedStyle(menu).backgroundColor);
-    expect(["rgb(37, 39, 43)", "rgba(38, 40, 44, 0.96)"]).toContain(darkMenuBackground);
+    expect(darkMenuBackground).toBe("rgb(45, 47, 52)");
     await expect(page.locator(".context-menu")).toHaveCSS("color", "rgb(245, 245, 246)");
     await page.keyboard.press("Escape");
 
