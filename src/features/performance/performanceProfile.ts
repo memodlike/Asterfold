@@ -44,6 +44,14 @@ function rendererName(): string | null {
   }
 }
 
+function reducedTransparencyPreference(): boolean {
+  try {
+    return typeof matchMedia === "function" && matchMedia("(prefers-reduced-transparency: reduce)").matches;
+  } catch {
+    return false;
+  }
+}
+
 export function browserPerformanceSignals(): PerformanceSignals {
   const extendedNavigator = navigator as Navigator & { deviceMemory?: number; userAgentData?: { platform?: string } };
   return {
@@ -51,6 +59,6 @@ export function browserPerformanceSignals(): PerformanceSignals {
     platform: extendedNavigator.userAgentData?.platform ?? navigator.platform ?? navigator.userAgent,
     deviceMemory: typeof extendedNavigator.deviceMemory === "number" ? extendedNavigator.deviceMemory : null,
     hardwareConcurrency: navigator.hardwareConcurrency || 1,
-    reducedTransparency: matchMedia("(prefers-reduced-transparency: reduce)").matches,
+    reducedTransparency: reducedTransparencyPreference(),
   };
 }
