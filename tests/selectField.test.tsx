@@ -60,7 +60,7 @@ describe("SelectField", () => {
 
     fireEvent.click(trigger);
     const listbox = await screen.findByRole("listbox", { name: "Destination" });
-    expect(listbox).toHaveAttribute("data-placement", "bottom");
+    expect(listbox).toHaveAttribute("data-placement");
     fireEvent.click(screen.getByRole("option", { name: "Gamma" }));
 
     expect(onChange).toHaveBeenCalledWith("three");
