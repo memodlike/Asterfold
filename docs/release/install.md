@@ -1,4 +1,4 @@
-# Install Asterfold 3.1.2
+# Install Asterfold 3.1.3
 
 ## Requirements
 

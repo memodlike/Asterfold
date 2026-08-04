@@ -6,46 +6,13 @@ on:
   pull_request:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  preview-prepare:
-    if: github.event_name == 'pull_request' && github.head_ref == 'fix/newtab-startup-flash-3.1.3'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - name: Check out exact preview branch
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          ref: fix/newtab-startup-flash-3.1.3
-          fetch-depth: 0
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: 22
-      - name: Rebuild patched lockfile and synchronize metadata
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm install --package-lock-only --ignore-scripts
-          node scripts/prepare-3.1.3-preview.mjs
-          node -e "const p=require('./package-lock.json'); if(p.version!=='3.1.3'||p.packages[''].version!=='3.1.3'||p.packages['node_modules/brace-expansion'].version!=='5.0.9') process.exit(1)"
-          git fetch origin main
-          git checkout origin/main -- .github/workflows/ci.yml
-          git diff --check
-      - name: Publish one clean preparation commit
-        shell: bash
-        run: |
-          set -euo pipefail
-          git add -A
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'chore: finalize Asterfold 3.1.3 preview metadata'
-          git push origin HEAD:fix/newtab-startup-flash-3.1.3
-
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 40

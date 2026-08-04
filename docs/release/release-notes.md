@@ -1,4 +1,27 @@
-# Asterfold 3.1.2
+# Asterfold 3.1.3
+
+## Flash-free new-tab startup
+
+- Paints a dark critical surface before React and the main stylesheet load.
+- Restores a strictly validated local visual snapshot for the canvas and bundled wallpaper.
+- Keeps React hidden until IndexedDB, the selected theme and wallpaper resolve, then reveals the final workspace once.
+- Applies final theme variables before the first visible React frame and keeps a five-second failure fallback.
+
+## Entrance motion
+
+- Fades the final wallpaper without animating blur or filters.
+- Introduces a restrained board stagger and launcher rise using opacity and transform only.
+- Runs only during initial startup and respects both reduced-motion and the Asterfold motion preference.
+
+## Verification
+
+- Adds unit/static coverage for snapshot validation, denied storage, critical resource ordering and reduced-motion behavior.
+- Adds a real unpacked-MV3 frame-sampled regression for white flashes, visible loading frames and opacity reversals.
+- Retains audit, source scan, typecheck, lint, coverage, Store validation, deterministic packaging, MV3 E2E, stress and exact upgrade checks.
+
+## Previous release details
+
+## 3.1.2 — Original-quality uploaded wallpapers
 
 ## Original-quality uploaded wallpapers
 
