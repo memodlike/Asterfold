@@ -1,8 +1,8 @@
 # Asterfold privacy policy
 
 Effective date: 3 August 2026<br>
-Policy version: 3.1.3<br>
-Applies to: Asterfold 3.1.3 for Chrome
+Policy version: 3.1.4<br>
+Applies to: Asterfold 3.1.4 for Chrome
 
 Asterfold replaces the Chrome new tab with a local-first visual workspace for organizing and opening bookmarks. It processes the information needed for those features on the user's device. It does not claim that no data is processed.
 

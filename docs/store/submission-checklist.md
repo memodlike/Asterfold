@@ -1,6 +1,6 @@
 # Chrome Web Store submission checklist — Asterfold 3.1.2
 
-Current version: 3.1.3
+Current version: 3.1.4
 This checklist separates repository readiness from the owner-only action of submitting through the Chrome Web Store Developer Dashboard. Check an item only after verifying it against the exact ZIP being uploaded.
 
 ## Identity and listing

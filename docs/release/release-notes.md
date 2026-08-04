@@ -1,4 +1,39 @@
-# Asterfold 3.1.3
+# Asterfold 3.1.4
+
+## Opaque, readable interface surfaces
+
+- Makes Settings, editors, search, move dialogs, Quick Save and every dropdown surface fully opaque in both light and dark themes.
+- Prevents wallpaper and workspace content from bleeding through menus, forms and popovers.
+- Uses theme-aware borders, focus rings and shadows without GPU-heavy live backdrop filters.
+
+## Custom adaptive dropdowns and locale flags
+
+- Replaces visible native selects with one accessible Asterfold listbox system across the extension.
+- Supports pointer input, Arrow keys, Home, End, Enter, Space, Escape, Tab and typeahead search.
+- Positions menus above or below according to the available viewport and keeps them inside the screen.
+- Replaces text country codes with local SVG flags that render consistently on Windows, macOS and Linux.
+
+## Reliable Appearance controls
+
+- Applies theme, background, glass, opacity, blur, dimming, wallpaper blur and saturation changes immediately.
+- Persists rapid slider input with a short debounce instead of writing IndexedDB on every pointer frame.
+- Flushes pending settings safely when Settings closes and preserves uploaded-wallpaper metadata.
+
+## Weak-PC and Windows 11 optimization
+
+- Preserves the Radeon R5 230/Caicos compatibility path and avoids classifying missing WebGL as software rendering.
+- Uses compatibility-safe opaque controls, compositor-safe motion and no live backdrop blur in constrained modes.
+- Keeps reduced-transparency and reduced-motion preferences authoritative.
+
+## Verification
+
+- Adds dedicated custom-select coverage for pointer, keyboard, typeahead, disabled states, adaptive placement and outside-click behavior.
+- Retains strict global coverage thresholds instead of lowering them.
+- Retains security scans, dependency review, CodeQL, deterministic Linux/Windows packaging, Store validation, real MV3 accessibility/visual E2E, Windows stress and exact 2.2.3 upgrade gates.
+
+## Previous release details
+
+## 3.1.3 — Flash-free new-tab startup
 
 ## Flash-free new-tab startup
 
