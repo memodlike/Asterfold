@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Globe2 } from "lucide-react";
 import type { LocalePreference } from "../domain/models";
 
@@ -5,7 +6,7 @@ interface LocaleFlagProps {
   locale: LocalePreference;
 }
 
-function Frame({ children, label }: { children: React.ReactNode; label: string }) {
+function Frame({ children, label }: { children: ReactNode; label: string }) {
   return <svg className="locale-flag" viewBox="0 0 24 18" role="img" aria-label={label}>{children}<rect x=".5" y=".5" width="23" height="17" rx="3" fill="none" stroke="currentColor" strokeOpacity=".16" /></svg>;
 }
 
