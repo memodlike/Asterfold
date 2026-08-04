@@ -1,5 +1,7 @@
 # Install Asterfold 3.1.3
 
+> Asterfold 3.1.3 is currently an unpublished test preview. Use the verified preview ZIP attached to the pull-request validation run; the latest public GitHub Release remains 3.1.2 until physical Chrome testing is complete.
+
 ## Requirements
 
 - Chrome or a Chromium browser compatible with Chrome 120+.
@@ -7,20 +9,21 @@
 
 ## Personal installation
 
-1. On the GitHub release page, download **`Asterfold-Chrome.zip`**. Do **not** download `Source code (zip)`.
-2. Extract `Asterfold-Chrome.zip` into a permanent folder, for example `Documents/Asterfold`.
+1. Download the verified **`Asterfold-3.1.3-Chrome.zip`** preview artifact supplied for testing. Do **not** download GitHub's `Source code (zip)` archive.
+2. Extract the ZIP into a permanent folder, for example `Documents/Asterfold-3.1.3-preview`.
 3. Open `chrome://extensions`.
 4. Turn on **Developer mode**.
 5. Click **Load unpacked**.
 6. Select the extracted folder that contains `manifest.json` and `HOW-TO-INSTALL.txt`.
-7. Open a new tab. The Asterfold workspace should appear.
+7. Open several new tabs and verify that the workspace appears without a white/dark flash.
 8. Pin Asterfold from the extensions menu to keep Quick Save available.
 
 The extension works offline. Importing the existing Chrome bookmark tree asks for the optional `bookmarks` permission only when that command is selected.
 
 ## Verify the installation
 
-- New tab opens the Pages → Boards workspace.
+- New tab opens the Pages → Boards workspace without a visible white/dark loading flash.
+- The wallpaper, Boards and launcher appear once with restrained entrance motion.
 - The toolbar icon opens **Quick Save**.
 - Creating a bookmark survives a page reload and browser restart.
 - Settings → Import & Export can download a JSON backup.
