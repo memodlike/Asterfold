@@ -83,6 +83,7 @@ export function SelectField({ value, options, onChange, label, className = "", d
   const popoverRef = useRef<HTMLDivElement>(null);
   const typeaheadRef = useRef("");
   const typeaheadTimerRef = useRef<number | null>(null);
+  const triggerId = useId();
   const listboxId = useId();
   const [open, setOpen] = useState(false);
   const selectedIndex = useMemo(() => options.findIndex((option) => option.value === value), [options, value]);
@@ -138,6 +139,17 @@ export function SelectField({ value, options, onChange, label, className = "", d
   useEffect(() => {
     if (autoFocus) triggerRef.current?.focus();
   }, [autoFocus]);
+
+  useLayoutEffect(() => {
+    const trigger = triggerRef.current;
+    const wrappingLabel = trigger?.closest("label");
+    if (!trigger || !wrappingLabel) return;
+    const previousFor = wrappingLabel.getAttribute("for");
+    if (!previousFor) wrappingLabel.htmlFor = triggerId;
+    return () => {
+      if (!previousFor && wrappingLabel.htmlFor === triggerId) wrappingLabel.removeAttribute("for");
+    };
+  }, [triggerId]);
 
   useEffect(() => {
     if (open) return;
@@ -278,6 +290,7 @@ export function SelectField({ value, options, onChange, label, className = "", d
       tabIndex={-1}
       value={value}
       disabled={unavailable}
+      data-select-bridge="true"
       onChange={(event) => {
         const index = options.findIndex((option) => option.value === event.currentTarget.value);
         if (index >= 0) commit(index);
@@ -288,6 +301,7 @@ export function SelectField({ value, options, onChange, label, className = "", d
     </select>
     <button
       ref={triggerRef}
+      id={triggerId}
       type="button"
       role="combobox"
       value={value}
