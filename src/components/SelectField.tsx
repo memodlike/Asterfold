@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronDown } from "lucide-react";
 
@@ -53,6 +53,29 @@ function lastEnabledIndex(options: ReadonlyArray<SelectOption>): number {
     if (!options[index]?.disabled) return index;
   }
   return -1;
+}
+
+function nativeOptionNodes(options: ReadonlyArray<SelectOption>): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  let index = 0;
+  while (index < options.length) {
+    const option = options[index]!;
+    if (!option.group) {
+      nodes.push(<option key={`option:${option.value}`} value={option.value} disabled={option.disabled}>{option.label}</option>);
+      index += 1;
+      continue;
+    }
+    const group = option.group;
+    const groupOptions: ReactNode[] = [];
+    const groupStart = index;
+    while (index < options.length && options[index]?.group === group) {
+      const groupedOption = options[index]!;
+      groupOptions.push(<option key={`option:${groupedOption.value}`} value={groupedOption.value} disabled={groupedOption.disabled}>{groupedOption.label}</option>);
+      index += 1;
+    }
+    nodes.push(<optgroup key={`group:${group}:${groupStart}`} label={group}>{groupOptions}</optgroup>);
+  }
+  return nodes;
 }
 
 export function SelectField({ value, options, onChange, label, className = "", disabled = false, autoFocus = false, compact = false }: SelectFieldProps) {
@@ -120,6 +143,18 @@ export function SelectField({ value, options, onChange, label, className = "", d
     if (open) return;
     setActiveIndex(selectedIndex >= 0 ? selectedIndex : firstEnabledIndex(options));
   }, [open, options, selectedIndex]);
+
+  useEffect(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    const handleNativeChange = (event: Event): void => {
+      const nextValue = (event.currentTarget as HTMLButtonElement).value;
+      const index = options.findIndex((option) => option.value === nextValue);
+      if (index >= 0) commit(index);
+    };
+    trigger.addEventListener("change", handleNativeChange);
+    return () => trigger.removeEventListener("change", handleNativeChange);
+  }, [commit, options]);
 
   useEffect(() => {
     if (!open) return;
@@ -192,11 +227,6 @@ export function SelectField({ value, options, onChange, label, className = "", d
     }
   };
 
-  const handleNativeLikeChange = (event: FormEvent<HTMLButtonElement>): void => {
-    const index = options.findIndex((option) => option.value === event.currentTarget.value);
-    if (index >= 0) commit(index);
-  };
-
   const popoverStyle: CSSProperties | undefined = position ? {
     left: position.left,
     width: position.width,
@@ -242,6 +272,20 @@ export function SelectField({ value, options, onChange, label, className = "", d
   ) : null;
 
   return <div className={`select-field ${compact ? "select-field--compact" : ""} ${className}`.trim()} data-state={open ? "open" : "closed"}>
+    <select
+      hidden
+      aria-hidden="true"
+      tabIndex={-1}
+      value={value}
+      disabled={unavailable}
+      onChange={(event) => {
+        const index = options.findIndex((option) => option.value === event.currentTarget.value);
+        if (index >= 0) commit(index);
+      }}
+    >
+      {selectedIndex < 0 ? <option value="">—</option> : null}
+      {nativeOptionNodes(options)}
+    </select>
     <button
       ref={triggerRef}
       type="button"
@@ -253,7 +297,6 @@ export function SelectField({ value, options, onChange, label, className = "", d
       aria-controls={open ? listboxId : undefined}
       aria-activedescendant={open && activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
       disabled={unavailable}
-      onChange={handleNativeLikeChange}
       onClick={() => open ? close(false) : openMenu()}
       onKeyDown={handleKeyDown}
     >
