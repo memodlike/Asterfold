@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronDown } from "lucide-react";
 
@@ -192,6 +192,11 @@ export function SelectField({ value, options, onChange, label, className = "", d
     }
   };
 
+  const handleNativeLikeChange = (event: FormEvent<HTMLButtonElement>): void => {
+    const index = options.findIndex((option) => option.value === event.currentTarget.value);
+    if (index >= 0) commit(index);
+  };
+
   const popoverStyle: CSSProperties | undefined = position ? {
     left: position.left,
     width: position.width,
@@ -241,12 +246,14 @@ export function SelectField({ value, options, onChange, label, className = "", d
       ref={triggerRef}
       type="button"
       role="combobox"
+      value={value}
       aria-label={label}
       aria-haspopup="listbox"
       aria-expanded={open}
       aria-controls={open ? listboxId : undefined}
       aria-activedescendant={open && activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
       disabled={unavailable}
+      onChange={handleNativeLikeChange}
       onClick={() => open ? close(false) : openMenu()}
       onKeyDown={handleKeyDown}
     >
