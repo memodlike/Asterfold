@@ -90,6 +90,7 @@ export function SelectField({ value, options, onChange, label, className = "", d
   const selectedOption = selectedIndex >= 0 ? options[selectedIndex] : undefined;
   const [activeIndex, setActiveIndex] = useState(() => selectedIndex >= 0 ? selectedIndex : firstEnabledIndex(options));
   const [position, setPosition] = useState<PopoverPosition | null>(null);
+  const [bridgeHost, setBridgeHost] = useState<HTMLElement | null>(null);
   const unavailable = disabled || options.length === 0 || options.every((option) => option.disabled);
 
   const updatePosition = useCallback(() => {
@@ -142,8 +143,10 @@ export function SelectField({ value, options, onChange, label, className = "", d
 
   useLayoutEffect(() => {
     const trigger = triggerRef.current;
-    const wrappingLabel = trigger?.closest("label");
-    if (!trigger || !wrappingLabel) return;
+    if (!trigger) return;
+    const wrappingLabel = trigger.closest("label");
+    setBridgeHost(wrappingLabel?.parentElement ?? trigger.parentElement);
+    if (!wrappingLabel) return;
     const previousFor = wrappingLabel.getAttribute("for");
     if (!previousFor) wrappingLabel.htmlFor = triggerId;
     return () => {
@@ -247,6 +250,25 @@ export function SelectField({ value, options, onChange, label, className = "", d
     ...(position.bottom === undefined ? {} : { bottom: position.bottom }),
   } : undefined;
 
+  const bridge = bridgeHost ? createPortal(
+    <select
+      hidden
+      aria-hidden="true"
+      tabIndex={-1}
+      value={value}
+      disabled={unavailable}
+      data-select-bridge="true"
+      onChange={(event) => {
+        const index = options.findIndex((option) => option.value === event.currentTarget.value);
+        if (index >= 0) commit(index);
+      }}
+    >
+      {selectedIndex < 0 ? <option value="">—</option> : null}
+      {nativeOptionNodes(options)}
+    </select>,
+    bridgeHost,
+  ) : null;
+
   const popover = open && position ? createPortal(
     <div
       ref={popoverRef}
@@ -284,21 +306,6 @@ export function SelectField({ value, options, onChange, label, className = "", d
   ) : null;
 
   return <div className={`select-field ${compact ? "select-field--compact" : ""} ${className}`.trim()} data-state={open ? "open" : "closed"}>
-    <select
-      hidden
-      aria-hidden="true"
-      tabIndex={-1}
-      value={value}
-      disabled={unavailable}
-      data-select-bridge="true"
-      onChange={(event) => {
-        const index = options.findIndex((option) => option.value === event.currentTarget.value);
-        if (index >= 0) commit(index);
-      }}
-    >
-      {selectedIndex < 0 ? <option value="">—</option> : null}
-      {nativeOptionNodes(options)}
-    </select>
     <button
       ref={triggerRef}
       id={triggerId}
@@ -320,6 +327,7 @@ export function SelectField({ value, options, onChange, label, className = "", d
       </span>
       <ChevronDown className="select-field__chevron" size={16} aria-hidden="true" />
     </button>
+    {bridge}
     {popover}
   </div>;
 }
