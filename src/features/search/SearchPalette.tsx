@@ -3,6 +3,7 @@ import { Copy, Edit3, ExternalLink, MoveRight, Search, ShieldCheck, Trash2 } fro
 import type { Board, Bookmark, Page } from "../../domain/models";
 import { BookmarkSearchEngine, createSearchDocuments, type SearchField, type SearchMode } from "../../search/searchEngine";
 import { Modal } from "../../components/Modal";
+import { SelectField } from "../../components/SelectField";
 import { useI18n } from "../../i18n";
 import { primaryShortcut } from "../../browser/platform";
 
@@ -34,6 +35,11 @@ export function SearchPalette(props: SearchPaletteProps) {
   const results = useMemo(() => engine?.search(query, { mode, field, ...(scope === "page" ? { pageId: props.activePageId } : {}), limit: 40 }) ?? [], [engine, field, mode, props.activePageId, query, scope]);
   const bookmarkById = useMemo(() => new Map(props.bookmarks.map((bookmark) => [bookmark.id, bookmark])), [props.bookmarks]);
   const searchShortcut = primaryShortcut("K");
+  const fieldOptions = useMemo(() => [
+    { value: "all", label: t("search.allFields") },
+    { value: "title", label: t("search.titleOnly") },
+    { value: "url", label: t("search.urlOnly") },
+  ], [t]);
 
   useEffect(() => {
     if (props.open) {
@@ -70,7 +76,7 @@ export function SearchPalette(props: SearchPaletteProps) {
         <div className="search-palette__input"><Search size={20} /><input ref={inputRef} disabled={props.privacy} value={props.privacy ? t("search.protected") : query} onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }} onKeyDown={handleSearchKeyDown} placeholder={t("search.placeholder")} aria-keyshortcuts={searchShortcut.aria} /><kbd>{searchShortcut.visual}</kbd></div>
         <div className="search-palette__filters">
           <div className="segmented" aria-label={t("search.mode")}>{(["fuzzy", "prefix", "exact"] as const).map((item) => <button className={mode === item ? "is-active" : ""} key={item} onClick={() => { setMode(item); setActiveIndex(0); }}>{t(item === "fuzzy" ? "search.fuzzy" : item === "prefix" ? "search.prefix" : "search.exact")}</button>)}</div>
-          <label className="search-palette__select"><span className="sr-only">{t("search.title")}</span><select value={field} onChange={(event) => { setField(event.target.value as SearchField); setActiveIndex(0); }} aria-label={t("search.title")}><option value="all">{t("search.allFields")}</option><option value="title">{t("search.titleOnly")}</option><option value="url">{t("search.urlOnly")}</option></select></label>
+          <SelectField compact className="search-palette__select" value={field} options={fieldOptions} label={t("search.title")} onChange={(value) => { setField(value as SearchField); setActiveIndex(0); }} />
           <div className="segmented"><button className={scope === "all" ? "is-active" : ""} onClick={() => { setScope("all"); setActiveIndex(0); }}>{t("search.all")}</button><button className={scope === "page" ? "is-active" : ""} onClick={() => { setScope("page"); setActiveIndex(0); }}>{t("search.thisPage")}</button></div>
         </div>
         {props.privacy ? <div className="search-state search-private"><span className="search-state__icon"><ShieldCheck size={22} /></span><div><strong>{t("search.privateTitle")}</strong><span>{t("search.privateBody")}</span></div></div> : null}
