@@ -15,7 +15,7 @@ function ControlledSelect({ initial = "one", items = options, autoFocus = false 
   return <SelectField value={value} options={items} onChange={setValue} label="Destination" autoFocus={autoFocus} />;
 }
 
-const originalRect = HTMLElement.prototype.getBoundingClientRect;
+const originalRectDescriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "getBoundingClientRect");
 
 beforeEach(() => {
   Object.defineProperty(HTMLElement.prototype, "getBoundingClientRect", {
@@ -40,10 +40,11 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
-  Object.defineProperty(HTMLElement.prototype, "getBoundingClientRect", {
-    configurable: true,
-    value: originalRect,
-  });
+  if (originalRectDescriptor) {
+    Object.defineProperty(HTMLElement.prototype, "getBoundingClientRect", originalRectDescriptor);
+  } else {
+    delete (HTMLElement.prototype as Partial<HTMLElement>).getBoundingClientRect;
+  }
   vi.useRealTimers();
 });
 
