@@ -1,0 +1,256 @@
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { Check, ChevronDown } from "lucide-react";
+
+export interface SelectOption {
+  value: string;
+  label: string;
+  group?: string;
+  disabled?: boolean;
+  icon?: ReactNode;
+}
+
+interface SelectFieldProps {
+  value: string;
+  options: ReadonlyArray<SelectOption>;
+  onChange: (value: string) => void;
+  label: string;
+  className?: string;
+  disabled?: boolean;
+  autoFocus?: boolean;
+  compact?: boolean;
+}
+
+interface PopoverPosition {
+  left: number;
+  width: number;
+  maxHeight: number;
+  top?: number;
+  bottom?: number;
+  placement: "top" | "bottom";
+}
+
+const VIEWPORT_MARGIN = 8;
+const POPOVER_GAP = 6;
+const MIN_POPOVER_HEIGHT = 120;
+const MAX_POPOVER_HEIGHT = 300;
+
+function nextEnabledIndex(options: ReadonlyArray<SelectOption>, start: number, direction: 1 | -1): number {
+  if (options.length === 0) return -1;
+  for (let offset = 1; offset <= options.length; offset += 1) {
+    const index = (start + direction * offset + options.length) % options.length;
+    if (!options[index]?.disabled) return index;
+  }
+  return -1;
+}
+
+function firstEnabledIndex(options: ReadonlyArray<SelectOption>): number {
+  return options.findIndex((option) => !option.disabled);
+}
+
+function lastEnabledIndex(options: ReadonlyArray<SelectOption>): number {
+  for (let index = options.length - 1; index >= 0; index -= 1) {
+    if (!options[index]?.disabled) return index;
+  }
+  return -1;
+}
+
+export function SelectField({ value, options, onChange, label, className = "", disabled = false, autoFocus = false, compact = false }: SelectFieldProps) {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const typeaheadRef = useRef("");
+  const typeaheadTimerRef = useRef<number | null>(null);
+  const listboxId = useId();
+  const [open, setOpen] = useState(false);
+  const selectedIndex = useMemo(() => options.findIndex((option) => option.value === value), [options, value]);
+  const selectedOption = selectedIndex >= 0 ? options[selectedIndex] : undefined;
+  const [activeIndex, setActiveIndex] = useState(() => selectedIndex >= 0 ? selectedIndex : firstEnabledIndex(options));
+  const [position, setPosition] = useState<PopoverPosition | null>(null);
+  const unavailable = disabled || options.every((option) => option.disabled);
+
+  const updatePosition = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    const viewportWidth = document.documentElement.clientWidth;
+    const viewportHeight = document.documentElement.clientHeight;
+    const width = Math.min(Math.max(rect.width, compact ? 132 : 180), viewportWidth - VIEWPORT_MARGIN * 2);
+    const left = Math.min(Math.max(VIEWPORT_MARGIN, rect.left), Math.max(VIEWPORT_MARGIN, viewportWidth - width - VIEWPORT_MARGIN));
+    const availableBelow = viewportHeight - rect.bottom - VIEWPORT_MARGIN - POPOVER_GAP;
+    const availableAbove = rect.top - VIEWPORT_MARGIN - POPOVER_GAP;
+    const placement = availableBelow < 176 && availableAbove > availableBelow ? "top" : "bottom";
+    const available = placement === "top" ? availableAbove : availableBelow;
+    const maxHeight = Math.max(MIN_POPOVER_HEIGHT, Math.min(MAX_POPOVER_HEIGHT, available));
+    setPosition({
+      left,
+      width,
+      maxHeight,
+      placement,
+      ...(placement === "top"
+        ? { bottom: viewportHeight - rect.top + POPOVER_GAP }
+        : { top: rect.bottom + POPOVER_GAP }),
+    });
+  }, [compact]);
+
+  const close = useCallback((restoreFocus = false) => {
+    setOpen(false);
+    setPosition(null);
+    if (restoreFocus) window.setTimeout(() => triggerRef.current?.focus(), 0);
+  }, []);
+
+  const openMenu = useCallback((preferredIndex?: number) => {
+    if (unavailable) return;
+    const fallback = selectedIndex >= 0 && !options[selectedIndex]?.disabled ? selectedIndex : firstEnabledIndex(options);
+    setActiveIndex(preferredIndex ?? fallback);
+    setOpen(true);
+  }, [options, selectedIndex, unavailable]);
+
+  const commit = useCallback((index: number) => {
+    const option = options[index];
+    if (!option || option.disabled) return;
+    onChange(option.value);
+    close(true);
+  }, [close, onChange, options]);
+
+  useEffect(() => {
+    if (autoFocus) triggerRef.current?.focus();
+  }, [autoFocus]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent): void => {
+      const target = event.target as Node;
+      if (triggerRef.current?.contains(target) || popoverRef.current?.contains(target)) return;
+      close(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, [close, open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const reposition = (): void => updatePosition();
+    window.addEventListener("resize", reposition, { passive: true });
+    window.addEventListener("scroll", reposition, { passive: true, capture: true });
+    return () => {
+      window.removeEventListener("resize", reposition);
+      window.removeEventListener("scroll", reposition, true);
+    };
+  }, [open, updatePosition]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    updatePosition();
+    window.requestAnimationFrame(() => {
+      popoverRef.current?.querySelector<HTMLElement>(`[data-option-index="${activeIndex}"]`)?.scrollIntoView({ block: "nearest" });
+    });
+  }, [activeIndex, open, updatePosition]);
+
+  useEffect(() => () => {
+    if (typeaheadTimerRef.current !== null) window.clearTimeout(typeaheadTimerRef.current);
+  }, []);
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>): void => {
+    if (unavailable) return;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const direction = event.key === "ArrowDown" ? 1 : -1;
+      if (!open) {
+        const edge = direction === 1 ? firstEnabledIndex(options) : lastEnabledIndex(options);
+        openMenu(selectedIndex >= 0 ? selectedIndex : edge);
+      } else {
+        setActiveIndex((current) => nextEnabledIndex(options, current < 0 ? (direction === 1 ? -1 : 0) : current, direction));
+      }
+      return;
+    }
+    if (event.key === "Home" && open) { event.preventDefault(); setActiveIndex(firstEnabledIndex(options)); return; }
+    if (event.key === "End" && open) { event.preventDefault(); setActiveIndex(lastEnabledIndex(options)); return; }
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      if (open) commit(activeIndex);
+      else openMenu();
+      return;
+    }
+    if (event.key === "Escape" && open) { event.preventDefault(); close(true); return; }
+    if (event.key === "Tab") { close(false); return; }
+    if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.length === 1) {
+      typeaheadRef.current += event.key.toLocaleLowerCase();
+      if (typeaheadTimerRef.current !== null) window.clearTimeout(typeaheadTimerRef.current);
+      typeaheadTimerRef.current = window.setTimeout(() => { typeaheadRef.current = ""; typeaheadTimerRef.current = null; }, 500);
+      const match = options.findIndex((option) => !option.disabled && option.label.toLocaleLowerCase().startsWith(typeaheadRef.current));
+      if (match >= 0) {
+        event.preventDefault();
+        if (open) setActiveIndex(match);
+        else commit(match);
+      }
+    }
+  };
+
+  const popoverStyle: CSSProperties | undefined = position ? {
+    left: position.left,
+    width: position.width,
+    maxHeight: position.maxHeight,
+    ...(position.top === undefined ? {} : { top: position.top }),
+    ...(position.bottom === undefined ? {} : { bottom: position.bottom }),
+  } : undefined;
+
+  let previousGroup: string | undefined;
+  const popover = open && position ? createPortal(
+    <div
+      ref={popoverRef}
+      id={listboxId}
+      role="listbox"
+      aria-label={label}
+      className="select-popover"
+      data-placement={position.placement}
+      style={popoverStyle}
+    >
+      {options.map((option, index) => {
+        const showGroup = Boolean(option.group && option.group !== previousGroup);
+        previousGroup = option.group;
+        return <div className="select-popover__entry" key={`${option.group ?? ""}:${option.value}`}>
+          {showGroup ? <div className="select-popover__group" role="presentation">{option.group}</div> : null}
+          <button
+            type="button"
+            role="option"
+            aria-selected={option.value === value}
+            aria-disabled={option.disabled || undefined}
+            disabled={option.disabled}
+            className={`${option.value === value ? "is-selected" : ""} ${index === activeIndex ? "is-active" : ""}`}
+            data-option-index={index}
+            onMouseEnter={() => setActiveIndex(index)}
+            onClick={() => commit(index)}
+          >
+            {option.icon ? <span className="select-field__icon" aria-hidden="true">{option.icon}</span> : null}
+            <span className="select-popover__label">{option.label}</span>
+            {option.value === value ? <Check size={15} aria-hidden="true" /> : <span className="select-popover__check-placeholder" />}
+          </button>
+        </div>;
+      })}
+    </div>,
+    document.body,
+  ) : null;
+
+  return <div className={`select-field ${compact ? "select-field--compact" : ""} ${className}`.trim()} data-state={open ? "open" : "closed"}>
+    <button
+      ref={triggerRef}
+      type="button"
+      role="combobox"
+      aria-label={label}
+      aria-haspopup="listbox"
+      aria-expanded={open}
+      aria-controls={open ? listboxId : undefined}
+      aria-activedescendant={open && activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
+      disabled={unavailable}
+      onClick={() => open ? close(false) : openMenu()}
+      onKeyDown={handleKeyDown}
+    >
+      <span className="select-field__value">
+        {selectedOption?.icon ? <span className="select-field__icon" aria-hidden="true">{selectedOption.icon}</span> : null}
+        <span>{selectedOption?.label ?? "—"}</span>
+      </span>
+      <ChevronDown className="select-field__chevron" size={16} aria-hidden="true" />
+    </button>
+    {popover}
+  </div>;
+}
