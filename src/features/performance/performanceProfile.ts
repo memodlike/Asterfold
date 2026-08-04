@@ -34,7 +34,7 @@ function rendererName(): string | null {
   try {
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("webgl", { failIfMajorPerformanceCaveat: false });
-    if (!context) return "software rasterizer";
+    if (!context) return null;
     const extension = context.getExtension("WEBGL_debug_renderer_info");
     return extension
       ? String(context.getParameter(extension.UNMASKED_RENDERER_WEBGL))
