@@ -40,6 +40,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   if (originalRectDescriptor) {
     Object.defineProperty(HTMLElement.prototype, "getBoundingClientRect", originalRectDescriptor);
   } else {
@@ -155,6 +156,76 @@ describe("SelectField", () => {
 
     rerender(<SelectField value="blocked" options={[{ value: "blocked", label: "Blocked", disabled: true }]} onChange={onChange} label="Destination" />);
     expect(screen.getByRole("combobox", { name: "Destination" })).toBeDisabled();
+  });
+
+  it("keeps options out of the Tab sequence and closes without trapping focus", async () => {
+    render(<div><ControlledSelect /><button type="button">Next control</button></div>);
+    const trigger = screen.getByRole("combobox", { name: "Destination" });
+
+    fireEvent.click(trigger);
+    const renderedOptions = await screen.findAllByRole("option");
+    renderedOptions.forEach((option) => expect(option).toHaveAttribute("tabindex", "-1"));
+
+    fireEvent.keyDown(trigger, { key: "Tab" });
+    await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull());
+  });
+
+  it("cycles repeated typeahead characters and supports Unicode labels", async () => {
+    const onChange = vi.fn();
+    const typeaheadOptions: SelectOption[] = [
+      { value: "alpha", label: "Alpha" },
+      { value: "gamma", label: "Gamma" },
+      { value: "garden", label: "Garden" },
+      { value: "kazakh", label: "Қазақша" },
+    ];
+    render(<SelectField value="alpha" options={typeaheadOptions} onChange={onChange} label="Destination" />);
+    const trigger = screen.getByRole("combobox", { name: "Destination" });
+
+    fireEvent.click(trigger);
+    await screen.findByRole("listbox");
+    fireEvent.keyDown(trigger, { key: "g" });
+    expect(trigger.getAttribute("aria-activedescendant")).toMatch(/option-1$/);
+    fireEvent.keyDown(trigger, { key: "g" });
+    expect(trigger.getAttribute("aria-activedescendant")).toMatch(/option-2$/);
+    fireEvent.keyDown(trigger, { key: "Enter" });
+    expect(onChange).toHaveBeenCalledWith("garden");
+
+    fireEvent.keyDown(trigger, { key: "Қ" });
+    expect(onChange).toHaveBeenLastCalledWith("kazakh");
+  });
+
+  it("reconciles an externally changed value and closes when options become unavailable", async () => {
+    const onChange = vi.fn();
+    const { rerender } = render(<SelectField value="one" options={options} onChange={onChange} label="Destination" />);
+    const trigger = screen.getByRole("combobox", { name: "Destination" });
+
+    fireEvent.click(trigger);
+    await screen.findByRole("listbox");
+    rerender(<SelectField value="three" options={options} onChange={onChange} label="Destination" />);
+    await waitFor(() => expect(trigger.getAttribute("aria-activedescendant")).toMatch(/option-3$/));
+
+    rerender(<SelectField value="" options={[]} onChange={onChange} label="Destination" />);
+    await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull());
+    expect(trigger).toBeDisabled();
+  });
+
+  it("cancels scheduled scrolling and focus restoration during teardown", async () => {
+    const requestAnimationFrame = vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 73);
+    const cancelAnimationFrame = vi.spyOn(window, "cancelAnimationFrame");
+    const setTimeoutSpy = vi.spyOn(window, "setTimeout");
+    const clearTimeoutSpy = vi.spyOn(window, "clearTimeout");
+    const { unmount } = render(<ControlledSelect />);
+    const trigger = screen.getByRole("combobox", { name: "Destination" });
+
+    fireEvent.click(trigger);
+    await screen.findByRole("listbox");
+    expect(requestAnimationFrame).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("option", { name: "Gamma" }));
+    unmount();
+
+    expect(cancelAnimationFrame).toHaveBeenCalledWith(73);
+    expect(setTimeoutSpy).toHaveBeenCalled();
+    expect(clearTimeoutSpy).toHaveBeenCalled();
   });
 
   it("focuses the trigger on request and routes the compatibility bridge change", () => {
