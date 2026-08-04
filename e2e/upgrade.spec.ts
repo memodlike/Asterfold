@@ -51,7 +51,7 @@ async function seedVersion223(page: Page): Promise<UpgradeSeedData> {
     const timestamp = "2026-07-28T12:00:00.000Z";
     const pageRecord = { id: "upgrade-page", userId: null, title: "Upgrade workspace", icon: "folder", accent: "#123456", position: "000000000099", isDefault: false, createdAt: timestamp, updatedAt: timestamp, deletedAt: null, deletedBatchId: null, version: 3 };
     const boardRecord = { id: "upgrade-board", userId: null, pageId: pageRecord.id, title: "Upgrade board", icon: "briefcase", accent: "#654321", position: "000000000099", collapsed: false, layout: "grid", bookmarkColumns: 2, gridColumn: 4, gridRow: 1, gridSpan: 6, createdAt: timestamp, updatedAt: timestamp, deletedAt: null, deletedBatchId: null, version: 2 };
-    const bookmarkRecord = { id: "upgrade-bookmark", userId: null, boardId: boardRecord.id, title: "Preserved link", url: "https://example.com/preserved", normalizedUrl: "https://example.com/preserved", hostname: "example.com", description: "Must survive 3.1.2", faviconUrl: null, customIcon: null, position: "000000000099", openMode: "new-window", pinned: true, createdAt: timestamp, updatedAt: timestamp, deletedAt: null, deletedBatchId: null, version: 4 };
+    const bookmarkRecord = { id: "upgrade-bookmark", userId: null, boardId: boardRecord.id, title: "Preserved link", url: "https://example.com/preserved", normalizedUrl: "https://example.com/preserved", hostname: "example.com", description: "Must survive 3.1.3", faviconUrl: null, customIcon: null, position: "000000000099", openMode: "new-window", pinned: true, createdAt: timestamp, updatedAt: timestamp, deletedAt: null, deletedBatchId: null, version: 4 };
     const trashRecord = { ...bookmarkRecord, id: "upgrade-trash", title: "Preserved trash", url: "https://example.com/trash", normalizedUrl: "https://example.com/trash", deletedAt: timestamp, deletedBatchId: "upgrade-batch" };
     const transaction = database.transaction(["pages", "boards", "bookmarks", "settings"], "readwrite");
     transaction.objectStore("pages").put(pageRecord);
@@ -92,7 +92,7 @@ async function seedVersion223(page: Page): Promise<UpgradeSeedData> {
   });
 }
 
-test("preserves a real 2.2.3 profile when the same unpacked extension path is upgraded to 3.1.2", async () => {
+test("preserves a real 2.2.3 profile when the same unpacked extension path is upgraded to 3.1.3", async () => {
   expect(existsSync(`${baselinePath}/manifest.json`)).toBe(true);
   expect(existsSync(targetZip)).toBe(true);
   rmSync(profilePath, { recursive: true, force: true });
@@ -113,7 +113,7 @@ test("preserves a real 2.2.3 profile when the same unpacked extension path is up
   const after = await launch(baselinePath);
   expect(after.extensionId).toBe(baselineExtensionId);
   const targetManifest = await after.page.evaluate(() => chrome.runtime.getManifest());
-  expect(targetManifest.version).toBe("3.1.2");
+  expect(targetManifest.version).toBe("3.1.3");
   const snapshot = await after.page.evaluate(async () => {
     const open = indexedDB.open("asterfold");
     const database = await new Promise<IDBDatabase>((resolvePromise, reject) => {

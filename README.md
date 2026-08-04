@@ -178,7 +178,7 @@ Contribution guidance is available in [docs/development/CONTRIBUTING.md](docs/de
 
 ## Release artifacts
 
-Asterfold 3.1.2 produces a reproducible, cryptographically verifiable release containing:
+Asterfold 3.1.3 produces a reproducible, cryptographically verifiable release containing:
 
 - `Asterfold-Chrome.zip` — upload/install package with `manifest.json` at the ZIP root;
 - `chrome-unpacked.zip` — unpacked folder wrapper;
@@ -192,22 +192,23 @@ The release pipeline verifies Manifest V3 structure, permission policy, CSP, for
 
 ## Current status
 
-**Asterfold 3.1.2** preserves user-uploaded wallpapers at their exact original resolution, format and byte quality, while keeping a separate Full HD software-rendering fallback and the verified local-first release pipeline.
+**Asterfold 3.1.3** removes new-tab white/dark flashing with a critical first-paint surface, waits for the final theme and wallpaper before revealing React, and adds a restrained reduced-motion-aware entrance sequence while retaining the 3.1.2 original-quality wallpaper pipeline.
 
 The repository does not claim Chrome Web Store publication, approval, user counts, ratings, awards, or endorsements until those facts exist publicly.
 
 ## Version history
 
-1. **v3.1.2 — Original-quality uploaded wallpapers.** Preserves uploaded raster files byte-for-byte at their original dimensions, broadens safe Chrome-decodable image support, adds backup format 4, and reserves the separate Full HD copy for software rendering only.
-2. **v3.1.1 — Wallpaper, Settings and import polish.** Replaces the three built-in backgrounds with licensed 4K sources and native-size compatibility variants, makes Settings fully opaque, adds emoji flags to every language option, and opens newly imported bookmark Pages immediately at the first position.
-3. **v3.1.0 — Windows 11 adaptive performance update.** Adds automatic Radeon R5 230/Caicos detection, Compatibility Glass, pre-rendered compatibility wallpaper, compositor-safe motion, Full-HD wallpaper caps, schema 7 migration, and 600-bookmark stress gates.
-4. **v3.0.1 — Verified release pipeline and first-use hardening.** Adds tag-only CI-gated publishing, exact-SHA workflow checks, deterministic cross-platform packaging, SBOM/provenance/attestations, runtime-only Store ZIP validation, migration-safe launcher discovery, and versioned audit evidence.
-5. **v2.2.3 — Chrome Web Store readiness.** Fixed Quick Save destination validation, cross-context session Privacy Mode, scoped restore safety, bounded imports, HTML description round-trip, atomic free-grid moves, settings races, and release gates.
-6. **v2.2.2 — Data and privacy hardening.** Improved scoped backups, deleted-data merge behavior, Quick Save, atomic moves and Undo, wallpaper handling, Page actions, and background reliability.
-7. **v2.2.1 — Store submission package.** Added verifiable Store collateral, privacy documentation, and backup v3 wallpaper support.
-8. **v2.2.0 — Security and release hardening.** Centralized safe navigation, strengthened migrations/import/order handling, added Low Power and accessibility gates, and made release archives reproducible.
-9. **v2.1.x — Localization, Search, Trash, contrast, and keyboard improvements.**
-10. **v2.0.x — Pages → Boards → Bookmarks redesign and correct Chrome packaging.**
+1. **v3.1.3 — Flash-free new-tab startup.** Adds a critical dark first paint, validated visual snapshot, layout-timed theme application, one-time compositor-safe entrance motion, reduced-motion support, and a frame-sampled MV3 regression.
+2. **v3.1.2 — Original-quality uploaded wallpapers.** Preserves uploaded raster files byte-for-byte at their original dimensions, broadens safe Chrome-decodable image support, adds backup format 4, and reserves the separate Full HD copy for software rendering only.
+3. **v3.1.1 — Wallpaper, Settings and import polish.** Replaces the three built-in backgrounds with licensed 4K sources and native-size compatibility variants, makes Settings fully opaque, adds emoji flags to every language option, and opens newly imported bookmark Pages immediately at the first position.
+4. **v3.1.0 — Windows 11 adaptive performance update.** Adds automatic Radeon R5 230/Caicos detection, Compatibility Glass, pre-rendered compatibility wallpaper, compositor-safe motion, Full-HD wallpaper caps, schema 7 migration, and 600-bookmark stress gates.
+5. **v3.0.1 — Verified release pipeline and first-use hardening.** Adds tag-only CI-gated publishing, exact-SHA workflow checks, deterministic cross-platform packaging, SBOM/provenance/attestations, runtime-only Store ZIP validation, migration-safe launcher discovery, and versioned audit evidence.
+6. **v2.2.3 — Chrome Web Store readiness.** Fixed Quick Save destination validation, cross-context session Privacy Mode, scoped restore safety, bounded imports, HTML description round-trip, atomic free-grid moves, settings races, and release gates.
+7. **v2.2.2 — Data and privacy hardening.** Improved scoped backups, deleted-data merge behavior, Quick Save, atomic moves and Undo, wallpaper handling, Page actions, and background reliability.
+8. **v2.2.1 — Store submission package.** Added verifiable Store collateral, privacy documentation, and backup v3 wallpaper support.
+9. **v2.2.0 — Security and release hardening.** Centralized safe navigation, strengthened migrations/import/order handling, added Low Power and accessibility gates, and made release archives reproducible.
+10. **v2.1.x — Localization, Search, Trash, contrast, and keyboard improvements.**
+11. **v2.0.x — Pages → Boards → Bookmarks redesign and correct Chrome packaging.**
 
 The newest published build is always listed first on the [GitHub Releases page](https://github.com/memodlike/Asterfold/releases).
 

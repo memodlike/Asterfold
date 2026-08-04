@@ -1,6 +1,6 @@
 # Permission rationale
 
-Asterfold 3.1.2 uses Manifest V3, `host_permissions: []`, no content scripts and no remotely hosted executable code.
+Asterfold 3.1.3 uses Manifest V3, `host_permissions: []`, no content scripts and no remotely hosted executable code.
 
 | Permission | Purpose |
 | --- | --- |

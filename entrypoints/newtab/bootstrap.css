@@ -1,0 +1,105 @@
+:root {
+  --startup-canvas: #111318;
+  --startup-wallpaper: none;
+  color-scheme: dark;
+  background: var(--startup-canvas);
+}
+
+html,
+body,
+#root {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+html,
+body {
+  min-height: 100vh;
+  background: var(--startup-canvas);
+}
+
+body {
+  overflow: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: var(--startup-canvas);
+  background-image: linear-gradient(rgb(0 0 0 / .24), rgb(0 0 0 / .24)), var(--startup-wallpaper);
+  background-position: center;
+  background-size: cover;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+html[data-asterfold-ready="true"] #root {
+  visibility: visible;
+  pointer-events: auto;
+  animation: asterfold-root-in 220ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+html[data-asterfold-entering="true"] .wallpaper {
+  animation: asterfold-wallpaper-in 360ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+html[data-asterfold-entering="true"] .board-track > .board {
+  animation: asterfold-board-in 360ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+html[data-asterfold-entering="true"] .board-track > .board:nth-child(2) { animation-delay: 22ms; }
+html[data-asterfold-entering="true"] .board-track > .board:nth-child(3) { animation-delay: 44ms; }
+html[data-asterfold-entering="true"] .board-track > .board:nth-child(4) { animation-delay: 66ms; }
+html[data-asterfold-entering="true"] .board-track > .board:nth-child(5) { animation-delay: 88ms; }
+html[data-asterfold-entering="true"] .board-track > .board:nth-child(6) { animation-delay: 110ms; }
+html[data-asterfold-entering="true"] .board-track > .board:nth-child(7) { animation-delay: 132ms; }
+html[data-asterfold-entering="true"] .board-track > .board:nth-child(8) { animation-delay: 154ms; }
+html[data-asterfold-entering="true"] .board-track > .board:nth-child(n+9) { animation-delay: 176ms; }
+
+html[data-asterfold-entering="true"] .app-launcher {
+  animation: asterfold-launcher-in 320ms cubic-bezier(.2, .8, .2, 1) 120ms both;
+}
+
+@keyframes asterfold-root-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes asterfold-wallpaper-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes asterfold-board-in {
+  from { opacity: 0; transform: translateY(7px) scale(.992); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes asterfold-launcher-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-asterfold-ready="true"] #root,
+  html[data-asterfold-entering="true"] .wallpaper,
+  html[data-asterfold-entering="true"] .board-track > .board,
+  html[data-asterfold-entering="true"] .app-launcher {
+    animation: none !important;
+  }
+
+  html[data-asterfold-ready="true"] #root {
+    opacity: 1;
+  }
+}
