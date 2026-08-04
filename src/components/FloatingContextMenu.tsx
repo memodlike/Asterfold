@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 export interface ContextMenuPoint {
@@ -18,19 +18,30 @@ const EDGE_GAP = 8;
 export function FloatingContextMenu({ label, point, children, onClose }: FloatingContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(document.activeElement instanceof HTMLElement ? document.activeElement : null);
+  const pointX = point.x;
+  const pointY = point.y;
   const [placement, setPlacement] = useState(point);
 
-  useEffect(() => { setPlacement(point); }, [point]);
-  useLayoutEffect(() => {
+  const clampPlacement = useCallback(() => {
     const menu = menuRef.current;
     if (!menu) return;
     const bounds = menu.getBoundingClientRect();
     const next = {
-      x: Math.max(EDGE_GAP, Math.min(point.x, window.innerWidth - bounds.width - EDGE_GAP)),
-      y: Math.max(EDGE_GAP, Math.min(point.y, window.innerHeight - bounds.height - EDGE_GAP)),
+      x: Math.max(EDGE_GAP, Math.min(pointX, window.innerWidth - bounds.width - EDGE_GAP)),
+      y: Math.max(EDGE_GAP, Math.min(pointY, window.innerHeight - bounds.height - EDGE_GAP)),
     };
-    if (next.x !== placement.x || next.y !== placement.y) setPlacement(next);
-  }, [placement, point]);
+    setPlacement((current) => current.x === next.x && current.y === next.y ? current : next);
+  }, [pointX, pointY]);
+
+  useEffect(() => { setPlacement({ x: pointX, y: pointY }); }, [pointX, pointY]);
+  useLayoutEffect(() => { clampPlacement(); });
+  useLayoutEffect(() => {
+    const menu = menuRef.current;
+    if (!menu || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => clampPlacement());
+    observer.observe(menu);
+    return () => observer.disconnect();
+  }, [clampPlacement]);
   useLayoutEffect(() => {
     const buttons = menuRef.current?.querySelectorAll<HTMLButtonElement>("button") ?? [];
     for (const button of buttons) if (!button.hasAttribute("role")) button.setAttribute("role", "menuitem");
