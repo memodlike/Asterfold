@@ -200,7 +200,6 @@ export function SelectField({ value, options, onChange, label, className = "", d
     ...(position.bottom === undefined ? {} : { bottom: position.bottom }),
   } : undefined;
 
-  let previousGroup: string | undefined;
   const popover = open && position ? createPortal(
     <div
       ref={popoverRef}
@@ -212,8 +211,7 @@ export function SelectField({ value, options, onChange, label, className = "", d
       style={popoverStyle}
     >
       {options.map((option, index) => {
-        const showGroup = Boolean(option.group && option.group !== previousGroup);
-        previousGroup = option.group;
+        const showGroup = Boolean(option.group && option.group !== options[index - 1]?.group);
         return <div className="select-popover__entry" key={`${option.group ?? ""}:${option.value}`}>
           {showGroup ? <div className="select-popover__group" role="presentation">{option.group}</div> : null}
           <button
