@@ -36,7 +36,9 @@ async function extensionWorker(context: BrowserContext): Promise<Worker> {
 function luminance(color: string): number | null {
   const values = color.match(/[\d.]+/g)?.slice(0, 3).map(Number);
   if (!values || values.length !== 3) return null;
-  return values[0] * 0.2126 + values[1] * 0.7152 + values[2] * 0.0722;
+  const [red, green, blue] = values;
+  if (red === undefined || green === undefined || blue === undefined) return null;
+  return red * 0.2126 + green * 0.7152 + blue * 0.0722;
 }
 
 async function useDarkWallpaper(pageUrl: string, context: BrowserContext): Promise<void> {
@@ -129,7 +131,7 @@ test("new tab keeps a stable first paint and reveals the workspace once", async 
     expect(samples.length).toBeGreaterThan(10);
     const beforeReady = samples.filter((sample) => !sample.ready && sample.rootOpacity !== null);
     expect(beforeReady.length).toBeGreaterThan(0);
-    expect(beforeReady.every((sample) => sample.rootOpacity! <= 0.01 && sample.rootVisibility === "hidden")).toBe(true);
+    expect(beforeReady.every((sample) => sample.rootOpacity !== null && sample.rootOpacity <= 0.01 && sample.rootVisibility === "hidden")).toBe(true);
     expect(samples.some((sample) => sample.loadingVisible)).toBe(false);
 
     const luminances = samples.flatMap((sample) => [luminance(sample.htmlBackground), luminance(sample.bodyBackground)]).filter((value): value is number => value !== null);
@@ -138,7 +140,10 @@ test("new tab keeps a stable first paint and reveals the workspace once", async 
     const visibleOpacities = samples.map((sample) => sample.rootOpacity).filter((value): value is number => value !== null && value > 0.01);
     expect(visibleOpacities.at(-1)).toBeGreaterThanOrEqual(0.99);
     for (let index = 1; index < visibleOpacities.length; index += 1) {
-      expect(visibleOpacities[index] + 0.08).toBeGreaterThanOrEqual(visibleOpacities[index - 1]);
+      const previous = visibleOpacities[index - 1];
+      const current = visibleOpacities[index];
+      if (previous === undefined || current === undefined) throw new Error("Opacity sample sequence is incomplete");
+      expect(current + 0.08).toBeGreaterThanOrEqual(previous);
     }
     expect(samples.some((sample) => sample.boardAnimation === "asterfold-board-in")).toBe(true);
     await expect(page.locator("html")).not.toHaveAttribute("data-asterfold-entering", "true");
