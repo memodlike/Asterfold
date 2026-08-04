@@ -358,7 +358,9 @@ test.describe.serial("Asterfold MV3 release", () => {
 
     const popup = await context.newPage();
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
-    await popup.getByLabel("Страница").selectOption("empty-page");
+    const pageSelect = popup.getByRole("combobox", { name: "Страница" });
+    await pageSelect.click();
+    await popup.getByRole("option", { name: "Empty", exact: true }).click();
     await expect(popup.getByLabel("Блок")).toHaveValue("");
     await expect(popup.getByRole("button", { name: "Сохранить закладку" })).toBeDisabled();
     await expect(popup.getByText(/нет блока/iu)).toBeVisible();
