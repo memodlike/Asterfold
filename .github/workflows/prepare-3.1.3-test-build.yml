@@ -1,0 +1,203 @@
+name: Prepare Asterfold 3.1.3 test build
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  build-test-package:
+    if: github.head_ref == 'fix/newtab-startup-flash-3.1.3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: fix/newtab-startup-flash-3.1.3
+          fetch-depth: 0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+          cache: npm
+      - name: Detect completed preparation
+        id: state
+        shell: bash
+        run: |
+          if [ "$(node -p 'require("./package.json").version')" = "3.1.3" ] && git log -1 --pretty=%B | grep -q 'prepare Asterfold 3.1.3 test build'; then
+            echo 'done=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'done=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Synchronize version and release history
+        if: steps.state.outputs.done == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import re
+          from pathlib import Path
+
+          version = '3.1.3'
+
+          package_path = Path('package.json')
+          package = json.loads(package_path.read_text())
+          package['version'] = version
+          package_path.write_text(json.dumps(package, ensure_ascii=False, indent=2) + '\n')
+
+          lock_path = Path('package-lock.json')
+          lock = json.loads(lock_path.read_text())
+          lock['version'] = version
+          lock['packages']['']['version'] = version
+          lock_path.write_text(json.dumps(lock, ensure_ascii=False, indent=2) + '\n')
+
+          replacements = {
+            'docs/security/privacy.md': [
+              ('Policy version: 3.1.2', 'Policy version: 3.1.3'),
+              ('Applies to: Asterfold 3.1.2', 'Applies to: Asterfold 3.1.3'),
+            ],
+            'docs/store/privacy.html': [
+              ('Policy version: 3.1.2', 'Policy version: 3.1.3'),
+              ('Asterfold 3.1.2', 'Asterfold 3.1.3'),
+            ],
+            'docs/store/submission-checklist.md': [('Current version: 3.1.2', 'Current version: 3.1.3')],
+            'store-assets/listing/submission-values.md': [('Current version: 3.1.2', 'Current version: 3.1.3')],
+            'docs/release/install.md': [('Install Asterfold 3.1.2', 'Install Asterfold 3.1.3')],
+            'docs/security/permissions.md': [('Asterfold 3.1.2', 'Asterfold 3.1.3')],
+            'docs/security/review.md': [('Asterfold 3.1.2', 'Asterfold 3.1.3')],
+          }
+          for path, pairs in replacements.items():
+            file = Path(path)
+            text = file.read_text()
+            for old, new in pairs:
+              text = text.replace(old, new)
+            file.write_text(text)
+
+          release_path = Path('docs/release/release-notes.md')
+          previous = release_path.read_text()
+          previous = previous.replace('# Asterfold 3.1.2', '## 3.1.2 — Original-quality uploaded wallpapers', 1)
+          release_path.write_text('''# Asterfold 3.1.3
+
+## Flash-free new-tab startup
+
+- Paints a dark critical startup surface before React and the main stylesheet load, eliminating the browser-default white frame.
+- Restores a strictly validated local visual snapshot for the canvas and bundled wallpaper without storing bookmark or workspace content.
+- Keeps the React root hidden while IndexedDB, the selected theme and wallpaper asset resolve, then reveals the final workspace once.
+- Uses layout-timed theme variables so the first visible React frame already has the correct light/dark palette and performance profile.
+- Adds a five-second failure fallback so a startup error remains recoverable instead of leaving a blank tab.
+
+## Entrance motion
+
+- Fades the final wallpaper in without animating blur or expensive filters.
+- Introduces a restrained board stagger and launcher rise using only opacity and transform.
+- Runs the entrance sequence only during initial startup; newly created boards do not replay it.
+- Disables all startup motion for `prefers-reduced-motion` and the existing Asterfold motion preference.
+
+## Verification
+
+- Adds unit/static coverage for snapshot validation, denied storage, critical stylesheet ordering and reduced-motion behavior.
+- Adds a real unpacked-MV3 Playwright regression that samples every animation frame during a new-tab open.
+- Rejects visible loading-state flashes, near-white startup frames, root-opacity reversals and missing board entrance motion.
+- Retains production audit, source scan, typecheck, lint, coverage, Store validation, deterministic packaging, standard MV3 E2E, Windows compatibility stress and exact 2.2.3 upgrade checks.
+
+## Previous release details
+
+''' + previous)
+
+          readme_path = Path('README.md')
+          readme = readme_path.read_text()
+          readme = readme.replace('Asterfold 3.1.2 produces a reproducible', 'Asterfold 3.1.3 produces a reproducible', 1)
+          readme = readme.replace(
+            '**Asterfold 3.1.2** preserves user-uploaded wallpapers at their exact original resolution, format and byte quality, while keeping a separate Full HD software-rendering fallback and the verified local-first release pipeline.',
+            '**Asterfold 3.1.3** removes new-tab white/dark flashing with a critical first-paint surface, waits for the final theme and wallpaper before revealing React, and introduces a restrained reduced-motion-aware entrance sequence while retaining the 3.1.2 original-quality wallpaper pipeline.',
+            1,
+          )
+          marker = '## Version history\n\n'
+          start = readme.index(marker) + len(marker)
+          end = readme.index('\n\nThe newest published build', start)
+          lines = readme[start:end].splitlines()
+          renumbered = []
+          for line in lines:
+            match = re.match(r'^(\d+)\.\s+(.*)$', line)
+            renumbered.append(f"{int(match.group(1)) + 1}. {match.group(2)}" if match else line)
+          current = '1. **v3.1.3 — Flash-free new-tab startup.** Adds a critical dark first paint, validated visual startup snapshot, layout-timed theme application, one-time wallpaper/board/launcher entrance motion, reduced-motion support, and a frame-sampled MV3 flash regression.'
+          readme = readme[:start] + current + '\n' + '\n'.join(renumbered) + readme[end:]
+          readme_path.write_text(readme)
+
+          versioning_path = Path('docs/release/versioning.md')
+          versioning = versioning_path.read_text()
+          anchor = '`3.1.2` is the original-quality wallpaper patch release. It follows the 3.1.1 wallpaper/UI polish build and preserves uploaded raster sources without changing extension permissions or the local-first data model.\n'
+          addition = anchor + '\n`3.1.3` is the flash-free new-tab startup patch. It adds a critical first-paint surface, waits for the resolved theme and wallpaper before revealing the workspace, and keeps all entrance motion compositor-safe and reduced-motion-aware.\n'
+          if '`3.1.3` is the flash-free' not in versioning:
+            versioning = versioning.replace(anchor, addition)
+          versioning = versioning.replace('for example `v3.1.2`', 'for example `v3.1.3`')
+          versioning = versioning.replace('numeric version `3.1.2`', 'numeric version `3.1.3`')
+          versioning_path.write_text(versioning)
+
+          runtime_path = Path('tests/runtimeCoverage.test.ts')
+          runtime = runtime_path.read_text()
+          cleanup_anchor = 'document.documentElement.removeAttribute("data-performance");\n'
+          cleanup = cleanup_anchor + '    document.documentElement.removeAttribute("data-asterfold-ready");\n    document.documentElement.removeAttribute("data-asterfold-entering");\n    document.documentElement.removeAttribute("data-asterfold-boot");\n    localStorage.removeItem("asterfold:startup-theme:v1");\n'
+          if 'data-asterfold-ready' not in runtime:
+            runtime = runtime.replace(cleanup_anchor, cleanup)
+          runtime_path.write_text(runtime)
+          PY
+          git diff --check
+      - name: Install dependencies
+        if: steps.state.outputs.done == 'false'
+        run: npm ci
+      - name: Verify source, types, tests and deterministic package
+        if: steps.state.outputs.done == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run validate:version
+          npm run audit:production
+          npm run scan:source
+          npm run typecheck
+          npm run lint
+          npm run test:coverage
+          npm run validate:store
+          npm run release:repro
+      - name: Install Chromium
+        if: steps.state.outputs.done == 'false'
+        run: npx playwright install --with-deps chromium
+      - name: Verify real MV3 startup, interactions and stress
+        if: steps.state.outputs.done == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:e2e
+          npm run test:stress
+      - name: Stage test ZIP
+        if: steps.state.outputs.done == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$(find . -type f -name 'Asterfold-Chrome.zip' -print -quit)"
+          test -n "$archive"
+          test "$(unzip -p "$archive" manifest.json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).version))')" = '3.1.3'
+          mkdir -p test-artifact
+          cp "$archive" test-artifact/Asterfold-3.1.3-Chrome.zip
+          sha256sum test-artifact/Asterfold-3.1.3-Chrome.zip > test-artifact/Asterfold-3.1.3-Chrome.sha256
+      - name: Upload verified test ZIP
+        if: steps.state.outputs.done == 'false'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v5
+        with:
+          name: Asterfold-3.1.3-test-build
+          path: test-artifact
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish prepared source commit
+        if: steps.state.outputs.done == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -A
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'test-build: prepare Asterfold 3.1.3 test build'
+          git push origin HEAD:fix/newtab-startup-flash-3.1.3
