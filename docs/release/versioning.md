@@ -18,9 +18,11 @@ Asterfold follows `MAJOR.MINOR.PATCH`.
 
 `3.1.2` is the original-quality wallpaper patch release. It follows the 3.1.1 wallpaper/UI polish build and preserves uploaded raster sources without changing extension permissions or the local-first data model.
 
+`3.1.3` is the flash-free new-tab startup patch. It adds a critical first-paint surface, waits for the resolved theme and wallpaper before revealing the workspace, and keeps entrance motion compositor-safe and reduced-motion-aware.
+
 `3.0.1` was the final Store-readiness patch. It fixes popup destination state, cross-context session Privacy Mode, scoped restore safety, authoritative URL normalization, bounded/cancellable imports, HTML description round-trips, atomic free-grid moves, transactional settings, default-Page metadata and removal of inaccessible runtime snapshots while retaining the legacy store for migration compatibility.
 
-Git tags and GitHub Releases use a `v` prefix, for example `v3.1.2`. Package and MV3 manifest use the numeric version `3.1.2`.
+Git tags and GitHub Releases use a `v` prefix, for example `v3.1.3`. Package and MV3 manifest use the numeric version `3.1.3`.
 
 
 > Version 3.0.0 was an internal unreleased release candidate and was superseded by 3.0.1 before publication.

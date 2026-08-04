@@ -149,6 +149,8 @@ jobs:
             release/extension-source.zip
             release/Asterfold-Store-Assets.zip
             release/sbom.spdx.json
+            release/provenance.json
+            release/checksums.txt
           if-no-files-found: error
 
   windows-release:
@@ -184,6 +186,8 @@ jobs:
             release/extension-source.zip
             release/Asterfold-Store-Assets.zip
             release/sbom.spdx.json
+            release/provenance.json
+            release/checksums.txt
           if-no-files-found: error
 
   cross-platform-reproducibility:
@@ -205,7 +209,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for name in Asterfold-Chrome.zip chrome-unpacked.zip extension-source.zip Asterfold-Store-Assets.zip sbom.spdx.json; do
+          for name in Asterfold-Chrome.zip chrome-unpacked.zip extension-source.zip Asterfold-Store-Assets.zip sbom.spdx.json provenance.json checksums.txt; do
             cmp "linux/$name" "windows/$name"
             sha256sum "linux/$name" "windows/$name"
           done

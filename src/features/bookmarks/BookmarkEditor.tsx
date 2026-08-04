@@ -5,6 +5,7 @@ import { createBookmark, findDuplicate, updateBookmark } from "../../db/reposito
 import { DuplicateError } from "../../domain/errors";
 import { Button } from "../../components/Button";
 import { Modal } from "../../components/Modal";
+import { SelectField, type SelectOption } from "../../components/SelectField";
 import { faviconUrl } from "../../browser/api";
 import { useI18n } from "../../i18n";
 
@@ -61,7 +62,15 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
     };
   }, [boardId, props.bookmark?.id, props.open, url]);
 
-  const boardOptions = useMemo(() => props.pages.map((page) => ({ page, boards: props.boards.filter((board) => board.pageId === page.id) })), [props.boards, props.pages]);
+  const destinationOptions = useMemo<ReadonlyArray<SelectOption>>(() => props.pages.flatMap((page) => props.boards
+    .filter((board) => board.pageId === page.id)
+    .map((board) => ({ value: board.id, label: board.title, group: page.title }))), [props.boards, props.pages]);
+  const openModeOptions = useMemo<ReadonlyArray<SelectOption>>(() => [
+    { value: "current", label: t("bookmark.currentTab") },
+    { value: "new-tab", label: t("bookmark.newTab") },
+    { value: "new-window", label: t("bookmark.newWindow") },
+    { value: "incognito", label: t("bookmark.incognito") },
+  ], [t]);
   const icon = !props.privacy && url.startsWith("http") ? faviconUrl(url, 48) : "";
   const formId = "asterfold-bookmark-editor";
 
@@ -112,14 +121,8 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
         <label>{t("generic.title")}<input autoFocus value={title} maxLength={240} onChange={(event) => setTitle(event.target.value)} placeholder={t("bookmark.untitled")} /></label>
         <label>{t("bookmark.url")}<input type="url" required value={url} maxLength={8192} onChange={(event) => setUrl(event.target.value)} placeholder={t("bookmark.urlPlaceholder")} /></label>
         <label>{t("generic.description")}<textarea value={description} maxLength={2000} rows={4} onChange={(event) => setDescription(event.target.value)} placeholder={t("bookmark.optionalNote")} /></label>
-        <label>{t("generic.destination")}<select required value={boardId} onChange={(event) => setBoardId(event.target.value)}>
-          {boardOptions.map(({ page, boards }) => (
-            <optgroup key={page.id} label={page.title}>{boards.map((board) => <option key={board.id} value={board.id}>{board.title}</option>)}</optgroup>
-          ))}
-        </select></label>
-        <label>{t("bookmark.openMode")}<select value={openMode} onChange={(event) => setOpenMode(event.target.value as BookmarkOpenMode)}>
-          <option value="current">{t("bookmark.currentTab")}</option><option value="new-tab">{t("bookmark.newTab")}</option><option value="new-window">{t("bookmark.newWindow")}</option><option value="incognito">{t("bookmark.incognito")}</option>
-        </select></label>
+        <label>{t("generic.destination")}<SelectField value={boardId} options={destinationOptions} label={t("generic.destination")} onChange={setBoardId} /></label>
+        <label>{t("bookmark.openMode")}<SelectField value={openMode} options={openModeOptions} label={t("bookmark.openMode")} onChange={(value) => setOpenMode(value as BookmarkOpenMode)} /></label>
         {duplicate ? (
           <div className="inline-warning"><AlertTriangle size={18} /><div><strong>{t("bookmark.duplicateWarning")}</strong><span>{duplicate.title}</span>{!props.bookmark ? <button type="button" onClick={() => setAllowDuplicate(true)}>{t(allowDuplicate ? "bookmark.copyWillSave" : "bookmark.saveCopy")}</button> : null}</div><ExternalLink size={15} /></div>
         ) : null}

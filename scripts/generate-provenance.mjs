@@ -12,6 +12,10 @@ const git = (...args) => {
   try { return execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim(); }
   catch { return "unknown"; }
 };
+const declaredNpmVersion = typeof packageJson.packageManager === "string"
+  ? packageJson.packageManager.match(/^npm@(\d+\.\d+\.\d+)$/u)?.[1]
+  : undefined;
+if (!declaredNpmVersion) throw new Error("package.json must declare an exact npm packageManager version");
 const sourceCommit = process.env.GITHUB_SHA || git("rev-parse", "HEAD");
 const sourceTree = git("rev-parse", `${sourceCommit}^{tree}`);
 const tag = process.env.GITHUB_REF_TYPE === "tag" ? process.env.GITHUB_REF_NAME : process.env.RELEASE_TAG || `v${packageJson.version}`;
@@ -32,7 +36,7 @@ const provenance = {
   packageVersion: packageJson.version,
   manifestVersion: manifest.version,
   nodeVersion: process.version,
-  npmVersion: process.env.npm_config_user_agent?.match(/npm\/([^ ]+)/u)?.[1] ?? process.env.NPM_VERSION ?? "unknown",
+  npmVersion: declaredNpmVersion,
   lockfileSha256: await sha256File(resolve(root, "package-lock.json")),
   workflowRunId: process.env.GITHUB_RUN_ID || "local",
   workflowRunAttempt: process.env.GITHUB_RUN_ATTEMPT || "local",

@@ -123,6 +123,10 @@ describe("runtime lifecycle coverage", () => {
     vi.useRealTimers();
     document.documentElement.removeAttribute("data-theme");
     document.documentElement.removeAttribute("data-performance");
+    document.documentElement.removeAttribute("data-asterfold-ready");
+    document.documentElement.removeAttribute("data-asterfold-entering");
+    document.documentElement.removeAttribute("data-asterfold-boot");
+    localStorage.removeItem("asterfold:startup-theme:v1");
     document.documentElement.removeAttribute("style");
   });
 

@@ -1,4 +1,62 @@
-# Asterfold 3.1.2
+# Asterfold 3.1.4
+
+## Opaque, readable interface surfaces
+
+- Makes Settings, editors, search, move dialogs, Quick Save and every dropdown surface fully opaque in both light and dark themes.
+- Prevents wallpaper and workspace content from bleeding through menus, forms and popovers.
+- Uses theme-aware borders, focus rings and shadows without GPU-heavy live backdrop filters.
+
+## Custom adaptive dropdowns and locale flags
+
+- Replaces visible native selects with one accessible Asterfold listbox system across the extension.
+- Supports pointer input, Arrow keys, Home, End, Enter, Space, Escape, Tab and typeahead search.
+- Positions menus above or below according to the available viewport and keeps them inside the screen.
+- Replaces text country codes with local SVG flags that render consistently on Windows, macOS and Linux.
+
+## Reliable Appearance controls
+
+- Applies theme, background, glass, opacity, blur, dimming, wallpaper blur and saturation changes immediately.
+- Persists rapid slider input with a short debounce instead of writing IndexedDB on every pointer frame.
+- Flushes pending settings safely when Settings closes and preserves uploaded-wallpaper metadata.
+
+## Weak-PC and Windows 11 optimization
+
+- Preserves the Radeon R5 230/Caicos compatibility path and avoids classifying missing WebGL as software rendering.
+- Uses compatibility-safe opaque controls, compositor-safe motion and no live backdrop blur in constrained modes.
+- Keeps reduced-transparency and reduced-motion preferences authoritative.
+
+## Verification
+
+- Adds dedicated custom-select coverage for pointer, keyboard, typeahead, disabled states, adaptive placement and outside-click behavior.
+- Retains strict global coverage thresholds instead of lowering them.
+- Retains security scans, dependency review, CodeQL, deterministic Linux/Windows packaging, Store validation, real MV3 accessibility/visual E2E, Windows stress and exact 2.2.3 upgrade gates.
+
+## Previous release details
+
+## 3.1.3 — Flash-free new-tab startup
+
+## Flash-free new-tab startup
+
+- Paints a dark critical surface before React and the main stylesheet load.
+- Restores a strictly validated local visual snapshot for the canvas and bundled wallpaper.
+- Keeps React hidden until IndexedDB, the selected theme and wallpaper resolve, then reveals the final workspace once.
+- Applies final theme variables before the first visible React frame and keeps a five-second failure fallback.
+
+## Entrance motion
+
+- Fades the final wallpaper without animating blur or filters.
+- Introduces a restrained board stagger and launcher rise using opacity and transform only.
+- Runs only during initial startup and respects both reduced-motion and the Asterfold motion preference.
+
+## Verification
+
+- Adds unit/static coverage for snapshot validation, denied storage, critical resource ordering and reduced-motion behavior.
+- Adds a real unpacked-MV3 frame-sampled regression for white flashes, visible loading frames and opacity reversals.
+- Retains audit, source scan, typecheck, lint, coverage, Store validation, deterministic packaging, MV3 E2E, stress and exact upgrade checks.
+
+## Previous release details
+
+## 3.1.2 — Original-quality uploaded wallpapers
 
 ## Original-quality uploaded wallpapers
 

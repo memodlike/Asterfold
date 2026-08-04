@@ -7,6 +7,7 @@ import { isValidQuickSaveDestination, resolvePageBoardSelection, resolveQuickSav
 import { DuplicateError } from "../../src/domain/errors";
 import { faviconUrl, openWorkspace } from "../../src/browser/api";
 import { Logo } from "../../src/components/Logo";
+import { SelectField, type SelectOption } from "../../src/components/SelectField";
 import { useWorkspace } from "../../src/app/useWorkspace";
 import { translate, type MessageKey } from "../../src/i18n";
 import { primaryShortcut } from "../../src/browser/platform";
@@ -64,6 +65,8 @@ export function PopupApp() {
   }, [tab, workspace]);
 
   const pageBoards = useMemo(() => workspace?.boards.filter((board) => board.pageId === pageId) ?? [], [pageId, workspace?.boards]);
+  const pageOptions = useMemo<ReadonlyArray<SelectOption>>(() => workspace?.pages.map((page, index) => ({ value: page.id, label: privacy ? `${t("generic.page")} ${index + 1}` : page.title })) ?? [], [privacy, t, workspace?.pages]);
+  const boardOptions = useMemo<ReadonlyArray<SelectOption>>(() => pageBoards.map((board, index) => ({ value: board.id, label: privacy ? `${t("generic.board")} ${index + 1}` : board.title })), [pageBoards, privacy, t]);
   const destinationIsValid = workspace ? isValidQuickSaveDestination(pageId, boardId, workspace.boards) : false;
   useEffect(() => {
     const nextBoardId = resolvePageBoardSelection(pageId, boardId, pageBoards);
@@ -120,7 +123,7 @@ export function PopupApp() {
         <div className="popup__title"><h1>{t("popup.title")}</h1>{shortcut ? <kbd>{shortcut}</kbd> : null}</div>
         <div className="tab-preview"><span className="tab-preview__icon">{privacy ? "•" : faviconUrl(tab.url, 40) ? <img src={faviconUrl(tab.url, 40)} alt="" /> : tab.title[0]?.toUpperCase()}</span><div><strong>{visibleTitle}</strong><small>{privacy ? "••••••" : tab.url}</small></div></div>
         {unsupported ? <div className="popup-error"><AlertTriangle size={17} />{t("popup.unsupported")}</div> : null}
-        <div className="popup-grid"><label>{t("generic.page")}<select value={pageId} onChange={(event) => setPageId(event.target.value)}>{workspace.pages.map((page, index) => <option key={page.id} value={page.id}>{privacy ? `${t("generic.page")} ${index + 1}` : page.title}</option>)}</select></label><label>{t("generic.board")}<select value={boardId} onChange={(event) => setBoardId(event.target.value)}>{pageBoards.map((board, index) => <option key={board.id} value={board.id}>{privacy ? `${t("generic.board")} ${index + 1}` : board.title}</option>)}</select></label></div>
+        <div className="popup-grid"><label>{t("generic.page")}<SelectField value={pageId} options={pageOptions} label={t("generic.page")} onChange={setPageId} /></label><label>{t("generic.board")}<SelectField value={boardId} options={boardOptions} label={t("generic.board")} onChange={setBoardId} /></label></div>
         {!destinationIsValid ? <div className="popup-error"><AlertTriangle size={17} />{t("popup.boardRequired")}</div> : null}
         {showNewBoard ? <div className="new-board"><input autoFocus value={newBoardName} maxLength={240} placeholder={t("popup.boardName")} onChange={(event) => setNewBoardName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void addBoard(); } }} /><button onClick={() => void addBoard()}>{t("generic.create")}</button><button onClick={() => setShowNewBoard(false)}>{t("generic.cancel")}</button></div> : <button className="text-action" onClick={() => setShowNewBoard(true)}><FolderPlus size={15} />{t("popup.createBoard")}</button>}
         {!privacy ? <><label>{t("generic.title")}<input value={title} maxLength={240} onChange={(event) => setTitle(event.target.value)} /></label>

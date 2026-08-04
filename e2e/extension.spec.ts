@@ -358,8 +358,12 @@ test.describe.serial("Asterfold MV3 release", () => {
 
     const popup = await context.newPage();
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
-    await popup.getByLabel("Страница").selectOption("empty-page");
-    await expect(popup.getByLabel("Блок")).toHaveValue("");
+    const pageSelect = popup.getByRole("combobox", { name: "Страница" });
+    await pageSelect.click();
+    await popup.getByRole("option", { name: "Empty", exact: true }).click();
+    const boardSelect = popup.getByRole("combobox", { name: "Блок" });
+    await expect(boardSelect).toBeDisabled();
+    await expect(boardSelect).toContainText("—");
     await expect(popup.getByRole("button", { name: "Сохранить закладку" })).toBeDisabled();
     await expect(popup.getByText(/нет блока/iu)).toBeVisible();
     await popup.close();
@@ -526,14 +530,16 @@ test.describe.serial("Asterfold MV3 release", () => {
       return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, isTopmost: target === menu || menu.contains(target), background: style.backgroundColor, color: style.color, zIndex: style.zIndex };
     });
     expect(sourceMenuBounds).toMatchObject({ isTopmost: true, color: "rgb(25, 26, 29)", zIndex: "2147483647" });
-    expect(["rgb(251, 251, 252)", "rgba(255, 255, 255, 0.96)"]).toContain(sourceMenuBounds.background);
+    expect(sourceMenuBounds.background).toBe("rgb(255, 255, 255)");
     expect(sourceMenuBounds.left).toBeGreaterThanOrEqual(8);
     expect(sourceMenuBounds.top).toBeGreaterThanOrEqual(8);
     expect(sourceMenuBounds.right).toBeLessThanOrEqual(1440 - 8);
     expect(sourceMenuBounds.bottom).toBeLessThanOrEqual(900 - 8);
     await page.getByRole("menuitem", { name: "Переместить", exact: true }).click();
     dialog = page.getByRole("dialog");
-    await dialog.getByLabel("Назначение").selectOption({ label: "Later" });
+    const destinationSelect = dialog.getByRole("combobox", { name: "Назначение" });
+    await destinationSelect.click();
+    await page.getByRole("option", { name: "Later", exact: true }).click();
     await dialog.getByRole("button", { name: "Переместить", exact: true }).click();
     await expect(target.getByText("Playwright docs", { exact: true })).toBeVisible();
     await page.reload();
@@ -670,7 +676,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await page.reload();
     await page.getByRole("button", { name: "Playwright docs" }).click({ button: "right" });
     const darkMenuBackground = await page.locator(".context-menu").evaluate((menu) => getComputedStyle(menu).backgroundColor);
-    expect(["rgb(37, 39, 43)", "rgba(38, 40, 44, 0.96)"]).toContain(darkMenuBackground);
+    expect(darkMenuBackground).toBe("rgb(45, 47, 52)");
     await expect(page.locator(".context-menu")).toHaveCSS("color", "rgb(245, 245, 246)");
     await page.keyboard.press("Escape");
 

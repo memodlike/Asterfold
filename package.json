@@ -1,8 +1,9 @@
 {
   "name": "asterfold",
-  "version": "3.1.2",
+  "version": "3.1.4",
   "private": true,
   "type": "module",
+  "packageManager": "npm@10.9.8",
   "description": "A premium local-first visual bookmark workspace for Chrome.",
   "scripts": {
     "dev": "wxt",
@@ -68,6 +69,7 @@
     "node": ">=22"
   },
   "overrides": {
+    "brace-expansion": "5.0.9",
     "esbuild": "0.28.1",
     "fx-runner": "1.5.0",
     "tmp": "0.2.7",

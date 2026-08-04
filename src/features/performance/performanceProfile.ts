@@ -34,13 +34,21 @@ function rendererName(): string | null {
   try {
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("webgl", { failIfMajorPerformanceCaveat: false });
-    if (!context) return "software rasterizer";
+    if (!context) return null;
     const extension = context.getExtension("WEBGL_debug_renderer_info");
     return extension
       ? String(context.getParameter(extension.UNMASKED_RENDERER_WEBGL))
       : String(context.getParameter(context.RENDERER));
   } catch {
     return null;
+  }
+}
+
+function reducedTransparencyPreference(): boolean {
+  try {
+    return typeof matchMedia === "function" && matchMedia("(prefers-reduced-transparency: reduce)").matches;
+  } catch {
+    return false;
   }
 }
 
@@ -51,6 +59,6 @@ export function browserPerformanceSignals(): PerformanceSignals {
     platform: extendedNavigator.userAgentData?.platform ?? navigator.platform ?? navigator.userAgent,
     deviceMemory: typeof extendedNavigator.deviceMemory === "number" ? extendedNavigator.deviceMemory : null,
     hardwareConcurrency: navigator.hardwareConcurrency || 1,
-    reducedTransparency: matchMedia("(prefers-reduced-transparency: reduce)").matches,
+    reducedTransparency: reducedTransparencyPreference(),
   };
 }

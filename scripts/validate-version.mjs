@@ -7,6 +7,7 @@ const lock = JSON.parse(await readFile(resolve(root, "package-lock.json"), "utf8
 const version = packageJson.version;
 const failures = [];
 if (lock.version !== version || lock.packages?.[""]?.version !== version) failures.push("package-lock.json");
+if (typeof packageJson.packageManager !== "string" || !/^npm@\d+\.\d+\.\d+$/u.test(packageJson.packageManager)) failures.push("package.json: packageManager must pin an exact npm version");
 const currentVersionFiles = [
   ["docs/security/privacy.md", [`Policy version: ${version}`, `Applies to: Asterfold ${version}`]],
   ["docs/store/privacy.html", [`Policy version: ${version}`, `Asterfold ${version}`]],
