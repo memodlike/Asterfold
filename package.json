@@ -3,6 +3,7 @@
   "version": "3.1.4",
   "private": true,
   "type": "module",
+  "packageManager": "npm@10.9.8",
   "description": "A premium local-first visual bookmark workspace for Chrome.",
   "scripts": {
     "dev": "wxt",
