@@ -485,14 +485,14 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
     <Modal
       open
       size="large"
-      className="onboarding-modal"
+      className="onboarding-modal launcher-discovery"
       title={currentTitle}
       description={`${stepIndex(step) + 1} / ${ONBOARDING_STEPS.length}`}
       closeOnBackdrop={false}
       onClose={() => setConfirmSkip(true)}
       footer={(
         <div className="onboarding-footer-content">
-          <Button variant="ghost" onClick={() => setConfirmSkip(true)} disabled={busy}>{t("action.skip")}</Button>
+          <Button className="launcher-discovery__dismiss" variant="ghost" onClick={() => void finish(true)} disabled={busy}>{t("action.skip")}</Button>
           <div className="onboarding-footer-actions">
             {stepIndex(step) > 0 ? <Button onClick={() => setStep(previousStep(step))} disabled={busy || parsing}>{t("action.back")}</Button> : null}
             <Button variant="primary" type="submit" form="onboarding-form" disabled={busy || !canContinue(step, plan, parsing)}>
