@@ -1,8 +1,9 @@
 name: Trigger Asterfold 3.1.4 Release
 
 on:
-  push:
-    branches: [main]
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
 
 permissions:
   contents: write
@@ -10,17 +11,33 @@ permissions:
 
 jobs:
   dispatch:
-    if: github.event.head_commit.message == 'ci: trigger Asterfold 3.1.4 release'
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
     steps:
       - name: Create exact tag and dispatch verified release workflow
         env:
           GH_TOKEN: ${{ github.token }}
-          TARGET_SHA: ${{ github.sha }}
+          TARGET_SHA: ${{ github.event.workflow_run.head_sha }}
           RELEASE_TAG: v3.1.4
+          REQUIRED_MESSAGE: ci: trigger Asterfold 3.1.4 release
         shell: bash
         run: |
           set -euo pipefail
+
+          commit_message="$(gh api "repos/$GITHUB_REPOSITORY/commits/$TARGET_SHA" --jq '.commit.message')"
+          if [ "$commit_message" != "$REQUIRED_MESSAGE" ]; then
+            echo "Skipping non-release main commit: $TARGET_SHA"
+            exit 0
+          fi
+
+          main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          if [ "$main_sha" != "$TARGET_SHA" ]; then
+            echo "::error::main moved from $TARGET_SHA to $main_sha before release dispatch"
+            exit 1
+          fi
 
           existing_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" --jq '.object.sha' 2>/dev/null || true)"
           if [ -z "$existing_sha" ]; then
