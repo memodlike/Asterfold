@@ -1,8 +1,8 @@
 name: Manual Publish Asterfold 3.1.4
 
 on:
-  issue_comment:
-    types: [created]
+  push:
+    branches: [main]
 
 permissions:
   contents: read
@@ -13,11 +13,7 @@ concurrency:
 
 jobs:
   authorize:
-    if: >-
-      github.event.issue.pull_request != null &&
-      github.event.issue.number == 43 &&
-      github.event.comment.body == '/publish-v3.1.4' &&
-      github.event.comment.user.login == github.repository_owner
+    if: startsWith(github.event.head_commit.message, 'ci: trigger Asterfold 3.1.4 release')
     runs-on: ubuntu-latest
     permissions:
       issues: write
