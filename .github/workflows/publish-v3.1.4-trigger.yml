@@ -1,0 +1,44 @@
+name: Trigger Asterfold 3.1.4 Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  dispatch:
+    if: github.event.head_commit.message == 'ci: trigger Asterfold 3.1.4 release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create exact tag and dispatch verified release workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: b1d4bf06a11e8b3f8c4ae5cf5188b8650cbea4ac
+          RELEASE_TAG: v3.1.4
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          existing_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" --jq '.object.sha' 2>/dev/null || true)"
+          if [ -z "$existing_sha" ]; then
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+              -f ref="refs/tags/$RELEASE_TAG" \
+              -f sha="$TARGET_SHA"
+          elif [ "$existing_sha" != "$TARGET_SHA" ]; then
+            echo "::error::Tag $RELEASE_TAG points to $existing_sha instead of $TARGET_SHA"
+            exit 1
+          fi
+
+          gh workflow run release.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref "$RELEASE_TAG"
+
+          sleep 5
+          gh run list \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow release.yml \
+            --branch "$RELEASE_TAG" \
+            --limit 3
