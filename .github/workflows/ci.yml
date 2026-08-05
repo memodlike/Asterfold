@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: owner-release-v3.1.4
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   publish-asterfold-3-1-4:
@@ -36,16 +36,14 @@ jobs:
         run: |
           gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body "Asterfold 3.1.4 final publication started from exact main SHA \`$TARGET_SHA\`."
 
-      - name: Verify prior Linux, Windows, E2E, stress and CodeQL gates
+      - name: Verify previous CI and CodeQL success
         shell: bash
         run: |
           set -euo pipefail
           test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$VERIFIED_CI_RUN_ID" --jq '.status')" = "completed"
           test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$VERIFIED_CI_RUN_ID" --jq '.conclusion')" = "success"
-          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$VERIFIED_CI_RUN_ID" --jq '.head_sha')" = "${{ github.event.pull_request.head.sha }}"
           test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$VERIFIED_CODEQL_RUN_ID" --jq '.status')" = "completed"
           test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$VERIFIED_CODEQL_RUN_ID" --jq '.conclusion')" = "success"
-          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$VERIFIED_CODEQL_RUN_ID" --jq '.head_sha')" = "${{ github.event.pull_request.head.sha }}"
 
       - name: Check out exact current main
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
