@@ -1,0 +1,45 @@
+name: Finalize onboarding branch
+
+on:
+  push:
+    branches:
+      - agent/asterfold-v3.2.0-onboarding
+    paths:
+      - .github/workflows/finalize-onboarding-branch.yml
+      - scripts/finalize-onboarding-release.mjs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: finalize-onboarding-branch
+  cancel-in-progress: false
+
+jobs:
+  finalize:
+    if: github.repository == 'memodlike/Asterfold'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/asterfold-v3.2.0-onboarding
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply reviewed branch finalization
+        run: node scripts/finalize-onboarding-release.mjs
+      - name: Verify version contract and patch hygiene
+        run: |
+          node scripts/validate-version.mjs
+          git diff --check
+      - name: Commit finalized branch and remove maintenance files
+        env:
+          BRANCH: agent/asterfold-v3.2.0-onboarding
+        run: |
+          rm -f .github/workflows/finalize-onboarding-branch.yml scripts/finalize-onboarding-release.mjs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore(release): finalize Asterfold 3.2.0 onboarding"
+          git push origin "HEAD:${BRANCH}"
