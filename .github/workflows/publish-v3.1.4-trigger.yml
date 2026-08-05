@@ -1,9 +1,8 @@
 name: Trigger Asterfold 3.1.4 Release
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
+  repository_dispatch:
+    types: [publish-asterfold-3-1-4]
 
 permissions:
   contents: write
@@ -11,42 +10,70 @@ permissions:
 
 jobs:
   dispatch:
-    if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push' &&
-      github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - name: Create exact tag and dispatch verified release workflow
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.client_payload.sha }}
+          fetch-depth: 0
+
+      - name: Wait for exact CI and dispatch verified release
         env:
           GH_TOKEN: ${{ github.token }}
-          TARGET_SHA: ${{ github.event.workflow_run.head_sha }}
+          TARGET_SHA: ${{ github.event.client_payload.sha }}
+          SOURCE_RUN_ID: ${{ github.event.client_payload.run_id }}
           RELEASE_TAG: v3.1.4
           REQUIRED_MESSAGE: ci: trigger Asterfold 3.1.4 release
         shell: bash
         run: |
           set -euo pipefail
 
-          commit_message="$(gh api "repos/$GITHUB_REPOSITORY/commits/$TARGET_SHA" --jq '.commit.message')"
-          if [ "$commit_message" != "$REQUIRED_MESSAGE" ]; then
-            echo "Skipping non-release main commit: $TARGET_SHA"
-            exit 0
-          fi
+          test -n "$TARGET_SHA"
+          test -n "$SOURCE_RUN_ID"
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/commits/$TARGET_SHA" --jq '.commit.message')" = "$REQUIRED_MESSAGE"
+
+          source_completed=false
+          for attempt in $(seq 1 60); do
+            status="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" --jq '.status')"
+            conclusion="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" --jq '.conclusion // ""')"
+            source_sha="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" --jq '.head_sha')"
+            source_event="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" --jq '.event')"
+            test "$source_sha" = "$TARGET_SHA"
+            test "$source_event" = "push"
+            if [ "$status" = "completed" ]; then
+              test "$conclusion" = "success"
+              source_completed=true
+              break
+            fi
+            sleep 5
+          done
+          test "$source_completed" = "true"
+
+          required_verified=false
+          for attempt in $(seq 1 60); do
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$TARGET_SHA&status=completed&per_page=100" > workflow-runs.json
+            if node scripts/verify-required-workflows.mjs workflow-runs.json; then
+              required_verified=true
+              break
+            fi
+            sleep 5
+          done
+          rm -f workflow-runs.json
+          test "$required_verified" = "true"
 
           main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
-          if [ "$main_sha" != "$TARGET_SHA" ]; then
-            echo "::error::main moved from $TARGET_SHA to $main_sha before release dispatch"
-            exit 1
-          fi
+          test "$main_sha" = "$TARGET_SHA"
 
           existing_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" --jq '.object.sha' 2>/dev/null || true)"
           if [ -z "$existing_sha" ]; then
             gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
               -f ref="refs/tags/$RELEASE_TAG" \
               -f sha="$TARGET_SHA"
-          elif [ "$existing_sha" != "$TARGET_SHA" ]; then
-            echo "::error::Tag $RELEASE_TAG points to $existing_sha instead of $TARGET_SHA"
-            exit 1
+          else
+            test "$existing_sha" = "$TARGET_SHA"
           fi
 
           gh workflow run release.yml \
