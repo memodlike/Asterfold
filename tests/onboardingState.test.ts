@@ -156,17 +156,17 @@ describe("Chrome bookmark normalization", () => {
 
   it("handles an empty Chrome tree", () => {
     expect(flattenChromeBookmarks([])).toEqual([]);
-    expect(flattenChromeBookmarks([{ id: "root", title: "", children: [] }] as chrome.bookmarks.BookmarkTreeNode[])).toEqual([]);
+    expect(flattenChromeBookmarks([{ id: "root", title: "", children: [] }] as unknown as chrome.bookmarks.BookmarkTreeNode[])).toEqual([]);
   });
 
   it("rejects excessive folder nesting", () => {
-    const root: chrome.bookmarks.BookmarkTreeNode = { id: "root", title: "root", children: [] };
+    const root = { id: "root", title: "root", children: [] as unknown[] };
     let current = root;
     for (let index = 0; index <= IMPORT_LIMITS.depth + 1; index += 1) {
-      const child: chrome.bookmarks.BookmarkTreeNode = { id: String(index), title: `folder-${index}`, children: [] };
+      const child = { id: String(index), title: `folder-${index}`, children: [] as unknown[] };
       current.children = [child];
       current = child;
     }
-    expect(() => flattenChromeBookmarks([root])).toThrow(/nesting is too deep/i);
+    expect(() => flattenChromeBookmarks([root] as unknown as chrome.bookmarks.BookmarkTreeNode[])).toThrow(/nesting is too deep/i);
   });
 });
