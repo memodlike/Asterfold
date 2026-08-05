@@ -6,6 +6,7 @@ import { Button } from "../../components/Button";
 import { db } from "../../db/database";
 import { ensureStarterWorkspace, getWorkspaceData } from "../../db/repository";
 import { I18nProvider, translate } from "../../i18n";
+import { useThemeRuntime } from "../appearance/useThemeRuntime";
 import { shouldShowOnboarding } from "./onboardingState";
 
 const OnboardingWizard = lazy(() => import("./OnboardingEntry"));
@@ -40,6 +41,8 @@ export function OnboardingGate() {
 
 function PendingOnboarding() {
   const workspace = useLiveQuery(() => getWorkspaceData(db, false), [], undefined);
+  useThemeRuntime(workspace?.settings.theme);
+
   if (!workspace) return <div className="app-loading"><Sparkles size={22} /><span>{translate("auto", "loading.opening")}</span></div>;
   return <I18nProvider preference={workspace.settings.locale} documentTitle="tab.title">
     <div className="onboarding-shell" aria-hidden="true">
