@@ -178,7 +178,7 @@ Contribution guidance is available in [docs/development/CONTRIBUTING.md](docs/de
 
 ## Release artifacts
 
-Asterfold 3.1.4 produces a reproducible, cryptographically verifiable release containing:
+Asterfold 3.2.0 produces a reproducible, cryptographically verifiable release containing:
 
 - `Asterfold-Chrome.zip` — upload/install package with `manifest.json` at the ZIP root;
 - `chrome-unpacked.zip` — unpacked folder wrapper;
@@ -192,12 +192,13 @@ The release pipeline verifies Manifest V3 structure, permission policy, CSP, for
 
 ## Current status
 
-**Asterfold 3.1.4** makes every settings, editor, search and dropdown surface fully opaque; adds one accessible theme-aware dropdown system with cross-platform SVG flags; restores immediate Appearance live preview; and preserves strict Radeon R5 230/weak-PC compatibility.
+**Asterfold 3.2.0** adds a localized, migration-safe guided first-run setup with Chrome, HTML and Asterfold-backup import previews; preserves existing profiles; commits setup atomically with recovery rollback; and retains the verified opaque, accessible and weak-PC-compatible runtime.
 
 The repository does not claim Chrome Web Store publication, approval, user counts, ratings, awards, or endorsements until those facts exist publicly.
 
 ## Version history
 
+1. **v3.2.0 — Guided first-run setup.** Adds localized language selection, preview-only Chrome/HTML/backup imports, appearance setup, migration-safe existing-user behavior, explicit skip confirmation and recovery-backed atomic completion.
 1. **v3.1.4 — Opaque settings and adaptive controls.** Makes all overlays fully opaque, introduces accessible theme-aware dropdowns with SVG flags, restores live Appearance controls, and preserves weak-GPU optimization.
 2. **v3.1.3 — Flash-free new-tab startup.** Adds a critical dark first paint, validated visual snapshot, layout-timed theme application, one-time compositor-safe entrance motion, reduced-motion support, and a frame-sampled MV3 regression.
 3. **v3.1.2 — Original-quality uploaded wallpapers.** Preserves uploaded raster files byte-for-byte at their original dimensions, broadens safe Chrome-decodable image support, adds backup format 4, and reserves the separate Full HD copy for software rendering only.

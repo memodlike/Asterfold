@@ -1,3 +1,33 @@
+# Asterfold 3.2.0
+
+## Guided first-run setup
+
+- Opens a localized four-step setup only for genuinely fresh installations.
+- Lets users choose the interface language, import source, initial appearance and final review before any workspace write.
+- Supports Chrome bookmarks, browser-exported HTML and validated Asterfold JSON backups.
+- Keeps import parsing and preview local, abortable and off the main UI path.
+
+## Safe upgrades and recovery
+
+- Migrates every existing Asterfold database to schema 8 with onboarding already completed, so updates never display the blocking wizard.
+- Requests the optional Chrome bookmarks permission only after an explicit user action and removes it after reading.
+- Commits onboarding once, validates workspace invariants and restores a recovery backup on failure.
+- Requires explicit confirmation before skipping guided setup.
+
+## Appearance and accessibility
+
+- Previews theme, mode, density, rows and bundled wallpaper choices without persisting them before Finish.
+- Uses an opaque responsive dialog, trapped keyboard focus, reduced-motion support and localized accessible names.
+- Preserves the existing flash-free startup path and weak-GPU compatibility mode.
+
+## Verification
+
+- Adds unit and integration coverage for onboarding state, migration, localization, Chrome permission handling, rollback and idempotency.
+- Adds real unpacked-MV3 E2E coverage proving fresh-profile completion and non-reappearance.
+- Retains strict typecheck, lint, coverage, security, CodeQL, deterministic Linux/Windows packaging, accessibility, Windows stress and exact 2.2.3 upgrade gates.
+
+## Previous release details
+
 # Asterfold 3.1.4
 
 ## Opaque, readable interface surfaces
