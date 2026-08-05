@@ -224,3 +224,29 @@ jobs:
       - uses: actions/dependency-review-action@1e966ba708e4b64bb0c9bfb7abb5a232840be16a
         with:
           fail-on-severity: high
+
+  dispatch-release-3-1-4:
+    needs: [validate, windows-release, cross-platform-reproducibility]
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      github.event.head_commit.message == 'ci: trigger Asterfold 3.1.4 release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Dispatch owner-authorized release event
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api --method POST "repos/$GITHUB_REPOSITORY/dispatches" --input - <<JSON
+          {
+            "event_type": "publish-asterfold-3-1-4",
+            "client_payload": {
+              "sha": "$GITHUB_SHA",
+              "run_id": "$GITHUB_RUN_ID"
+            }
+          }
+          JSON
