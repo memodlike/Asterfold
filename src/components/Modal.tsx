@@ -13,21 +13,39 @@ interface ModalProps {
   children: ReactNode;
   footer?: ReactNode;
   className?: string;
+  closeOnBackdrop?: boolean;
+  closeOnEscape?: boolean;
+  showCloseButton?: boolean;
 }
 
 const FOCUSABLE = "button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex='-1'])";
 
-export function Modal({ open, title, description, size = "medium", side = false, onClose, children, footer, className = "" }: ModalProps) {
+export function Modal({
+  open,
+  title,
+  description,
+  size = "medium",
+  side = false,
+  onClose,
+  children,
+  footer,
+  className = "",
+  closeOnBackdrop = true,
+  closeOnEscape = true,
+  showCloseButton = true,
+}: ModalProps) {
   const { t } = useI18n();
   const titleId = useId();
   const descriptionId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const backdropPointerRef = useRef(false);
   const onCloseRef = useRef(onClose);
+  const closeOnEscapeRef = useRef(closeOnEscape);
 
   useEffect(() => {
     onCloseRef.current = onClose;
-  }, [onClose]);
+    closeOnEscapeRef.current = closeOnEscape;
+  }, [closeOnEscape, onClose]);
 
   useEffect(() => {
     if (!open) return;
@@ -38,7 +56,7 @@ export function Modal({ open, title, description, size = "medium", side = false,
     document.body.style.overflow = "hidden";
     (first ?? panel)?.focus();
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && closeOnEscapeRef.current) {
         event.preventDefault();
         onCloseRef.current();
         return;
@@ -73,7 +91,7 @@ export function Modal({ open, title, description, size = "medium", side = false,
       role="presentation"
       onPointerDown={(event) => { backdropPointerRef.current = event.target === event.currentTarget; }}
       onPointerUp={(event) => {
-        if (backdropPointerRef.current && event.target === event.currentTarget) onClose();
+        if (closeOnBackdrop && backdropPointerRef.current && event.target === event.currentTarget) onClose();
         backdropPointerRef.current = false;
       }}
     >
@@ -91,7 +109,7 @@ export function Modal({ open, title, description, size = "medium", side = false,
             <h2 id={titleId}>{title}</h2>
             {description ? <p id={descriptionId}>{description}</p> : null}
           </div>
-          <IconButton label={t("generic.close")} onClick={onClose}><X size={18} /></IconButton>
+          {showCloseButton ? <IconButton label={t("generic.close")} onClick={onClose}><X size={18} /></IconButton> : null}
         </header>
         <div className="modal__body">{children}</div>
         {footer ? <footer className="modal__footer">{footer}</footer> : null}
