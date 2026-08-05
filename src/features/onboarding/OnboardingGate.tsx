@@ -7,9 +7,8 @@ import { db } from "../../db/database";
 import { ensureStarterWorkspace, getWorkspaceData } from "../../db/repository";
 import { I18nProvider, translate } from "../../i18n";
 import { shouldShowOnboarding } from "./onboardingState";
-import "./onboarding.css";
 
-const OnboardingWizard = lazy(async () => import("./OnboardingWizard").then((module) => ({ default: module.OnboardingWizard })));
+const OnboardingWizard = lazy(() => import("./OnboardingEntry"));
 
 export function OnboardingGate() {
   const [ready, setReady] = useState(false);
