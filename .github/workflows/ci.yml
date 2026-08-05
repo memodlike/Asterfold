@@ -28,24 +28,13 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Restore CI and finalize 3.2.0 metadata
+      - name: Generate 3.2.0 release metadata
         shell: bash
         run: |
           set -euo pipefail
-          git fetch origin main
-          git show origin/main:.github/workflows/ci.yml > .github/workflows/ci.yml
-          python <<'PY'
-          from pathlib import Path
-          path = Path('.github/workflows/ci.yml')
-          text = path.read_text(encoding='utf-8')
-          text = text.replace('publish-release-3-1-4', 'publish-release-3-2-0')
-          text = text.replace('3.1.4', '3.2.0')
-          path.write_text(text, encoding='utf-8')
-          PY
           test "$(node -p "require('./package.json').version")" = "3.2.0"
           npm install --package-lock-only --ignore-scripts
           node scripts/finalize-v3.2.0.mjs
-          rm -f scripts/finalize-v3.2.0.mjs .github/workflows/bump-v3.2.0.yml
           python <<'PY'
           from pathlib import Path
           for name in ['docs/release/release-notes.md', 'docs/release/3.2.0-test-plan.md']:
@@ -53,13 +42,16 @@ jobs:
               path.write_text(path.read_text(encoding='utf-8').rstrip() + '\n', encoding='utf-8')
           PY
           npm run validate:version
-      - name: Commit finalized 3.2.0 metadata
+      - name: Commit non-workflow release files
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add package-lock.json README.md e2e/upgrade.spec.ts \
+            docs/release/install.md docs/release/release-notes.md docs/release/3.2.0-test-plan.md \
+            docs/security/privacy.md docs/store/privacy.html docs/store/submission-checklist.md \
+            store-assets/listing/submission-values.md
           git diff --cached --check
-          git commit -m "release: prepare Asterfold 3.2.0"
+          git commit -m "release: prepare Asterfold 3.2.0 metadata"
           git push origin HEAD:agent/asterfold-v3.2.0-onboarding
