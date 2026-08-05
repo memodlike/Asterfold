@@ -1,7 +1,7 @@
 name: Owner Publish Asterfold 3.1.4
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened]
     branches: [main]
 
@@ -20,10 +20,13 @@ jobs:
       github.event.pull_request.user.login == github.repository_owner &&
       github.event.pull_request.title == 'release: publish Asterfold 3.1.4 as Latest'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     outputs:
       target_sha: ${{ steps.target.outputs.sha }}
     steps:
-      - name: Resolve exact main SHA
+      - name: Resolve exact trusted main SHA
         id: target
         env:
           TARGET_SHA: ${{ github.event.pull_request.base.sha }}
@@ -32,6 +35,13 @@ jobs:
           set -euo pipefail
           test -n "$TARGET_SHA"
           echo "sha=$TARGET_SHA" >> "$GITHUB_OUTPUT"
+      - name: Record owner-authorized publication start
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          TARGET_SHA: ${{ steps.target.outputs.sha }}
+        shell: bash
+        run: gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body "Asterfold 3.1.4 owner-authorized publication started from trusted main SHA \`$TARGET_SHA\`. Linux and Windows release gates are running."
 
   linux-release:
     needs: authorize
@@ -40,7 +50,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Check out exact release source
+      - name: Check out exact trusted release source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ needs.authorize.outputs.target_sha }}
@@ -103,7 +113,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Check out exact release source
+      - name: Check out exact trusted release source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ needs.authorize.outputs.target_sha }}
@@ -153,7 +163,7 @@ jobs:
       attestations: write
       id-token: write
     steps:
-      - name: Check out exact release source
+      - name: Check out exact trusted release source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ needs.authorize.outputs.target_sha }}
@@ -271,10 +281,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TARGET_SHA: ${{ needs.authorize.outputs.target_sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         shell: bash
         run: |
           release_url="$(gh release view v3.1.4 --repo "$GITHUB_REPOSITORY" --json url --jq '.url')"
-          gh pr comment "$GITHUB_EVENT_PATH" --repo "$GITHUB_REPOSITORY" --body "Asterfold 3.1.4 RELEASED and marked Latest. Target: \`$TARGET_SHA\`. Release: $release_url" || true
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body "Asterfold 3.1.4 RELEASED and marked Latest. Target: \`$TARGET_SHA\`. Release: $release_url"
 
   report-failure:
     needs: [authorize, linux-release, windows-release, publish]
