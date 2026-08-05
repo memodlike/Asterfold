@@ -16,7 +16,7 @@ jobs:
       - name: Create exact tag and dispatch verified release workflow
         env:
           GH_TOKEN: ${{ github.token }}
-          TARGET_SHA: b1d4bf06a11e8b3f8c4ae5cf5188b8650cbea4ac
+          TARGET_SHA: ${{ github.sha }}
           RELEASE_TAG: v3.1.4
         shell: bash
         run: |
