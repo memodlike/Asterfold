@@ -72,7 +72,7 @@ jobs:
           test -s verified-release/Asterfold-Store-Assets.zip
           test -s verified-release/provenance.json
           test -s verified-release/sbom.spdx.json
-          node -e "const p=require('./verified-release/provenance.json'); if(p.version!=='3.2.0'||p.tag!=='v3.2.0'||p.sourceSha!=='9f46b709f8c10a3986a67f69db399f6b5db3cd72') process.exit(1)"
+          node -e "const p=require('./verified-release/provenance.json'); if(p.packageVersion!=='3.2.0'||p.tag!=='v3.2.0'||p.sourceCommit!=='9f46b709f8c10a3986a67f69db399f6b5db3cd72') process.exit(1)"
 
       - name: Record verified publication
         env:
