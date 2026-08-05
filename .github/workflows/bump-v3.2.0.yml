@@ -1,0 +1,152 @@
+name: Finalize Asterfold 3.2.0 metadata
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: finalize-v3.2.0-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  finalize:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/asterfold-v3.2.0-onboarding'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out exact PR branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: agent/asterfold-v3.2.0-onboarding
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+          cache: npm
+      - name: Finalize version metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node -p "require('./package.json').version")" = "3.2.0"
+          npm install --package-lock-only --ignore-scripts
+          python <<'PY'
+          from pathlib import Path
+
+          version = "3.2.0"
+          previous = "3.1.4"
+
+          def replace(path: str, old: str, new: str) -> None:
+              file = Path(path)
+              text = file.read_text(encoding="utf-8")
+              if old not in text:
+                  raise SystemExit(f"Missing expected text in {path}: {old}")
+              file.write_text(text.replace(old, new), encoding="utf-8")
+
+          replace("e2e/upgrade.spec.ts", previous, version)
+          replace("e2e/upgrade.spec.ts", "schemaVersion: 7,", "schemaVersion: 8,")
+
+          for path in [
+              "docs/security/privacy.md",
+              "docs/store/privacy.html",
+              "docs/store/submission-checklist.md",
+              "store-assets/listing/submission-values.md",
+          ]:
+              replace(path, previous, version)
+
+          privacy = Path("docs/store/privacy.html")
+          privacy.write_text(privacy.read_text(encoding="utf-8").replace("Effective 3 August 2026", "Effective 5 August 2026"), encoding="utf-8")
+
+          install = Path("docs/release/install.md")
+          install_text = install.read_text(encoding="utf-8").replace(previous, version)
+          install_text = install_text.replace(
+              "> Asterfold 3.2.0 is an unpublished test candidate. The latest public stable version remains 3.1.2 until the required physical Windows 11 / Radeon R5 230 verification is accepted. Do not treat a successful CI run as Chrome Web Store publication.",
+              "> Asterfold 3.2.0 is the current release candidate. GitHub Release publication and Chrome Web Store publication are separate events; do not treat a successful CI run as Store approval.",
+          )
+          install_text = install_text.replace("[Asterfold 3.2.0 physical test plan](./3.1.4-test-plan.md)", "[Asterfold 3.2.0 physical test plan](./3.2.0-test-plan.md)")
+          install.write_text(install_text, encoding="utf-8")
+
+          old_plan = Path("docs/release/3.1.4-test-plan.md").read_text(encoding="utf-8")
+          new_plan = old_plan.replace(previous, version)
+          new_plan += """
+
+## Guided first-run setup
+
+- [ ] A genuinely fresh Chrome profile opens the localized four-step setup exactly once.
+- [ ] An existing 2.2.3 or 3.1.x profile upgrades without showing the blocking setup.
+- [ ] Chrome bookmark access is requested only after the user selects Chrome import and is removed after reading.
+- [ ] HTML and Asterfold JSON imports show a validated preview before any workspace write.
+- [ ] Skip requires explicit confirmation and preserves the default workspace.
+- [ ] A failed final commit restores the recovery backup and leaves onboarding incomplete for retry.
+"""
+          Path("docs/release/3.2.0-test-plan.md").write_text(new_plan, encoding="utf-8")
+
+          readme = Path("README.md")
+          readme_text = readme.read_text(encoding="utf-8")
+          readme_text = readme_text.replace("Asterfold 3.1.4 produces a reproducible", "Asterfold 3.2.0 produces a reproducible", 1)
+          old_status = "**Asterfold 3.1.4** makes every settings, editor, search and dropdown surface fully opaque; adds one accessible theme-aware dropdown system with cross-platform SVG flags; restores immediate Appearance live preview; and preserves strict Radeon R5 230/weak-PC compatibility."
+          new_status = "**Asterfold 3.2.0** adds a localized, migration-safe guided first-run setup with Chrome, HTML and Asterfold-backup import previews; preserves existing profiles; commits setup atomically with recovery rollback; and retains the verified opaque, accessible and weak-PC-compatible runtime."
+          if old_status not in readme_text:
+              raise SystemExit("README current-status marker missing")
+          readme_text = readme_text.replace(old_status, new_status, 1)
+          history_marker = "1. **v3.1.4 — Opaque settings and adaptive controls.**"
+          history_entry = "1. **v3.2.0 — Guided first-run setup.** Adds localized language selection, preview-only Chrome/HTML/backup imports, appearance setup, migration-safe existing-user behavior, explicit skip confirmation and recovery-backed atomic completion.\n"
+          if history_marker not in readme_text:
+              raise SystemExit("README version-history marker missing")
+          readme_text = readme_text.replace(history_marker, history_entry + history_marker, 1)
+          readme.write_text(readme_text, encoding="utf-8")
+
+          old_notes = Path("docs/release/release-notes.md").read_text(encoding="utf-8")
+          release_notes = f"""# Asterfold {version}
+
+## Guided first-run setup
+
+- Opens a localized four-step setup only for genuinely fresh installations.
+- Lets users choose the interface language, import source, initial appearance and final review before any workspace write.
+- Supports Chrome bookmarks, browser-exported HTML and validated Asterfold JSON backups.
+- Keeps import parsing and preview local, abortable and off the main UI path.
+
+## Safe upgrades and recovery
+
+- Migrates every existing Asterfold database to schema 8 with onboarding already completed, so updates never display the blocking wizard.
+- Requests the optional Chrome bookmarks permission only after an explicit user action and removes it after reading.
+- Commits onboarding once, validates workspace invariants and restores a recovery backup on failure.
+- Requires explicit confirmation before skipping guided setup.
+
+## Appearance and accessibility
+
+- Previews theme, mode, density, rows and bundled wallpaper choices without persisting them before Finish.
+- Uses an opaque responsive dialog, trapped keyboard focus, reduced-motion support and localized accessible names.
+- Preserves the existing flash-free startup path and weak-GPU compatibility mode.
+
+## Verification
+
+- Adds unit and integration coverage for onboarding state, migration, localization, Chrome permission handling, rollback and idempotency.
+- Adds real unpacked-MV3 E2E coverage proving fresh-profile completion and non-reappearance.
+- Retains strict typecheck, lint, coverage, security, CodeQL, deterministic Linux/Windows packaging, accessibility, Windows stress and exact 2.2.3 upgrade gates.
+
+## Previous release details
+
+{old_notes}
+"""
+          Path("docs/release/release-notes.md").write_text(release_notes, encoding="utf-8")
+
+          ci = Path(".github/workflows/ci.yml")
+          ci_text = ci.read_text(encoding="utf-8")
+          ci_text = ci_text.replace("publish-release-3-1-4", "publish-release-3-2-0")
+          ci_text = ci_text.replace(previous, version)
+          ci.write_text(ci_text, encoding="utf-8")
+          PY
+          git rm .github/workflows/bump-v3.2.0.yml
+          npm run validate:version
+      - name: Commit finalized 3.2.0 metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "release: prepare Asterfold 3.2.0"
+          git push origin HEAD:agent/asterfold-v3.2.0-onboarding
