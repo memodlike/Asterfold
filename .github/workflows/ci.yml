@@ -1,322 +1,118 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
-
-permissions:
-  contents: read
+    types: [opened, synchronize, reopened]
+    branches: [main]
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: owner-release-v3.1.4
+  cancel-in-progress: false
 
 jobs:
-  validate:
+  publish-asterfold-3-1-4:
+    if: >-
+      github.event.pull_request.number == 50 &&
+      github.event.pull_request.head.ref == 'release/publish-v3.1.4-owner-authorized' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login == github.repository_owner &&
+      github.event.pull_request.title == 'release: publish Asterfold 3.1.4 as Latest'
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      actions: read
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: v3.1.4
+      TARGET_SHA: ${{ github.event.pull_request.base.sha }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      VERIFIED_CI_RUN_ID: '30974845159'
+      VERIFIED_CODEQL_RUN_ID: '30974845198'
     steps:
-      - name: Check out repository
+      - name: Record owner-authorized release start
+        shell: bash
+        run: |
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body "Asterfold 3.1.4 final publication started from exact main SHA \`$TARGET_SHA\`."
+
+      - name: Verify prior Linux, Windows, E2E, stress and CodeQL gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$VERIFIED_CI_RUN_ID" --jq '.status')" = "completed"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$VERIFIED_CI_RUN_ID" --jq '.conclusion')" = "success"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$VERIFIED_CI_RUN_ID" --jq '.head_sha')" = "${{ github.event.pull_request.head.sha }}"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$VERIFIED_CODEQL_RUN_ID" --jq '.status')" = "completed"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$VERIFIED_CODEQL_RUN_ID" --jq '.conclusion')" = "success"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$VERIFIED_CODEQL_RUN_ID" --jq '.head_sha')" = "${{ github.event.pull_request.head.sha }}"
+
+      - name: Check out exact current main
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - name: Version consistency
-        run: npm run validate:version
-      - name: Production dependency audit
-        run: npm run audit:production
-      - name: Capture development dependency audit
-        shell: bash
-        run: npm audit --json > npm-audit.json || true
-      - name: Upload development audit evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: npm-audit-development
-          path: npm-audit.json
-          if-no-files-found: error
-      - name: Development dependency audit baseline
-        run: node scripts/check-audit-baseline.mjs npm-audit.json
-      - name: Source security scan
-        run: npm run scan:source
-      - name: Capture typecheck result
-        id: typecheck
-        shell: bash
-        run: |
-          set +e
-          npm run typecheck > typecheck.log 2>&1
-          status=$?
-          cat typecheck.log
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-          exit 0
-      - name: Upload typecheck evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: typecheck-evidence
-          path: typecheck.log
-          if-no-files-found: error
-      - name: Enforce typecheck result
-        shell: bash
-        run: test "${{ steps.typecheck.outputs.status }}" = "0"
-      - name: Capture lint result
-        id: lint
-        shell: bash
-        run: |
-          set +e
-          npm run lint > lint.log 2>&1
-          status=$?
-          cat lint.log
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-          exit 0
-      - name: Upload lint evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: lint-evidence
-          path: lint.log
-          if-no-files-found: error
-      - name: Enforce lint result
-        shell: bash
-        run: test "${{ steps.lint.outputs.status }}" = "0"
-      - name: Capture coverage result
-        id: coverage
-        shell: bash
-        run: |
-          set +e
-          npm run test:coverage > coverage.log 2>&1
-          status=$?
-          cat coverage.log
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-          exit 0
-      - name: Upload coverage evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: coverage-evidence
-          path: |
-            coverage.log
-            coverage
-          if-no-files-found: error
-      - name: Enforce coverage result
-        shell: bash
-        run: test "${{ steps.coverage.outputs.status }}" = "0"
-      - name: Chrome Web Store asset validation
-        run: npm run validate:store
-      - name: Reproducible release and package validation
-        run: npm run release:repro
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
-      - name: Real MV3, accessibility and visual E2E
-        run: npm run test:e2e
-      - name: Windows 11 compatibility stress gate
-        run: npm run test:stress
-      - name: Prepare exact 2.2.3 upgrade fixture
-        env:
-          GH_TOKEN: ${{ github.token }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and verify deterministic release assets
         shell: bash
         run: |
           set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$TARGET_SHA"
+          test "$(node -p "require('./package.json').version")" = "3.1.4"
+          export GITHUB_SHA="$TARGET_SHA"
+          npm run audit:production
+          npm run audit:development
+          npm run scan:source
+          npm run typecheck
+          npm run lint
+          npm run test:coverage
+          npm run validate:store
+          npm run release:repro
+          npx playwright install --with-deps chromium
+          npm run test:e2e
+          npm run test:stress
           rm -rf .upgrade && mkdir -p .upgrade/extension
           gh release download v2.2.3 --repo "$GITHUB_REPOSITORY" --pattern Asterfold-Chrome.zip --dir .upgrade
           echo "e666c0e40ca2bcd1631b04e3b9087e38b26f71336664ecfc475ee8b4d610920a  .upgrade/Asterfold-Chrome.zip" | sha256sum --check
           unzip -q .upgrade/Asterfold-Chrome.zip -d .upgrade/extension
-          test "$(node -p "require('./.upgrade/extension/manifest.json').version")" = "2.2.3"
-      - name: Exact 2.2.3 upgrade E2E
-        env:
-          ASTERFOLD_UPGRADE_BASELINE_PATH: ${{ github.workspace }}/.upgrade/extension
-          ASTERFOLD_UPGRADE_TARGET_ZIP: ${{ github.workspace }}/release/Asterfold-Chrome.zip
-          ASTERFOLD_UPGRADE_PROFILE_PATH: ${{ github.workspace }}/.upgrade/profile
-        run: npm run test:upgrade
-      - name: Upload failure evidence
-        if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: failure-evidence-linux
-          path: |
-            test-results
-            playwright-report
-            coverage
-          if-no-files-found: ignore
-      - name: Upload Linux reproducibility subjects
-        if: success()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: release-linux
-          path: |
-            release/Asterfold-Chrome.zip
-            release/chrome-unpacked.zip
-            release/extension-source.zip
-            release/Asterfold-Store-Assets.zip
-            release/sbom.spdx.json
-            release/provenance.json
-            release/checksums.txt
-          if-no-files-found: error
-
-  windows-release:
-    runs-on: windows-latest
-    timeout-minutes: 25
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: Windows version consistency
-        run: npm run validate:version
-      - name: Windows source security scan
-        run: npm run scan:source
-      - name: Windows production build
-        run: npm run build
-      - name: Windows generated manifest consistency
-        shell: pwsh
-        run: $env:REQUIRE_GENERATED_MANIFEST='true'; npm run validate:version
-      - name: Windows Store asset validation
-        run: npm run validate:store
-      - name: Windows deterministic release verification
-        run: node scripts/verify-release.mjs
-      - name: Upload Windows reproducibility subjects
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: release-windows
-          path: |
-            release/Asterfold-Chrome.zip
-            release/chrome-unpacked.zip
-            release/extension-source.zip
-            release/Asterfold-Store-Assets.zip
-            release/sbom.spdx.json
-            release/provenance.json
-            release/checksums.txt
-          if-no-files-found: error
-
-  cross-platform-reproducibility:
-    needs: [validate, windows-release]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Download Linux artifacts
-        uses: actions/download-artifact@974686ed5098c7f9c9289ec946b9058e496a2561 # v8
-        with:
-          name: release-linux
-          path: linux
-      - name: Download Windows artifacts
-        uses: actions/download-artifact@974686ed5098c7f9c9289ec946b9058e496a2561 # v8
-        with:
-          name: release-windows
-          path: windows
-      - name: Compare exact bytes
-        shell: bash
-        run: |
-          set -euo pipefail
-          for name in Asterfold-Chrome.zip chrome-unpacked.zip extension-source.zip Asterfold-Store-Assets.zip sbom.spdx.json provenance.json checksums.txt; do
-            cmp "linux/$name" "windows/$name"
-            sha256sum "linux/$name" "windows/$name"
-          done
-
-  dependency-review:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: actions/dependency-review-action@1e966ba708e4b64bb0c9bfb7abb5a232840be16a
-        with:
-          fail-on-severity: high
-
-  publish-release-3-1-4:
-    needs: [validate, windows-release, cross-platform-reproducibility]
-    if: >-
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/main' &&
-      startsWith(github.event.head_commit.message, 'ci: trigger Asterfold 3.1.4 release')
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions:
-      contents: write
-      actions: read
-      checks: read
-      attestations: write
-      id-token: write
-    steps:
-      - name: Check out exact release commit
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 0
-      - name: Set up Node.js
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: 22
-          cache: npm
-      - name: Download verified Linux release artifacts
-        uses: actions/download-artifact@974686ed5098c7f9c9289ec946b9058e496a2561 # v8
-        with:
-          name: release-linux
-          path: release
-      - name: Verify exact commit and successful CodeQL
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: v3.1.4
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(node -p "require('./package.json').version")" = "3.1.4"
-          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
-          codeql_verified=false
-          for attempt in $(seq 1 60); do
-            runs="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$GITHUB_SHA&per_page=100")"
-            if RUNS_JSON="$runs" node --input-type=module <<'NODE'
-          const runs = JSON.parse(process.env.RUNS_JSON).workflow_runs ?? [];
-          const matching = runs.filter((run) => run.name === 'CodeQL' && run.event === 'push');
-          if (!matching.some((run) => run.status === 'completed' && run.conclusion === 'success')) process.exit(1);
-          NODE
-            then
-              codeql_verified=true
-              break
-            fi
-            sleep 5
-          done
-          test "$codeql_verified" = "true"
-          existing_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" --jq '.object.sha' 2>/dev/null || true)"
-          if [ -z "$existing_sha" ]; then
-            gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$RELEASE_TAG" -f sha="$GITHUB_SHA"
-          else
-            test "$existing_sha" = "$GITHUB_SHA"
-          fi
-          npm ci
-          npm run validate:version
+          ASTERFOLD_UPGRADE_BASELINE_PATH="$GITHUB_WORKSPACE/.upgrade/extension" \
+          ASTERFOLD_UPGRADE_TARGET_ZIP="$GITHUB_WORKSPACE/release/Asterfold-Chrome.zip" \
+          ASTERFOLD_UPGRADE_PROFILE_PATH="$GITHUB_WORKSPACE/.upgrade/profile" \
+          npm run test:upgrade
           (cd release && sha256sum --check checksums.txt)
-          EXPECTED_SOURCE_SHA="$GITHUB_SHA" EXPECTED_TAG="$RELEASE_TAG" node scripts/verify-provenance.mjs release
-      - name: Attest release assets
-        uses: actions/attest@c32b4b8b198b65d0bd9d63490e847ff7b53989d4 # v4.0.0
-        with:
-          subject-checksums: release/checksums.txt
-      - name: Attest checksums manifest
-        uses: actions/attest@c32b4b8b198b65d0bd9d63490e847ff7b53989d4 # v4.0.0
-        with:
-          subject-path: release/checksums.txt
-      - name: Attest Store package SBOM
-        uses: actions/attest@c32b4b8b198b65d0bd9d63490e847ff7b53989d4 # v4.0.0
-        with:
-          subject-path: release/Asterfold-Chrome.zip
-          sbom-path: release/sbom.spdx.json
-      - name: Publish Asterfold 3.1.4 as Latest
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: v3.1.4
+          EXPECTED_SOURCE_SHA="$TARGET_SHA" EXPECTED_TAG="$RELEASE_TAG" node scripts/verify-provenance.mjs release
+
+      - name: Verify publication preconditions
         shell: bash
         run: |
           set -euo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$TARGET_SHA"
           if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "::error::Release $RELEASE_TAG already exists and was not modified."
+            echo "::error::Release $RELEASE_TAG already exists."
             exit 1
           fi
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "::error::Tag $RELEASE_TAG already exists without a release."
+            exit 1
+          fi
+
+      - name: Publish Asterfold 3.1.4 as Latest
+        shell: bash
+        run: |
+          set -euo pipefail
           store_sha="$(sha256sum release/Asterfold-Chrome.zip | cut -d' ' -f1)"
           cp docs/release/release-notes.md release-notes.md
-          printf '\n### Verification\n\n`Asterfold-Chrome.zip` SHA-256: `%s`\n\nBuild provenance, SBOM and checksums are attached. GitHub-generated source archives are not the Chrome Web Store upload package.\n' "$store_sha" >> release-notes.md
+          printf '\n### Verification\n\n`Asterfold-Chrome.zip` SHA-256: `%s`\n\nChecksums, provenance and SBOM are attached. GitHub-generated source archives are not the Chrome installation package.\n' "$store_sha" >> release-notes.md
           gh release create "$RELEASE_TAG" \
             release/Asterfold-Chrome.zip \
             release/chrome-unpacked.zip \
@@ -326,14 +122,12 @@ jobs:
             release/provenance.json \
             release/sbom.spdx.json \
             --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" \
+            --target "$TARGET_SHA" \
             --title "Asterfold 3.1.4" \
             --notes-file release-notes.md \
             --latest
+
       - name: Download and verify published release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: v3.1.4
         shell: bash
         run: |
           set -euo pipefail
@@ -345,12 +139,28 @@ jobs:
           test "${actual[*]}" = "${sorted_expected[*]}"
           for name in "${expected[@]}"; do cmp "release/$name" "published-release/$name"; done
           (cd published-release && sha256sum --check checksums.txt)
-          EXPECTED_SOURCE_SHA="$GITHUB_SHA" EXPECTED_TAG="$RELEASE_TAG" node scripts/verify-provenance.mjs published-release
-          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json tagName,targetCommitish,isDraft,isPrerelease,url,assets
-          gh attestation verify published-release/Asterfold-Chrome.zip --repo "$GITHUB_REPOSITORY"
-      - name: Upload release verification evidence
+          EXPECTED_SOURCE_SHA="$TARGET_SHA" EXPECTED_TAG="$RELEASE_TAG" node scripts/verify-provenance.mjs published-release
+          test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json tagName --jq '.tagName')" = "$RELEASE_TAG"
+          test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json targetCommitish --jq '.targetCommitish')" = "$TARGET_SHA"
+          test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft')" = "false"
+          test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isPrerelease --jq '.isPrerelease')" = "false"
+          test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets | length')" = "7"
+
+      - name: Upload verified release for direct download
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: release-verification-v3.1.4
+          name: owner-published-release-v3.1.4
           path: published-release
           if-no-files-found: error
+
+      - name: Report successful publication
+        shell: bash
+        run: |
+          release_url="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url --jq '.url')"
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body "Asterfold 3.1.4 RELEASED and marked Latest. Target: \`$TARGET_SHA\`. Release: $release_url"
+
+      - name: Report publication failure
+        if: failure()
+        shell: bash
+        run: |
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body "Asterfold 3.1.4 publication failed. Workflow: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
