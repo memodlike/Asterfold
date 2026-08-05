@@ -73,4 +73,10 @@ describe("onboarding Chrome bookmark permission", () => {
     mocks.remove.mockResolvedValue(false);
     await expect(readChromeBookmarks()).resolves.toMatchObject({ status: "granted", permissionRemoved: false });
   });
+
+  it("does not convert cleanup API rejection into an import failure", async () => {
+    mocks.remove.mockRejectedValue(new Error("permission cleanup unavailable"));
+    await expect(readChromeBookmarks()).resolves.toMatchObject({ status: "granted", permissionRemoved: false });
+    expect(mocks.getTree).toHaveBeenCalledTimes(1);
+  });
 });
