@@ -11,20 +11,22 @@ function write(path, content) {
   writeFileSync(path, content, "utf8");
 }
 
-function replace(path, oldValue, newValue) {
-  const content = read(path);
-  if (!content.includes(oldValue)) throw new Error(`Missing expected text in ${path}: ${oldValue}`);
-  write(path, content.replaceAll(oldValue, newValue));
+function promote(path) {
+  let content = read(path);
+  if (content.includes(previous)) content = content.replaceAll(previous, version);
+  if (!content.includes(version)) throw new Error(`Version ${version} is missing from ${path}`);
+  write(path, content);
 }
 
-replace("e2e/upgrade.spec.ts", previous, version);
-replace("e2e/upgrade.spec.ts", "schemaVersion: 7,", "schemaVersion: 8,");
+const upgrade = read("e2e/upgrade.spec.ts");
+if (!upgrade.includes("schemaVersion: 8,")) throw new Error("Upgrade fixture does not expect schema 8");
+
 for (const path of [
   "docs/security/privacy.md",
   "docs/store/privacy.html",
   "docs/store/submission-checklist.md",
   "store-assets/listing/submission-values.md",
-]) replace(path, previous, version);
+]) promote(path);
 
 write("docs/store/privacy.html", read("docs/store/privacy.html").replace("Effective 3 August 2026", "Effective 5 August 2026"));
 
@@ -34,6 +36,7 @@ install = install.replace(
   "> Asterfold 3.2.0 is the current release candidate. GitHub Release publication and Chrome Web Store publication are separate events; do not treat a successful CI run as Store approval.",
 );
 install = install.replace("[Asterfold 3.2.0 physical test plan](./3.1.4-test-plan.md)", "[Asterfold 3.2.0 physical test plan](./3.2.0-test-plan.md)");
+if (!install.includes(version)) throw new Error("Install guide was not promoted to 3.2.0");
 write("docs/release/install.md", install);
 
 const testPlan = `${read("docs/release/3.1.4-test-plan.md").replaceAll(previous, version)}
@@ -53,15 +56,19 @@ let readme = read("README.md");
 readme = readme.replace("Asterfold 3.1.4 produces a reproducible", "Asterfold 3.2.0 produces a reproducible");
 const oldStatus = "**Asterfold 3.1.4** makes every settings, editor, search and dropdown surface fully opaque; adds one accessible theme-aware dropdown system with cross-platform SVG flags; restores immediate Appearance live preview; and preserves strict Radeon R5 230/weak-PC compatibility.";
 const newStatus = "**Asterfold 3.2.0** adds a localized, migration-safe guided first-run setup with Chrome, HTML and Asterfold-backup import previews; preserves existing profiles; commits setup atomically with recovery rollback; and retains the verified opaque, accessible and weak-PC-compatible runtime.";
-if (!readme.includes(oldStatus)) throw new Error("README current-status marker missing");
-readme = readme.replace(oldStatus, newStatus);
+if (readme.includes(oldStatus)) readme = readme.replace(oldStatus, newStatus);
+if (!readme.includes(newStatus)) throw new Error("README current status was not promoted");
 const historyMarker = "1. **v3.1.4 — Opaque settings and adaptive controls.**";
 const historyEntry = "1. **v3.2.0 — Guided first-run setup.** Adds localized language selection, preview-only Chrome/HTML/backup imports, appearance setup, migration-safe existing-user behavior, explicit skip confirmation and recovery-backed atomic completion.\n";
-if (!readme.includes(historyMarker)) throw new Error("README version-history marker missing");
-write("README.md", readme.replace(historyMarker, historyEntry + historyMarker));
+if (!readme.includes("**v3.2.0 — Guided first-run setup.**")) {
+  if (!readme.includes(historyMarker)) throw new Error("README version-history marker missing");
+  readme = readme.replace(historyMarker, historyEntry + historyMarker);
+}
+write("README.md", readme);
 
 const previousNotes = read("docs/release/release-notes.md");
-write("docs/release/release-notes.md", `# Asterfold ${version}
+if (!previousNotes.startsWith(`# Asterfold ${version}`)) {
+  write("docs/release/release-notes.md", `# Asterfold ${version}
 
 ## Guided first-run setup
 
@@ -93,3 +100,4 @@ write("docs/release/release-notes.md", `# Asterfold ${version}
 
 ${previousNotes}
 `);
+}
