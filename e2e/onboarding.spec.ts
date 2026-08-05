@@ -7,7 +7,10 @@ import AxeBuilder from "@axe-core/playwright";
 const extensionPath = resolve(process.env.ASTERFOLD_EXTENSION_PATH ?? ".output/chrome-mv3");
 const knownBrowserPaths = [
   process.env.ASTERFOLD_CHROMIUM_PATH,
+  "/tmp/asterfold-playwright/chromium-1194/chrome-mac/Chromium.app/Contents/MacOS/Chromium",
+  "/tmp/asterfold-playwright/chromium-1194/chrome-linux/chrome",
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "/Applications/Chromium.app/Contents/MacOS/Chromium",
   "/usr/bin/chromium",
   "/usr/bin/google-chrome",
 ].filter((value): value is string => Boolean(value));
