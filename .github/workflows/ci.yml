@@ -225,28 +225,132 @@ jobs:
         with:
           fail-on-severity: high
 
-  dispatch-release-3-1-4:
+  publish-release-3-1-4:
     needs: [validate, windows-release, cross-platform-reproducibility]
     if: >-
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
       startsWith(github.event.head_commit.message, 'ci: trigger Asterfold 3.1.4 release')
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: write
+      actions: read
+      checks: read
+      attestations: write
+      id-token: write
     steps:
-      - name: Dispatch owner-authorized release event
+      - name: Check out exact release commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+          cache: npm
+      - name: Download verified Linux release artifacts
+        uses: actions/download-artifact@974686ed5098c7f9c9289ec946b9058e496a2561 # v8
+        with:
+          name: release-linux
+          path: release
+      - name: Verify exact commit and successful CodeQL
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: v3.1.4
         shell: bash
         run: |
           set -euo pipefail
-          gh api --method POST "repos/$GITHUB_REPOSITORY/dispatches" --input - <<JSON
-          {
-            "event_type": "publish-asterfold-3-1-4",
-            "client_payload": {
-              "sha": "$GITHUB_SHA",
-              "run_id": "$GITHUB_RUN_ID"
-            }
-          }
-          JSON
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(node -p "require('./package.json').version")" = "3.1.4"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          codeql_verified=false
+          for attempt in $(seq 1 60); do
+            runs="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$GITHUB_SHA&per_page=100")"
+            if RUNS_JSON="$runs" node --input-type=module <<'NODE'
+          const runs = JSON.parse(process.env.RUNS_JSON).workflow_runs ?? [];
+          const matching = runs.filter((run) => run.name === 'CodeQL' && run.event === 'push');
+          if (!matching.some((run) => run.status === 'completed' && run.conclusion === 'success')) process.exit(1);
+          NODE
+            then
+              codeql_verified=true
+              break
+            fi
+            sleep 5
+          done
+          test "$codeql_verified" = "true"
+          existing_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" --jq '.object.sha' 2>/dev/null || true)"
+          if [ -z "$existing_sha" ]; then
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$RELEASE_TAG" -f sha="$GITHUB_SHA"
+          else
+            test "$existing_sha" = "$GITHUB_SHA"
+          fi
+          npm ci
+          npm run validate:version
+          (cd release && sha256sum --check checksums.txt)
+          EXPECTED_SOURCE_SHA="$GITHUB_SHA" EXPECTED_TAG="$RELEASE_TAG" node scripts/verify-provenance.mjs release
+      - name: Attest release assets
+        uses: actions/attest@c32b4b8b198b65d0bd9d63490e847ff7b53989d4 # v4.0.0
+        with:
+          subject-checksums: release/checksums.txt
+      - name: Attest checksums manifest
+        uses: actions/attest@c32b4b8b198b65d0bd9d63490e847ff7b53989d4 # v4.0.0
+        with:
+          subject-path: release/checksums.txt
+      - name: Attest Store package SBOM
+        uses: actions/attest@c32b4b8b198b65d0bd9d63490e847ff7b53989d4 # v4.0.0
+        with:
+          subject-path: release/Asterfold-Chrome.zip
+          sbom-path: release/sbom.spdx.json
+      - name: Publish Asterfold 3.1.4 as Latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: v3.1.4
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::Release $RELEASE_TAG already exists and was not modified."
+            exit 1
+          fi
+          store_sha="$(sha256sum release/Asterfold-Chrome.zip | cut -d' ' -f1)"
+          cp docs/release/release-notes.md release-notes.md
+          printf '\n### Verification\n\n`Asterfold-Chrome.zip` SHA-256: `%s`\n\nBuild provenance, SBOM and checksums are attached. GitHub-generated source archives are not the Chrome Web Store upload package.\n' "$store_sha" >> release-notes.md
+          gh release create "$RELEASE_TAG" \
+            release/Asterfold-Chrome.zip \
+            release/chrome-unpacked.zip \
+            release/extension-source.zip \
+            release/Asterfold-Store-Assets.zip \
+            release/checksums.txt \
+            release/provenance.json \
+            release/sbom.spdx.json \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Asterfold 3.1.4" \
+            --notes-file release-notes.md \
+            --latest
+      - name: Download and verify published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: v3.1.4
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf published-release && mkdir published-release
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir published-release
+          expected=(Asterfold-Chrome.zip chrome-unpacked.zip extension-source.zip Asterfold-Store-Assets.zip checksums.txt provenance.json sbom.spdx.json)
+          mapfile -t actual < <(find published-release -maxdepth 1 -type f -printf '%f\n' | sort)
+          mapfile -t sorted_expected < <(printf '%s\n' "${expected[@]}" | sort)
+          test "${actual[*]}" = "${sorted_expected[*]}"
+          for name in "${expected[@]}"; do cmp "release/$name" "published-release/$name"; done
+          (cd published-release && sha256sum --check checksums.txt)
+          EXPECTED_SOURCE_SHA="$GITHUB_SHA" EXPECTED_TAG="$RELEASE_TAG" node scripts/verify-provenance.mjs published-release
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json tagName,targetCommitish,isDraft,isPrerelease,url,assets
+          gh attestation verify published-release/Asterfold-Chrome.zip --repo "$GITHUB_REPOSITORY"
+      - name: Upload release verification evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-verification-v3.1.4
+          path: published-release
+          if-no-files-found: error
