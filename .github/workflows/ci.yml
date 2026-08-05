@@ -46,6 +46,12 @@ jobs:
           npm install --package-lock-only --ignore-scripts
           node scripts/finalize-v3.2.0.mjs
           rm -f scripts/finalize-v3.2.0.mjs .github/workflows/bump-v3.2.0.yml
+          python <<'PY'
+          from pathlib import Path
+          for name in ['docs/release/release-notes.md', 'docs/release/3.2.0-test-plan.md']:
+              path = Path(name)
+              path.write_text(path.read_text(encoding='utf-8').rstrip() + '\n', encoding='utf-8')
+          PY
           npm run validate:version
       - name: Commit finalized 3.2.0 metadata
         shell: bash
