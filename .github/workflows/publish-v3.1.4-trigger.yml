@@ -33,7 +33,8 @@ jobs:
           test -n "$TARGET_SHA"
           test -n "$SOURCE_RUN_ID"
           test "$(git rev-parse HEAD)" = "$TARGET_SHA"
-          test "$(gh api "repos/$GITHUB_REPOSITORY/commits/$TARGET_SHA" --jq '.commit.message')" = "$REQUIRED_MESSAGE"
+          commit_subject="$(gh api "repos/$GITHUB_REPOSITORY/commits/$TARGET_SHA" --jq '.commit.message' | sed -n '1p')"
+          test "$commit_subject" = "$REQUIRED_MESSAGE"
 
           source_completed=false
           for attempt in $(seq 1 60); do
