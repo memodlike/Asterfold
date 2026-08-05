@@ -2,6 +2,7 @@ import type { AppSettings } from "../domain/models";
 import { getThemePreset } from "../domain/themes";
 import { nowIso } from "../utils/ids";
 import { CURRENT_DB_SCHEMA_VERSION } from "./migrations";
+import { CURRENT_ONBOARDING_VERSION } from "../features/onboarding/onboardingState";
 
 export function createDefaultSettings(): AppSettings {
   return {
@@ -24,6 +25,7 @@ export function createDefaultSettings(): AppSettings {
     duplicateStrategy: "warn",
     trashRetentionDays: 30,
     recentQueries: [],
+    onboardingVersion: CURRENT_ONBOARDING_VERSION,
     onboardingComplete: false,
     updatedAt: nowIso(),
   };
