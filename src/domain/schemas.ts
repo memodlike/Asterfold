@@ -110,6 +110,7 @@ export const appSettingsSchema = z.object({
   duplicateStrategy: z.enum(["warn", "skip", "allow"]),
   trashRetentionDays: z.union([z.literal(7), z.literal(30), z.literal(90), z.null()]),
   recentQueries: z.array(z.string().max(512)).max(20),
+  onboardingVersion: finite.int().nonnegative().default(0),
   onboardingComplete: z.boolean(),
   updatedAt: isoDate,
 }).strict();
