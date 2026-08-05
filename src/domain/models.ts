@@ -143,6 +143,7 @@ export interface AppSettings {
   duplicateStrategy: "warn" | "skip" | "allow";
   trashRetentionDays: 7 | 30 | 90 | null;
   recentQueries: string[];
+  onboardingVersion: number;
   onboardingComplete: boolean;
   updatedAt: ISODate;
 }
