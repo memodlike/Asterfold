@@ -1,5 +1,8 @@
+import Dexie from "dexie";
 import { describe, expect, it } from "vitest";
+import { AsterfoldDatabase } from "../src/db/database";
 import { createDefaultSettings } from "../src/db/defaults";
+import { ensureStarterWorkspace } from "../src/db/repository";
 import { IMPORT_LIMITS } from "../src/domain/importLimits";
 import { getThemePreset } from "../src/domain/themes";
 import { flattenChromeBookmarks } from "../src/features/onboarding/chromeBookmarkImport";
@@ -17,8 +20,6 @@ import {
   type OnboardingPlan,
 } from "../src/features/onboarding/onboardingState";
 import { createBackup } from "../src/services/exportImport";
-import { AsterfoldDatabase } from "../src/db/database";
-import { ensureStarterWorkspace } from "../src/db/repository";
 
 function plan(): OnboardingPlan {
   return {
@@ -93,7 +94,8 @@ describe("onboarding lifecycle and state", () => {
   });
 
   it("requires both parsed backup and preview for restore", async () => {
-    const database = new AsterfoldDatabase(`onboarding-backup-${crypto.randomUUID()}`);
+    const name = `onboarding-backup-${crypto.randomUUID()}`;
+    const database = new AsterfoldDatabase(name);
     try {
       await ensureStarterWorkspace(database);
       const backup = await createBackup({}, database);
@@ -106,7 +108,7 @@ describe("onboarding lifecycle and state", () => {
       expect(canContinue("import", current, false)).toBe(true);
     } finally {
       database.close();
-      await AsterfoldDatabase.delete(`onboarding-backup-${crypto.randomUUID()}`).catch(() => undefined);
+      await Dexie.delete(name);
     }
   });
 
