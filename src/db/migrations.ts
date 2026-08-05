@@ -2,13 +2,15 @@ import type { Transaction } from "dexie";
 import type { AppSettings, Board, SyncState } from "../domain/models";
 import { getThemePreset } from "../domain/themes";
 import { createId, nowIso } from "../utils/ids";
+import { CURRENT_ONBOARDING_VERSION } from "../features/onboarding/onboardingState";
 
 const V2_DB_SCHEMA_VERSION = 2;
 const V3_DB_SCHEMA_VERSION = 3;
 const V4_DB_SCHEMA_VERSION = 4;
 const V5_DB_SCHEMA_VERSION = 5;
 const V6_DB_SCHEMA_VERSION = 6;
-export const CURRENT_DB_SCHEMA_VERSION = 7;
+const V7_DB_SCHEMA_VERSION = 7;
+export const CURRENT_DB_SCHEMA_VERSION = 8;
 
 export const V1_STORES = {
   pages: "id, userId, position, updatedAt, deletedAt, isDefault",
@@ -33,6 +35,7 @@ export const V4_STORES = { ...V3_STORES } as const;
 export const V5_STORES = { ...V4_STORES } as const;
 export const V6_STORES = { ...V5_STORES } as const;
 export const V7_STORES = { ...V6_STORES } as const;
+export const V8_STORES = { ...V7_STORES } as const;
 
 type LegacySettings = Partial<AppSettings> & Pick<AppSettings, "id">;
 
@@ -59,6 +62,7 @@ export async function migrateToV2(transaction: Transaction): Promise<void> {
       duplicateStrategy: current.duplicateStrategy ?? "warn",
       trashRetentionDays: current.trashRetentionDays ?? 30,
       recentQueries: current.recentQueries?.slice(0, 20) ?? [],
+      onboardingVersion: current.onboardingVersion ?? 0,
       onboardingComplete: current.onboardingComplete ?? false,
       updatedAt: timestamp,
     });
@@ -146,11 +150,10 @@ export async function migrateToV5(transaction: Transaction): Promise<void> {
   }
 }
 
-
 /**
  * Marks the legacy onboarding flag complete for existing installations.
  * Fresh databases still use createDefaultSettings() with onboardingComplete=false,
- * so only genuinely new users see the 3.0.1 launcher discovery hint.
+ * so only genuinely new users see the launcher discovery hint.
  */
 export async function migrateToV6(transaction: Transaction): Promise<void> {
   const settingsTable = transaction.table<V2Settings, string>("settings");
@@ -166,7 +169,6 @@ export async function migrateToV6(transaction: Transaction): Promise<void> {
   }
 }
 
-
 /**
  * Introduces adaptive rendering without breaking legacy backups. Existing
  * low-power users are mapped to the compatibility glass renderer.
@@ -179,12 +181,32 @@ export async function migrateToV7(transaction: Transaction): Promise<void> {
   await settingsTable.put({
     ...current,
     id: "app",
-    schemaVersion: CURRENT_DB_SCHEMA_VERSION,
+    schemaVersion: V7_DB_SCHEMA_VERSION,
     theme: {
       ...fallbackTheme,
       ...current.theme,
       performanceMode: current.theme?.performanceMode ?? (current.theme?.lowPowerMode ? "compatibility" : "auto"),
     },
+    updatedAt: nowIso(),
+  });
+}
+
+/**
+ * Introduces the versioned 3.2.0 onboarding lifecycle. Every pre-3.2.0
+ * database is an existing installation, including profiles that never
+ * dismissed the legacy launcher hint, so migration must never open the new
+ * blocking wizard for them.
+ */
+export async function migrateToV8(transaction: Transaction): Promise<void> {
+  const settingsTable = transaction.table<V2Settings, string>("settings");
+  const current = await settingsTable.get("app");
+  if (!current) return;
+  await settingsTable.put({
+    ...current,
+    id: "app",
+    schemaVersion: CURRENT_DB_SCHEMA_VERSION,
+    onboardingVersion: CURRENT_ONBOARDING_VERSION,
+    onboardingComplete: true,
     updatedAt: nowIso(),
   });
 }
