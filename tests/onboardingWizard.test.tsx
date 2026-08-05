@@ -143,6 +143,7 @@ describe("guided onboarding wizard", () => {
     fireEvent.click(screen.getByRole("radio", { name: /Import bookmark HTML/u }));
     const input = container.querySelector<HTMLInputElement>('input[type="file"][accept*="text/html"]')!;
     const file = new File(["<DL><p></DL>"], "bookmarks.html", { type: "text/html" });
+    Object.defineProperty(file, "text", { configurable: true, value: vi.fn().mockResolvedValue("<DL><p></DL>") });
     fireEvent.change(input, { target: { files: [file] } });
 
     await screen.findByText("bookmarks.html");
