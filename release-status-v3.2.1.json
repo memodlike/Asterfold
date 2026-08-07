@@ -1,0 +1,149 @@
+{
+  "releaseExists": true,
+  "runs": [
+    {
+      "id": 31157888913,
+      "name": "Publish GitHub Release",
+      "event": "workflow_dispatch",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "28937865d10ea7b42eac2387a73b5b5a41d58171",
+      "head_branch": "v3.2.1",
+      "created_at": "2026-08-07T07:30:02Z",
+      "updated_at": "2026-08-07T07:33:41Z",
+      "html_url": "https://github.com/memodlike/Asterfold/actions/runs/31157888913"
+    },
+    {
+      "id": 31157592738,
+      "name": "CodeQL",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "28937865d10ea7b42eac2387a73b5b5a41d58171",
+      "head_branch": "main",
+      "created_at": "2026-08-07T07:25:26Z",
+      "updated_at": "2026-08-07T07:26:46Z",
+      "html_url": "https://github.com/memodlike/Asterfold/actions/runs/31157592738"
+    },
+    {
+      "id": 31157592439,
+      "name": "CI",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "28937865d10ea7b42eac2387a73b5b5a41d58171",
+      "head_branch": "main",
+      "created_at": "2026-08-07T07:25:26Z",
+      "updated_at": "2026-08-07T07:29:57Z",
+      "html_url": "https://github.com/memodlike/Asterfold/actions/runs/31157592439"
+    }
+  ],
+  "release": {
+    "assets": [
+      {
+        "apiUrl": "https://api.github.com/repos/memodlike/Asterfold/releases/assets/504830128",
+        "contentType": "application/zip",
+        "createdAt": "2026-08-07T07:33:31Z",
+        "digest": "sha256:aa12b175392c3c36da080727895934cc8b9bbf5b8d810a3bfad60f37cdb87b92",
+        "downloadCount": 0,
+        "id": "RA_kwDOTdH3MM4eFxiw",
+        "label": "",
+        "name": "Asterfold-Chrome.zip",
+        "size": 4422237,
+        "state": "uploaded",
+        "updatedAt": "2026-08-07T07:33:32Z",
+        "url": "https://github.com/memodlike/Asterfold/releases/download/v3.2.1/Asterfold-Chrome.zip"
+      },
+      {
+        "apiUrl": "https://api.github.com/repos/memodlike/Asterfold/releases/assets/504830127",
+        "contentType": "application/zip",
+        "createdAt": "2026-08-07T07:33:31Z",
+        "digest": "sha256:a208e16ef55e1814e19c733e3ccd52a8dd02591a88fcc0a8754fc38723d35376",
+        "downloadCount": 0,
+        "id": "RA_kwDOTdH3MM4eFxiv",
+        "label": "",
+        "name": "Asterfold-Store-Assets.zip",
+        "size": 1611563,
+        "state": "uploaded",
+        "updatedAt": "2026-08-07T07:33:32Z",
+        "url": "https://github.com/memodlike/Asterfold/releases/download/v3.2.1/Asterfold-Store-Assets.zip"
+      },
+      {
+        "apiUrl": "https://api.github.com/repos/memodlike/Asterfold/releases/assets/504830126",
+        "contentType": "text/plain; charset=utf-8",
+        "createdAt": "2026-08-07T07:33:31Z",
+        "digest": "sha256:0b6182a35b07d76471bcda0389f2f602f95973b5b4ad0f2637aabebbbb573b1f",
+        "downloadCount": 0,
+        "id": "RA_kwDOTdH3MM4eFxiu",
+        "label": "",
+        "name": "checksums.txt",
+        "size": 516,
+        "state": "uploaded",
+        "updatedAt": "2026-08-07T07:33:32Z",
+        "url": "https://github.com/memodlike/Asterfold/releases/download/v3.2.1/checksums.txt"
+      },
+      {
+        "apiUrl": "https://api.github.com/repos/memodlike/Asterfold/releases/assets/504830130",
+        "contentType": "application/zip",
+        "createdAt": "2026-08-07T07:33:32Z",
+        "digest": "sha256:7576ed916330b718c5c5555872245a8ff851b7f5d9ac652b656225fbefccfe2d",
+        "downloadCount": 0,
+        "id": "RA_kwDOTdH3MM4eFxiy",
+        "label": "",
+        "name": "chrome-unpacked.zip",
+        "size": 4423982,
+        "state": "uploaded",
+        "updatedAt": "2026-08-07T07:33:32Z",
+        "url": "https://github.com/memodlike/Asterfold/releases/download/v3.2.1/chrome-unpacked.zip"
+      },
+      {
+        "apiUrl": "https://api.github.com/repos/memodlike/Asterfold/releases/assets/504830129",
+        "contentType": "application/zip",
+        "createdAt": "2026-08-07T07:33:32Z",
+        "digest": "sha256:6e3d56c928ca11b915ea994c5372c458c26eda82342cbdf53123e88fd63cb20b",
+        "downloadCount": 0,
+        "id": "RA_kwDOTdH3MM4eFxix",
+        "label": "",
+        "name": "extension-source.zip",
+        "size": 7307559,
+        "state": "uploaded",
+        "updatedAt": "2026-08-07T07:33:32Z",
+        "url": "https://github.com/memodlike/Asterfold/releases/download/v3.2.1/extension-source.zip"
+      },
+      {
+        "apiUrl": "https://api.github.com/repos/memodlike/Asterfold/releases/assets/504830135",
+        "contentType": "application/json",
+        "createdAt": "2026-08-07T07:33:32Z",
+        "digest": "sha256:ea4634080f63137522421a6f54c2f2afc21e507ea55517a0455024f4cee7b4b4",
+        "downloadCount": 0,
+        "id": "RA_kwDOTdH3MM4eFxi3",
+        "label": "",
+        "name": "provenance.json",
+        "size": 1326,
+        "state": "uploaded",
+        "updatedAt": "2026-08-07T07:33:32Z",
+        "url": "https://github.com/memodlike/Asterfold/releases/download/v3.2.1/provenance.json"
+      },
+      {
+        "apiUrl": "https://api.github.com/repos/memodlike/Asterfold/releases/assets/504830138",
+        "contentType": "application/json",
+        "createdAt": "2026-08-07T07:33:32Z",
+        "digest": "sha256:b5e00af68e7c25752bdb0cbe0439b92e62a970efd4dc9b4c97b928951c71f9d0",
+        "downloadCount": 0,
+        "id": "RA_kwDOTdH3MM4eFxi6",
+        "label": "",
+        "name": "sbom.spdx.json",
+        "size": 957,
+        "state": "uploaded",
+        "updatedAt": "2026-08-07T07:33:32Z",
+        "url": "https://github.com/memodlike/Asterfold/releases/download/v3.2.1/sbom.spdx.json"
+      }
+    ],
+    "isDraft": false,
+    "isPrerelease": false,
+    "publishedAt": "2026-08-07T07:33:32Z",
+    "tagName": "v3.2.1",
+    "targetCommitish": "28937865d10ea7b42eac2387a73b5b5a41d58171",
+    "url": "https://github.com/memodlike/Asterfold/releases/tag/v3.2.1"
+  }
+}
