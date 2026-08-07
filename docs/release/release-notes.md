@@ -1,3 +1,24 @@
+# Asterfold 3.2.1
+
+## Store listing
+
+- Updated the Chrome extension name to `Asterfold — Visual Bookmark Workspace` while keeping `short_name` as `Asterfold`.
+- Refined English and Russian Chrome Web Store copy around the actual New Tab visual bookmark workspace use case.
+- Replaced stale `Balanced` terminology with the current rendering labels and synchronized the Store category to `Workflow & Planning`.
+- Synchronized submission values, checklist, README and privacy-policy version metadata for 3.2.1.
+
+## Runtime
+
+- No new permissions or host permissions.
+- No change to Asterfold's core bookmark-workspace functionality.
+- No change to local-first storage behavior, backend/network behavior or optional Chrome bookmark import model.
+
+## Verification
+
+- Release remains gated by version consistency, dependency audits, source scan, typecheck, lint, coverage, Store validation, reproducible Linux/Windows packaging, real MV3 E2E, stress testing, exact 2.2.3 upgrade E2E and CodeQL.
+
+## Previous release details
+
 # Asterfold 3.2.0
 
 ## Guided first-run setup

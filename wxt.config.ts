@@ -6,9 +6,9 @@ export default defineConfig({
   srcDir: ".",
   manifestVersion: 3,
   manifest: {
-    name: "Asterfold",
+    name: "Asterfold — Visual Bookmark Workspace",
     short_name: "Asterfold",
-    description: "A private, local-first visual bookmark workspace.",
+    description: "Turn Chrome New Tab into a visual bookmark workspace with Pages, Boards, search, Quick Save, and local-first storage.",
     version: packageVersion,
     minimum_chrome_version: "120",
     permissions: ["activeTab", "favicon", "alarms", "contextMenus", "storage"],
