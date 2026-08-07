@@ -1,10 +1,10 @@
 {
   "name": "asterfold",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "private": true,
   "type": "module",
   "packageManager": "npm@10.9.8",
-  "description": "A premium local-first visual bookmark workspace for Chrome.",
+  "description": "A local-first visual bookmark workspace for Chrome New Tab.",
   "scripts": {
     "dev": "wxt",
     "prepare": "wxt prepare",

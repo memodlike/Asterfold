@@ -1,16 +1,16 @@
-# Chrome Web Store submission values — Asterfold 3.1.2
+# Chrome Web Store submission values — Asterfold 3.2.1
 
-Current version: 3.2.0
+Current version: 3.2.1
 Copy these values into the owner Dashboard only after checking them against the final release ZIP.
 
 ## Core values
 
 | Field | English value | Russian value |
 | --- | --- | --- |
-| Name | Asterfold | Asterfold |
-| Single purpose | Asterfold replaces the Chrome new tab with a private, local-first visual workspace for organizing and opening bookmarks. | Asterfold заменяет новую вкладку Chrome локальным визуальным рабочим пространством для организации и открытия закладок. |
-| Short description | Private, local-first visual workspace for organizing and opening bookmarks from every new Chrome tab. | Локальное визуальное пространство для организации и открытия закладок в каждой новой вкладке Chrome. |
-| Category | Productivity | Продуктивность |
+| Name | Asterfold — Visual Bookmark Workspace | Asterfold — Visual Bookmark Workspace |
+| Single purpose | Asterfold replaces Chrome New Tab with a local-first visual bookmark workspace organized into Pages and Boards. | Asterfold заменяет новую вкладку Chrome локальным визуальным пространством закладок со Страницами и Блоками. |
+| Short description | Turn Chrome New Tab into a visual bookmark workspace with Pages, Boards, search, Quick Save, and local-first storage. | Новая вкладка Chrome как визуальное пространство закладок со Страницами, Блоками, поиском, Quick Save и локальным хранением. |
+| Category | Workflow & Planning | Workflow & Planning |
 | Language | English | Русский |
 
 ## URLs

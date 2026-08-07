@@ -2,63 +2,68 @@
 
 ## Name
 
-Asterfold
+Asterfold — Visual Bookmark Workspace
 
 ## Short description
 
-Private, local-first visual workspace for organizing and opening bookmarks from every new Chrome tab.
+Turn Chrome New Tab into a visual bookmark workspace with Pages, Boards, search, Quick Save, and local-first storage.
 
-Character count: 101 including spaces.
+Character count: 117 including spaces.
 
 ## Detailed description
 
-Asterfold replaces the Chrome new tab with a calm visual workspace for the links you use every day.
+Asterfold is a local-first visual bookmark workspace for Chrome New Tab.
 
-Organize bookmarks into Pages and Boards, then open them directly from the new tab. Search, Quick Save, drag-and-drop, Trash, import and export all support the same purpose: keeping useful links easy to find without sending the workspace to an Asterfold server.
+It replaces each new tab with a visual workspace where bookmarks are organized into Pages and Boards, so frequently used links stay visible, structured and quick to open.
 
-### Organize your workspace
+### Organize bookmarks visually
 
-- Create Pages for different areas such as work, study or personal projects.
+- Create Pages for work, study, personal projects or other contexts.
 - Group related bookmarks in visual Boards.
-- Move Boards and bookmarks with drag-and-drop or keyboard controls.
-- Choose how each bookmark opens: in the current tab, a new tab or a new window.
+- Reorder Boards and bookmarks with drag-and-drop or keyboard controls.
+- Choose whether a bookmark opens in the current tab, a new tab or a new window.
 
-### Find and save links
+### Find, save and import links
 
-- Search the local workspace by bookmark title or URL.
-- Use Quick Save after an explicit toolbar, keyboard or context-menu action.
-- Import the Chrome bookmark tree only when you choose to grant the optional permission.
-- Export and restore versioned local backups.
-- Recover deleted records from Trash before permanent cleanup.
+- Search the local workspace for saved bookmarks.
+- Use Quick Save from the extension toolbar, keyboard shortcut or supported context-menu action.
+- Import Chrome bookmarks only after you explicitly grant the optional `bookmarks` permission.
+- Import browser-exported HTML bookmarks or a validated Asterfold backup.
+- Export local backups and supported bookmark formats.
+- Restore deleted Pages, Boards and bookmarks from Trash before permanent cleanup.
 
-### Make the new tab yours
+### Customize the New Tab workspace
 
 - Use light, dark or system appearance.
-- Choose a built-in background or a locally stored wallpaper.
-- Adjust layout and glass effects.
-- Use Balanced or Low Power rendering to match the device.
-- Select one of 12 interface languages; uncommon untranslated strings in secondary locales may fall back to English.
+- Choose a built-in background or a wallpaper stored locally in Asterfold.
+- Adjust layout, opacity, blur, wallpaper and glass controls.
+- Choose Auto, Maximum Quality or Smooth Glass rendering, with a separate Low Power option for weaker hardware.
+- Select from 12 interface languages; rare untranslated strings in secondary locales may fall back to English.
 
-### Privacy by design
+### Local-first privacy model
 
-Asterfold 3.1.2 is local-first. Workspace data is stored in the local Chrome profile. The default release has no application backend, account, analytics, advertising, telemetry, cloud synchronization, host permissions or content scripts, and it makes no application network requests.
+Asterfold stores the primary workspace locally in the Chrome profile. No Asterfold account is required. The current release has no application backend, cloud synchronization, analytics, advertising or telemetry. It requests no host permissions and injects no content scripts into websites.
 
-Chrome may use the network when you open a destination page or when it supplies its browser-owned favicon resource. Privacy Mode hides bookmark titles in the interface and local search while active, but it is visual protection rather than database encryption.
+Quick Save reads the active page title and URL only after an explicit user action. Chrome bookmark access is optional and requested only when you choose to import Chrome bookmarks.
 
-Read the complete privacy policy before installation:
+Privacy Mode hides bookmark titles in the interface and prevents local search indexing while it is active. It is visual shoulder-surfing protection, not database encryption.
+
+Chrome itself may use the network when you open a destination page or when it provides its browser-owned favicon resource. Asterfold makes no application network requests in the reviewed default build.
+
+Read the privacy policy before installation:
 
 https://github.com/memodlike/Asterfold/blob/main/docs/security/privacy.md
 
 ## Permission summary
 
-- `activeTab`: reads the page title and URL only after you invoke Quick Save or a supported save action.
-- `favicon`: displays Chrome's browser-owned favicon for a URL you saved.
-- `alarms`: schedules local Trash cleanup using your selected retention period.
-- `contextMenus`: adds Save page, Save link and Open Asterfold commands.
-- `storage`: keeps only the temporary Privacy Mode flag in Chrome session storage so popup and New Tab stay consistent; Chrome clears it when the browser session ends.
-- optional `bookmarks`: requested only if you choose Import Chrome bookmarks.
+- `activeTab`: reads the active page title and URL only after a user-invoked save action.
+- `favicon`: displays Chrome's browser-owned favicon resource for a saved URL.
+- `alarms`: schedules local Trash cleanup using the selected retention period.
+- `contextMenus`: adds user-invoked Save page, Save link and Open Asterfold commands.
+- `storage`: stores the temporary Privacy Mode flag in `chrome.storage.session`.
+- optional `bookmarks`: requested only when you choose Import Chrome bookmarks.
 
-No access to browsing history, cookies, page contents across all sites or host origins is requested.
+No browsing-history, cookies or host-origin access is requested.
 
 ## Support
 
@@ -67,11 +72,11 @@ Support and bug reports: https://github.com/memodlike/Asterfold/issues
 
 ## Recommended category
 
-Productivity
+Workflow & Planning
 
 ## URLs
 
 - Homepage: `https://github.com/memodlike/Asterfold`
 - Support: `https://github.com/memodlike/Asterfold/issues`
 - Privacy policy: `https://github.com/memodlike/Asterfold/blob/main/docs/security/privacy.md`
-- Intended hosted policy after GitHub Pages availability is verified: `https://memodlike.github.io/Asterfold/store/privacy.html`
+- Hosted policy, after public availability is verified: `https://memodlike.github.io/Asterfold/store/privacy.html`
