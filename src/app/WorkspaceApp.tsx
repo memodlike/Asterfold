@@ -38,10 +38,14 @@ import { AppLauncher } from "./AppLauncher";
 import { useWorkspace } from "./useWorkspace";
 import { usePrivacyMode } from "./usePrivacyMode";
 
-const BookmarkEditor = lazy(async () => import("../features/bookmarks/BookmarkEditor").then((module) => ({ default: module.BookmarkEditor })));
-const SearchPalette = lazy(async () => import("../features/search/SearchPalette").then((module) => ({ default: module.SearchPalette })));
-const SettingsDialog = lazy(async () => import("../features/settings/SettingsDialog").then((module) => ({ default: module.SettingsDialog })));
-const TrashDialog = lazy(async () => import("../features/trash/TrashDialog").then((module) => ({ default: module.TrashDialog })));
+const loadBookmarkEditor = async () => import("../features/bookmarks/BookmarkEditor").then((module) => ({ default: module.BookmarkEditor }));
+const loadSearchPalette = async () => import("../features/search/SearchPalette").then((module) => ({ default: module.SearchPalette }));
+const loadSettingsDialog = async () => import("../features/settings/SettingsDialog").then((module) => ({ default: module.SettingsDialog }));
+const loadTrashDialog = async () => import("../features/trash/TrashDialog").then((module) => ({ default: module.TrashDialog }));
+const BookmarkEditor = lazy(loadBookmarkEditor);
+const SearchPalette = lazy(loadSearchPalette);
+const SettingsDialog = lazy(loadSettingsDialog);
+const TrashDialog = lazy(loadTrashDialog);
 
 type SettingsSection = "appearance" | "layout" | "language" | "quick-save" | "data-privacy";
 type NameIntent =
@@ -69,11 +73,24 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   const [nameIntent, setNameIntent] = useState<NameIntent | null>(null);
   const [moveIntent, setMoveIntent] = useState<MoveIntent | null>(null);
   const [editor, setEditor] = useState<EditorIntent | null>(null);
+  const [pendingReveal, setPendingReveal] = useState<{ bookmarkId: string; pageId: string } | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
   const initialSettingsSeen = useRef(false);
   const performanceMode = useThemeRuntime(workspace.settings.theme);
   const { privacy, setPrivacy } = usePrivacyMode(workspace.settings);
+  const blockingOverlayOpen = searchOpen || settingsOpen || trashOpen || nameIntent !== null || moveIntent !== null || editor !== null;
+
+  useEffect(() => {
+    const preload = (): void => { void Promise.allSettled([loadSearchPalette(), loadSettingsDialog(), loadTrashDialog(), loadBookmarkEditor()]); };
+    const idleWindow = window as Window & { requestIdleCallback?: (callback: IdleRequestCallback) => number; cancelIdleCallback?: (handle: number) => void };
+    if (idleWindow.requestIdleCallback) {
+      const handle = idleWindow.requestIdleCallback(preload);
+      return () => idleWindow.cancelIdleCallback?.(handle);
+    }
+    const handle = window.setTimeout(preload, 250);
+    return () => window.clearTimeout(handle);
+  }, []);
 
   useEffect(() => {
     if (initialSettingsSeen.current) return;
@@ -87,16 +104,24 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
     const handler = (event: KeyboardEvent): void => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
-        setSearchOpen(true);
+        if (!blockingOverlayOpen) setSearchOpen(true);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [blockingOverlayOpen]);
 
   const notifyError = (message: string): void => toasts.push({ message, tone: "error" });
   const notifySuccess = (message: string): void => toasts.push({ message, tone: "success" });
   const activePage = workspace.pages.find((page) => page.id === workspace.settings.activePageId) ?? workspace.pages[0];
+  useEffect(() => {
+    if (!pendingReveal || !activePage || activePage.id !== pendingReveal.pageId) return;
+    const target = document.querySelector<HTMLElement>(`[data-bookmark-id="${CSS.escape(pendingReveal.bookmarkId)}"]`);
+    if (!target) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches || !workspace.settings.theme.motion;
+    target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center", inline: "center" });
+    setPendingReveal(null);
+  }, [activePage?.id, pendingReveal, workspace.bookmarks, workspace.settings.theme.motion]);
   if (!activePage) return <div className="app-loading">{t("loading.repairing")}</div>;
   const boards = workspace.boards.filter((board) => board.pageId === activePage.id);
   const boardIds = new Set(boards.map((board) => board.id));
@@ -174,11 +199,8 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
     void copyText(`[${bookmark.title}](${bookmark.url})`).then(() => notifySuccess(t("bookmark.copyMarkdown"))).catch(() => notifyError(t("error.actionFailed")));
   };
   const revealBookmark = (bookmark: Bookmark, pageId: string): void => {
+    setPendingReveal({ bookmarkId: bookmark.id, pageId });
     selectPage(pageId);
-    window.setTimeout(() => {
-      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches || !workspace.settings.theme.motion;
-      document.querySelector<HTMLElement>(`[data-bookmark-id="${CSS.escape(bookmark.id)}"]`)?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center", inline: "center" });
-    }, 120);
   };
   const togglePrivacy = (): void => {
     const next = !privacy;
@@ -248,7 +270,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
         onDefaultPage={(page) => void run(() => setDefaultPage(page.id))}
         onMovePage={(page, targetIndex) => void run(() => movePageToIndex(page.id, targetIndex))}
         onDeletePage={deletePage}
-        onSearch={() => setSearchOpen(true)}
+        onSearch={() => { if (!blockingOverlayOpen) setSearchOpen(true); }}
         onPrivacy={togglePrivacy}
         onTrash={() => setTrashOpen(true)}
         onSettings={() => openSettings("appearance")}
@@ -257,8 +279,8 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
       />
       {selectedIds.size > 0 ? <div className="bulk-toolbar"><strong>{selectedIds.size}</strong><Button size="small" onClick={() => setMoveIntent({ kind: "bulk" })}>{t("generic.move")}</Button><Button size="small" icon={<Download size={14} />} onClick={exportSelected}>{t("generic.export")}</Button><Button size="small" variant="danger" onClick={bulkDelete}>{t("generic.delete")}</Button><IconButton label={t("generic.close")} onClick={() => setSelectedIds(new Set())}><X size={16} /></IconButton></div> : null}
 
-      <Suspense fallback={null}>
-        {searchOpen ? <SearchPalette open privacy={privacy} pages={workspace.pages} boards={workspace.boards} bookmarks={workspace.bookmarks} activePageId={activePage.id} onClose={() => setSearchOpen(false)} onOpen={openBookmark} onReveal={revealBookmark} onEdit={(bookmark) => setEditor({ bookmark, boardId: bookmark.boardId })} onMove={(bookmark) => setMoveIntent({ kind: "bookmark", bookmark })} onCopy={copyUrl} onDelete={deleteBookmark} /> : null}
+      <Suspense fallback={<div className="overlay-loading" role="status" aria-label={t("loading.opening")} />}>
+        {searchOpen ? <SearchPalette open privacy={privacy} pages={workspace.pages} boards={workspace.boards} bookmarks={workspace.bookmarks} activePageId={activePage.id} onClose={() => setSearchOpen(false)} onOpen={openBookmark} onReveal={revealBookmark} onEdit={(bookmark) => { setSearchOpen(false); setEditor({ bookmark, boardId: bookmark.boardId }); }} onMove={(bookmark) => { setSearchOpen(false); setMoveIntent({ kind: "bookmark", bookmark }); }} onCopy={copyUrl} onDelete={deleteBookmark} /> : null}
         {editor !== null ? <BookmarkEditor open bookmark={editor.bookmark} privacy={privacy} initialBoardId={editor.boardId || boards[0]?.id || ""} pages={workspace.pages} boards={workspace.boards} onClose={() => setEditor(null)} onSaved={() => notifySuccess(t("bookmark.saved"))} onError={notifyError} /> : null}
       </Suspense>
       <NameDialog open={nameIntent !== null} title={t(nameIntent?.kind === "new-page" ? "name.newPage" : nameIntent?.kind === "rename-page" ? "name.renamePage" : nameIntent?.kind === "new-board" ? "name.newBoard" : "name.renameBoard")} label={t("generic.title")} initialValue={nameIntent && "page" in nameIntent ? nameIntent.page.title : nameIntent && "board" in nameIntent ? nameIntent.board.title : ""} submitLabel={t(nameIntent?.kind.startsWith("new-") ? "generic.create" : "generic.save")} onClose={() => setNameIntent(null)} onSubmit={handleNameSubmit} />
@@ -275,7 +297,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
           if (moveIntent?.kind === "bulk") { await bulkMoveBookmarks([...selectedIds], destinationId); setSelectedIds(new Set()); }
             }}
       />
-      <Suspense fallback={null}>
+      <Suspense fallback={<div className="overlay-loading" role="status" aria-label={t("loading.opening")} />}>
         {settingsOpen ? <SettingsDialog open initialSection={settingsSection} workspace={workspace} onClose={() => setSettingsOpen(false)} onUpdated={notifySuccess} onError={notifyError} onOpenTrash={() => { setSettingsOpen(false); setTrashOpen(true); }} /> : null}
         {trashOpen ? <TrashDialog open privacy={privacy} onClose={() => setTrashOpen(false)} onChanged={notifySuccess} onError={notifyError} /> : null}
       </Suspense>
