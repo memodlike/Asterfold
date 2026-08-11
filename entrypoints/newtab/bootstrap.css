@@ -1,9 +1,22 @@
 :root {
-  --startup-canvas: #111318;
+  --startup-canvas: #f1f2f4;
   --startup-wallpaper: none;
-  color-scheme: dark;
+  --startup-text: #191a1d;
+  --startup-text-secondary: #6e7077;
+  color-scheme: light dark;
   background: var(--startup-canvas);
 }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --startup-canvas: #111318;
+    --startup-text: #f5f5f6;
+    --startup-text-secondary: #a1a3aa;
+  }
+}
+
+html[data-theme="dark"] { --startup-text: #f5f5f6; --startup-text-secondary: #a1a3aa; }
+html[data-theme="light"] { --startup-text: #191a1d; --startup-text-secondary: #6e7077; }
 
 html,
 body,
@@ -19,9 +32,7 @@ body {
   background: var(--startup-canvas);
 }
 
-body {
-  overflow: hidden;
-}
+body { overflow: hidden; }
 
 body::before {
   content: "";
@@ -30,7 +41,7 @@ body::before {
   z-index: 0;
   pointer-events: none;
   background-color: var(--startup-canvas);
-  background-image: linear-gradient(rgb(0 0 0 / .24), rgb(0 0 0 / .24)), var(--startup-wallpaper);
+  background-image: linear-gradient(rgb(0 0 0 / .16), rgb(0 0 0 / .16)), var(--startup-wallpaper);
   background-position: center;
   background-size: cover;
 }
@@ -47,17 +58,15 @@ body::before {
 html[data-asterfold-ready="true"] #root {
   visibility: visible;
   pointer-events: auto;
+  opacity: 1;
+}
+
+html[data-asterfold-ready="true"]:not([data-asterfold-motion="off"]) #root {
   animation: asterfold-root-in 220ms cubic-bezier(.2, .8, .2, 1) both;
 }
 
-html[data-asterfold-entering="true"] .wallpaper {
-  animation: asterfold-wallpaper-in 360ms cubic-bezier(.2, .8, .2, 1) both;
-}
-
-html[data-asterfold-entering="true"] .board-track > .board {
-  animation: asterfold-board-in 360ms cubic-bezier(.2, .8, .2, 1) both;
-}
-
+html[data-asterfold-entering="true"] .wallpaper { animation: asterfold-wallpaper-in 360ms cubic-bezier(.2, .8, .2, 1) both; }
+html[data-asterfold-entering="true"] .board-track > .board { animation: asterfold-board-in 360ms cubic-bezier(.2, .8, .2, 1) both; }
 html[data-asterfold-entering="true"] .board-track > .board:nth-child(2) { animation-delay: 22ms; }
 html[data-asterfold-entering="true"] .board-track > .board:nth-child(3) { animation-delay: 44ms; }
 html[data-asterfold-entering="true"] .board-track > .board:nth-child(4) { animation-delay: 66ms; }
@@ -66,40 +75,17 @@ html[data-asterfold-entering="true"] .board-track > .board:nth-child(6) { animat
 html[data-asterfold-entering="true"] .board-track > .board:nth-child(7) { animation-delay: 132ms; }
 html[data-asterfold-entering="true"] .board-track > .board:nth-child(8) { animation-delay: 154ms; }
 html[data-asterfold-entering="true"] .board-track > .board:nth-child(n+9) { animation-delay: 176ms; }
+html[data-asterfold-entering="true"] .app-launcher { animation: asterfold-launcher-in 320ms cubic-bezier(.2, .8, .2, 1) 120ms both; }
 
-html[data-asterfold-entering="true"] .app-launcher {
-  animation: asterfold-launcher-in 320ms cubic-bezier(.2, .8, .2, 1) 120ms both;
-}
-
-@keyframes asterfold-root-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes asterfold-wallpaper-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes asterfold-board-in {
-  from { opacity: 0; transform: translateY(7px) scale(.992); }
-  to { opacity: 1; transform: none; }
-}
-
-@keyframes asterfold-launcher-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: none; }
-}
+@keyframes asterfold-root-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes asterfold-wallpaper-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes asterfold-board-in { from { opacity: 0; transform: translateY(7px) scale(.992); } to { opacity: 1; transform: none; } }
+@keyframes asterfold-launcher-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 @media (prefers-reduced-motion: reduce) {
   html[data-asterfold-ready="true"] #root,
   html[data-asterfold-entering="true"] .wallpaper,
   html[data-asterfold-entering="true"] .board-track > .board,
-  html[data-asterfold-entering="true"] .app-launcher {
-    animation: none !important;
-  }
-
-  html[data-asterfold-ready="true"] #root {
-    opacity: 1;
-  }
+  html[data-asterfold-entering="true"] .app-launcher { animation: none !important; }
+  html[data-asterfold-ready="true"] #root { opacity: 1; }
 }
