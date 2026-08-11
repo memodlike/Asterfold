@@ -1,0 +1,59 @@
+/* Targeted production hardening overrides. Keep this layer cheap and free of live blur. */
+.app-loading {
+  color: var(--color-text-secondary, var(--startup-text-secondary, #6e7077));
+  background: var(--color-canvas, var(--startup-canvas, #f1f2f4));
+}
+
+.board { container-type: inline-size; }
+.board__items--columns-auto { grid-template-columns: minmax(0, 1fr); }
+@container (min-width: 360px) {
+  .board__items--columns-auto {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 5px;
+  }
+}
+.board__empty { min-height: 108px; }
+.bookmark-card { height: var(--bookmark-row-height, 24px); }
+.launcher-trigger { opacity: .42; }
+
+.settings-modal .modal__body { overflow: hidden; }
+.settings-modal .settings-layout { height: 100%; min-height: 0; }
+.settings-modal .settings-nav { min-height: 0; overflow-y: auto; }
+.settings-modal .settings-content {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.overlay-loading {
+  position: fixed;
+  z-index: 89;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  color: var(--color-text-secondary);
+}
+.overlay-loading::before {
+  content: "•••";
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface-elevated);
+  letter-spacing: .18em;
+}
+
+@media (max-width: 720px) {
+  .board { min-height: 0; }
+  .settings-modal .modal__body { overflow: auto; }
+  .settings-modal .settings-layout { height: auto; }
+  .settings-modal .settings-content { overflow: visible; }
+  .settings-modal .settings-nav { overflow-x: auto; overflow-y: hidden; }
+}
+
+@media (pointer: coarse) {
+  .bookmark-card { height: 36px; }
+  .board__add { width: 34px; height: 34px; opacity: .72; transform: scale(1); }
+  .launcher-trigger { width: 44px; height: 44px; opacity: .68; }
+  .launcher-trigger::before { height: 44px; }
+}
