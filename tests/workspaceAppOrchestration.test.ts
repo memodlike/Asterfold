@@ -179,10 +179,12 @@ describe("WorkspaceApp orchestration", () => {
     expect(mocks.nameDialog?.open).toBe(true);
     await act(async () => { await mocks.nameDialog?.onSubmit("New page"); });
     expect(mocks.createPage).toHaveBeenCalledWith("New page");
+    act(() => { mocks.nameDialog?.onClose(); });
 
     act(() => { mocks.launcher?.onRenamePage(page); });
     await act(async () => { await mocks.nameDialog?.onSubmit("Renamed page"); });
     expect(mocks.renamePage).toHaveBeenCalledWith(page.id, "Renamed page");
+    act(() => { mocks.nameDialog?.onClose(); });
 
     mocks.launcher?.onSelectPage(pageTwo.id);
     mocks.launcher?.onDuplicatePage(page);
@@ -199,9 +201,11 @@ describe("WorkspaceApp orchestration", () => {
     act(() => { mocks.canvas?.onCreateBoard(); });
     await act(async () => { await mocks.nameDialog?.onSubmit("New board"); });
     expect(mocks.createBoard).toHaveBeenCalledWith(page.id, "New board");
+    act(() => { mocks.nameDialog?.onClose(); });
     act(() => { mocks.canvas?.onEditBoard(board); });
     await act(async () => { await mocks.nameDialog?.onSubmit("Renamed board"); });
     expect(mocks.updateBoard).toHaveBeenCalledWith(board.id, { title: "Renamed board" });
+    act(() => { mocks.nameDialog?.onClose(); });
 
     mocks.canvas?.onPatchBoard(board, { gridSpan: 4 });
     mocks.canvas?.onDuplicateBoard(board);
@@ -217,6 +221,7 @@ describe("WorkspaceApp orchestration", () => {
     await waitFor(() => expect(mocks.editor?.initialBoardId).toBe(board.id));
     act(() => { mocks.canvas?.onEditBookmark(bookmark); });
     await waitFor(() => expect(mocks.editor?.bookmark).toEqual(bookmark));
+    act(() => { mocks.editor?.onClose(); });
     mocks.canvas?.onDuplicateBookmark(bookmark);
     mocks.canvas?.onDeleteBookmark(bookmark);
     mocks.canvas?.onMoveBookmarkIndex(bookmark.id, boardTwo.id, 0);
@@ -264,6 +269,7 @@ describe("WorkspaceApp orchestration", () => {
     expect(mocks.moveDialog?.type).toBe("bulk-bookmarks");
     await act(async () => { await mocks.moveDialog?.onMove(boardTwo.id); });
     expect(mocks.bulkMoveBookmarks).toHaveBeenCalledWith([bookmark.id], boardTwo.id);
+    act(() => { mocks.moveDialog?.onClose(); });
 
     act(() => {
       mocks.canvas?.onSelectBookmark(bookmark, { ctrlKey: false, metaKey: false, shiftKey: false } as ReactMouseEvent);
