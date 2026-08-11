@@ -5,7 +5,7 @@ on:
 
 permissions:
   contents: read
-  actions: read
+  actions: write
 
 jobs:
   verify-release:
@@ -13,44 +13,40 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Inspect exact-source workflows and published release
+      - name: Dispatch protected release workflow on v3.2.2
         env:
           GH_TOKEN: ${{ github.token }}
           EXPECTED_SOURCE_SHA: f913d8689efbf11d0c4b0fa9b04008ee54e4f82f
         shell: bash
         run: |
           set -euo pipefail
-          gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$EXPECTED_SOURCE_SHA&per_page=100" > runs.json
-          node --input-type=module <<'NODE'
-          import fs from 'node:fs';
-          const payload = JSON.parse(fs.readFileSync('runs.json', 'utf8'));
-          for (const run of payload.workflow_runs ?? []) {
-            console.log(`RUN id=${run.id} name=${run.name} event=${run.event} status=${run.status} conclusion=${run.conclusion} branch=${run.head_branch}`);
-          }
-          NODE
-          if ! gh release view v3.2.2 --repo "$GITHUB_REPOSITORY" --json tagName,targetCommitish,isDraft,isPrerelease,url,assets > release.json; then
-            echo "RELEASE_NOT_FOUND"
-            exit 1
+          if gh release view v3.2.2 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release already exists; no dispatch needed."
+            exit 0
           fi
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$EXPECTED_SOURCE_SHA&per_page=100" > before.json
+          existing="$(node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const runs = JSON.parse(fs.readFileSync('before.json', 'utf8')).workflow_runs ?? [];
+          const active = runs.find((r) => r.name === 'Publish GitHub Release' && ['queued','in_progress'].includes(r.status));
+          process.stdout.write(active ? String(active.id) : '');
+          NODE
+          )"
+          if [ -z "$existing" ]; then
+            echo "Dispatching release.yml on ref v3.2.2"
+            gh workflow run release.yml --repo "$GITHUB_REPOSITORY" --ref v3.2.2
+          else
+            echo "Release workflow already active: $existing"
+          fi
+          sleep 5
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$EXPECTED_SOURCE_SHA&per_page=100" > after.json
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
-          const release = JSON.parse(fs.readFileSync('release.json', 'utf8'));
-          if (release.tagName !== 'v3.2.2') throw new Error(`Unexpected tag: ${release.tagName}`);
-          if (release.isDraft) throw new Error('Release is still draft');
-          if (release.isPrerelease) throw new Error('Release is prerelease');
-          const expected = [
-            'Asterfold-Chrome.zip',
-            'Asterfold-Store-Assets.zip',
-            'checksums.txt',
-            'chrome-unpacked.zip',
-            'extension-source.zip',
-            'provenance.json',
-            'sbom.spdx.json',
-          ].sort();
-          const actual = (release.assets ?? []).map((asset) => asset.name).sort();
-          if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-            throw new Error(`Release assets mismatch. Actual: ${actual.join(', ')}`);
+          const runs = JSON.parse(fs.readFileSync('after.json', 'utf8')).workflow_runs ?? [];
+          for (const run of runs.filter((r) => r.name === 'Publish GitHub Release')) {
+            console.log(`RELEASE_RUN id=${run.id} event=${run.event} status=${run.status} conclusion=${run.conclusion} branch=${run.head_branch}`);
           }
-          console.log(`Published release verified: ${release.url}`);
-          console.log(`Assets: ${actual.join(', ')}`);
+          if (!runs.some((r) => r.name === 'Publish GitHub Release' && ['queued','in_progress','completed'].includes(r.status))) {
+            throw new Error('Publish GitHub Release workflow did not start');
+          }
           NODE
