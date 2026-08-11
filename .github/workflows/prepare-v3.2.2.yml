@@ -3,14 +3,14 @@ name: Prepare Asterfold 3.2.2
 on:
   push:
     branches:
-      - release/asterfold-3.2.2-design-hardening
+      - main
 
 permissions:
   contents: write
 
 jobs:
   prepare:
-    if: github.actor != 'github-actions[bot]'
+    if: contains(github.event.head_commit.message, '[prepare-3.2.2]') && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -69,6 +69,7 @@ jobs:
           fs.writeFileSync(readmePath, readme);
           NODE
           rm -f .github/workflows/prepare-v3.2.2.yml
+          rm -f .release-3.2.2-trigger
       - name: Validate prepared source
         shell: bash
         run: |
@@ -90,7 +91,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git add package.json package-lock.json README.md docs/release/release-notes.md docs/security/privacy.md docs/store/privacy.html docs/store/submission-checklist.md store-assets/listing/submission-values.md .github/workflows/prepare-v3.2.2.yml
+          git add -A
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "release: prepare Asterfold 3.2.2 design hardening"
