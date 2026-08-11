@@ -103,6 +103,9 @@ export function SettingsDialog(props: SettingsDialogProps) {
   const performanceSignals = useMemo(() => browserPerformanceSignals(), []);
   const resolvedPerformanceMode = useMemo(() => classifyPerformanceMode(themeDraft.performanceMode, themeDraft.lowPowerMode, performanceSignals), [performanceSignals, themeDraft.lowPowerMode, themeDraft.performanceMode]);
   const expensiveEffectsDisabled = resolvedPerformanceMode !== "quality";
+  const resolvedPerformanceLabel = t(resolvedPerformanceMode === "quality"
+    ? "settings.performanceQuality"
+    : "settings.performanceCompatibility");
   const counts = useMemo(() => ({ pages: props.workspace.pages.length, boards: props.workspace.boards.length, bookmarks: props.workspace.bookmarks.length }), [props.workspace]);
   const pageOptions = useMemo<ReadonlyArray<SelectOption>>(() => props.workspace.pages.map((page) => ({ value: page.id, label: page.title })), [props.workspace.pages]);
   const boardOptions = useMemo<ReadonlyArray<SelectOption>>(() => props.workspace.boards.filter((board) => board.pageId === settings.quickSaveDefaultPageId).map((board) => ({ value: board.id, label: board.title })), [props.workspace.boards, settings.quickSaveDefaultPageId]);
@@ -314,7 +317,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
               <Range disabled={expensiveEffectsDisabled} title={t("settings.performanceDescription")} label={t("settings.blur")} min={0} max={32} value={themeDraft.blur} suffix="px" onChange={(value) => patchTheme({ blur: value })} />
               <Range label={t("settings.wallpaperDim")} min={0} max={80} value={Math.round(themeDraft.wallpaperDim * 100)} suffix="%" onChange={(value) => patchTheme({ wallpaperDim: value / 100 })} />
               <Range disabled={expensiveEffectsDisabled} title={t("settings.performanceDescription")} label={t("settings.wallpaperBlur")} min={0} max={20} value={themeDraft.wallpaperBlur} suffix="px" onChange={(value) => patchTheme({ wallpaperBlur: value })} />
-              <Range label={t("settings.wallpaperSaturation")} min={0} max={180} value={Math.round(themeDraft.wallpaperSaturation * 100)} suffix="%" onChange={(value) => patchTheme({ wallpaperSaturation: value / 100 })} />
+              <Range disabled={expensiveEffectsDisabled} title={t("settings.performanceDescription")} label={t("settings.wallpaperSaturation")} min={0} max={180} value={Math.round(themeDraft.wallpaperSaturation * 100)} suffix="%" onChange={(value) => patchTheme({ wallpaperSaturation: value / 100 })} />
             </div>
             <div className="wallpaper-grid"><button type="button" aria-pressed={!themeDraft.wallpaperId} className={!themeDraft.wallpaperId ? "is-active" : ""} onClick={() => patchTheme({ wallpaperId: null, backgroundMode: "auto" })}><span className="wallpaper-none" />{t("settings.noWallpaper")}</button>{BUILTIN_WALLPAPERS.map((item) => <button type="button" key={item.id} aria-pressed={themeDraft.wallpaperId === item.id} className={themeDraft.wallpaperId === item.id ? "is-active" : ""} onClick={() => patchTheme({ wallpaperId: item.id, backgroundMode: "wallpaper" })}><span style={{ background: item.value }} />{t(item.labelKey)}</button>)}<button type="button" onClick={() => wallpaperInputRef.current?.click()}><span className="wallpaper-upload"><Upload size={19} /></span>{t("settings.uploadWallpaper")}</button></div>
             {wallpaperInfo?.width && wallpaperInfo.height ? <p>{wallpaperInfo.width} × {wallpaperInfo.height} · {formatBytes(wallpaperInfo.storedBytes)}</p> : null}
@@ -323,6 +326,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
               <h3>{t("settings.performance")}</h3>
               <SettingRow label={t("settings.performanceMode")}><Segmented value={themeDraft.performanceMode} items={[{ value: "auto", label: t("settings.performanceAuto") }, { value: "quality", label: t("settings.performanceQuality") }, { value: "compatibility", label: t("settings.performanceCompatibility") }]} onChange={(value) => patchTheme({ performanceMode: value as ThemeConfig["performanceMode"], lowPowerMode: value === "compatibility" })} /></SettingRow>
               <p>{t("settings.performanceDescription")}</p>
+              {themeDraft.performanceMode === "auto" ? <p className="settings-resolved-mode">{t("settings.performanceMode")}: {resolvedPerformanceLabel}</p> : null}
             </div>
             <div className="settings-control-group">
               <h3>{t("settings.animations")}</h3>
