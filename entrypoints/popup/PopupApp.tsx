@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { browser } from "wxt/browser";
 import { AlertTriangle, Check, ExternalLink, FolderPlus, Settings, Sparkles } from "lucide-react";
 import { createBoard, createBookmark, findDuplicate, updateSettings } from "../../src/db/repository";
@@ -12,6 +12,7 @@ import { useWorkspace } from "../../src/app/useWorkspace";
 import { translate, type MessageKey } from "../../src/i18n";
 import { primaryShortcut } from "../../src/browser/platform";
 import { usePrivacyMode } from "../../src/app/usePrivacyMode";
+import { applyPopupTheme } from "../../src/features/appearance/popupTheme";
 
 interface ActiveTabData {
   title: string;
@@ -20,6 +21,7 @@ interface ActiveTabData {
 
 export function PopupApp() {
   const { workspace, failed, retry } = useWorkspace();
+  const [systemDark, setSystemDark] = useState(() => matchMedia("(prefers-color-scheme: dark)").matches);
   const t = useCallback((key: MessageKey): string => translate(workspace?.settings.locale ?? "auto", key), [workspace?.settings.locale]);
   const [tab, setTab] = useState<ActiveTabData | null>(null);
   const [pageId, setPageId] = useState("");
@@ -36,6 +38,17 @@ export function PopupApp() {
   const [error, setError] = useState<string | null>(null);
   const [shortcut, setShortcut] = useState("");
   const { privacy } = usePrivacyMode(workspace?.settings ?? { privacyPersist: false, privacyEnabled: false });
+
+  useEffect(() => {
+    const query = matchMedia("(prefers-color-scheme: dark)");
+    const update = (): void => setSystemDark(query.matches);
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (workspace?.settings.theme) applyPopupTheme(document.documentElement, workspace.settings.theme, systemDark);
+  }, [systemDark, workspace?.settings.theme]);
 
   useEffect(() => {
     void Promise.all([
@@ -131,9 +144,11 @@ export function PopupApp() {
         {duplicate ? <div className="duplicate-warning"><AlertTriangle size={18} /><div><strong>{t("popup.duplicate")}</strong><span>{privacy ? t("privacy.hiddenBookmark") : duplicate.title}</span><button onClick={() => setAllowDuplicate(true)}>{t(allowDuplicate ? "popup.copyReady" : "popup.saveCopy")}</button></div></div> : null}
         {error ? <div className="popup-error"><AlertTriangle size={17} />{error}</div> : null}
         {status ? <div className="popup-success"><Check size={17} />{status}</div> : null}
+      </section>
+      <div className="popup__actions">
         <button className="save-button" disabled={saving || unsupported || !destinationIsValid || (!!duplicate && !allowDuplicate)} onClick={() => void save()}>{saving ? t("popup.saving") : t("popup.save")}</button>
         <button className="workspace-button" onClick={() => void openWorkspace(pageId)}><ExternalLink size={16} />{t("popup.openWorkspace")}</button>
-      </section>
+      </div>
       <footer><span><kbd>{saveShortcut.visual}</kbd> {t("generic.save")}</span><span>{t("popup.localOnly")}</span></footer>
     </main>
   );
