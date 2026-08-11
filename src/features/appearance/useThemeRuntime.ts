@@ -101,6 +101,7 @@ export function useThemeRuntime(theme: ThemeConfig | undefined): ResolvedPerform
     const root = document.documentElement;
     root.dataset.theme = dark ? "dark" : "light";
     root.dataset.performance = performanceMode;
+    root.dataset.asterfoldMotion = activeTheme.motion ? "on" : "off";
     root.style.colorScheme = dark ? "dark" : "light";
     const next = new Map<string, string>();
     for (const [name, rawValue] of Object.entries(style)) {
@@ -119,7 +120,7 @@ export function useThemeRuntime(theme: ThemeConfig | undefined): ResolvedPerform
     let firstFrame: number | null = null;
     let secondFrame: number | null = null;
     const root = document.documentElement;
-    storeStartupThemeSnapshot(dark, style as Record<string, unknown>);
+    storeStartupThemeSnapshot(dark, style as Record<string, unknown>, localStorage, activeTheme.motion);
     if (root.dataset.asterfoldReady === "true") return;
 
     void Promise.all([
@@ -160,6 +161,7 @@ export function useThemeRuntime(theme: ThemeConfig | undefined): ResolvedPerform
     for (const name of previousVariables.current.keys()) root.style.removeProperty(name);
     previousVariables.current.clear();
     delete root.dataset.performance;
+    delete root.dataset.asterfoldMotion;
   }, []);
 
   return performanceMode;
