@@ -114,14 +114,15 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   const notifyError = (message: string): void => toasts.push({ message, tone: "error" });
   const notifySuccess = (message: string): void => toasts.push({ message, tone: "success" });
   const activePage = workspace.pages.find((page) => page.id === workspace.settings.activePageId) ?? workspace.pages[0];
+  const activePageId = activePage?.id;
   useEffect(() => {
-    if (!pendingReveal || !activePage || activePage.id !== pendingReveal.pageId) return;
+    if (!pendingReveal || !activePageId || activePageId !== pendingReveal.pageId) return;
     const target = document.querySelector<HTMLElement>(`[data-bookmark-id="${CSS.escape(pendingReveal.bookmarkId)}"]`);
     if (!target) return;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches || !workspace.settings.theme.motion;
     target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center", inline: "center" });
     setPendingReveal(null);
-  }, [activePage?.id, pendingReveal, workspace.bookmarks, workspace.settings.theme.motion]);
+  }, [activePageId, pendingReveal, workspace.bookmarks, workspace.settings.theme.motion]);
   if (!activePage) return <div className="app-loading">{t("loading.repairing")}</div>;
   const boards = workspace.boards.filter((board) => board.pageId === activePage.id);
   const boardIds = new Set(boards.map((board) => board.id));
