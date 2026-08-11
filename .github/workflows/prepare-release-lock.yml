@@ -1,0 +1,52 @@
+name: Prepare release lockfile
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  generate-lock:
+    if: github.event.pull_request.head.ref == 'release/asterfold-3.2.2-design-hardening' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: release/asterfold-3.2.2-design-hardening
+          fetch-depth: 0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22.23.2
+          cache: npm
+      - name: Generate exact lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --package-lock-only --ignore-scripts
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          const node = lock.packages?.['node_modules/nanoid'];
+          if (lock.version !== '3.2.2' || lock.packages?.['']?.version !== '3.2.2') {
+            throw new Error('Release version was not synchronized in package-lock.json');
+          }
+          if (node?.version !== '3.3.17') throw new Error(`Expected nanoid 3.3.17, got ${node?.version}`);
+          if (!String(node?.resolved ?? '').includes('73d67168136b36fd3b644159b0cff149da4905d9')) {
+            throw new Error(`Nano ID is not pinned to verified upstream commit: ${node?.resolved}`);
+          }
+          NODE
+          git diff --check
+      - name: Commit generated lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add package-lock.json
+          git diff --cached --quiet && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "fix(deps): synchronize patched Nano ID lockfile"
+          git push origin HEAD:release/asterfold-3.2.2-design-hardening
