@@ -1,0 +1,81 @@
+name: Fix Asterfold 3.2.2 orchestration tests
+
+on:
+  push:
+    branches:
+      - release/asterfold-3.2.2-design-hardening
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: release/asterfold-3.2.2-design-hardening
+          fetch-depth: 0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22.23.2
+          cache: npm
+      - name: Patch stale dialog lifecycle expectations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('tests/workspaceAppOrchestration.test.ts')
+          s = p.read_text()
+          replacements = [
+            (
+              '    await act(async () => { await mocks.nameDialog?.onSubmit("New page"); });\n    expect(mocks.createPage).toHaveBeenCalledWith("New page");',
+              '    await act(async () => { await mocks.nameDialog?.onSubmit("New page"); });\n    expect(mocks.createPage).toHaveBeenCalledWith("New page");\n    act(() => { mocks.nameDialog?.onClose(); });'
+            ),
+            (
+              '    await act(async () => { await mocks.nameDialog?.onSubmit("Renamed page"); });\n    expect(mocks.renamePage).toHaveBeenCalledWith(page.id, "Renamed page");',
+              '    await act(async () => { await mocks.nameDialog?.onSubmit("Renamed page"); });\n    expect(mocks.renamePage).toHaveBeenCalledWith(page.id, "Renamed page");\n    act(() => { mocks.nameDialog?.onClose(); });'
+            ),
+            (
+              '    await act(async () => { await mocks.nameDialog?.onSubmit("New board"); });\n    expect(mocks.createBoard).toHaveBeenCalledWith(page.id, "New board");',
+              '    await act(async () => { await mocks.nameDialog?.onSubmit("New board"); });\n    expect(mocks.createBoard).toHaveBeenCalledWith(page.id, "New board");\n    act(() => { mocks.nameDialog?.onClose(); });'
+            ),
+            (
+              '    await act(async () => { await mocks.nameDialog?.onSubmit("Renamed board"); });\n    expect(mocks.updateBoard).toHaveBeenCalledWith(board.id, { title: "Renamed board" });',
+              '    await act(async () => { await mocks.nameDialog?.onSubmit("Renamed board"); });\n    expect(mocks.updateBoard).toHaveBeenCalledWith(board.id, { title: "Renamed board" });\n    act(() => { mocks.nameDialog?.onClose(); });'
+            ),
+            (
+              '    act(() => { mocks.canvas?.onEditBookmark(bookmark); });\n    await waitFor(() => expect(mocks.editor?.bookmark).toEqual(bookmark));\n    mocks.canvas?.onDuplicateBookmark(bookmark);',
+              '    act(() => { mocks.canvas?.onEditBookmark(bookmark); });\n    await waitFor(() => expect(mocks.editor?.bookmark).toEqual(bookmark));\n    act(() => { mocks.editor?.onClose(); });\n    mocks.canvas?.onDuplicateBookmark(bookmark);'
+            ),
+            (
+              '    await act(async () => { await mocks.moveDialog?.onMove(boardTwo.id); });\n    expect(mocks.bulkMoveBookmarks).toHaveBeenCalledWith([bookmark.id], boardTwo.id);',
+              '    await act(async () => { await mocks.moveDialog?.onMove(boardTwo.id); });\n    expect(mocks.bulkMoveBookmarks).toHaveBeenCalledWith([bookmark.id], boardTwo.id);\n    act(() => { mocks.moveDialog?.onClose(); });'
+            ),
+          ]
+          for old, new in replacements:
+            if old not in s:
+              raise SystemExit(f'missing expected test fragment: {old[:80]!r}')
+            s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+      - name: Verify focused gates
+        run: |
+          npm ci
+          npm run typecheck
+          npm run lint
+          npx vitest run tests/workspaceAppOrchestration.test.ts
+      - name: Commit test synchronization fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/fix-v3.2.2-orchestration-tests.yml
+          git add tests/workspaceAppOrchestration.test.ts
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "test: align orchestration lifecycle with blocking overlays"
+          git push origin HEAD:release/asterfold-3.2.2-design-hardening
