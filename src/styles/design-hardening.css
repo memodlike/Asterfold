@@ -13,7 +13,7 @@
   }
 }
 .board__empty { min-height: 108px; }
-.bookmark-card { height: var(--bookmark-row-height, 24px); }
+.bookmark-card { height: var(--bookmark-row-height, 20px); }
 .launcher-trigger { opacity: .42; }
 
 .settings-modal .modal__body { overflow: hidden; }
