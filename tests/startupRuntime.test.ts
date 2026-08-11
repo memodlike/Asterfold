@@ -14,6 +14,7 @@ describe("new-tab startup runtime", () => {
   afterEach(() => {
     localStorage.removeItem(STARTUP_SNAPSHOT_KEY);
     document.documentElement.removeAttribute("data-theme");
+    document.documentElement.removeAttribute("data-asterfold-motion");
     document.documentElement.style.removeProperty("--startup-canvas");
     document.documentElement.style.removeProperty("--startup-wallpaper");
     document.documentElement.style.colorScheme = "";
@@ -25,9 +26,11 @@ describe("new-tab startup runtime", () => {
       theme: "dark",
       canvas: "#16171a",
       wallpaper: 'url("/wallpapers/dusk.webp")',
+      motion: true,
     });
+    expect(parseStartupThemeSnapshot(JSON.stringify({ version: 2, theme: "dark", canvas: "#16171a", wallpaper: "none", motion: false }))?.motion).toBe(false);
     expect(parseStartupThemeSnapshot("not-json")).toBeNull();
-    expect(parseStartupThemeSnapshot(JSON.stringify({ version: 2, theme: "dark", canvas: "#16171a" }))).toBeNull();
+    expect(parseStartupThemeSnapshot(JSON.stringify({ version: 3, theme: "dark", canvas: "#16171a" }))).toBeNull();
     expect(parseStartupThemeSnapshot(JSON.stringify({ version: 1, theme: "dark", canvas: "white" }))).toBeNull();
     expect(parseStartupThemeSnapshot(JSON.stringify({ version: 1, theme: "dark", canvas: "#16171a", wallpaper: 'url("https://example.com/remote.jpg")' }))?.wallpaper).toBe("none");
   });
@@ -37,13 +40,14 @@ describe("new-tab startup runtime", () => {
       "--color-canvas": "#16171a",
       "--wallpaper-image": 'url("/wallpapers/quiet-aurora.webp")',
       "--color-text": "sensitive-value-that-is-not-persisted",
-    });
+    }, localStorage, false);
     const raw = localStorage.getItem(STARTUP_SNAPSHOT_KEY);
     expect(raw).not.toContain("sensitive-value");
     const snapshot = readStartupThemeSnapshot();
     expect(snapshot).not.toBeNull();
     applyStartupThemeSnapshot(document.documentElement, snapshot!);
     expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(document.documentElement.dataset.asterfoldMotion).toBe("off");
     expect(document.documentElement.style.getPropertyValue("--startup-canvas")).toBe("#16171a");
     expect(document.documentElement.style.getPropertyValue("--startup-wallpaper")).toContain("quiet-aurora.webp");
   });
@@ -60,13 +64,15 @@ describe("new-tab startup runtime", () => {
     expect(extractCssImageUrl("none")).toBeNull();
   });
 
-  it("loads critical dark paint and bootstrap logic before React", () => {
+  it("loads system-aware critical paint and bootstrap logic before React", () => {
     const html = readFileSync(resolve("entrypoints/newtab/index.html"), "utf8");
     const css = readFileSync(resolve("entrypoints/newtab/bootstrap.css"), "utf8");
-    expect(html).toContain('<meta name="color-scheme" content="dark" />');
+    expect(html).toContain('<meta name="color-scheme" content="light dark" />');
     expect(html.indexOf("bootstrap.css")).toBeLessThan(html.indexOf("<body>"));
     expect(html.indexOf("bootstrap.ts")).toBeLessThan(html.indexOf("main.tsx"));
-    expect(css).toContain("--startup-canvas: #111318");
+    expect(css).toContain("--startup-canvas: #f1f2f4");
+    expect(css).toContain("prefers-color-scheme: dark");
+    expect(css).toContain('data-asterfold-motion="off"');
     expect(css).toContain("#root");
     expect(css).toContain("visibility: hidden");
     expect(css).toContain('html[data-asterfold-ready="true"] #root');
