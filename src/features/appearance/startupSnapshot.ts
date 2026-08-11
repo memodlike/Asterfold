@@ -1,10 +1,11 @@
 export const STARTUP_SNAPSHOT_KEY = "asterfold:startup-theme:v1";
 
 export interface StartupThemeSnapshot {
-  version: 1;
+  version: 1 | 2;
   theme: "light" | "dark";
   canvas: string;
   wallpaper: string;
+  motion: boolean;
 }
 
 const SAFE_CANVAS = /^#[0-9a-f]{6}$/i;
@@ -20,10 +21,11 @@ export function parseStartupThemeSnapshot(raw: string | null): StartupThemeSnaps
   if (!raw) return null;
   try {
     const value = JSON.parse(raw) as Partial<StartupThemeSnapshot>;
-    if (value.version !== 1 || (value.theme !== "light" && value.theme !== "dark")) return null;
+    if ((value.version !== 1 && value.version !== 2) || (value.theme !== "light" && value.theme !== "dark")) return null;
     if (typeof value.canvas !== "string" || !SAFE_CANVAS.test(value.canvas)) return null;
     const wallpaper = typeof value.wallpaper === "string" && SAFE_WALLPAPER.test(value.wallpaper) ? value.wallpaper : "none";
-    return { version: 1, theme: value.theme, canvas: value.canvas, wallpaper };
+    const motion = value.version === 2 ? value.motion !== false : true;
+    return { version: value.version, theme: value.theme, canvas: value.canvas, wallpaper, motion };
   } catch {
     return null;
   }
@@ -39,6 +41,7 @@ export function readStartupThemeSnapshot(storage: Pick<Storage, "getItem"> = loc
 
 export function applyStartupThemeSnapshot(root: HTMLElement, snapshot: StartupThemeSnapshot): void {
   root.dataset.theme = snapshot.theme;
+  root.dataset.asterfoldMotion = snapshot.motion ? "on" : "off";
   root.style.colorScheme = snapshot.theme;
   root.style.setProperty("--startup-canvas", snapshot.canvas);
   root.style.setProperty("--startup-wallpaper", snapshot.wallpaper);
@@ -48,12 +51,13 @@ export function storeStartupThemeSnapshot(
   dark: boolean,
   style: Record<string, unknown>,
   storage: Pick<Storage, "setItem"> = localStorage,
+  motion = true,
 ): void {
   const rawCanvas = stringStyleValue(style["--color-canvas"], "");
   const canvas = SAFE_CANVAS.test(rawCanvas) ? rawCanvas : dark ? "#16171a" : "#f1f2f4";
   const rawWallpaper = stringStyleValue(style["--wallpaper-image"], "none");
   const wallpaper = SAFE_WALLPAPER.test(rawWallpaper) ? rawWallpaper : "none";
-  const snapshot: StartupThemeSnapshot = { version: 1, theme: dark ? "dark" : "light", canvas, wallpaper };
+  const snapshot: StartupThemeSnapshot = { version: 2, theme: dark ? "dark" : "light", canvas, wallpaper, motion };
   try {
     storage.setItem(STARTUP_SNAPSHOT_KEY, JSON.stringify(snapshot));
   } catch {

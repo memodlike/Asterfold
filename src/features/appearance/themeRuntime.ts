@@ -1,13 +1,7 @@
 import type { CSSProperties } from "react";
 import type { ThemeConfig } from "../../domain/models";
 import type { ResolvedPerformanceMode } from "../performance/performanceProfile";
-
-interface Palette {
-  canvas: string; surface: string; surfaceSolid: string; surfaceElevated: string; text: string; secondary: string; border: string; danger: string; success: string; shadow: string;
-}
-
-const lightPalette: Palette = { canvas: "#f1f2f4", surface: "255 255 255", surfaceSolid: "#fbfbfc", surfaceElevated: "#ffffff", text: "#191a1d", secondary: "#6e7077", border: "19 20 23", danger: "#c9342f", success: "#237c4b", shadow: "0 20px 55px rgb(20 22 28 / .12)" };
-const darkPalette: Palette = { canvas: "#16171a", surface: "38 40 44", surfaceSolid: "#25272b", surfaceElevated: "#2d2f34", text: "#f5f5f6", secondary: "#a1a3aa", border: "255 255 255", danger: "#ff7772", success: "#64d79b", shadow: "0 24px 64px rgb(0 0 0 / .34)" };
+import { semanticPalette } from "./semanticPalette";
 
 export const BUILTIN_WALLPAPERS = [
   { id: "builtin-aurora", labelKey: "settings.wallpaperAurora", value: 'url("/wallpapers/quiet-aurora.webp")', compatibilityValue: 'url("/wallpapers/quiet-aurora-compat.webp")' },
@@ -25,7 +19,7 @@ export function themeStyle(
   const legacyCall = typeof compatibilityWallpaperOrDark === "boolean";
   const compatibilityWallpaperUrl = legacyCall ? wallpaperUrl : compatibilityWallpaperOrDark;
   const dark = legacyCall ? compatibilityWallpaperOrDark : darkValue ?? false;
-  const palette = dark ? darkPalette : lightPalette;
+  const palette = semanticPalette(dark);
   const builtin = BUILTIN_WALLPAPERS.find((item) => item.id === theme.wallpaperId);
   const wallpaperImage = theme.backgroundMode === "wallpaper" ? wallpaperUrl ? `url("${wallpaperUrl}")` : builtin?.value ?? "none" : "none";
   const compatibilityImage = theme.backgroundMode === "wallpaper"
@@ -46,6 +40,7 @@ export function themeStyle(
     "--color-success": palette.success, "--shadow-panel": palette.shadow, "--glass-blur": `${Math.min(32, theme.blur)}px`,
     "--glass-highlight": dark ? "rgb(255 255 255 / .14)" : "rgb(255 255 255 / .70)", "--glass-sheen": theme.glassVariant === "clear" ? ".09" : ".18",
     "--radius-card": `${theme.radius}px`, "--font-scale": theme.fontScale, "--board-width": `${theme.boardWidth}px`, "--favicon-size": `${theme.faviconSize}px`,
+    "--bookmark-row-height": theme.density === "compact" ? "22px" : theme.density === "spacious" ? "26px" : "24px",
     "--wallpaper-image": wallpaperImage, "--wallpaper-compat-image": compatibilityImage, "--wallpaper-software-image": softwareImage, "--wallpaper-dim": wallpaperImage === "none" ? 0 : theme.wallpaperDim,
     "--wallpaper-filter": wallpaperFilter, "--wallpaper-position": theme.wallpaperPosition, "--wallpaper-transform": wallpaperTransform,
     "--density-space": theme.density === "compact" ? "8px" : theme.density === "spacious" ? "16px" : "12px",

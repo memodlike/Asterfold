@@ -290,6 +290,19 @@ describe("WorkspaceApp orchestration", () => {
     await waitFor(() => expect(mocks.toastPush).toHaveBeenCalled());
   });
 
+  it("prevents a second blocking overlay from opening through the global search shortcut", async () => {
+    render(createElement(WorkspaceApp));
+    await waitFor(() => expect(mocks.launcher).not.toBeNull());
+    act(() => { mocks.launcher?.onSettings(); });
+    await waitFor(() => expect(mocks.settings?.open).toBe(true));
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    await settle();
+    expect(mocks.search).toBeNull();
+    act(() => { mocks.settings?.onClose(); });
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    await waitFor(() => expect(mocks.search?.open).toBe(true));
+  });
+
   it("uses free-layout board swaps and blocks clipboard copy in privacy mode", async () => {
     mocks.privacy = true;
     mocks.workspaceState.workspace = workspace({ workspaceLayoutMode: "free" });

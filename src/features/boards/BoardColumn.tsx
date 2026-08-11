@@ -37,7 +37,7 @@ export const BoardColumn = memo(function BoardColumn(props: BoardColumnProps) {
   const [menuPoint, setMenuPoint] = useState<ContextMenuPoint | null>(null);
   const sortable = useSortable({ id: `board:${props.board.id}`, data: { type: "board", boardId: props.board.id } });
   const drop = useDroppable({ id: `board-drop:${props.board.id}`, data: { type: "board-drop", boardId: props.board.id } });
-  const columns = props.board.bookmarkColumns === "auto" ? ((props.placement?.span ?? 3) >= 4 || props.bookmarks.length >= 12 ? 2 : 1) : props.board.bookmarkColumns;
+  const columnsClass = props.board.bookmarkColumns === "auto" ? "auto" : String(props.board.bookmarkColumns);
   const style = {
     transform: CSS.Transform.toString(sortable.transform),
     transition: sortable.transition,
@@ -90,7 +90,7 @@ export const BoardColumn = memo(function BoardColumn(props: BoardColumnProps) {
         </button>
         <button className="board__add" onClick={() => props.onAddBookmark(props.board)} aria-label={t("board.add", { name: props.board.title })}><Plus size={17} /></button>
       </header>
-      <div ref={drop.setNodeRef} className={`board__items board__items--columns-${columns}`}>
+      <div ref={drop.setNodeRef} className={`board__items board__items--columns-${columnsClass}`}>
         <SortableContext items={props.bookmarks.map((bookmark) => `bookmark:${bookmark.id}`)} strategy={rectSortingStrategy}>
           {props.bookmarks.map((bookmark) => <BookmarkCard
             key={bookmark.id}

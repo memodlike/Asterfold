@@ -119,13 +119,13 @@ describe("BoardColumn behavior", () => {
     expect(screen.getByRole("menu", { name: "Actions for Inbox" })).toBeVisible();
   });
 
-  it("passes bookmark state and callbacks to cards and selects two columns automatically", () => {
+  it("passes bookmark state and callbacks to cards and leaves automatic columns to container queries", () => {
     const many = Array.from({ length: 12 }, (_, index) => ({ ...bookmark, id: `bookmark-${index}`, title: `Bookmark ${index}`, position: String(index) }));
     const { container, callbacks } = renderColumn({ bookmarks: many, selectedIds: new Set([many[0]!.id]), placement: { column: 2, row: 1, span: 4 } });
     expect(mocks.cards).toHaveLength(12);
     expect(mocks.cards[0]?.selected).toBe(true);
     expect(mocks.cards[0]?.onOpen).toBe(callbacks.onOpenBookmark);
-    expect(container.querySelector(".board__items--columns-2")).not.toBeNull();
+    expect(container.querySelector(".board__items--columns-auto")).not.toBeNull();
     expect(container.querySelector<HTMLElement>("section.board")?.style.gridColumn).toContain("span 4");
   });
 

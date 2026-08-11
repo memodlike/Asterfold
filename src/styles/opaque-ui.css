@@ -287,14 +287,14 @@ textarea,
 .range-control.is-disabled { opacity: .54; }
 .range-control.is-disabled input { cursor: not-allowed; }
 
-/* Popup uses its own light token set. */
+/* Popup keeps the shared SelectField behavior while using its lightweight semantic palette. */
 .popup .select-field { width: 100%; }
 .popup .select-field > button {
   min-height: 34px;
-  border-color: #d5dbe6;
+  border-color: var(--popup-border, var(--color-border));
   border-radius: 8px;
-  color: #172033;
-  background: #fff;
+  color: var(--popup-text, var(--color-text));
+  background: var(--popup-surface, var(--color-surface-elevated));
   font-size: 12px;
 }
 .popup .select-field__icon { display: none; }

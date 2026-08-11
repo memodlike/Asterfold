@@ -26,27 +26,46 @@ export function useToasts(): ToastController {
   const [busyActions, setBusyActions] = useState<Set<number>>(new Set());
   const idRef = useRef(0);
   const timers = useRef(new Map<number, number>());
+  const deadlines = useRef(new Map<number, number>());
+  const remaining = useRef(new Map<number, number>());
 
   const remove = useCallback((id: number) => {
     const timer = timers.current.get(id);
     if (timer !== undefined) window.clearTimeout(timer);
     timers.current.delete(id);
+    deadlines.current.delete(id);
+    remaining.current.delete(id);
     setToasts((current) => current.filter((toast) => toast.id !== id));
   }, []);
+
+  const schedule = useCallback((id: number, duration: number): void => {
+    const timer = timers.current.get(id);
+    if (timer !== undefined) window.clearTimeout(timer);
+    const safeDuration = Math.max(0, duration);
+    remaining.current.set(id, safeDuration);
+    deadlines.current.set(id, Date.now() + safeDuration);
+    timers.current.set(id, window.setTimeout(() => remove(id), safeDuration));
+  }, [remove]);
 
   const push = useCallback((input: ToastInput) => {
     const id = ++idRef.current;
     setToasts((current) => [...current.slice(-2), { ...input, id }]);
-    timers.current.set(id, window.setTimeout(() => remove(id), input.actionLabel ? 7_000 : 4_000));
-  }, [remove]);
+    schedule(id, input.actionLabel ? 7_000 : 4_000);
+  }, [schedule]);
   const pause = (id: number): void => {
     const timer = timers.current.get(id);
-    if (timer !== undefined) window.clearTimeout(timer);
+    if (timer === undefined) return;
+    const deadline = deadlines.current.get(id);
+    if (deadline !== undefined) remaining.current.set(id, Math.max(0, deadline - Date.now()));
+    window.clearTimeout(timer);
     timers.current.delete(id);
+    deadlines.current.delete(id);
   };
   const resume = (toast: Toast): void => {
-    pause(toast.id);
-    timers.current.set(toast.id, window.setTimeout(() => remove(toast.id), 2_000));
+    if (timers.current.has(toast.id)) return;
+    const duration = remaining.current.get(toast.id) ?? (toast.actionLabel ? 7_000 : 4_000);
+    if (duration <= 0) remove(toast.id);
+    else schedule(toast.id, duration);
   };
   const runAction = async (toast: Toast): Promise<void> => {
     if (!toast.onAction || busyActions.has(toast.id)) return;
@@ -63,7 +82,7 @@ export function useToasts(): ToastController {
         delete failed.onAction;
         return failed;
       }));
-      timers.current.set(toast.id, window.setTimeout(() => remove(toast.id), 4_000));
+      schedule(toast.id, 4_000);
     } finally {
       setBusyActions((current) => {
         const next = new Set(current);
@@ -75,6 +94,9 @@ export function useToasts(): ToastController {
 
   useEffect(() => () => {
     for (const timer of timers.current.values()) window.clearTimeout(timer);
+    timers.current.clear();
+    deadlines.current.clear();
+    remaining.current.clear();
   }, []);
 
   return {
