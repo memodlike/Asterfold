@@ -40,7 +40,7 @@ export function themeStyle(
     "--color-success": palette.success, "--shadow-panel": palette.shadow, "--glass-blur": `${Math.min(32, theme.blur)}px`,
     "--glass-highlight": dark ? "rgb(255 255 255 / .14)" : "rgb(255 255 255 / .70)", "--glass-sheen": theme.glassVariant === "clear" ? ".09" : ".18",
     "--radius-card": `${theme.radius}px`, "--font-scale": theme.fontScale, "--board-width": `${theme.boardWidth}px`, "--favicon-size": `${theme.faviconSize}px`,
-    "--bookmark-row-height": theme.density === "compact" ? "22px" : theme.density === "spacious" ? "26px" : "24px",
+    "--bookmark-row-height": theme.density === "compact" ? "18px" : theme.density === "spacious" ? "22px" : "20px",
     "--wallpaper-image": wallpaperImage, "--wallpaper-compat-image": compatibilityImage, "--wallpaper-software-image": softwareImage, "--wallpaper-dim": wallpaperImage === "none" ? 0 : theme.wallpaperDim,
     "--wallpaper-filter": wallpaperFilter, "--wallpaper-position": theme.wallpaperPosition, "--wallpaper-transform": wallpaperTransform,
     "--density-space": theme.density === "compact" ? "8px" : theme.density === "spacious" ? "16px" : "12px",
