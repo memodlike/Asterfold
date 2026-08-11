@@ -1,0 +1,43 @@
+name: Verify Asterfold 3.2.2 publication
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-release:
+    if: github.head_ref == 'ops/verify-v3.2.2-publication'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify published GitHub Release and exact assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view v3.2.2 --repo "$GITHUB_REPOSITORY" --json tagName,targetCommitish,isDraft,isPrerelease,url,assets > release.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const release = JSON.parse(fs.readFileSync('release.json', 'utf8'));
+          if (release.tagName !== 'v3.2.2') throw new Error(`Unexpected tag: ${release.tagName}`);
+          if (release.isDraft) throw new Error('Release is still draft');
+          if (release.isPrerelease) throw new Error('Release is prerelease');
+          const expected = [
+            'Asterfold-Chrome.zip',
+            'Asterfold-Store-Assets.zip',
+            'checksums.txt',
+            'chrome-unpacked.zip',
+            'extension-source.zip',
+            'provenance.json',
+            'sbom.spdx.json',
+          ].sort();
+          const actual = (release.assets ?? []).map((asset) => asset.name).sort();
+          if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+            throw new Error(`Release assets mismatch. Actual: ${actual.join(', ')}`);
+          }
+          console.log(`Published release verified: ${release.url}`);
+          console.log(`Assets: ${actual.join(', ')}`);
+          NODE
