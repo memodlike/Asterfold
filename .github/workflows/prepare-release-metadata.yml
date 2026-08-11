@@ -1,0 +1,68 @@
+name: Prepare 3.2.2 release metadata
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  prepare-metadata:
+    if: github.event.pull_request.head.ref == 'release/asterfold-3.2.2-design-hardening' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: release/asterfold-3.2.2-design-hardening
+          fetch-depth: 0
+      - name: Synchronize 3.2.2 metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const replaceVersion = path => {
+            let text = fs.readFileSync(path, 'utf8');
+            text = text.replaceAll('3.2.1', '3.2.2');
+            fs.writeFileSync(path, text);
+          };
+          for (const path of [
+            'docs/security/privacy.md',
+            'docs/store/privacy.html',
+            'docs/store/submission-checklist.md',
+            'store-assets/listing/submission-values.md'
+          ]) replaceVersion(path);
+
+          const notesPath = 'docs/release/release-notes.md';
+          let notes = fs.readFileSync(notesPath, 'utf8');
+          if (!notes.startsWith('# Asterfold 3.2.2')) {
+            notes = `# Asterfold 3.2.2\n\n## Design-system hardening\n\n- Unified Quick Save with Light/Dark/System semantic theme tokens and the active accent while keeping opaque, weak-PC-safe surfaces.\n- Corrected startup theme and Motion Off behavior, blocking-overlay orchestration, lazy overlay feedback, bookmark reveal, and toast timing.\n- Added container-aware Board columns, responsive hit areas, mobile Board sizing, Settings scrolling, and performance-mode affordance fixes.\n- Added regression coverage for startup motion, overlay invariants, Board column behavior, and toast lifecycle.\n- Pinned the patched Nano ID 3.3.17 upstream commit in the development toolchain; runtime permissions and local-first behavior are unchanged.\n\n${notes}`;
+          }
+          fs.writeFileSync(notesPath, notes);
+
+          const readmePath = 'README.md';
+          let readme = fs.readFileSync(readmePath, 'utf8');
+          readme = readme.replace('Asterfold 3.2.1 produces a reproducible', 'Asterfold 3.2.2 produces a reproducible');
+          readme = readme.replace(/\*\*Asterfold 3\.2\.1\*\* updates the extension name and Chrome Web Store listing metadata around the verified visual bookmark workspace use case\. Runtime functionality, local-first storage behavior and the permission surface are unchanged from 3\.2\.0\./,
+            '**Asterfold 3.2.2** hardens the visual design system, popup theming, startup motion, overlay lifecycle and responsive behavior while preserving the local-first architecture and permission surface.');
+          if (!readme.includes('**v3.2.2 — Design-system hardening.**')) {
+            readme = readme.replace('## Version history\n\n', '## Version history\n\n1. **v3.2.2 — Design-system hardening.** Unifies popup theming, startup motion, overlay lifecycle, responsive Board behavior, performance affordances, and regression coverage without changing permissions or the local-first architecture.\n');
+          }
+          fs.writeFileSync(readmePath, readme);
+          NODE
+          rm -f .github/workflows/prepare-v3.2.2.yml
+          rm -f .github/workflows/prepare-release-lock.yml
+          rm -f .github/workflows/prepare-release-metadata.yml
+          git diff --check
+      - name: Commit release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -A
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "release: synchronize Asterfold 3.2.2 metadata"
+          git push origin HEAD:release/asterfold-3.2.2-design-hardening
