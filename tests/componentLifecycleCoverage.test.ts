@@ -259,11 +259,14 @@ describe("ToastRegion lifecycle coverage", () => {
     const { controller } = harness();
     act(() => { controller().push({ message: "Paused", actionLabel: "Undo", onAction: vi.fn() }); });
     const toast = screen.getByText("Paused").closest(".toast")!;
+    act(() => { vi.advanceTimersByTime(2_500); });
     fireEvent.pointerEnter(toast);
     act(() => { vi.advanceTimersByTime(8_000); });
     expect(screen.getByText("Paused")).toBeVisible();
     fireEvent.pointerLeave(toast);
-    act(() => { vi.advanceTimersByTime(2_001); });
+    act(() => { vi.advanceTimersByTime(4_400); });
+    expect(screen.getByText("Paused")).toBeVisible();
+    act(() => { vi.advanceTimersByTime(101); });
     expect(screen.queryByText("Paused")).toBeNull();
 
     act(() => { controller().push({ message: "Focused", actionLabel: "Undo", onAction: vi.fn() }); });
@@ -274,7 +277,9 @@ describe("ToastRegion lifecycle coverage", () => {
     act(() => { vi.advanceTimersByTime(3_000); });
     expect(screen.getByText("Focused")).toBeVisible();
     fireEvent.blur(undo, { relatedTarget: document.body });
-    act(() => { vi.advanceTimersByTime(2_001); });
+    act(() => { vi.advanceTimersByTime(6_900); });
+    expect(screen.getByText("Focused")).toBeVisible();
+    act(() => { vi.advanceTimersByTime(101); });
     expect(screen.queryByText("Focused")).toBeNull();
 
     act(() => { controller().push({ message: "Dismiss me" }); });
