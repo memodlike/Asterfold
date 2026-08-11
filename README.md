@@ -178,7 +178,7 @@ Contribution guidance is available in [docs/development/CONTRIBUTING.md](docs/de
 
 ## Release artifacts
 
-Asterfold 3.2.1 produces a reproducible, cryptographically verifiable release containing:
+Asterfold 3.2.2 produces a reproducible, cryptographically verifiable release containing:
 
 - `Asterfold-Chrome.zip` — upload/install package with `manifest.json` at the ZIP root;
 - `chrome-unpacked.zip` — unpacked folder wrapper;
@@ -192,12 +192,13 @@ The release pipeline verifies Manifest V3 structure, permission policy, CSP, for
 
 ## Current status
 
-**Asterfold 3.2.1** updates the extension name and Chrome Web Store listing metadata around the verified visual bookmark workspace use case. Runtime functionality, local-first storage behavior and the permission surface are unchanged from 3.2.0.
+**Asterfold 3.2.2** hardens the visual design system, popup theming, startup motion, overlay lifecycle and responsive behavior while preserving the local-first architecture and permission surface.
 
 The repository does not claim Chrome Web Store publication, approval, user counts, ratings, awards, or endorsements until those facts exist publicly.
 
 ## Version history
 
+1. **v3.2.2 — Design-system hardening.** Unifies popup theming, startup motion, overlay lifecycle, responsive Board behavior, performance affordances, and regression coverage without changing permissions or the local-first architecture.
 1. **v3.2.1 — Store listing optimization.** Updates the manifest name to `Asterfold — Visual Bookmark Workspace`, refreshes English/Russian Store copy, removes stale rendering terminology, and keeps runtime permissions and functionality unchanged.
 1. **v3.2.0 — Guided first-run setup.** Adds localized language selection, preview-only Chrome/HTML/backup imports, appearance setup, migration-safe existing-user behavior, explicit skip confirmation and recovery-backed atomic completion.
 1. **v3.1.4 — Opaque settings and adaptive controls.** Makes all overlays fully opaque, introduces accessible theme-aware dropdowns with SVG flags, restores live Appearance controls, and preserves weak-GPU optimization.

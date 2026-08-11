@@ -1,6 +1,6 @@
 {
   "name": "asterfold",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "private": true,
   "type": "module",
   "packageManager": "npm@10.9.8",
@@ -73,6 +73,7 @@
     "esbuild": "0.28.1",
     "fx-runner": "1.5.0",
     "tmp": "0.2.7",
-    "uuid": "11.1.1"
+    "uuid": "11.1.1",
+    "nanoid": "git+https://github.com/ai/nanoid.git#73d67168136b36fd3b644159b0cff149da4905d9"
   }
 }

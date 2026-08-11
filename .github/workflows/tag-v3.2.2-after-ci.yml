@@ -1,0 +1,67 @@
+name: Tag Asterfold 3.2.2 after CI
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  tag:
+    if: github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact validated main commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22.23.2
+      - name: Verify exact main and required workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node -p "require('./package.json').version")" = "3.2.2"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_SOURCE_SHA"
+
+          for attempt in {1..30}; do
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$EXPECTED_SOURCE_SHA&status=completed&per_page=100" > workflow-runs.json
+            if EXPECTED_SOURCE_SHA="$EXPECTED_SOURCE_SHA" node scripts/verify-required-workflows.mjs workflow-runs.json; then
+              rm workflow-runs.json
+              exit 0
+            fi
+            rm workflow-runs.json
+            sleep 10
+          done
+          echo "Required exact-SHA CI/CodeQL runs did not become green" >&2
+          exit 1
+      - name: Create annotated release tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          remote="$(git ls-remote origin refs/tags/v3.2.2 | awk '{print $1}')"
+          if [ -n "$remote" ]; then
+            resolved="$(git rev-list -n 1 v3.2.2 2>/dev/null || true)"
+            test "$resolved" = "$EXPECTED_SOURCE_SHA"
+            echo "v3.2.2 already points to the validated commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a v3.2.2 "$EXPECTED_SOURCE_SHA" -m "Asterfold 3.2.2 — design-system hardening"
+          git push origin refs/tags/v3.2.2

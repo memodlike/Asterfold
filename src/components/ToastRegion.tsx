@@ -52,7 +52,7 @@ export function useToasts(): ToastController {
     setToasts((current) => [...current.slice(-2), { ...input, id }]);
     schedule(id, input.actionLabel ? 7_000 : 4_000);
   }, [schedule]);
-  const pause = (id: number): void => {
+  const pause = useCallback((id: number): void => {
     const timer = timers.current.get(id);
     if (timer === undefined) return;
     const deadline = deadlines.current.get(id);
@@ -60,13 +60,13 @@ export function useToasts(): ToastController {
     window.clearTimeout(timer);
     timers.current.delete(id);
     deadlines.current.delete(id);
-  };
-  const resume = (toast: Toast): void => {
+  }, []);
+  const resume = useCallback((toast: Toast): void => {
     if (timers.current.has(toast.id)) return;
     const duration = remaining.current.get(toast.id) ?? (toast.actionLabel ? 7_000 : 4_000);
     if (duration <= 0) remove(toast.id);
     else schedule(toast.id, duration);
-  };
+  }, [remove, schedule]);
   const runAction = async (toast: Toast): Promise<void> => {
     if (!toast.onAction || busyActions.has(toast.id)) return;
     pause(toast.id);

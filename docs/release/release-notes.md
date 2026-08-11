@@ -1,3 +1,17 @@
+# Asterfold 3.2.2
+
+## Design-system hardening
+
+- Unified Quick Save with Light/Dark/System semantic theme tokens and the active accent while keeping opaque, weak-PC-safe surfaces.
+- Corrected startup theme and Motion Off behavior, blocking-overlay orchestration, lazy overlay feedback, bookmark reveal, and toast timing.
+- Added container-aware Board columns, responsive hit areas, mobile Board sizing, Settings scrolling, and performance-mode affordance fixes.
+- Added regression coverage for startup motion, overlay invariants, Board column behavior, and toast lifecycle.
+- Pinned the patched Nano ID 3.3.17 upstream commit in the development toolchain; runtime permissions and local-first behavior are unchanged.
+
+## Verification
+
+- Release remains gated by version consistency, dependency audits, source scan, typecheck, lint, coverage, Store validation, reproducible Linux/Windows packaging, real MV3/accessibility E2E, compatibility stress testing, exact 2.2.3 upgrade E2E and CodeQL.
+
 # Asterfold 3.2.1
 
 ## Store listing
