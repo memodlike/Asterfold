@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
   writeSessionPrivacy: vi.fn(),
   commandsGetAll: vi.fn(),
   permissionsRequest: vi.fn(),
+  permissionsRemove: vi.fn().mockResolvedValue(true),
   bookmarksGetTree: vi.fn(),
   tabsCreate: vi.fn(),
 }));
@@ -32,7 +33,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("wxt/browser", () => ({
   browser: {
     commands: { getAll: mocks.commandsGetAll },
-    permissions: { request: mocks.permissionsRequest },
+    permissions: { request: mocks.permissionsRequest, remove: mocks.permissionsRemove },
     bookmarks: { getTree: mocks.bookmarksGetTree },
     tabs: { create: mocks.tabsCreate },
   },
@@ -251,6 +252,7 @@ describe("SettingsDialog behavior", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Import from Chrome/ }));
     await waitFor(() => expect(mocks.bookmarksGetTree).toHaveBeenCalledOnce());
+    await waitFor(() => expect(mocks.permissionsRemove).toHaveBeenCalledWith({ permissions: ["bookmarks"] }));
     expect(await screen.findByText("Bookmarks: 1. No changes written yet.")).toBeVisible();
     const textInput = container.querySelector<HTMLInputElement>('.import-preview input[maxlength="240"]')!;
     fireEvent.change(textInput, { target: { value: "Chrome import" } });

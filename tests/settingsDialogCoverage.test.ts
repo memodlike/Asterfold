@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
   parseHtmlOffThread: vi.fn(),
   commandsGetAll: vi.fn(),
   permissionRequest: vi.fn(),
+  permissionRemove: vi.fn().mockResolvedValue(true),
   bookmarksGetTree: vi.fn(),
   tabsCreate: vi.fn(),
 }));
@@ -32,7 +33,7 @@ const confirmMock = vi.fn();
 vi.mock("wxt/browser", () => ({
   browser: {
     commands: { getAll: mocks.commandsGetAll },
-    permissions: { request: mocks.permissionRequest },
+    permissions: { request: mocks.permissionRequest, remove: mocks.permissionRemove },
     bookmarks: { getTree: mocks.bookmarksGetTree },
     tabs: { create: mocks.tabsCreate },
   },

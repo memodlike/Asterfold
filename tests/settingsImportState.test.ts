@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("wxt/browser", () => ({
   browser: {
     commands: { getAll: vi.fn().mockResolvedValue([]) },
-    permissions: { request: vi.fn().mockResolvedValue(false) },
+    permissions: { request: vi.fn().mockResolvedValue(false), remove: vi.fn().mockResolvedValue(true) },
     bookmarks: { getTree: vi.fn().mockResolvedValue([]) },
     tabs: { create: vi.fn() },
     storage: { session: { get: vi.fn().mockResolvedValue({}), set: vi.fn().mockResolvedValue(undefined) } },

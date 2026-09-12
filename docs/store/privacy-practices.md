@@ -1,6 +1,6 @@
-# Chrome Web Store Privacy Practices — Asterfold 3.0.1
+# Chrome Web Store Privacy Practices — Asterfold 3.2.3
 
-Prepared on 28 July 2026. These are proposed dashboard answers for the reviewed default release. Recheck every answer against the final uploaded ZIP before submission.
+Prepared for the Asterfold 3.2.3 release. These are recommended dashboard answers for the reviewed default release. Recheck every answer against the final uploaded ZIP before submission.
 
 ## Single purpose
 
@@ -10,27 +10,27 @@ Pages, Boards, search, Quick Save, Trash, import/export, appearance and Privacy 
 
 ## Data-use disclosure
 
-Do **not** select a blanket answer that says the extension handles no user data. Asterfold processes data locally even though it does not transmit it.
+In the Chrome Web Store Developer Dashboard under **Privacy Practices → Data Usage**:
 
-Recommended transparent declarations:
+Declare that the extension **does not collect or transmit user data** to external servers. All bookmark records, workspace hierarchy, and user preferences are stored strictly locally in the browser's IndexedDB.
+
+Category breakdown for the Dashboard:
 
 | Dashboard category | Declare | Explanation |
 | --- | --- | --- |
-| Web history | Yes | The workspace stores user-selected bookmark URLs and titles. It does not collect the user's general browsing history. |
-| Website content | Yes | After an explicit Quick Save or supported context-menu action, Asterfold may read the active page URL/title or selected link information needed to save that bookmark. |
-| Personally identifiable information | No by default | Asterfold does not ask for name, email, address, identifier or account. A user can nevertheless place personal text in a bookmark title or URL; that user-authored content remains local. |
+| Web history | No | Asterfold does not monitor, record, collect, or transmit the user's browsing history. User bookmarks in IndexedDB are user-curated local links, not browsing history. Declaring "Yes" here causes Chrome to display false warnings that the extension reads historical records / browsing history. |
+| Website content | No | Asterfold does not read, parse, or scrape website content. When Quick Save is triggered, `activeTab` receives only the active tab's title and URL to save into local IndexedDB. |
+| Personally identifiable information | No | Asterfold does not collect name, email, address, identifier or account data. |
 | Authentication information | No | There is no account, sign-in, password or token flow. |
 | Personal communications | No | Asterfold does not read email, chat or communications. |
 | Location | No | No location data is requested or inferred. |
 | Financial and payment information | No | No payment or financial flow exists. |
 | Health information | No | No health feature exists. |
-| User activity | No | Asterfold does not record clicks, keystrokes, mouse movement, scrolling or general browsing activity for analytics or profiling. Workspace edits are stored only as the records needed to provide the requested feature. |
-
-If the Dashboard wording or examples change, use the broader disclosure when a category is ambiguous.
+| User activity | No | Asterfold does not record clicks, keystrokes, mouse movement, scrolling or general browsing activity for analytics or profiling. Workspace edits are stored only as local records needed to provide the requested feature. |
 
 ## Data handling certifications
 
-The owner can certify the following for the reviewed 3.0.1 default build:
+The owner can certify the following for the reviewed 3.2.3 default build:
 
 - data is used only to provide the extension's single bookmark-workspace purpose;
 - workspace data is stored locally in the user's Chrome profile;
@@ -67,9 +67,9 @@ Do not submit the intended Pages URL until it opens publicly without authenticat
 | `alarms` | Schedules local Trash cleanup according to the retention period selected by the user. |
 | `contextMenus` | Adds the user-invoked Save page, Save link and Open Asterfold commands. |
 | `storage` | Stores only the temporary Privacy Mode flag in `chrome.storage.session`, allowing popup and New Tab to share the same visual-protection state. Chrome clears session storage when the browser session ends; bookmark workspace data remains in IndexedDB. |
-| optional `bookmarks` | Requested only when the user selects Import Chrome bookmarks. The Chrome bookmark tree is read and processed locally to create an import preview; declining does not affect normal use. |
+| optional `bookmarks` | Requested only on-demand when the user selects Import Chrome bookmarks. The Chrome bookmark tree is read locally to create an import preview and the permission is immediately revoked; declining does not affect normal use. |
 
-The final 3.0.1 manifest must list only `activeTab`, `favicon`, `alarms`, `contextMenus`, `storage` and optional `bookmarks`; it must not list host permissions, content scripts, `tabs`, `history`, `identity`, `scripting`, `webRequest`, cookies or clipboard-read. If the final ZIP differs, stop submission and reconcile the manifest and disclosures.
+The final 3.2.3 manifest must list only `activeTab`, `favicon`, `alarms`, `contextMenus`, `storage` and optional `bookmarks`; it must not list host permissions, content scripts, `tabs`, `history`, `identity`, `scripting`, `webRequest`, cookies or clipboard-read. If the final ZIP differs, stop submission and reconcile the manifest and disclosures.
 
 ## Privacy policy URL
 
@@ -88,5 +88,3 @@ The Dashboard should contain one URL that is public, stable, readable without si
 - <https://developer.chrome.com/docs/webstore/program-policies/privacy>
 - <https://developer.chrome.com/docs/webstore/program-policies/limited-use>
 - <https://developer.chrome.com/docs/webstore/program-policies/user-data-faq>
-
-Chrome's official guidance treats locally stored information as handled user data and requires a privacy policy when sensitive user information is handled locally. These answers therefore disclose local URL/title processing instead of selecting a misleading “no user data” position.

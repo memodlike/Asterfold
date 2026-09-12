@@ -1,3 +1,21 @@
+# Asterfold 3.2.3
+
+## Chrome Web Store privacy practices & zero-history disclosure correction
+
+- Corrected Chrome Web Store developer declarations: confirmed that Asterfold does not collect web browsing history, website content, or user data. Asterfold is a 100% local-first visual bookmark workspace; user bookmarks are stored exclusively on-device in IndexedDB.
+- Hardened Chrome bookmark import in Settings: unified Chrome bookmark extraction with `readChromeBookmarks(true)`, guaranteeing that the optional `bookmarks` permission is requested on-demand only during reading and immediately revoked via `browser.permissions.remove`, preventing persistent permission warnings in Chrome settings.
+- Updated store documentation, submission checklists, and privacy statements to clarify that user-curated local bookmarks are not web history.
+
+## Runtime
+
+- No new permissions, no host permissions.
+- Strictly zero-telemetry, zero remote scripts, zero dynamic code.
+- Immediate revocation of optional `bookmarks` permission post-import.
+
+## Verification
+
+- Gated by version consistency, dependency audits, source security scans, TypeScript strict checks, ESLint, unit/integration test suites (382 tests), store asset validation, deterministic package verification, and reproducible ZIP generation.
+
 # Asterfold 3.2.2
 
 ## Design-system hardening

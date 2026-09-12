@@ -178,7 +178,7 @@ Contribution guidance is available in [docs/development/CONTRIBUTING.md](docs/de
 
 ## Release artifacts
 
-Asterfold 3.2.2 produces a reproducible, cryptographically verifiable release containing:
+Asterfold 3.2.3 produces a reproducible, cryptographically verifiable release containing:
 
 - `Asterfold-Chrome.zip` — upload/install package with `manifest.json` at the ZIP root;
 - `chrome-unpacked.zip` — unpacked folder wrapper;
@@ -192,12 +192,13 @@ The release pipeline verifies Manifest V3 structure, permission policy, CSP, for
 
 ## Current status
 
-**Asterfold 3.2.2** hardens the visual design system, popup theming, startup motion, overlay lifecycle and responsive behavior while preserving the local-first architecture and permission surface.
+**Asterfold 3.2.3** corrects Chrome Web Store privacy declarations, guarantees immediate revocation of Chrome bookmark import permissions, and eliminates false browsing history warnings while preserving the local-first architecture and least-privilege permission surface.
 
 The repository does not claim Chrome Web Store publication, approval, user counts, ratings, awards, or endorsements until those facts exist publicly.
 
 ## Version history
 
+1. **v3.2.3 — Zero-history disclosure & permission revocation.** Corrects Web Store data usage disclosures (zero web history collection), guarantees immediate revocation of optional `bookmarks` permissions post-import in Settings, and eliminates false historical records warnings in Chrome.
 1. **v3.2.2 — Design-system hardening.** Unifies popup theming, startup motion, overlay lifecycle, responsive Board behavior, performance affordances, and regression coverage without changing permissions or the local-first architecture.
 1. **v3.2.1 — Store listing optimization.** Updates the manifest name to `Asterfold — Visual Bookmark Workspace`, refreshes English/Russian Store copy, removes stale rendering terminology, and keeps runtime permissions and functionality unchanged.
 1. **v3.2.0 — Guided first-run setup.** Adds localized language selection, preview-only Chrome/HTML/backup imports, appearance setup, migration-safe existing-user behavior, explicit skip confirmation and recovery-backed atomic completion.

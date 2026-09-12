@@ -1,6 +1,6 @@
-# Chrome Web Store submission values — Asterfold 3.2.2
+# Chrome Web Store submission values — Asterfold 3.2.3
 
-Current version: 3.2.2
+Current version: 3.2.3
 Copy these values into the owner Dashboard only after checking them against the final release ZIP.
 
 ## Core values
@@ -48,7 +48,7 @@ Use only a privacy URL that has been opened publicly without authentication. The
 
 ### Optional `bookmarks`
 
-> Requested only when the user selects Import Chrome bookmarks. The Chrome bookmark tree is read and processed locally to create an import preview; declining does not affect normal use.
+> Requested only on-demand when the user selects Import Chrome bookmarks. The Chrome bookmark tree is read locally to create an import preview and the permission is immediately revoked; declining does not affect normal use.
 
 ## Remote code
 
@@ -60,12 +60,13 @@ Answer **None** for the reviewed default build. Stop submission if the final man
 
 ## Data use
 
-Disclose:
+Answer **No** (the extension does not collect or transmit user data).
 
-- **Web history** for user-selected bookmark URLs and titles, with the clarification that general browsing history is not collected;
-- **Website content** for active-page title/URL or selected-link data read only after a user-invoked save action.
-
-Do not select authentication, location, financial, health, personal communications or general user-activity collection. See `docs/store/privacy-practices.md` for the detailed rationale and verify the current Dashboard category definitions.
+In the Developer Dashboard under **Privacy Practices → Data Usage**:
+- **Do NOT declare "Web history"**: Asterfold is a local-first visual bookmark workspace. It stores only user-created bookmarks locally in IndexedDB. It does NOT track, monitor, or collect browsing history. Selecting "Web history" causes Chrome and the Web Store to show false warnings that the extension reads historical records / browsing history (*"читает исторические записи"* / *"собирает историю просмотров"*).
+- **Do NOT declare "Website content"**: Asterfold does not scrape or read page content. Saving a bookmark passes only the active tab's URL/title to local IndexedDB via user-initiated `activeTab`.
+- Do NOT select authentication, location, financial, health, personal communications or general user-activity collection.
+- Confirm that data is not sold, transferred to third parties, or used for creditworthiness/advertising.
 
 ## Limited Use
 

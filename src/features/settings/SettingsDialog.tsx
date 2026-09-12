@@ -5,7 +5,6 @@ import { IMPORT_LIMITS } from "../../domain/importLimits";
 import { WALLPAPER_FILE_ACCEPT } from "../../domain/wallpaperFormats";
 import { Brush, Check, CheckCircle2, Database, Download, FileJson, FileText, Grid2X2, Languages, Shield, Trash2, Upload, Zap } from "lucide-react";
 import type { AppSettings, ThemeConfig, Wallpaper, WorkspaceData } from "../../domain/models";
-import { ImportError } from "../../domain/errors";
 import { validateTheme } from "../../domain/themes";
 import { auditInvariants, getWallpaper, saveWallpaper, updateSettings } from "../../db/repository";
 import {
@@ -29,6 +28,7 @@ import { localeOptions, useI18n } from "../../i18n";
 import { publishThemePreview } from "../appearance/themePreview";
 import { BUILTIN_WALLPAPERS } from "../appearance/themeRuntime";
 import { browserPerformanceSignals, classifyPerformanceMode } from "../performance/performanceProfile";
+import { readChromeBookmarks } from "../onboarding/chromeBookmarkImport";
 
 export type SettingsSection = "appearance" | "layout" | "language" | "quick-save" | "data-privacy";
 
@@ -40,34 +40,6 @@ interface SettingsDialogProps {
   onUpdated: (message: string) => void;
   onError: (message: string) => void;
   onOpenTrash: () => void;
-}
-
-type ChromeNode = chrome.bookmarks.BookmarkTreeNode;
-
-function flattenChromeBookmarks(nodes: ChromeNode[]): ImportRecord[] {
-  const records: ImportRecord[] = [];
-  const stack = [...nodes].reverse().map((node) => ({ node, path: [] as string[], depth: 0 }));
-  let visited = 0;
-  while (stack.length > 0) {
-    const current = stack.pop()!;
-    visited += 1;
-    if (visited > IMPORT_LIMITS.nodes) throw new ImportError("Chrome bookmark tree contains too many nodes");
-    if (current.depth > IMPORT_LIMITS.depth) throw new ImportError("Chrome bookmark folder nesting is too deep");
-    if (current.node.url) {
-      if (records.length >= IMPORT_LIMITS.bookmarks) throw new ImportError("Chrome bookmark tree contains too many bookmarks");
-      records.push({
-        title: current.node.title.trim().slice(0, 240) || "Bookmark",
-        url: current.node.url,
-        description: null,
-        folderPath: current.path,
-      });
-    }
-    const childPath = current.node.title ? [...current.path, current.node.title.slice(0, 240)] : current.path;
-    for (const child of [...(current.node.children ?? [])].reverse()) {
-      stack.push({ node: child, path: childPath, depth: current.depth + 1 });
-    }
-  }
-  return records;
 }
 
 function formatBytes(value: number | undefined): string {
@@ -249,9 +221,9 @@ export function SettingsDialog(props: SettingsDialogProps) {
 
   const requestChromeImport = async (): Promise<void> => {
     try {
-      const granted = await browser.permissions.request({ permissions: ["bookmarks"] });
-      if (!granted) return;
-      setImportRecordsPreview(flattenChromeBookmarks(await browser.bookmarks.getTree()));
+      const result = await readChromeBookmarks(true);
+      if (result.status !== "granted") return;
+      setImportRecordsPreview(result.records);
       setBackupPreview(null);
       setImportSource(t("settings.chromeBookmarks"));
     } catch {
