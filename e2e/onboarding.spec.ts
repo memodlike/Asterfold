@@ -52,7 +52,7 @@ test("fresh profile completes accessible guided setup and never reopens it", asy
     await expect(dialog).toBeVisible();
     await expect(dialog).toHaveAttribute("aria-modal", "true");
     await expect(dialog).toHaveAccessibleName(/\S/u);
-    await expect(page.locator(".onboarding-progress span")).toHaveCount(4);
+    await expect(page.locator(".onboarding-progress span")).toHaveCount(3);
 
     const bounds = await dialog.boundingBox();
     expect(bounds).not.toBeNull();

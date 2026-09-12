@@ -644,12 +644,12 @@ test.describe.serial("Asterfold MV3 release", () => {
     await autoButton.click();
     await expect(autoButton).toHaveClass(/is-active/u);
     await expect(page.locator("html")).toHaveAttribute("data-performance", /^(quality|compatibility|software)$/u);
-    await dialog.getByRole("button", { name: "Язык" }).click();
+    await dialog.getByRole("tab", { name: "Язык" }).click();
     await dialog.getByRole("button", { name: "Қазақша" }).click();
     await expect(page).toHaveTitle("Жаңа қойынды");
-    await dialog.getByRole("button", { name: "Тіл", exact: true }).click();
+    await dialog.getByRole("tab", { name: "Тіл", exact: true }).click();
     await dialog.getByRole("button", { name: "Русский" }).click();
-    await dialog.getByRole("button", { name: "Данные и приватность" }).click();
+    await dialog.getByRole("tab", { name: "Данные и приватность" }).click();
     const downloadPromise = page.waitForEvent("download");
     await dialog.getByRole("button", { name: /Резервная копия JSON/u }).click();
     expect((await downloadPromise).suggestedFilename()).toMatch(/^asterfold-backup-v4-\d{4}-\d{2}-\d{2}\.json$/u);
