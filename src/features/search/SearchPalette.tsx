@@ -73,7 +73,7 @@ export function SearchPalette(props: SearchPaletteProps) {
   return (
     <Modal open={props.open} size="large" className="modal--search" title={t("search.title")} description={t("search.placeholder")} onClose={close}>
       <div className="search-palette">
-        <div className="search-palette__input"><Search size={20} /><input ref={inputRef} disabled={props.privacy} value={props.privacy ? t("search.protected") : query} onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }} onKeyDown={handleSearchKeyDown} placeholder={t("search.placeholder")} aria-keyshortcuts={searchShortcut.aria} /><kbd>{searchShortcut.visual}</kbd></div>
+        <div className="search-palette__input"><Search size={20} /><input ref={inputRef} maxLength={240} disabled={props.privacy} value={props.privacy ? t("search.protected") : query} onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }} onKeyDown={handleSearchKeyDown} placeholder={t("search.placeholder")} aria-keyshortcuts={searchShortcut.aria} /><kbd>{searchShortcut.visual}</kbd></div>
         <div className="search-palette__filters">
           <div className="segmented" aria-label={t("search.mode")}>{(["fuzzy", "prefix", "exact"] as const).map((item) => <button className={mode === item ? "is-active" : ""} key={item} onClick={() => { setMode(item); setActiveIndex(0); }}>{t(item === "fuzzy" ? "search.fuzzy" : item === "prefix" ? "search.prefix" : "search.exact")}</button>)}</div>
           <SelectField compact className="search-palette__select" value={field} options={fieldOptions} label={t("search.title")} onChange={(value) => { setField(value as SearchField); setActiveIndex(0); }} />

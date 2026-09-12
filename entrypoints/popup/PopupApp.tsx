@@ -135,15 +135,15 @@ export function PopupApp() {
       <section className="popup__content">
         <div className="popup__title"><h1>{t("popup.title")}</h1>{shortcut ? <kbd>{shortcut}</kbd> : null}</div>
         <div className="tab-preview"><span className="tab-preview__icon">{privacy ? "•" : faviconUrl(tab.url, 40) ? <img src={faviconUrl(tab.url, 40)} alt="" /> : tab.title[0]?.toUpperCase()}</span><div><strong>{visibleTitle}</strong><small>{privacy ? "••••••" : tab.url}</small></div></div>
-        {unsupported ? <div className="popup-error"><AlertTriangle size={17} />{t("popup.unsupported")}</div> : null}
+        {unsupported ? <div className="popup-error" role="alert"><AlertTriangle size={17} />{t("popup.unsupported")}</div> : null}
         <div className="popup-grid"><label>{t("generic.page")}<SelectField value={pageId} options={pageOptions} label={t("generic.page")} onChange={setPageId} /></label><label>{t("generic.board")}<SelectField value={boardId} options={boardOptions} label={t("generic.board")} onChange={setBoardId} /></label></div>
-        {!destinationIsValid ? <div className="popup-error"><AlertTriangle size={17} />{t("popup.boardRequired")}</div> : null}
+        {!destinationIsValid ? <div className="popup-error" role="alert"><AlertTriangle size={17} />{t("popup.boardRequired")}</div> : null}
         {showNewBoard ? <div className="new-board"><input autoFocus value={newBoardName} maxLength={240} placeholder={t("popup.boardName")} onChange={(event) => setNewBoardName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void addBoard(); } }} /><button onClick={() => void addBoard()}>{t("generic.create")}</button><button onClick={() => setShowNewBoard(false)}>{t("generic.cancel")}</button></div> : <button className="text-action" onClick={() => setShowNewBoard(true)}><FolderPlus size={15} />{t("popup.createBoard")}</button>}
         {!privacy ? <><label>{t("generic.title")}<input value={title} maxLength={240} onChange={(event) => setTitle(event.target.value)} /></label>
         <label>{t("generic.description")}<textarea rows={3} value={description} maxLength={2000} onChange={(event) => setDescription(event.target.value)} placeholder={t("bookmark.optionalNote")} /></label></> : null}
         {duplicate ? <div className="duplicate-warning"><AlertTriangle size={18} /><div><strong>{t("popup.duplicate")}</strong><span>{privacy ? t("privacy.hiddenBookmark") : duplicate.title}</span><button onClick={() => setAllowDuplicate(true)}>{t(allowDuplicate ? "popup.copyReady" : "popup.saveCopy")}</button></div></div> : null}
-        {error ? <div className="popup-error"><AlertTriangle size={17} />{error}</div> : null}
-        {status ? <div className="popup-success"><Check size={17} />{status}</div> : null}
+        {error ? <div className="popup-error" role="alert"><AlertTriangle size={17} />{error}</div> : null}
+        {status ? <div className="popup-success" role="status"><Check size={17} />{status}</div> : null}
       </section>
       <div className="popup__actions">
         <button className="save-button" disabled={saving || unsupported || !destinationIsValid || (!!duplicate && !allowDuplicate)} onClick={() => void save()}>{saving ? t("popup.saving") : t("popup.save")}</button>

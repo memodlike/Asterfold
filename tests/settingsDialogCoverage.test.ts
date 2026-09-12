@@ -116,7 +116,7 @@ function renderSettings(overrides: Partial<Parameters<typeof SettingsDialog>[0]>
 }
 
 function openSection(name: string): void {
-  fireEvent.click(within(screen.getByRole("navigation", { name: "Settings" })).getByRole("button", { name }));
+  fireEvent.click(within(screen.getByRole("navigation", { name: "Settings" })).getByRole("tab", { name }));
 }
 
 function importInput(container: HTMLElement): HTMLInputElement {
@@ -161,6 +161,15 @@ afterEach(() => {
 });
 
 describe("SettingsDialog appearance and navigation", () => {
+  it("uses roving keyboard tabs for Settings sections", () => {
+    renderSettings();
+    const appearance = screen.getByRole("tab", { name: "Appearance" });
+    appearance.focus();
+    fireEvent.keyDown(appearance, { key: "ArrowRight" });
+    expect(screen.getByRole("tab", { name: "Layout" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tabpanel", { name: "Layout" })).toBeVisible();
+  });
+
   it("loads runtime metadata and changes every appearance control with a debounced commit", async () => {
     vi.useFakeTimers();
     const { handlers } = renderSettings();

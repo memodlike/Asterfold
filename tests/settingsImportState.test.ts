@@ -52,7 +52,7 @@ describe("Settings import state", () => {
       }),
     }));
 
-    fireEvent.click(screen.getByRole("button", { name: "Data & privacy" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Data & privacy" }));
     expect(screen.getByRole("heading", { name: "Data & privacy" })).toBeVisible();
 
     const input = view.container.querySelector<HTMLInputElement>('input[accept*=".json"]');

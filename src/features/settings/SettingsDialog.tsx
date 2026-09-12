@@ -277,23 +277,37 @@ export function SettingsDialog(props: SettingsDialogProps) {
   return (
     <Modal open={props.open} size="fullscreen" className="settings-modal" title={t("settings.title")} onClose={closeSettings}>
       <div className="settings-layout">
-        <nav className="settings-nav" aria-label={t("settings.title")}>{sections.map((item) => <button type="button" key={item.id} aria-pressed={section === item.id} className={section === item.id ? "is-active" : ""} onClick={() => setSection(item.id)}><item.icon size={17} />{item.label}</button>)}</nav>
-        <div className="settings-content">
-          {section === "appearance" ? <SettingsSection title={t("settings.appearance")} description={t("settings.appearanceDescription")}>
+        <nav className="settings-navigation" aria-label={t("settings.title")}><div className="settings-nav" role="tablist" onKeyDown={(event) => {
+          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+          event.preventDefault();
+          const currentIndex = sections.findIndex((item) => item.id === section);
+          const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? sections.length - 1 : (currentIndex + (event.key === "ArrowRight" ? 1 : -1) + sections.length) % sections.length;
+          const next = sections[nextIndex];
+          if (!next) return;
+          setSection(next.id);
+          (event.currentTarget.querySelector(`#settings-tab-${next.id}`) as HTMLButtonElement | null)?.focus();
+        }}>{sections.map((item) => <button type="button" role="tab" key={item.id} id={`settings-tab-${item.id}`} aria-selected={section === item.id} aria-controls={`settings-panel-${item.id}`} tabIndex={section === item.id ? 0 : -1} className={section === item.id ? "is-active" : ""} onClick={() => setSection(item.id)}><item.icon size={17} />{item.label}</button>)}</div></nav>
+        <div className="settings-content" tabIndex={-1}>
+          {section === "appearance" ? <SettingsSection id="appearance" title={t("settings.appearance")} description={t("settings.appearanceDescription")}>
             <SettingRow label={t("settings.themeMode")}><Segmented value={themeDraft.mode} items={[{ value: "system", label: t("settings.auto") }, { value: "light", label: t("settings.light") }, { value: "dark", label: t("settings.dark") }]} onChange={(value) => patchTheme({ mode: value as ThemeConfig["mode"] })} /></SettingRow>
-            <SettingRow label={t("settings.background")}><Segmented value={themeDraft.backgroundMode} items={[{ value: "auto", label: t("settings.backgroundAuto") }, { value: "solid", label: t("settings.backgroundSolid") }, { value: "wallpaper", label: t("settings.backgroundWallpaper") }]} onChange={(value) => patchTheme({ backgroundMode: value as ThemeConfig["backgroundMode"] })} /></SettingRow>
-            {themeDraft.backgroundMode === "solid" ? <SettingRow label={t("settings.solidColor")}><input type="color" value={themeDraft.canvas} onChange={(event) => patchTheme({ canvas: event.target.value })} /></SettingRow> : null}
-            <SettingRow label={t("settings.glassStyle")}><Segmented disabled={expensiveEffectsDisabled} title={t("settings.performanceDescription")} value={themeDraft.glassVariant} items={[{ value: "regular", label: t("settings.glassRegular") }, { value: "clear", label: t("settings.glassClear") }]} onChange={(value) => patchTheme({ glassVariant: value as ThemeConfig["glassVariant"], surfaceOpacity: value === "clear" ? 0.34 : 0.62 })} /></SettingRow>
-            <div className="settings-range-grid">
-              <Range disabled={expensiveEffectsDisabled} title={t("settings.performanceDescription")} label={t("settings.transparency")} min={4} max={80} value={Math.round((1 - themeDraft.surfaceOpacity) * 100)} suffix="%" onChange={(value) => patchTheme({ surfaceOpacity: 1 - value / 100 })} />
-              <Range disabled={expensiveEffectsDisabled} title={t("settings.performanceDescription")} label={t("settings.blur")} min={0} max={32} value={themeDraft.blur} suffix="px" onChange={(value) => patchTheme({ blur: value })} />
-              <Range label={t("settings.wallpaperDim")} min={0} max={80} value={Math.round(themeDraft.wallpaperDim * 100)} suffix="%" onChange={(value) => patchTheme({ wallpaperDim: value / 100 })} />
-              <Range disabled={expensiveEffectsDisabled} title={t("settings.performanceDescription")} label={t("settings.wallpaperBlur")} min={0} max={20} value={themeDraft.wallpaperBlur} suffix="px" onChange={(value) => patchTheme({ wallpaperBlur: value })} />
-              <Range disabled={expensiveEffectsDisabled} title={t("settings.performanceDescription")} label={t("settings.wallpaperSaturation")} min={0} max={180} value={Math.round(themeDraft.wallpaperSaturation * 100)} suffix="%" onChange={(value) => patchTheme({ wallpaperSaturation: value / 100 })} />
-            </div>
-            <div className="wallpaper-grid"><button type="button" aria-pressed={!themeDraft.wallpaperId} className={!themeDraft.wallpaperId ? "is-active" : ""} onClick={() => patchTheme({ wallpaperId: null, backgroundMode: "auto" })}><span className="wallpaper-none" />{t("settings.noWallpaper")}</button>{BUILTIN_WALLPAPERS.map((item) => <button type="button" key={item.id} aria-pressed={themeDraft.wallpaperId === item.id} className={themeDraft.wallpaperId === item.id ? "is-active" : ""} onClick={() => patchTheme({ wallpaperId: item.id, backgroundMode: "wallpaper" })}><span style={{ background: item.value }} />{t(item.labelKey)}</button>)}<button type="button" onClick={() => wallpaperInputRef.current?.click()}><span className="wallpaper-upload"><Upload size={19} /></span>{t("settings.uploadWallpaper")}</button></div>
-            {wallpaperInfo?.width && wallpaperInfo.height ? <p>{wallpaperInfo.width} × {wallpaperInfo.height} · {formatBytes(wallpaperInfo.storedBytes)}</p> : null}
-            <input ref={wallpaperInputRef} hidden type="file" accept={WALLPAPER_FILE_ACCEPT} onChange={(event) => { const file = event.target.files?.[0]; if (file) void saveUploadedWallpaper(file); event.currentTarget.value = ""; }} />
+            <details className="settings-disclosure" open={themeDraft.backgroundMode !== "auto"}>
+              <summary>{t("settings.background")}</summary>
+              <div className="settings-disclosure__body">
+                <SettingRow label={t("settings.background")}><Segmented value={themeDraft.backgroundMode} items={[{ value: "auto", label: t("settings.backgroundAuto") }, { value: "solid", label: t("settings.backgroundSolid") }, { value: "wallpaper", label: t("settings.backgroundWallpaper") }]} onChange={(value) => patchTheme({ backgroundMode: value as ThemeConfig["backgroundMode"] })} /></SettingRow>
+                {themeDraft.backgroundMode === "solid" ? <SettingRow label={t("settings.solidColor")}><input type="color" value={themeDraft.canvas} onChange={(event) => patchTheme({ canvas: event.target.value })} /></SettingRow> : null}
+                <SettingRow label={t("settings.glassStyle")}><Segmented disabled={expensiveEffectsDisabled} title={t("settings.performanceDescription")} value={themeDraft.glassVariant} items={[{ value: "regular", label: t("settings.glassRegular") }, { value: "clear", label: t("settings.glassClear") }]} onChange={(value) => patchTheme({ glassVariant: value as ThemeConfig["glassVariant"], surfaceOpacity: value === "clear" ? 0.34 : 0.62 })} /></SettingRow>
+                <div className="settings-range-grid">
+                  <Range disabled={expensiveEffectsDisabled} title={t("settings.performanceDescription")} label={t("settings.transparency")} min={4} max={80} value={Math.round((1 - themeDraft.surfaceOpacity) * 100)} suffix="%" onChange={(value) => patchTheme({ surfaceOpacity: 1 - value / 100 })} />
+                  <Range disabled={expensiveEffectsDisabled} title={t("settings.performanceDescription")} label={t("settings.blur")} min={0} max={32} value={themeDraft.blur} suffix="px" onChange={(value) => patchTheme({ blur: value })} />
+                  <Range label={t("settings.wallpaperDim")} min={0} max={80} value={Math.round(themeDraft.wallpaperDim * 100)} suffix="%" onChange={(value) => patchTheme({ wallpaperDim: value / 100 })} />
+                  <Range disabled={expensiveEffectsDisabled} title={t("settings.performanceDescription")} label={t("settings.wallpaperBlur")} min={0} max={20} value={themeDraft.wallpaperBlur} suffix="px" onChange={(value) => patchTheme({ wallpaperBlur: value })} />
+                  <Range disabled={expensiveEffectsDisabled} title={t("settings.performanceDescription")} label={t("settings.wallpaperSaturation")} min={0} max={180} value={Math.round(themeDraft.wallpaperSaturation * 100)} suffix="%" onChange={(value) => patchTheme({ wallpaperSaturation: value / 100 })} />
+                </div>
+                <div className="wallpaper-grid"><button type="button" aria-pressed={!themeDraft.wallpaperId} className={!themeDraft.wallpaperId ? "is-active" : ""} onClick={() => patchTheme({ wallpaperId: null, backgroundMode: "auto" })}><span className="wallpaper-none" />{t("settings.noWallpaper")}</button>{BUILTIN_WALLPAPERS.map((item) => <button type="button" key={item.id} aria-pressed={themeDraft.wallpaperId === item.id} className={themeDraft.wallpaperId === item.id ? "is-active" : ""} onClick={() => patchTheme({ wallpaperId: item.id, backgroundMode: "wallpaper" })}><span style={{ background: item.value }} />{t(item.labelKey)}</button>)}<button type="button" onClick={() => wallpaperInputRef.current?.click()}><span className="wallpaper-upload"><Upload size={19} /></span>{t("settings.uploadWallpaper")}</button></div>
+                {wallpaperInfo?.width && wallpaperInfo.height ? <p>{wallpaperInfo.width} × {wallpaperInfo.height} · {formatBytes(wallpaperInfo.storedBytes)}</p> : null}
+                <input ref={wallpaperInputRef} hidden type="file" accept={WALLPAPER_FILE_ACCEPT} onChange={(event) => { const file = event.target.files?.[0]; if (file) void saveUploadedWallpaper(file); event.currentTarget.value = ""; }} />
+              </div>
+            </details>
             <div className="settings-control-group">
               <h3>{t("settings.performance")}</h3>
               <SettingRow label={t("settings.performanceMode")}><Segmented value={themeDraft.performanceMode} items={[{ value: "auto", label: t("settings.performanceAuto") }, { value: "quality", label: t("settings.performanceQuality") }, { value: "compatibility", label: t("settings.performanceCompatibility") }]} onChange={(value) => patchTheme({ performanceMode: value as ThemeConfig["performanceMode"], lowPowerMode: value === "compatibility" })} /></SettingRow>
@@ -312,23 +326,23 @@ export function SettingsDialog(props: SettingsDialogProps) {
             </div>
           </SettingsSection> : null}
 
-          {section === "layout" ? <SettingsSection title={t("settings.layout")} description={t("settings.layoutDescription")}>
+          {section === "layout" ? <SettingsSection id="layout" title={t("settings.layout")} description={t("settings.layoutDescription")}>
             <SettingRow label={t("settings.layoutMode")}><Segmented value={settings.workspaceLayoutMode} items={[{ value: "auto", label: t("settings.layoutAuto") }, { value: "free", label: t("settings.layoutFree") }]} onChange={(value) => void patchSettings({ workspaceLayoutMode: value as AppSettings["workspaceLayoutMode"] })} /></SettingRow>
             <SettingRow label={t("settings.rows")}><Segmented value={String(settings.workspaceRows)} items={[{ value: "1", label: t("settings.oneRow") }, { value: "2", label: t("settings.twoRows") }]} onChange={(value) => void patchSettings({ workspaceRows: Number(value) as 1 | 2 })} /></SettingRow>
             <SettingRow label={t("settings.alignment")}><Segmented value={settings.workspaceAlignment} items={[{ value: "left", label: t("settings.left") }, { value: "center", label: t("settings.center") }, { value: "right", label: t("settings.right") }]} onChange={(value) => void patchSettings({ workspaceAlignment: value as AppSettings["workspaceAlignment"] })} /></SettingRow>
           </SettingsSection> : null}
 
-          {section === "language" ? <SettingsSection title={t("settings.language")} description={t("settings.languageDescription")}>
+          {section === "language" ? <SettingsSection id="language" title={t("settings.language")} description={t("settings.languageDescription")}>
             <div className="language-options">{localeOptions.map((item) => <button type="button" key={item.value} aria-pressed={settings.locale === item.value} className={settings.locale === item.value ? "is-active" : ""} onClick={() => void patchSettings({ locale: item.value })}><span className="language-option__label"><span className="language-option__flag" aria-hidden="true"><LocaleFlag locale={item.value} /></span><span>{item.value === "auto" ? t("settings.languageAuto") : item.label}</span></span>{settings.locale === item.value ? <Check size={17} /> : null}</button>)}</div>
           </SettingsSection> : null}
 
-          {section === "quick-save" ? <SettingsSection title={t("settings.quickSave")} description={t("settings.quickSaveDescription")}>
+          {section === "quick-save" ? <SettingsSection id="quick-save" title={t("settings.quickSave")} description={t("settings.quickSaveDescription")}>
             <SettingRow label={t("settings.defaultPage")}><SelectField value={settings.quickSaveDefaultPageId ?? ""} options={pageOptions} label={t("settings.defaultPage")} onChange={(pageId) => { const board = props.workspace.boards.find((item) => item.pageId === pageId); void patchSettings({ quickSaveDefaultPageId: pageId, quickSaveDefaultBoardId: board?.id ?? null }); }} /></SettingRow>
             <SettingRow label={t("settings.defaultBoard")}><SelectField value={settings.quickSaveDefaultBoardId ?? ""} options={boardOptions} label={t("settings.defaultBoard")} onChange={(boardId) => void patchSettings({ quickSaveDefaultBoardId: boardId })} /></SettingRow>
             <SettingRow label={t("settings.shortcut")}><div className="shortcut-value"><kbd>{shortcut}</kbd><Button onClick={() => void browser.tabs.create({ url: "chrome://extensions/shortcuts" })}>{t("settings.configure")}</Button></div></SettingRow>
           </SettingsSection> : null}
 
-          {section === "data-privacy" ? <SettingsSection title={t("settings.dataPrivacy")} description={t("settings.dataDescription")}>
+          {section === "data-privacy" ? <SettingsSection id="data-privacy" title={t("settings.dataPrivacy")} description={t("settings.dataDescription")}>
             <div className="action-grid"><button type="button" onClick={() => void exportAll("json")}><FileJson /><strong>{t("settings.exportJson")}</strong><span>{t("settings.backupVersion")}</span></button><button type="button" onClick={() => void exportAll("html")}><Download /><strong>{t("settings.exportHtml")}</strong><span>{t("settings.exportHtmlHint")}</span></button><button type="button" onClick={() => void exportAll("markdown")}><FileText /><strong>{t("settings.exportMarkdown")}</strong><span>.md</span></button><button type="button" disabled={importParsing} onClick={() => importInputRef.current?.click()}><Upload /><strong>{t("settings.importFile")}</strong><span>{t("settings.importFileHint")}</span></button><button type="button" onClick={() => void requestChromeImport()}><Download /><strong>{t("settings.importChrome")}</strong><span>{t("settings.permissionOnDemand")}</span></button></div>
             <input ref={importInputRef} hidden type="file" accept="application/json,text/html,.json,.html,.htm" onChange={(event) => { const file = event.target.files?.[0]; if (file) void readImportFile(file); event.currentTarget.value = ""; }} />
             {importParsing ? <div className="import-preview" role="status"><p>{t("settings.importParsing")}</p><Button onClick={cancelImportParsing}>{t("generic.cancel")}</Button></div> : null}
@@ -344,8 +358,8 @@ export function SettingsDialog(props: SettingsDialogProps) {
   );
 }
 
-function SettingsSection({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
-  return <section className="settings-section"><header><h2>{title}</h2><p>{description}</p></header><div className="settings-section__body">{children}</div></section>;
+function SettingsSection({ id, title, description, children }: { id: SettingsSection; title: string; description: string; children: React.ReactNode }) {
+  return <section id={`settings-panel-${id}`} className="settings-section" role="tabpanel" aria-labelledby={`settings-tab-${id}`}><header><h2>{title}</h2><p>{description}</p></header><div className="settings-section__body">{children}</div></section>;
 }
 
 function SettingRow({ label, children }: { label: string; children: React.ReactNode }) {

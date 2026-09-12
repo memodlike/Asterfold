@@ -2,28 +2,37 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   color-scheme: light dark;
-  --popup-canvas: #f1f2f4;
-  --popup-surface: #ffffff;
-  --popup-surface-low: #fbfbfc;
-  --popup-text: #191a1d;
-  --popup-text-secondary: #6e7077;
-  --popup-border: rgb(19 20 23 / .10);
-  --popup-accent: #155eef;
-  --popup-danger: #c9342f;
-  --popup-success: #237c4b;
-  color: var(--popup-text);
-  background: var(--popup-canvas);
+  --color-canvas: #f1f2f4;
+  --color-surface-elevated: #ffffff;
+  --color-surface-solid: #fbfbfc;
+  --color-text: #191a1d;
+  --color-text-secondary: #6e7077;
+  --color-border: rgb(19 20 23 / .10);
+  --color-accent: #155eef;
+  --color-danger: #c9342f;
+  --color-success: #237c4b;
+  --popup-canvas: var(--color-canvas);
+  --popup-surface: var(--color-surface-elevated);
+  --popup-surface-low: var(--color-surface-solid);
+  --popup-text: var(--color-text);
+  --popup-text-secondary: var(--color-text-secondary);
+  --popup-border: var(--color-border);
+  --popup-accent: var(--color-accent);
+  --popup-danger: var(--color-danger);
+  --popup-success: var(--color-success);
+  color: var(--color-text);
+  background: var(--color-canvas);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --popup-canvas: #16171a;
-    --popup-surface: #2d2f34;
-    --popup-surface-low: #25272b;
-    --popup-text: #f5f5f6;
-    --popup-text-secondary: #a1a3aa;
-    --popup-border: rgb(255 255 255 / .15);
-    --popup-danger: #ff7772;
-    --popup-success: #64d79b;
+    --color-canvas: #16171a;
+    --color-surface-elevated: #2d2f34;
+    --color-surface-solid: #25272b;
+    --color-text: #f5f5f6;
+    --color-text-secondary: #a1a3aa;
+    --color-border: rgb(255 255 255 / .15);
+    --color-danger: #ff7772;
+    --color-success: #64d79b;
   }
 }
 * { box-sizing: border-box; }
@@ -33,7 +42,7 @@ button, input, textarea, select { font: inherit; }
 button { cursor: pointer; }
 .popup-loading { width: 390px; min-height: 220px; display: grid; place-content: center; gap: 12px; padding: 20px; color: var(--popup-text-secondary); background: var(--popup-canvas); }
 .popup-loading button { min-height: 34px; border: 1px solid var(--popup-border); border-radius: 9px; color: var(--popup-text); background: var(--popup-surface); }
-.popup { height: min(600px, 100vh); min-height: 540px; display: flex; flex-direction: column; color: var(--popup-text); background: var(--popup-canvas); }
+.popup { height: min(600px, 100vh); min-height: min(540px, 100vh); display: flex; flex-direction: column; color: var(--popup-text); background: var(--popup-canvas); }
 .popup__header { height: 58px; flex: 0 0 58px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border-bottom: 1px solid var(--popup-border); background: var(--popup-surface); }
 .popup__header > button { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--popup-border); border-radius: 9px; background: var(--popup-surface-low); color: var(--popup-text-secondary); }
 .brand { display: flex; align-items: center; gap: 9px; color: var(--popup-accent); font-size: 18px; font-weight: 720; letter-spacing: -.02em; }
@@ -73,4 +82,5 @@ footer span { min-width: 0; }
 footer span:first-child { display: flex; align-items: center; gap: 4px; }
 footer span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+@media (max-height: 560px) { body { min-height: 0; } .popup__header { height: 50px; flex-basis: 50px; } .popup__content { padding-block: 12px; gap: 9px; } footer { height: 38px; flex-basis: 38px; } }
 @media (forced-colors: active) { .popup, .popup__header, .popup__actions, footer, .tab-preview, input, textarea, .workspace-button { background: Canvas; color: CanvasText; border-color: CanvasText; } .save-button { background: Highlight; color: HighlightText; } }

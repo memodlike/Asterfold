@@ -9,7 +9,7 @@ import type {
 import type { AsterfoldBackup, ImportRecord } from "../../services/exportImport";
 
 export const CURRENT_ONBOARDING_VERSION = 1;
-export const ONBOARDING_STEPS = ["welcome", "import", "appearance", "review"] as const;
+export const ONBOARDING_STEPS = ["welcome", "import", "appearance"] as const;
 
 export type OnboardingStep = typeof ONBOARDING_STEPS[number];
 export type OnboardingSource = "default" | "chrome" | "html" | "backup";

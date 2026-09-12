@@ -22,15 +22,6 @@ export function applyPopupTheme(root: HTMLElement, theme: ThemeConfig, systemDar
     "--color-accent": theme.accent,
     "--color-danger": palette.danger,
     "--color-success": palette.success,
-    "--popup-canvas": palette.canvas,
-    "--popup-surface": palette.surfaceElevated,
-    "--popup-surface-low": palette.surfaceSolid,
-    "--popup-text": palette.text,
-    "--popup-text-secondary": palette.secondary,
-    "--popup-border": border,
-    "--popup-accent": theme.accent,
-    "--popup-danger": palette.danger,
-    "--popup-success": palette.success,
   };
   for (const [name, value] of Object.entries(variables)) root.style.setProperty(name, value);
 }

@@ -14,7 +14,6 @@ import {
   FileJson,
   FileText,
   FolderOpen,
-  LayoutGrid,
   Palette,
   ShieldCheck,
   Sparkles,
@@ -233,7 +232,7 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
 
   const submit = (event: FormEvent): void => {
     event.preventDefault();
-    if (step === "review") {
+    if (step === "appearance") {
       void finish(false);
       return;
     }
@@ -436,25 +435,7 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
     </section>
   );
 
-  const sourceTitle = sourceCards.find((item) => item.source === plan.source)?.title ?? t("import.default.title");
-  const localeTitle = localeOptions.find((item) => item.value === plan.locale)?.label ?? plan.locale;
-  const renderReview = () => (
-    <section className="onboarding-step" aria-labelledby="onboarding-review-title">
-      <div className="onboarding-section-heading">
-        <div className="onboarding-heading-icon" aria-hidden="true"><LayoutGrid size={20} /></div>
-        <div><h3 id="onboarding-review-title">{t("review.title")}</h3><p>{t("review.body")}</p></div>
-      </div>
-      <dl className="onboarding-summary">
-        <div><dt>{t("review.language")}</dt><dd><LocaleFlag locale={plan.locale} />{localeTitle}</dd></div>
-        <div><dt>{t("review.source")}</dt><dd>{sourceTitle}{plan.preview ? <small>{t("import.preview", previewParams(plan.preview))}</small> : null}</dd></div>
-        <div><dt>{t("review.theme")}</dt><dd>{THEME_PRESETS.find((preset) => preset.id === plan.theme.preset)?.name ?? plan.theme.preset}<small>{plan.theme.mode} · {t(`appearance.${plan.theme.density}`)}</small></dd></div>
-        <div><dt>{t("review.layout")}</dt><dd>{translate(plan.locale, plan.workspaceRows === 1 ? "settings.oneRow" : "settings.twoRows")}</dd></div>
-        <div><dt>{t("review.duplicates")}</dt><dd>{translate(plan.locale, plan.duplicateStrategy === "skip" ? "settings.skip" : "settings.allow")}</dd></div>
-      </dl>
-    </section>
-  );
-
-  const currentBody = step === "welcome" ? renderWelcome() : step === "import" ? renderImport() : step === "appearance" ? renderAppearance() : renderReview();
+  const currentBody = step === "welcome" ? renderWelcome() : step === "import" ? renderImport() : renderAppearance();
   const currentTitle = t(`step.${step}`);
 
   if (confirmSkip) {
@@ -496,7 +477,7 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
           <div className="onboarding-footer-actions">
             {stepIndex(step) > 0 ? <Button onClick={() => setStep(previousStep(step))} disabled={busy || parsing}>{t("action.back")}</Button> : null}
             <Button variant="primary" type="submit" form="onboarding-form" disabled={busy || !canContinue(step, plan, parsing)}>
-              {busy ? t("action.finishing") : step === "review" ? t("action.finish") : t("action.continue")}<ChevronRight size={15} aria-hidden="true" />
+              {busy ? t("action.finishing") : step === "appearance" ? t("action.finish") : t("action.continue")}<ChevronRight size={15} aria-hidden="true" />
             </Button>
           </div>
         </div>

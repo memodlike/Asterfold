@@ -63,7 +63,7 @@ beforeEach(() => {
 });
 
 describe("guided onboarding wizard", () => {
-  it("completes the four-step default flow with an appearance preview and one controlled commit", async () => {
+  it("completes the three-step default flow with an appearance preview and one controlled commit", async () => {
     const { onCompleted } = renderWizard();
     expect(screen.getByRole("heading", { name: "Welcome to Asterfold" })).toBeVisible();
     expect(screen.getByText(/No account and no analytics/u)).toBeVisible();
@@ -81,9 +81,6 @@ describe("guided onboarding wizard", () => {
     fireEvent.click(screen.getByRole("radio", { name: "Graphite Dark" }));
     expect(mocks.publishThemePreview).toHaveBeenCalled();
 
-    clickContinue();
-    expect(screen.getByRole("heading", { name: "Review setup" })).toBeVisible();
-    expect(screen.getByText("Graphite Dark")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /Finish setup/u }));
 
     await waitFor(() => expect(mocks.commit).toHaveBeenCalledTimes(1));

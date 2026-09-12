@@ -174,6 +174,7 @@ describe("SettingsDialog behavior", () => {
     fireEvent.click(screen.getByRole("button", { name: "Dark" }));
     await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ theme: expect.objectContaining({ mode: "dark" }) }));
 
+    fireEvent.click(container.querySelector("summary")!);
     fireEvent.click(screen.getByRole("button", { name: "Solid color" }));
     await waitFor(() => expect(screen.getByText("Background color")).toBeVisible());
     fireEvent.change(container.querySelector('input[type="color"]')!, { target: { value: "#123456" } });
@@ -204,7 +205,7 @@ describe("SettingsDialog behavior", () => {
   it("updates layout, language, Quick Save destinations, and shortcut settings", async () => {
     const { container, callbacks } = renderSettings();
 
-    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Layout" }));
     fireEvent.click(screen.getByRole("button", { name: "Free grid" }));
     fireEvent.click(screen.getByRole("button", { name: "One row" }));
     fireEvent.click(screen.getByRole("button", { name: "Right" }));
@@ -214,11 +215,11 @@ describe("SettingsDialog behavior", () => {
       expect(mocks.updateSettings).toHaveBeenCalledWith({ workspaceAlignment: "right" });
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Language" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Language" }));
     fireEvent.click(screen.getByRole("button", { name: "Русский" }));
     await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ locale: "ru" }));
 
-    fireEvent.click(screen.getByRole("button", { name: "Quick Save" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Quick Save" }));
     expect(screen.getByText("Ctrl+Shift+Y")).toBeVisible();
     const selects = [...container.querySelectorAll<HTMLSelectElement>("select")];
     expect(selects).toHaveLength(2);
@@ -309,11 +310,11 @@ describe("SettingsDialog behavior", () => {
     const { container, callbacks } = renderSettings();
 
     mocks.updateSettings.mockRejectedValueOnce(new Error("settings"));
-    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Layout" }));
     fireEvent.click(screen.getByRole("button", { name: "Free grid" }));
     await waitFor(() => expect(callbacks.onError).toHaveBeenCalledWith("Unable to update settings"));
 
-    fireEvent.click(screen.getByRole("button", { name: "Data & privacy" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Data & privacy" }));
     mocks.createBackup.mockRejectedValueOnce(new Error("export"));
     fireEvent.click(screen.getByRole("button", { name: /JSON backup/ }));
     await waitFor(() => expect(callbacks.onError).toHaveBeenCalledWith("Export failed"));
@@ -340,12 +341,12 @@ describe("SettingsDialog behavior", () => {
     fireEvent.click(screen.getByRole("button", { name: "Merge" }));
     await waitFor(() => expect(callbacks.onError).toHaveBeenCalledWith("Restore failed"));
 
-    fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Appearance" }));
     mocks.saveWallpaper.mockRejectedValueOnce(new Error("wallpaper"));
     fireEvent.change(wallpaperInput(container), { target: { files: [fileWithText("wallpaper.webp", "image", "image/webp")] } });
     await waitFor(() => expect(callbacks.onError).toHaveBeenCalledWith("Wallpaper could not be saved"));
 
-    fireEvent.click(screen.getByRole("button", { name: "Data & privacy" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Data & privacy" }));
     mocks.auditInvariants.mockRejectedValueOnce(new Error("diagnostics"));
     fireEvent.click(screen.getByRole("button", { name: "Repeat diagnostics" }));
     await waitFor(() => expect(callbacks.onError).toHaveBeenCalledWith("Unable to complete the action"));

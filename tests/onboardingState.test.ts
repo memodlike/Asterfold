@@ -60,17 +60,17 @@ describe("onboarding lifecycle and state", () => {
     expect(greetingPeriod(hour)).toBe(expected);
   });
 
-  it("keeps the four-step order stable", () => {
-    expect(ONBOARDING_STEPS).toEqual(["welcome", "import", "appearance", "review"]);
+  it("keeps the three-step order stable", () => {
+    expect(ONBOARDING_STEPS).toEqual(["welcome", "import", "appearance"]);
     expect(stepIndex("welcome")).toBe(0);
-    expect(stepIndex("review")).toBe(3);
+    expect(stepIndex("appearance")).toBe(2);
   });
 
   it("clamps forward and backward navigation", () => {
     expect(previousStep("welcome")).toBe("welcome");
     expect(nextStep("welcome")).toBe("import");
-    expect(previousStep("review")).toBe("appearance");
-    expect(nextStep("review")).toBe("review");
+    expect(previousStep("appearance")).toBe("import");
+    expect(nextStep("appearance")).toBe("appearance");
   });
 
   it("allows the default source without parsing", () => {

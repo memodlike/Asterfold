@@ -1,3 +1,18 @@
+# Asterfold 3.3.0
+
+## Interface clarity and accessibility
+
+- Redesigned Settings navigation as keyboard-operable semantic tabs, with one predictable content scroll region and progressive Appearance controls.
+- Reduced first-run setup to Welcome, Import and Appearance while retaining local, preview-first and atomic import behavior.
+- Unified Quick Save with the shared semantic color system, improved constrained-height behavior and announced save/error feedback to assistive technology.
+- Bounded search input and preserved the existing local-first, zero-telemetry and least-privilege MV3 model.
+
+## Verification
+
+- Validated with version consistency, source security scan, TypeScript, ESLint, unit/integration tests, production build, Store asset validation, production dependency audit and deterministic release reproducibility checks.
+
+## Previous release details
+
 # Asterfold 3.2.3
 
 ## Chrome Web Store privacy practices & zero-history disclosure correction
