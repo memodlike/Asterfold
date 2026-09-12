@@ -1,0 +1,5 @@
+{
+  "name": "chrome-extension-mv3-kit",
+  "description": "Comprehensive development kit for Google Chrome Extensions built on Manifest V3, WXT, React, and local-first architecture.",
+  "version": "1.0.0"
+}
