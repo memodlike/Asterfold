@@ -1,0 +1,41 @@
+name: Apply audit hardening
+
+on:
+  push:
+    branches:
+      - audit/full-logic-hardening-2026-09-13
+    paths:
+      - scripts/apply-audit-hardening.mjs
+      - .github/workflows/apply-audit-hardening.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-audit-hardening
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out audit branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: audit/full-logic-hardening-2026-09-13
+          fetch-depth: 0
+      - name: Apply exact audit fixes
+        run: node scripts/apply-audit-hardening.mjs
+      - name: Verify patch hygiene
+        run: git diff --check
+      - name: Commit hardened source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && { echo "No audit changes produced" >&2; exit 1; }
+          git commit -m "fix: harden runtime invariants and release automation"
+          git push origin HEAD:audit/full-logic-hardening-2026-09-13
