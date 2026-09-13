@@ -429,9 +429,16 @@ export function parseNetscapeHtml(text: string): ImportRecord[] {
   let buffer = "";
   let href = "";
   let lastRecord: ImportRecord | undefined;
+  const decodeCodePoint = (raw: string, radix: 10 | 16): string => {
+    const point = Number.parseInt(raw, radix);
+    if (!Number.isSafeInteger(point) || point <= 0 || point > 0x10ffff || (point >= 0xd800 && point <= 0xdfff)) {
+      return "\uFFFD";
+    }
+    return String.fromCodePoint(point);
+  };
   const decode = (value: string): string => value
-    .replace(/&#(\d+);/gu, (_, code: string) => String.fromCodePoint(Number(code)))
-    .replace(/&#x([\da-f]+);/giu, (_, code: string) => String.fromCodePoint(Number.parseInt(code, 16)))
+    .replace(/&#(\d+);/gu, (_, code: string) => decodeCodePoint(code, 10))
+    .replace(/&#x([\da-f]+);/giu, (_, code: string) => decodeCodePoint(code, 16))
     .replaceAll("&quot;", "\"").replaceAll("&apos;", "'").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&amp;", "&");
   const finishDescription = (): void => {
     if (capture === "description" && lastRecord) lastRecord.description = decode(buffer).trim().slice(0, 2_000) || null;

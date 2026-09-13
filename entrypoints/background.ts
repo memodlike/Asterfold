@@ -175,7 +175,7 @@ export default defineBackground(() => {
   });
 
   chrome.runtime.onMessage.addListener((raw: unknown, sender, sendResponse) => {
-    if (sender.id !== undefined && sender.id !== chrome.runtime.id) {
+    if (sender.id !== chrome.runtime.id) {
       sendResponse({ ok: false, code: "EXTERNAL_SENDER_REJECTED" } satisfies ExtensionResponse);
       return false;
     }

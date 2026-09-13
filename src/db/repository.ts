@@ -555,7 +555,7 @@ export async function moveBoardToIndex(
   targetIndex: number,
   database: AsterfoldDatabase = db,
 ): Promise<void> {
-  await database.transaction("rw", database.pages, database.boards, async () => {
+  await database.transaction("rw", [database.pages, database.boards, database.settings], async () => {
     const page = await database.pages.get(targetPageId);
     const current = await database.boards.get(id);
     if (!page || page.deletedAt !== null || !current || current.deletedAt !== null) throw new ValidationError("Board or target page not found");
@@ -568,6 +568,19 @@ export async function moveBoardToIndex(
         ? board
         : { ...board, updatedAt: timestamp, version: board.version + 1 };
     }));
+    const settings = await database.settings.get("app");
+    if (settings) {
+      const settingsPatch: Partial<AppSettings> = {};
+      if (settings.quickSaveDefaultBoardId === id && settings.quickSaveDefaultPageId !== targetPageId) {
+        settingsPatch.quickSaveDefaultPageId = targetPageId;
+      }
+      if (settings.quickSaveLastBoardId === id && settings.quickSaveLastPageId !== targetPageId) {
+        settingsPatch.quickSaveLastPageId = targetPageId;
+      }
+      if (Object.keys(settingsPatch).length > 0) {
+        await database.settings.update("app", { ...settingsPatch, updatedAt: timestamp });
+      }
+    }
   });
 }
 
