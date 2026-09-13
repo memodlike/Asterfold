@@ -73,7 +73,7 @@ export type Density = "compact" | "comfortable" | "spacious";
 export type CardVariant = "minimal" | "standard" | "visual";
 export type GlassVariant = "regular" | "clear";
 export type BackgroundMode = "auto" | "solid" | "wallpaper";
-export type PerformanceMode = "auto" | "quality" | "compatibility";
+export type PerformanceMode = "auto" | "quality" | "balanced" | "compatibility" | "software" | "custom";
 export type LocalePreference =
   | "auto"
   | "ru"

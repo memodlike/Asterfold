@@ -3,10 +3,6 @@ name: extension_qa_specialist
 description: QA and test automation engineer for Chrome Extensions. Implements and maintains Vitest unit tests, Playwright MV3 unpacked E2E tests, 600-card benchmarks, and database migration suites.
 mainAgent: false
 subagent: true
-tools:
-  - read
-  - write
-  - bash
 ---
 
 # Extension QA & Test Automation Specialist

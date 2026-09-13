@@ -3,9 +3,6 @@ name: extension_security_auditor
 description: Read-only security and privacy auditor for Chrome Extensions. Audits Content Security Policy (CSP), zero-telemetry enforcement, dangerous DOM XSS sinks, permission scope, and Web Store compliance.
 mainAgent: false
 subagent: true
-tools:
-  - read
-  - bash
 ---
 
 # Extension Security & Privacy Auditor

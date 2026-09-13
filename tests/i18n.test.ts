@@ -44,4 +44,26 @@ describe("runtime dictionaries", () => {
       expect(translate(locale as AppLocale, "error.updateSettings"), locale).not.toBe("");
     }
   });
+
+  it("enforces exact 275 key coverage with no English leakage in European locales", () => {
+    expect(messageKeys.length).toBe(275);
+    const sampleKeys = [
+      "settings.appearance",
+      "settings.performance",
+      "settings.performanceBalanced",
+      "settings.resetDefaults",
+      "generic.save",
+      "trash.empty",
+      "popup.saved",
+    ] as const;
+
+    for (const locale of localeOptions.filter((item) => item.value !== "auto" && item.value !== "en")) {
+      for (const key of sampleKeys) {
+        const localized = translate(locale.value, key);
+        const english = translate("en", key);
+        expect(localized, `${locale.value}:${key}`).not.toBe(english);
+      }
+    }
+  });
 });
+

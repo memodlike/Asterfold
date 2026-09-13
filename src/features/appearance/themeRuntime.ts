@@ -29,8 +29,8 @@ export function themeStyle(
     ? compatibilityWallpaperUrl ? `url("${compatibilityWallpaperUrl}")` : builtin?.compatibilityValue ?? compatibilityImage
     : "none";
   const canvas = theme.backgroundMode === "solid" ? theme.canvas : palette.canvas;
-  const wallpaperFilter = performanceMode === "quality" && (theme.wallpaperBlur > 0 || theme.wallpaperSaturation !== 1)
-    ? `blur(${theme.wallpaperBlur}px) saturate(${theme.wallpaperSaturation})`
+  const wallpaperFilter = (performanceMode === "quality" || performanceMode === "balanced") && (theme.wallpaperBlur > 0 || theme.wallpaperSaturation !== 1)
+    ? `blur(${performanceMode === "balanced" ? Math.min(6, theme.wallpaperBlur) : theme.wallpaperBlur}px) saturate(${theme.wallpaperSaturation})`
     : "none";
   const wallpaperTransform = performanceMode === "quality" && wallpaperImage !== "none" && theme.wallpaperZoom > 1 ? `scale(${theme.wallpaperZoom})` : "none";
   return {

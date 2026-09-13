@@ -3,9 +3,6 @@ name: store_readiness_auditor
 description: Chrome Web Store readiness and release auditor. Verifies single-purpose compliance, store listing metadata, screenshot resolutions, deterministic ZIP packaging, and release reproducibility.
 mainAgent: false
 subagent: true
-tools:
-  - read
-  - bash
 ---
 
 # Chrome Web Store Readiness Auditor

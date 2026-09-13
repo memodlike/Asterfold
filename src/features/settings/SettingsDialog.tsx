@@ -3,10 +3,11 @@ import { browser } from "wxt/browser";
 import { readSessionPrivacy, writeSessionPrivacy } from "../../browser/privacySession";
 import { IMPORT_LIMITS } from "../../domain/importLimits";
 import { WALLPAPER_FILE_ACCEPT } from "../../domain/wallpaperFormats";
-import { Brush, Check, CheckCircle2, Database, Download, FileJson, FileText, Grid2X2, Languages, Shield, Trash2, Upload, Zap } from "lucide-react";
+import { Brush, Check, CheckCircle2, Database, Download, FileJson, FileText, Grid2X2, Languages, RotateCcw, Shield, Sparkles, Trash2, Upload, Zap } from "lucide-react";
 import type { AppSettings, ThemeConfig, Wallpaper, WorkspaceData } from "../../domain/models";
 import { validateTheme } from "../../domain/themes";
 import { auditInvariants, getWallpaper, saveWallpaper, updateSettings } from "../../db/repository";
+import { createDefaultSettings } from "../../db/defaults";
 import {
   createBackup,
   CURRENT_BACKUP_FORMAT_VERSION,
@@ -27,7 +28,7 @@ import { SelectField, type SelectOption } from "../../components/SelectField";
 import { localeOptions, useI18n } from "../../i18n";
 import { publishThemePreview } from "../appearance/themePreview";
 import { BUILTIN_WALLPAPERS } from "../appearance/themeRuntime";
-import { browserPerformanceSignals, classifyPerformanceMode } from "../performance/performanceProfile";
+import { browserPerformanceSignals, classifyPerformanceMode, recommendPerformanceProfile } from "../performance/performanceProfile";
 import { readChromeBookmarks } from "../onboarding/chromeBookmarkImport";
 
 export type SettingsSection = "appearance" | "layout" | "language" | "quick-save" | "data-privacy";
@@ -74,10 +75,31 @@ export function SettingsDialog(props: SettingsDialogProps) {
   const themeDirtyRef = useRef(false);
   const performanceSignals = useMemo(() => browserPerformanceSignals(), []);
   const resolvedPerformanceMode = useMemo(() => classifyPerformanceMode(themeDraft.performanceMode, themeDraft.lowPowerMode, performanceSignals), [performanceSignals, themeDraft.lowPowerMode, themeDraft.performanceMode]);
-  const expensiveEffectsDisabled = resolvedPerformanceMode !== "quality";
+  const recommendation = useMemo(() => recommendPerformanceProfile(performanceSignals), [performanceSignals]);
+  const expensiveEffectsDisabled = resolvedPerformanceMode === "compatibility" || resolvedPerformanceMode === "software";
   const resolvedPerformanceLabel = t(resolvedPerformanceMode === "quality"
     ? "settings.performanceQuality"
-    : "settings.performanceCompatibility");
+    : resolvedPerformanceMode === "balanced"
+      ? "settings.performanceBalanced"
+      : resolvedPerformanceMode === "software"
+        ? "settings.performanceSoftware"
+        : "settings.performanceCompatibility");
+  const recommendationModeLabel = t(recommendation.recommendedMode === "quality"
+    ? "settings.performanceQuality"
+    : recommendation.recommendedMode === "balanced"
+      ? "settings.performanceBalanced"
+      : recommendation.recommendedMode === "software"
+        ? "settings.performanceSoftware"
+        : "settings.performanceCompatibility");
+  const recommendationReasonLabel = t(recommendation.reason === "software"
+    ? "settings.performanceReasonSoftware"
+    : recommendation.reason === "legacyGpu"
+      ? "settings.performanceReasonLegacyGpu"
+      : recommendation.reason === "reducedTransparency"
+        ? "settings.performanceReasonReducedTransparency"
+        : recommendation.reason === "constrainedHardware"
+          ? "settings.performanceReasonConstrainedHardware"
+          : "settings.performanceReasonHardwareAccelerated");
   const counts = useMemo(() => ({ pages: props.workspace.pages.length, boards: props.workspace.boards.length, bookmarks: props.workspace.bookmarks.length }), [props.workspace]);
   const pageOptions = useMemo<ReadonlyArray<SelectOption>>(() => props.workspace.pages.map((page) => ({ value: page.id, label: page.title })), [props.workspace.pages]);
   const boardOptions = useMemo<ReadonlyArray<SelectOption>>(() => props.workspace.boards.filter((board) => board.pageId === settings.quickSaveDefaultPageId).map((board) => ({ value: board.id, label: board.title })), [props.workspace.boards, settings.quickSaveDefaultPageId]);
@@ -273,6 +295,35 @@ export function SettingsDialog(props: SettingsDialogProps) {
       setDiagnosticsBusy(false);
     }
   };
+  const restartOnboarding = async (): Promise<void> => {
+    try {
+      await updateSettings({ onboardingComplete: false });
+      closeSettings();
+      props.onUpdated(t("settings.rerunOnboarding"));
+    } catch {
+      props.onError(t("error.updateSettings"));
+    }
+  };
+  const resetDefaults = async (): Promise<void> => {
+    if (!window.confirm(t("settings.resetDefaultsConfirm"))) return;
+    try {
+      const defaults = createDefaultSettings();
+      await updateSettings({
+        workspaceLayoutMode: defaults.workspaceLayoutMode,
+        workspaceRows: defaults.workspaceRows,
+        workspaceAlignment: defaults.workspaceAlignment,
+        theme: defaults.theme,
+        quickSaveMode: defaults.quickSaveMode,
+        duplicateStrategy: defaults.duplicateStrategy,
+        trashRetentionDays: defaults.trashRetentionDays,
+      });
+      setThemeDraft(defaults.theme);
+      publishThemePreview(null);
+      props.onUpdated(t("settings.resetDefaultsSuccess"));
+    } catch {
+      props.onError(t("error.updateSettings"));
+    }
+  };
 
   return (
     <Modal open={props.open} size="fullscreen" className="settings-modal" title={t("settings.title")} onClose={closeSettings}>
@@ -310,9 +361,9 @@ export function SettingsDialog(props: SettingsDialogProps) {
             </details>
             <div className="settings-control-group">
               <h3>{t("settings.performance")}</h3>
-              <SettingRow label={t("settings.performanceMode")}><Segmented value={themeDraft.performanceMode} items={[{ value: "auto", label: t("settings.performanceAuto") }, { value: "quality", label: t("settings.performanceQuality") }, { value: "compatibility", label: t("settings.performanceCompatibility") }]} onChange={(value) => patchTheme({ performanceMode: value as ThemeConfig["performanceMode"], lowPowerMode: value === "compatibility" })} /></SettingRow>
+              <SettingRow label={t("settings.performanceMode")}><Segmented value={themeDraft.performanceMode} items={[{ value: "auto", label: t("settings.performanceAuto") }, { value: "quality", label: t("settings.performanceQuality") }, { value: "balanced", label: t("settings.performanceBalanced") }, { value: "compatibility", label: t("settings.performanceCompatibility") }, { value: "software", label: t("settings.performanceSoftware") }, { value: "custom", label: t("settings.performanceCustom") }]} onChange={(value) => patchTheme({ performanceMode: value as ThemeConfig["performanceMode"], lowPowerMode: value === "compatibility" || value === "software" })} /></SettingRow>
               <p>{t("settings.performanceDescription")}</p>
-              {themeDraft.performanceMode === "auto" ? <p className="settings-resolved-mode">{t("settings.performanceMode")}: {resolvedPerformanceLabel}</p> : null}
+              <p className="settings-resolved-mode">{t("settings.performanceMode")}: {resolvedPerformanceLabel} · {t("settings.performanceRecommendation", { mode: recommendationModeLabel, reason: recommendationReasonLabel })}</p>
             </div>
             <div className="settings-control-group">
               <h3>{t("settings.animations")}</h3>
@@ -323,6 +374,9 @@ export function SettingsDialog(props: SettingsDialogProps) {
                 <SettingRow label={t("settings.motionDrag")}><Switch label={t("settings.motionDrag")} checked={themeDraft.dragMotion} onChange={(dragMotion) => patchTheme({ dragMotion })} /></SettingRow>
               </> : null}
               <p>{t("settings.animationsDescription")}</p>
+            </div>
+            <div className="settings-control-group">
+              <SettingRow label={t("settings.resetDefaults")}><Button icon={<RotateCcw size={15} />} onClick={() => void resetDefaults()}>{t("settings.resetDefaults")}</Button></SettingRow>
             </div>
           </SettingsSection> : null}
 
@@ -350,6 +404,19 @@ export function SettingsDialog(props: SettingsDialogProps) {
             {backupPreview ? <div className="import-preview"><h3>{importSource}</h3><p>{t("settings.backupSummary", { version: backupPreview.exportVersion, pages: backupPreview.entities.pages.length, boards: backupPreview.entities.boards.length, bookmarks: backupPreview.entities.bookmarks.length })}</p><div className="button-row"><Button onClick={() => setBackupPreview(null)}>{t("generic.cancel")}</Button><Button disabled={importBusy} onClick={() => void commitBackupRestore("merge")}>{t("settings.merge")}</Button>{backupPreview.scope === "full" ? <Button variant="danger" disabled={importBusy} onClick={() => void commitBackupRestore("replace")}>{t("settings.replace")}</Button> : null}</div></div> : null}
             <SettingRow label={t("settings.privacyPersist")}><label className="switch"><input type="checkbox" checked={settings.privacyPersist} onChange={(event) => void setPrivacyPersistence(event.target.checked)} /><span /></label></SettingRow>
             <SettingRow label={t("settings.retention")}><SelectField value={settings.trashRetentionDays === null ? "never" : String(settings.trashRetentionDays)} options={retentionOptions} label={t("settings.retention")} onChange={(value) => void patchSettings({ trashRetentionDays: value === "never" ? null : Number(value) as 7 | 30 | 90 })} /></SettingRow>
+            <div className="settings-control-group">
+              <div className="setting-row">
+                <div>
+                  <strong>{t("settings.rerunOnboarding")}</strong>
+                  <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--color-text-secondary)" }}>
+                    {t("settings.rerunOnboardingDescription")}
+                  </p>
+                </div>
+                <Button icon={<Sparkles size={15} />} onClick={() => void restartOnboarding()}>
+                  {t("settings.rerunOnboarding")}
+                </Button>
+              </div>
+            </div>
             <div className="data-footer"><Button icon={<Trash2 size={16} />} onClick={props.onOpenTrash}>{t("settings.openTrash")}</Button><div className="diagnostic-summary"><Database size={17} /><span>{counts.pages} / {counts.boards} / {counts.bookmarks}</span><span>{formatBytes(storage?.usage)}</span><strong className={invariants.length ? "is-warning" : "is-healthy"}>{invariants.length ? t("settings.issues", { count: invariants.length }) : t("settings.healthy")}</strong></div><Button icon={<CheckCircle2 size={16} />} disabled={diagnosticsBusy} onClick={() => void repeatDiagnostics()}>{t("settings.repeatDiagnostics")}</Button></div>
           </SettingsSection> : null}
         </div>

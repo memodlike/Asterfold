@@ -3,10 +3,6 @@ name: extension_ui_designer
 description: Senior extension UI/UX engineer specializing in Chrome New Tab workspaces, zero-flash startup snapshots, theme runtimes, glassmorphism, opaque compatibility fallbacks, and WCAG AA accessibility.
 mainAgent: false
 subagent: true
-tools:
-  - read
-  - write
-  - bash
 ---
 
 # Extension UI & Design System Engineer

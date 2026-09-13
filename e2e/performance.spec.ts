@@ -12,6 +12,15 @@ const knownBrowserPaths = [
 ].filter((value): value is string => Boolean(value));
 
 function browserPath(): string {
+  if (process.env.ASTERFOLD_CHROMIUM_PATH && existsSync(process.env.ASTERFOLD_CHROMIUM_PATH)) {
+    return process.env.ASTERFOLD_CHROMIUM_PATH;
+  }
+  try {
+    const pwPath = chromium.executablePath();
+    if (pwPath && existsSync(pwPath)) return pwPath;
+  } catch {
+    // fallback
+  }
   const found = knownBrowserPaths.find(existsSync);
   if (!found) throw new Error("Chromium is missing. Set ASTERFOLD_CHROMIUM_PATH.");
   return found;
@@ -73,8 +82,8 @@ async function frameSample(page: Page): Promise<number[]> {
 test("compatibility glass survives a 600-bookmark Windows-style stress fixture", async () => {
   expect(existsSync(join(extensionPath, "manifest.json"))).toBe(true);
   const context = await chromium.launchPersistentContext(join(tmpdir(), `asterfold-stress-${Date.now()}`), {
-    executablePath: browserPath(), headless: true,
-    args: ["--no-sandbox", "--disable-crash-reporter", "--disable-features=DisableLoadExtensionCommandLineSwitch", `--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
+    executablePath: browserPath(), headless: false,
+    args: ["--headless=new", "--no-sandbox", "--disable-crash-reporter", "--disable-features=DisableLoadExtensionCommandLineSwitch", `--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
   });
   try {
     const worker = await extensionWorker(context);

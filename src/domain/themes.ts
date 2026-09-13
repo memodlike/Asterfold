@@ -79,7 +79,7 @@ export function validateTheme(theme: ThemeConfig): ThemeConfig {
     showDescription: booleanValue(source.showDescription, fallback.showDescription),
     faviconSize: finiteNumber(source.faviconSize, fallback.faviconSize, 20, 48),
     motion: booleanValue(source.motion, fallback.motion),
-    performanceMode: enumValue(source.performanceMode, ["auto", "quality", "compatibility"], fallback.performanceMode),
+    performanceMode: enumValue(source.performanceMode, ["auto", "quality", "balanced", "compatibility", "software", "custom"], fallback.performanceMode),
     lowPowerMode: booleanValue(source.lowPowerMode, fallback.lowPowerMode),
     bookmarkHoverMotion: booleanValue(source.bookmarkHoverMotion, fallback.bookmarkHoverMotion),
     menuMotion: booleanValue(source.menuMotion, fallback.menuMotion),

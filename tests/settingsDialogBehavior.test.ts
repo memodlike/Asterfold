@@ -361,4 +361,54 @@ describe("SettingsDialog behavior", () => {
       expect(callbacks.onUpdated).toHaveBeenCalledWith("Save");
     });
   });
+
+  it("resets appearance and layout to defaults when confirmed", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    try {
+      const { callbacks } = renderSettings({ workspace: workspace(), initialSection: "appearance" });
+      const resetButton = screen.getByRole("button", { name: "Reset settings" });
+      fireEvent.click(resetButton);
+      await waitFor(() => {
+        expect(mocks.updateSettings).toHaveBeenCalledWith(expect.objectContaining({
+          workspaceLayoutMode: "auto",
+          workspaceRows: 2,
+          workspaceAlignment: "center",
+          theme: expect.objectContaining({ mode: "system", backgroundMode: "auto" }),
+        }));
+        expect(callbacks.onUpdated).toHaveBeenCalledWith("Settings reset to defaults");
+      });
+    } finally {
+      confirmSpy.mockRestore();
+    }
+  });
+
+  it("restarts the welcome tour without data loss", async () => {
+    const { callbacks } = renderSettings({ workspace: workspace(), initialSection: "data-privacy" });
+    const restartButton = screen.getByRole("button", { name: "Restart welcome tour" });
+    fireEvent.click(restartButton);
+    await waitFor(() => {
+      expect(mocks.updateSettings).toHaveBeenCalledWith({ onboardingComplete: false });
+      expect(callbacks.onClose).toHaveBeenCalled();
+    });
+  });
+
+  it("supports switching to balanced and software performance modes", async () => {
+    renderSettings({ workspace: workspace(), initialSection: "appearance" });
+    const balancedBtn = screen.getByRole("button", { name: "Balanced" });
+    fireEvent.click(balancedBtn);
+    await waitFor(() => {
+      expect(mocks.updateSettings).toHaveBeenCalledWith(expect.objectContaining({
+        theme: expect.objectContaining({ performanceMode: "balanced" }),
+      }));
+    });
+
+    const softwareBtn = screen.getByRole("button", { name: "Software (No effects)" });
+    fireEvent.click(softwareBtn);
+    await waitFor(() => {
+      expect(mocks.updateSettings).toHaveBeenCalledWith(expect.objectContaining({
+        theme: expect.objectContaining({ performanceMode: "software", lowPowerMode: true }),
+      }));
+    });
+  });
 });
+

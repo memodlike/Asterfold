@@ -18,6 +18,15 @@ const knownBrowserPaths = [
 ].filter((value): value is string => Boolean(value));
 
 function browserPath(): string {
+  if (process.env.ASTERFOLD_CHROMIUM_PATH && existsSync(process.env.ASTERFOLD_CHROMIUM_PATH)) {
+    return process.env.ASTERFOLD_CHROMIUM_PATH;
+  }
+  try {
+    const pwPath = chromium.executablePath();
+    if (pwPath && existsSync(pwPath)) return pwPath;
+  } catch {
+    // fallback
+  }
   const found = knownBrowserPaths.find(existsSync);
   if (!found) throw new Error("Chromium is missing. Set ASTERFOLD_CHROMIUM_PATH.");
   return found;
@@ -229,8 +238,8 @@ test.describe.serial("Asterfold MV3 release", () => {
     if (captureScreenshots) mkdirSync(screenshotPath, { recursive: true });
     context = await chromium.launchPersistentContext(join(tmpdir(), `asterfold-e2e-${Date.now()}`), {
       executablePath: browserPath(),
-      headless: true,
-      args: ["--no-sandbox", "--disable-crash-reporter", "--disable-features=DisableLoadExtensionCommandLineSwitch", `--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
+      headless: false,
+      args: ["--headless=new", "--no-sandbox", "--disable-crash-reporter", "--disable-features=DisableLoadExtensionCommandLineSwitch", `--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
     });
     worker = await extensionWorker(context);
     extensionId = new URL(worker.url()).hostname;

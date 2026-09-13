@@ -6,7 +6,7 @@ import { chromium, expect, test, type BrowserContext, type Page, type Worker } f
 const baselinePath = process.env.ASTERFOLD_UPGRADE_BASELINE_PATH ? resolve(process.env.ASTERFOLD_UPGRADE_BASELINE_PATH) : "";
 const targetZip = process.env.ASTERFOLD_UPGRADE_TARGET_ZIP ? resolve(process.env.ASTERFOLD_UPGRADE_TARGET_ZIP) : "";
 const profilePath = process.env.ASTERFOLD_UPGRADE_PROFILE_PATH ? resolve(process.env.ASTERFOLD_UPGRADE_PROFILE_PATH) : resolve(".upgrade/profile");
-const executablePath = process.env.ASTERFOLD_CHROMIUM_PATH || "/usr/bin/chromium";
+const executablePath = process.env.ASTERFOLD_CHROMIUM_PATH || chromium.executablePath();
 
 test.skip(!baselinePath || !targetZip, "Exact 2.2.3 upgrade fixture is prepared only in CI/release gates.");
 
@@ -28,8 +28,8 @@ async function launch(extensionPath: string): Promise<{ context: BrowserContext;
   const errors: string[] = [];
   const context = await chromium.launchPersistentContext(profilePath, {
     executablePath,
-    headless: true,
-    args: ["--no-sandbox", "--disable-crash-reporter", "--disable-features=DisableLoadExtensionCommandLineSwitch", `--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
+    headless: false,
+    args: ["--headless=new", "--no-sandbox", "--disable-crash-reporter", "--disable-features=DisableLoadExtensionCommandLineSwitch", `--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
   });
   context.on("console", (message) => { if (message.type() === "error") errors.push(`console: ${message.text()}`); });
   const worker = await extensionWorker(context);

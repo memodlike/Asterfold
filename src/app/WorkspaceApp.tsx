@@ -230,7 +230,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   };
 
   return (
-    <div className={`app-shell performance-${performanceMode} ${performanceMode !== "quality" ? "low-power-mode" : ""} ${privacy ? "privacy-mode" : ""} ${workspace.settings.theme.motion ? "" : "motion-disabled"} ${workspace.settings.theme.bookmarkHoverMotion ? "" : "motion-hover-disabled"} ${workspace.settings.theme.menuMotion ? "" : "motion-menu-disabled"} ${workspace.settings.theme.dragMotion ? "" : "motion-drag-disabled"}`}>
+    <div className={`app-shell performance-${performanceMode} ${performanceMode === "compatibility" || performanceMode === "software" ? "low-power-mode" : ""} ${privacy ? "privacy-mode" : ""} ${workspace.settings.theme.motion ? "" : "motion-disabled"} ${workspace.settings.theme.bookmarkHoverMotion ? "" : "motion-hover-disabled"} ${workspace.settings.theme.menuMotion ? "" : "motion-menu-disabled"} ${workspace.settings.theme.dragMotion ? "" : "motion-drag-disabled"}`}>
       <div className="wallpaper" aria-hidden="true" />
       <BoardCanvas
         boards={boards}

@@ -1,3 +1,33 @@
+# Asterfold 3.4.0
+
+## Multi-tier performance profile architecture
+
+- Introduced 6-tier rendering architecture (`auto`, `quality`, `balanced`, `compatibility`, `software`, `custom`) for seamless scalability from integrated/legacy GPUs (AMD Radeon HD/R5/R7, Intel HD Graphics, SwiftShader, Mesa) to high-refresh displays.
+- Implemented live hardware detection heuristics (`classifyPerformanceMode` and `recommendPerformanceProfile`) providing plain-language, localized recommendation rationales.
+- Implemented `balanced` mode with capped 10px blur, static wallpaper transforms, and single-layer subtle shadows; `compatibility` and `software` modes maintain 0px blur and opaque surfaces.
+
+## Modernized Settings UX & zero-data-loss controls
+
+- Added segmented performance profile selector and real-time hardware recommendation banner in Appearance settings.
+- Added "Restore Defaults" button with localized confirmation dialog (`settings.resetDefaultsConfirm`) resetting theme, layout, rows, and retention without deleting user bookmarks or boards.
+- Added "Restart Welcome Tour" action in Data & Privacy allowing users to safely re-experience the onboarding wizard without data loss.
+
+## Zero-leakage localization across 12 locales
+
+- Modularized translations into dedicated per-language dictionaries under `src/i18n/locales/` (`ru`, `kk`, `en`, `es`, `de`, `fr`, `it`, `pt`, `pl`, `uk`, `tr`, `nl`).
+- Expanded dictionary to 275 keys per language with 100% placeholder parity, zero missing keys, and zero English leakage in non-English interfaces.
+- Fully localized onboarding messages across all 12 languages.
+
+## E2E test runner modernization
+
+- Updated Playwright test runners to use Chrome for Testing with `--headless=new`, ensuring reliable MV3 service worker lifecycle event delivery in headless environments.
+
+## Verification
+
+- Gated by version consistency, dependency audits, source security scans, TypeScript strict checks (`npm run typecheck`), ESLint (`npm run lint`), all 51 unit & integration test suites (387 tests), 600-bookmark stress testing (`npm run test:stress`), Playwright MV3 E2E test suites (`npm run test:e2e`), store asset validation, and deterministic reproducible ZIP packaging (`npm run release:repro`).
+
+## Previous release details
+
 # Asterfold 3.3.0
 
 ## Interface clarity and accessibility

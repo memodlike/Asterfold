@@ -195,7 +195,10 @@ kbd { padding: 5px 8px; border: 1px solid var(--color-border); border-radius: 7p
 .toast-region { position: fixed; z-index: 120; top: 16px; right: 16px; display: grid; gap: 8px; }
 .toast { display: flex; min-width: 260px; max-width: 410px; align-items: center; gap: 9px; padding: 9px 10px; border: 1px solid var(--color-border); border-radius: 13px; background: rgb(var(--surface-rgb) / .92); box-shadow: var(--shadow-panel); backdrop-filter: blur(20px); font-size: 12px; }
 
-/* Adaptive Compatibility Glass: keep transparency and motion while removing live blur. */
+.performance-balanced .wallpaper,
+html[data-performance="balanced"] .wallpaper {
+  transform: none;
+}
 .performance-compatibility .wallpaper,
 html[data-performance="compatibility"] .wallpaper {
   filter: none;

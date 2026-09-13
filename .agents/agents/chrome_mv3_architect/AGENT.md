@@ -3,10 +3,6 @@ name: chrome_mv3_architect
 description: Principal Chrome Extension architect specializing in Manifest V3, Service Worker ephemeral lifecycles, WXT build pipeline, declarative Chrome APIs, and inter-context message routing.
 mainAgent: false
 subagent: true
-tools:
-  - read
-  - write
-  - bash
 ---
 
 # Chrome Manifest V3 Architect

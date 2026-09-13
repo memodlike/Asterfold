@@ -178,7 +178,7 @@ Contribution guidance is available in [docs/development/CONTRIBUTING.md](docs/de
 
 ## Release artifacts
 
-Asterfold 3.3.0 produces a reproducible, cryptographically verifiable release containing:
+Asterfold 3.4.0 produces a reproducible, cryptographically verifiable release containing:
 
 - `Asterfold-Chrome.zip` — upload/install package with `manifest.json` at the ZIP root;
 - `chrome-unpacked.zip` — unpacked folder wrapper;
@@ -192,13 +192,13 @@ The release pipeline verifies Manifest V3 structure, permission policy, CSP, for
 
 ## Current status
 
-**Asterfold 3.3.0** refines the visual workspace: Settings now have keyboard-operable tabs and progressive Appearance controls, onboarding takes three focused steps, and Quick Save uses the shared semantic color system. The local-first architecture and least-privilege permission surface are unchanged.
+**Asterfold 3.4.0** delivers a 6-tier hardware-aware rendering architecture (`auto`, `quality`, `balanced`, `compatibility`, `software`, `custom`) with legacy GPU heuristics and plain-language recommendations, a modernized Settings UX with non-destructive factory resets and onboarding replay, zero-leakage 100% localization across 12 European and regional languages, and modernized headless Playwright MV3 testing. The local-first architecture, zero telemetry, and least-privilege permission surface remain strictly preserved.
 
 The repository does not claim Chrome Web Store publication, approval, user counts, ratings, awards, or endorsements until those facts exist publicly.
 
 ## Version history
 
-1. **v3.2.3 — Zero-history disclosure & permission revocation.** Corrects Web Store data usage disclosures (zero web history collection), guarantees immediate revocation of optional `bookmarks` permissions post-import in Settings, and eliminates false historical records warnings in Chrome.
+1. **v3.4.0 — Multi-tier performance architecture and full localization.** Introduces 6-tier rendering hierarchy with legacy GPU heuristics and recommendation rationales, Settings "Restore Defaults" and "Restart Welcome Tour" controls, 100% complete localization across 12 locales with zero English leakage, and Chrome for Testing headless MV3 test runner upgrades.
 1. **v3.3.0 — Interface clarity and accessibility.** Adds semantic Settings tabs, progressive appearance controls, a shorter first-run flow, bounded search input, responsive Quick Save surfaces and accessible popup status feedback without changing permissions or local-only storage.
 1. **v3.2.2 — Design-system hardening.** Unifies popup theming, startup motion, overlay lifecycle, responsive Board behavior, performance affordances, and regression coverage without changing permissions or the local-first architecture.
 1. **v3.2.1 — Store listing optimization.** Updates the manifest name to `Asterfold — Visual Bookmark Workspace`, refreshes English/Russian Store copy, removes stale rendering terminology, and keeps runtime permissions and functionality unchanged.

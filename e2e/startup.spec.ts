@@ -23,6 +23,15 @@ interface StartupSample {
 }
 
 function browserPath(): string {
+  if (process.env.ASTERFOLD_CHROMIUM_PATH && existsSync(process.env.ASTERFOLD_CHROMIUM_PATH)) {
+    return process.env.ASTERFOLD_CHROMIUM_PATH;
+  }
+  try {
+    const pwPath = chromium.executablePath();
+    if (pwPath && existsSync(pwPath)) return pwPath;
+  } catch {
+    // fallback
+  }
   const found = knownBrowserPaths.find(existsSync);
   if (!found) throw new Error("Chromium is missing. Set ASTERFOLD_CHROMIUM_PATH.");
   return found;
@@ -86,9 +95,9 @@ test("new tab keeps a stable first paint and reveals the workspace once", async 
   expect(existsSync(join(extensionPath, "manifest.json"))).toBe(true);
   const context = await chromium.launchPersistentContext(join(tmpdir(), `asterfold-startup-${Date.now()}`), {
     executablePath: browserPath(),
-    headless: true,
+    headless: false,
     reducedMotion: "no-preference",
-    args: ["--no-sandbox", "--disable-crash-reporter", "--disable-features=DisableLoadExtensionCommandLineSwitch", `--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
+    args: ["--headless=new", "--no-sandbox", "--disable-crash-reporter", "--disable-features=DisableLoadExtensionCommandLineSwitch", `--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
   });
   try {
     const worker = await extensionWorker(context);
