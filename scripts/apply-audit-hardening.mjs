@@ -41,31 +41,10 @@ await patchFile("src/services/exportImport.ts", (source) => {
   return source.slice(0, start) + replacement + source.slice(end);
 });
 
-await patchFile(".github/workflows/ci.yml", (source) => {
-  const marker = "\n  publish-release-3-1-4:\n";
-  const index = source.indexOf(marker);
-  if (index < 0) throw new Error("stale CI 3.1.4 publish job not found");
-  return source.slice(0, index).trimEnd() + "\n";
-});
-
 const regressionTest = `import { readFile } from "node:fs/promises";\nimport { join } from "node:path";\nimport { afterEach, beforeEach, describe, expect, it } from "vitest";\nimport { AsterfoldDatabase } from "../src/db/database";\nimport { createPage, ensureStarterWorkspace, moveBoardToIndex } from "../src/db/repository";\nimport { parseNetscapeHtml } from "../src/services/exportImport";\n\ndescribe("audit hardening regressions", () => {\n  let database: AsterfoldDatabase;\n\n  beforeEach(async () => {\n    database = new AsterfoldDatabase(\`asterfold-audit-\${crypto.randomUUID()}\`);\n    await database.open();\n  });\n\n  afterEach(async () => {\n    await database.delete();\n  });\n\n  it("keeps Quick Save page/Board pairs coherent when a referenced Board moves", async () => {\n    const workspace = await ensureStarterWorkspace(database);\n    const sourcePage = workspace.pages[0]!;\n    const board = workspace.boards[0]!;\n    const targetPage = await createPage("Target", {}, database);\n    await database.settings.update("app", {\n      quickSaveDefaultPageId: sourcePage.id,\n      quickSaveDefaultBoardId: board.id,\n      quickSaveLastPageId: sourcePage.id,\n      quickSaveLastBoardId: board.id,\n    });\n\n    await moveBoardToIndex(board.id, targetPage.id, Number.MAX_SAFE_INTEGER, database);\n\n    expect(await database.settings.get("app")).toMatchObject({\n      quickSaveDefaultPageId: targetPage.id,\n      quickSaveDefaultBoardId: board.id,\n      quickSaveLastPageId: targetPage.id,\n      quickSaveLastBoardId: board.id,\n    });\n  });\n\n  it("decodes malformed numeric bookmark entities without throwing RangeError", () => {\n    const records = parseNetscapeHtml('<DL><p><DT><A HREF="https://example.com/">&#999999999999;</A><DD>&#xD800;</DD></DL><p>');\n    expect(records).toHaveLength(1);\n    expect(records[0]).toMatchObject({ title: "�", description: "�", url: "https://example.com/" });\n  });\n\n  it("keeps runtime message sender validation fail-closed", async () => {\n    const background = await readFile(join(process.cwd(), "entrypoints", "background.ts"), "utf8");\n    expect(background).toContain("if (sender.id !== chrome.runtime.id) {");\n    expect(background).not.toContain("sender.id !== undefined && sender.id !== chrome.runtime.id");\n  });\n\n  it("does not retain one-off version-specific release automation", async () => {\n    const ci = await readFile(join(process.cwd(), ".github", "workflows", "ci.yml"), "utf8");\n    expect(ci).not.toContain("publish-release-3-1-4");\n    expect(ci).not.toContain("Asterfold 3.1.4 as Latest");\n  });\n});\n`;
 await writeFile("tests/auditHardeningRegression.test.ts", regressionTest, "utf8");
 
-const obsolete = [
-  ".github/workflows/auto-tag-v3.1.2.yml",
-  ".github/workflows/finalize-onboarding-branch.yml",
-  ".github/workflows/manual-publish-v3.1.4.yml",
-  ".github/workflows/owner-publish-after-ci-v3.1.4.yml",
-  ".github/workflows/owner-publish-v3.1.4.yml",
-  ".github/workflows/prepare-v3.2.2.yml",
-  ".github/workflows/publish-v3.1.4-trigger.yml",
-  ".github/workflows/tag-v3.2.2-after-ci.yml",
-  ".release-3.2.2-execute",
-  ".release-3.2.2-execute-2",
-  "scripts/apply-audit-hardening.mjs",
-  ".github/workflows/apply-audit-hardening.yml",
-];
-for (const path of obsolete) {
+for (const path of [".release-3.2.2-execute", ".release-3.2.2-execute-2", "scripts/apply-audit-hardening.mjs"]) {
   await unlink(path).catch((error) => {
     if (error?.code !== "ENOENT") throw error;
   });
