@@ -56,4 +56,10 @@ describe("audit hardening regressions", () => {
     expect(ci).not.toContain("publish-release-3-1-4");
     expect(ci).not.toContain("Asterfold 3.1.4 as Latest");
   });
+
+  it("keeps adjacent bookmark pointer targets at the WCAG 2.2 minimum", async () => {
+    const hardening = await readFile(join(process.cwd(), "src", "styles", "design-hardening.css"), "utf8");
+    expect(hardening).toContain(".bookmark-card { height: var(--bookmark-row-height, 24px); }");
+    expect(hardening).not.toContain(".bookmark-card { height: var(--bookmark-row-height, 20px); }");
+  });
 });
