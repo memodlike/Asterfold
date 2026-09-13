@@ -1,5 +1,6 @@
 name: Apply audit hardening
 
+# One-shot source patch; removed after the hardened source is committed.
 on:
   push:
     branches:
