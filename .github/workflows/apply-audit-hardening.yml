@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   apply:
-    if: github.event.head_commit.message == 'chore(audit): run source hardening patch'
+    if: "${{ github.event.head_commit.message == 'chore(audit): run source hardening patch' }}"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
