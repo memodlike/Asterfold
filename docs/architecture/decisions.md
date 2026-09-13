@@ -20,7 +20,7 @@
 
 **Context:** Records must survive reload/restart, support transactions/Blob data, and remain local-first.  
 **Options:** React-only state; `localStorage`; Chrome storage; IndexedDB through Dexie.  
-**Decision:** Dexie/IndexedDB is the record source of truth; React derives UI through narrow live queries. The production extension does not use the Chrome Storage API.
+**Decision:** Dexie/IndexedDB is the record source of truth; React derives UI through narrow live queries. Workspace entities are not mirrored into the Chrome Storage API; the only Chrome storage use is the transient `chrome.storage.session` Privacy Mode flag described by ADR-007.  
 **Consequences:** Local writes complete before success feedback; popup and new tab share one extension database.  
 **Security/privacy:** No entity is mirrored into webpage-accessible storage.  
 **Validation:** CRUD, persistence, popup sharing, and repository tests.
