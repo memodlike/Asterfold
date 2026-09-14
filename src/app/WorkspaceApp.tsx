@@ -14,6 +14,7 @@ import {
   moveBoardWithGridSwap,
   moveBookmarkToIndex,
   movePageToIndex,
+  purgeTrash,
   renamePage,
   restoreBoard,
   restoreBookmark,
@@ -47,7 +48,7 @@ const SearchPalette = lazy(loadSearchPalette);
 const SettingsDialog = lazy(loadSettingsDialog);
 const TrashDialog = lazy(loadTrashDialog);
 
-type SettingsSection = "appearance" | "layout" | "language" | "quick-save" | "data-privacy";
+type SettingsSection = "appearance" | "layout" | "language" | "data-privacy";
 type NameIntent =
   | { kind: "new-page" }
   | { kind: "rename-page"; page: Page }
@@ -96,6 +97,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
     if (initialSettingsSeen.current) return;
     initialSettingsSeen.current = true;
     performance.mark("asterfold-interactive");
+    void purgeTrash();
     const requestedPage = new URLSearchParams(location.search).get("page");
     if (requestedPage && workspace.pages.some((page) => page.id === requestedPage)) void updateSettings({ activePageId: requestedPage });
   }, [workspace.pages]);

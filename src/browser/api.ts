@@ -13,13 +13,10 @@ export class ExtensionRequestError extends Error {
   }
 }
 
-export function faviconUrl(pageUrl: string, size = 32): string {
-  try {
-    const safeUrl = parseSafeNavigationUrl(pageUrl);
-    return chrome.runtime.getURL(`/_favicon/?pageUrl=${encodeURIComponent(safeUrl)}&size=${size}`);
-  } catch {
-    return "";
-  }
+export function faviconUrl(pageUrl?: string, size = 32): string {
+  void pageUrl;
+  void size;
+  return "";
 }
 
 export async function openUrl(url: string, mode: BookmarkOpenMode): Promise<void> {

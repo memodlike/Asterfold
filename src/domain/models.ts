@@ -35,6 +35,8 @@ export interface Board {
   deletedAt: ISODate | null;
   deletedBatchId: string | null;
   version: number;
+  source?: "manual" | "chrome" | undefined;
+  sourceId?: string | null | undefined;
 }
 
 export type BookmarkOpenMode = "current" | "new-tab" | "new-window" | "incognito";
@@ -58,6 +60,8 @@ export interface Bookmark {
   deletedAt: ISODate | null;
   deletedBatchId: string | null;
   version: number;
+  source?: "manual" | "chrome" | undefined;
+  sourceId?: string | null | undefined;
 }
 
 export type ThemePresetId =

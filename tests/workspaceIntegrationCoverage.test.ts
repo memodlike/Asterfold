@@ -29,6 +29,7 @@ const mocks = vi.hoisted(() => ({
     softDeletePage: vi.fn().mockResolvedValue(undefined),
     updateBoard: vi.fn().mockResolvedValue(undefined),
     updateSettings: vi.fn().mockResolvedValue(undefined),
+    purgeTrash: vi.fn().mockResolvedValue(0),
   },
   browser: {
     copyText: vi.fn().mockResolvedValue(undefined),

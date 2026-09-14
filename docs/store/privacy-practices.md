@@ -1,12 +1,12 @@
-# Chrome Web Store Privacy Practices — Asterfold 3.4.0
+# Chrome Web Store Privacy Practices — Asterfold 3.4.1
 
-Prepared for the Asterfold 3.4.0 release. These are recommended dashboard answers for the reviewed default release. Recheck every answer against the final uploaded ZIP before submission.
+Prepared for the Asterfold 3.4.1 release. These are recommended dashboard answers for the reviewed default release. Recheck every answer against the final uploaded ZIP before submission.
 
 ## Single purpose
 
 > Asterfold replaces the Chrome new tab with a private, local-first visual workspace for organizing and opening bookmarks.
 
-Pages, Boards, search, Quick Save, Trash, import/export, appearance and Privacy Mode directly support that bookmark-workspace purpose.
+Pages, Boards, search, Trash, import/export, appearance and Privacy Mode directly support that bookmark-workspace purpose.
 
 ## Data-use disclosure
 
@@ -19,7 +19,7 @@ Category breakdown for the Dashboard:
 | Dashboard category | Declare | Explanation |
 | --- | --- | --- |
 | Web history | No | Asterfold does not monitor, record, collect, or transmit the user's browsing history. User bookmarks in IndexedDB are user-curated local links, not browsing history. Declaring "Yes" here causes Chrome to display false warnings that the extension reads historical records / browsing history. |
-| Website content | No | Asterfold does not read, parse, or scrape website content. When Quick Save is triggered, `activeTab` receives only the active tab's title and URL to save into local IndexedDB. |
+| Website content | No | Asterfold does not read, parse, or scrape website content. Asterfold has zero content scripts, zero active-tab queries, and zero DOM access to web pages. |
 | Personally identifiable information | No | Asterfold does not collect name, email, address, identifier or account data. |
 | Authentication information | No | There is no account, sign-in, password or token flow. |
 | Personal communications | No | Asterfold does not read email, chat or communications. |
@@ -30,7 +30,7 @@ Category breakdown for the Dashboard:
 
 ## Data handling certifications
 
-The owner can certify the following for the reviewed 3.4.0 default build:
+The owner can certify the following for the reviewed 3.4.1 default build:
 
 - data is used only to provide the extension's single bookmark-workspace purpose;
 - workspace data is stored locally in the user's Chrome profile;
@@ -62,14 +62,10 @@ Do not submit the intended Pages URL until it opens publicly without authenticat
 
 | Permission | Dashboard justification |
 | --- | --- |
-| `activeTab` | Reads the current page title and URL only after the user invokes Quick Save or a supported save action, so the selected page can be added to the local bookmark workspace. |
-| `favicon` | Displays Chrome's browser-owned `_favicon` resource for a URL already saved by the user. Asterfold does not request or store a remote favicon URL. |
-| `alarms` | Schedules local Trash cleanup according to the retention period selected by the user. |
-| `contextMenus` | Adds the user-invoked Save page, Save link and Open Asterfold commands. |
-| `storage` | Stores only the temporary Privacy Mode flag in `chrome.storage.session`, allowing popup and New Tab to share the same visual-protection state. Chrome clears session storage when the browser session ends; bookmark workspace data remains in IndexedDB. |
-| optional `bookmarks` | Requested only on-demand when the user selects Import Chrome bookmarks. The Chrome bookmark tree is read locally to create an import preview and the permission is immediately revoked; declining does not affect normal use. |
+| `storage` | Stores only the temporary Privacy Mode flag in `chrome.storage.session`, allowing popup and New Tab to share the same visual-protection state without writing to disk. Chrome clears session storage when the browser session ends; bookmark workspace data remains in IndexedDB. |
+| optional `bookmarks` | Requested only on-demand when the user selects Import Chrome bookmarks or Refresh from Chrome. The Chrome bookmark tree is read locally to create or update bookmarks and the permission is immediately revoked via `browser.permissions.remove`; declining does not affect normal use. |
 
-The final 3.4.0 manifest must list only `activeTab`, `favicon`, `alarms`, `contextMenus`, `storage` and optional `bookmarks`; it must not list host permissions, content scripts, `tabs`, `history`, `identity`, `scripting`, `webRequest`, cookies or clipboard-read. If the final ZIP differs, stop submission and reconcile the manifest and disclosures.
+Asterfold 3.4.1 does NOT request `activeTab`, `favicon`, `alarms`, or `contextMenus`. The final 3.4.1 manifest must list only `permissions: ["storage"]` and optional `bookmarks`; it must not list host permissions, content scripts, `tabs`, `history`, `identity`, `scripting`, `webRequest`, cookies or clipboard-read. If the final ZIP differs, stop submission and reconcile the manifest and disclosures.
 
 ## Privacy policy URL
 

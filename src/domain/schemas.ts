@@ -43,6 +43,8 @@ export const boardSchema = baseEntitySchema.extend({
   gridColumn: finite.int().min(1).max(12).default(1),
   gridRow: z.union([z.literal(0), z.literal(1)]).default(0),
   gridSpan: finite.int().min(2).max(6).default(3),
+  source: z.enum(["manual", "chrome"]).optional(),
+  sourceId: z.string().max(MAX_ID).nullable().optional(),
 }).strict();
 
 export const bookmarkSchema = baseEntitySchema.extend({
@@ -57,6 +59,8 @@ export const bookmarkSchema = baseEntitySchema.extend({
   position: z.string().refine(isValidRank, "Invalid Bookmark rank"),
   openMode: z.enum(["current", "new-tab", "new-window", "incognito"]),
   pinned: z.boolean(),
+  source: z.enum(["manual", "chrome"]).optional(),
+  sourceId: z.string().max(MAX_ID).nullable().optional(),
 }).strict();
 
 export const themeSchema: z.ZodType<ThemeConfig> = z.object({

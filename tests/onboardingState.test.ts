@@ -137,9 +137,9 @@ describe("Chrome bookmark normalization", () => {
     }] as unknown as chrome.bookmarks.BookmarkTreeNode[];
 
     expect(flattenChromeBookmarks(nodes)).toEqual([
-      { title: "A", url: "https://a.example", description: null, folderPath: ["Work"] },
-      { title: "B", url: "https://b.example", description: null, folderPath: ["Work", "Nested"] },
-      { title: "C", url: "https://c.example", description: null, folderPath: [] },
+      { title: "A", url: "https://a.example", description: null, folderPath: ["Work"], source: "chrome", sourceId: "a", folderSourceId: null },
+      { title: "B", url: "https://b.example", description: null, folderPath: ["Work", "Nested"], source: "chrome", sourceId: "b", folderSourceId: null },
+      { title: "C", url: "https://c.example", description: null, folderPath: [], source: "chrome", sourceId: "c", folderSourceId: null },
     ]);
   });
 

@@ -1,6 +1,6 @@
-# Chrome Web Store submission values — Asterfold 3.4.0
+# Chrome Web Store submission values — Asterfold 3.4.1
 
-Current version: 3.4.0
+Current version: 3.4.1
 Copy these values into the owner Dashboard only after checking them against the final release ZIP.
 
 ## Core values
@@ -9,7 +9,7 @@ Copy these values into the owner Dashboard only after checking them against the 
 | --- | --- | --- |
 | Name | Asterfold — Visual Bookmark Workspace | Asterfold — Visual Bookmark Workspace |
 | Single purpose | Asterfold replaces Chrome New Tab with a local-first visual bookmark workspace organized into Pages and Boards. | Asterfold заменяет новую вкладку Chrome локальным визуальным пространством закладок со Страницами и Блоками. |
-| Short description | Turn Chrome New Tab into a visual bookmark workspace with Pages, Boards, search, Quick Save, and local-first storage. | Новая вкладка Chrome как визуальное пространство закладок со Страницами, Блоками, поиском, Quick Save и локальным хранением. |
+| Short description | Turn Chrome New Tab into a visual bookmark workspace with Pages, Boards, search, and local-first storage. | Новая вкладка Chrome как визуальное пространство закладок со Страницами, Блоками, поиском и локальным хранением. |
 | Category | Workflow & Planning | Workflow & Planning |
 | Language | English | Русский |
 
@@ -26,29 +26,17 @@ Use only a privacy URL that has been opened publicly without authentication. The
 
 ## Permission justifications
 
-### `activeTab`
-
-> Reads the current page title and URL only after the user invokes Quick Save or a supported save action, so the selected page can be added to the local bookmark workspace.
-
-### `favicon`
-
-> Displays Chrome's browser-owned `_favicon` resource for a URL already saved by the user. Asterfold does not request or store a remote favicon URL.
-
-### `alarms`
-
-> Schedules local Trash cleanup according to the retention period selected by the user.
-
-### `contextMenus`
-
-> Adds the user-invoked Save page, Save link and Open Asterfold commands.
-
 ### `storage`
 
-> Stores only the temporary Privacy Mode flag in `chrome.storage.session`, allowing popup and New Tab to share the same visual-protection state. Chrome clears this session value when the browser session ends; bookmark workspace data remains in IndexedDB.
+> Stores only the temporary visual Privacy Mode flag in `chrome.storage.session`, allowing popup and New Tab to share the same visual-protection state without writing to disk. Chrome clears this session value when the browser session ends; bookmark workspace data remains in IndexedDB.
 
 ### Optional `bookmarks`
 
-> Requested only on-demand when the user selects Import Chrome bookmarks. The Chrome bookmark tree is read locally to create an import preview and the permission is immediately revoked; declining does not affect normal use.
+> Requested only on-demand when the user selects Import Chrome bookmarks or Refresh from Chrome. The Chrome bookmark tree is read locally to create or update bookmarks and the permission is immediately revoked via `browser.permissions.remove`; declining does not affect normal use.
+
+### Removed permissions (`activeTab`, `favicon`, `alarms`, `contextMenus`)
+
+> Asterfold 3.4.1 does not request or require `activeTab`, `favicon`, `alarms`, or `contextMenus`. No active-tab URLs/titles are queried, no background alarm loops run, and all favicons are replaced by deterministic local letter/monogram avatars.
 
 ## Remote code
 

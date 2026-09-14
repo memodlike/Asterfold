@@ -47,7 +47,7 @@ describe("onboarding Chrome bookmark permission", () => {
   it("reads the tree after grant and removes the optional permission", async () => {
     await expect(readChromeBookmarks()).resolves.toEqual({
       status: "granted",
-      records: [{ title: "Example", url: "https://example.com", description: null, folderPath: [] }],
+      records: [{ title: "Example", url: "https://example.com", description: null, folderPath: [], source: "chrome", sourceId: "a", folderSourceId: null }],
       permissionRemoved: true,
     });
     expect(mocks.getTree).toHaveBeenCalledTimes(1);

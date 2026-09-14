@@ -226,7 +226,7 @@ describe("SettingsDialog appearance and navigation", () => {
     await waitFor(() => expect(handlers.onError).toHaveBeenCalledWith("Wallpaper could not be saved"));
   });
 
-  it("routes layout, language and Quick Save settings", async () => {
+  it("routes layout and language settings without quick-save", async () => {
     renderSettings();
     openSection("Layout");
     fireEvent.click(screen.getByRole("button", { name: "Free grid" }));
@@ -240,16 +240,7 @@ describe("SettingsDialog appearance and navigation", () => {
     fireEvent.click(screen.getByRole("button", { name: "Русский" }));
     await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ locale: "ru" }));
 
-    openSection("Quick Save");
-    await act(async () => { await Promise.resolve(); });
-    expect(screen.getByText("Ctrl+Shift+S")).toBeVisible();
-    const [defaultPage, defaultBoard] = screen.getAllByRole("combobox");
-    fireEvent.change(defaultPage!, { target: { value: "page-two" } });
-    expect(mocks.updateSettings).toHaveBeenCalledWith({ quickSaveDefaultPageId: "page-two", quickSaveDefaultBoardId: "board-two" });
-    fireEvent.change(defaultBoard!, { target: { value: "board-one" } });
-    expect(mocks.updateSettings).toHaveBeenCalledWith({ quickSaveDefaultBoardId: "board-one" });
-    fireEvent.click(screen.getByRole("button", { name: "Configure" }));
-    expect(mocks.tabsCreate).toHaveBeenCalledWith({ url: "chrome://extensions/shortcuts" });
+    expect(screen.queryByRole("tab", { name: /quick save/i })).toBeNull();
   });
 });
 

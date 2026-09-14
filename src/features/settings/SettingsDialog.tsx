@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { browser } from "wxt/browser";
 import { readSessionPrivacy, writeSessionPrivacy } from "../../browser/privacySession";
 import { IMPORT_LIMITS } from "../../domain/importLimits";
 import { WALLPAPER_FILE_ACCEPT } from "../../domain/wallpaperFormats";
-import { Brush, Check, CheckCircle2, Database, Download, FileJson, FileText, Grid2X2, Languages, RotateCcw, Shield, Sparkles, Trash2, Upload, Zap } from "lucide-react";
+import { Brush, Check, CheckCircle2, Database, Download, FileJson, FileText, Grid2X2, Languages, RotateCcw, Shield, Sparkles, Trash2, Upload } from "lucide-react";
 import type { AppSettings, ThemeConfig, Wallpaper, WorkspaceData } from "../../domain/models";
 import { validateTheme } from "../../domain/themes";
 import { auditInvariants, getWallpaper, saveWallpaper, updateSettings } from "../../db/repository";
@@ -31,7 +30,7 @@ import { BUILTIN_WALLPAPERS } from "../appearance/themeRuntime";
 import { browserPerformanceSignals, classifyPerformanceMode, recommendPerformanceProfile } from "../performance/performanceProfile";
 import { readChromeBookmarks } from "../onboarding/chromeBookmarkImport";
 
-export type SettingsSection = "appearance" | "layout" | "language" | "quick-save" | "data-privacy";
+export type SettingsSection = "appearance" | "layout" | "language" | "data-privacy";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -54,7 +53,6 @@ export function SettingsDialog(props: SettingsDialogProps) {
   const { t } = useI18n();
   const settings = props.workspace.settings;
   const [section, setSection] = useState<SettingsSection>(props.initialSection ?? "appearance");
-  const [shortcut, setShortcut] = useState("—");
   const [storage, setStorage] = useState<StorageEstimate>();
   const [wallpaperInfo, setWallpaperInfo] = useState<Wallpaper | null>(null);
   const [themeDraft, setThemeDraft] = useState(settings.theme);
@@ -101,8 +99,6 @@ export function SettingsDialog(props: SettingsDialogProps) {
           ? "settings.performanceReasonConstrainedHardware"
           : "settings.performanceReasonHardwareAccelerated");
   const counts = useMemo(() => ({ pages: props.workspace.pages.length, boards: props.workspace.boards.length, bookmarks: props.workspace.bookmarks.length }), [props.workspace]);
-  const pageOptions = useMemo<ReadonlyArray<SelectOption>>(() => props.workspace.pages.map((page) => ({ value: page.id, label: page.title })), [props.workspace.pages]);
-  const boardOptions = useMemo<ReadonlyArray<SelectOption>>(() => props.workspace.boards.filter((board) => board.pageId === settings.quickSaveDefaultPageId).map((board) => ({ value: board.id, label: board.title })), [props.workspace.boards, settings.quickSaveDefaultPageId]);
   const duplicateOptions = useMemo<ReadonlyArray<SelectOption>>(() => [
     { value: "skip", label: t("settings.skip") },
     { value: "allow", label: t("settings.allow") },
@@ -117,7 +113,6 @@ export function SettingsDialog(props: SettingsDialogProps) {
     { id: "appearance", label: t("settings.appearance"), icon: Brush },
     { id: "layout", label: t("settings.layout"), icon: Grid2X2 },
     { id: "language", label: t("settings.language"), icon: Languages },
-    { id: "quick-save", label: t("settings.quickSave"), icon: Zap },
     { id: "data-privacy", label: t("settings.dataPrivacy"), icon: Shield },
   ];
 
@@ -127,7 +122,6 @@ export function SettingsDialog(props: SettingsDialogProps) {
     setImportPageTitle(t("settings.importedBookmarks"));
     themeDirtyRef.current = false;
     pendingThemeRef.current = null;
-    if (browser.commands?.getAll) void browser.commands.getAll().then((commands) => setShortcut(commands.find((command) => command.name === "quick-save")?.shortcut || "—")).catch(() => setShortcut("—"));
     if (navigator.storage?.estimate) void navigator.storage.estimate().then(setStorage).catch(() => setStorage(undefined));
     void auditInvariants().then(setInvariants).catch(() => setInvariants([]));
   }, [props.initialSection, props.open, t]);
@@ -388,12 +382,6 @@ export function SettingsDialog(props: SettingsDialogProps) {
 
           {section === "language" ? <SettingsSection id="language" title={t("settings.language")} description={t("settings.languageDescription")}>
             <div className="language-options">{localeOptions.map((item) => <button type="button" key={item.value} aria-pressed={settings.locale === item.value} className={settings.locale === item.value ? "is-active" : ""} onClick={() => void patchSettings({ locale: item.value })}><span className="language-option__label"><span className="language-option__flag" aria-hidden="true"><LocaleFlag locale={item.value} /></span><span>{item.value === "auto" ? t("settings.languageAuto") : item.label}</span></span>{settings.locale === item.value ? <Check size={17} /> : null}</button>)}</div>
-          </SettingsSection> : null}
-
-          {section === "quick-save" ? <SettingsSection id="quick-save" title={t("settings.quickSave")} description={t("settings.quickSaveDescription")}>
-            <SettingRow label={t("settings.defaultPage")}><SelectField value={settings.quickSaveDefaultPageId ?? ""} options={pageOptions} label={t("settings.defaultPage")} onChange={(pageId) => { const board = props.workspace.boards.find((item) => item.pageId === pageId); void patchSettings({ quickSaveDefaultPageId: pageId, quickSaveDefaultBoardId: board?.id ?? null }); }} /></SettingRow>
-            <SettingRow label={t("settings.defaultBoard")}><SelectField value={settings.quickSaveDefaultBoardId ?? ""} options={boardOptions} label={t("settings.defaultBoard")} onChange={(boardId) => void patchSettings({ quickSaveDefaultBoardId: boardId })} /></SettingRow>
-            <SettingRow label={t("settings.shortcut")}><div className="shortcut-value"><kbd>{shortcut}</kbd><Button onClick={() => void browser.tabs.create({ url: "chrome://extensions/shortcuts" })}>{t("settings.configure")}</Button></div></SettingRow>
           </SettingsSection> : null}
 
           {section === "data-privacy" ? <SettingsSection id="data-privacy" title={t("settings.dataPrivacy")} description={t("settings.dataDescription")}>

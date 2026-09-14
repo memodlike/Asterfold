@@ -1,3 +1,32 @@
+# Asterfold 3.4.1
+
+## Comprehensive Privacy Hardening & Permission Minimization
+
+- **Zero Privileged Permissions**: Completely removed `activeTab`, `contextMenus`, `alarms`, and `favicon` permissions from the extension manifest.
+- **Strict Least-Privilege Manifest**: Retained only `permissions: ["storage"]` (used exclusively for ephemeral `chrome.storage.session` shoulder-surfing visual Privacy Mode synchronization) and user-initiated `optional_permissions: ["bookmarks"]`.
+- **Zero Browsing Activity Inspection**: Asterfold does not query active tabs, does not inspect active-tab URLs or titles, and has no context menu sinks or background alarm polling loops.
+- **Immediate Permission Revocation**: Chrome Bookmarks access is requested strictly on-demand when the user clicks "Import from Chrome" or "Refresh from Chrome", and is guaranteed to be revoked immediately via `browser.permissions.remove` in a `finally` block upon read completion or failure.
+
+## Non-Destructive Idempotent Chrome Bookmark Synchronization (Database Schema 9)
+
+- **IndexedDB Schema 9**: Upgraded Asterfold's local database to Schema 9, adding `sourceId` index to `boards` and `bookmarks` without data loss or structural alteration of existing user content.
+- **Stable Source ID Mapping**: Chrome bookmark import and refresh link items via their stable Chrome node IDs (`sourceId`), enabling repeated non-destructive overlay merges without duplicating bookmarks.
+- **User Customization Preservation**: Re-importing or refreshing from Chrome never overwrites local bookmark notes, custom titles, or positions, and never deletes custom user-created bookmarks or boards.
+
+## Deterministic Local Monogram Avatars
+
+- **Zero Remote & Extension Favicon Leakage**: Eliminated all calls to `chrome.runtime.getURL("/_favicon/...")` and external favicon endpoints.
+- **Deterministic Avatars**: Bookmark cards render high-contrast, beautiful deterministic letter/monogram avatars generated directly from hostname and title strings in memory, ensuring absolute privacy and zero history leakage.
+
+## Privacy-Neutral Extension Launcher Popup
+
+- **Offline Workspace Dashboard**: Refactored the toolbar action popup into a privacy-neutral launcher displaying local workspace metrics (Pages, Boards, Bookmarks count), a direct "Open Asterfold" launcher, an on-demand "Refresh from Chrome" action, and a quick settings link.
+- **Zero Active-Tab Queries**: The popup operates 100% locally without invoking `browser.tabs.query` or accessing any open browser tabs.
+
+## Verification
+
+- Verified across all quality gates: `npm run typecheck`, `npm run lint`, all unit & integration test suites (`npm test`), 600-card stress benchmarks (`npm run test:stress`), source security scanner (`npm run scan:source`), store asset validation (`npm run validate:store`), Playwright real-MV3 unpacked E2E suite (`npm run test:e2e`), and bit-for-bit reproducible packaging (`npm run release:repro`).
+
 # Asterfold 3.4.0
 
 ## Multi-tier performance profile architecture

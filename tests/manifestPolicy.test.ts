@@ -32,8 +32,9 @@ describe("Chrome Web Store manifest policy", () => {
     expect(releaseValidator).toContain("WebAssembly");
     expect(releaseValidator).toContain("<iframe");
     expect(await readFile(join(process.cwd(), "src", "services", "exportImport.ts"), "utf8")).not.toContain('appVersion: "2.1.3"');
-    expect(background).toContain("const BADGE_CLEAR_DELAY_MINUTES = 0.5;");
-    expect(background).toContain("delayInMinutes: BADGE_CLEAR_DELAY_MINUTES");
+    expect(background).toContain("ensureStarterWorkspace");
+    expect(background).not.toContain("contextMenus");
+    expect(background).not.toContain("alarms");
   });
 
   it("validates the built manifest as MV3 with the exact allowed permission set", async () => {
@@ -50,8 +51,8 @@ describe("Chrome Web Store manifest policy", () => {
 
     expect(manifest.manifest_version).toBe(3);
     expect(manifest.version).toBe(packageVersion);
-    expect(new Set(manifest.permissions)).toEqual(new Set(["activeTab", "favicon", "alarms", "contextMenus", "storage"]));
-    expect(manifest.permissions).not.toEqual(expect.arrayContaining(["identity", "tabs", "history", "scripting", "webRequest", "cookies"]));
+    expect(new Set(manifest.permissions)).toEqual(new Set(["storage"]));
+    expect(manifest.permissions).not.toEqual(expect.arrayContaining(["activeTab", "favicon", "alarms", "contextMenus", "identity", "tabs", "history", "scripting", "webRequest", "cookies"]));
     expect(manifest.optional_permissions).toEqual(["bookmarks"]);
     expect(manifest.host_permissions).toEqual([]);
     expect(manifest.content_security_policy?.extension_pages).toBe("script-src 'self'; object-src 'self'; base-uri 'self'");

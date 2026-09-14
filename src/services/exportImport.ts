@@ -23,6 +23,9 @@ export interface ImportRecord {
   url: string;
   description: string | null;
   folderPath: string[];
+  source?: "manual" | "chrome" | undefined;
+  sourceId?: string | null | undefined;
+  folderSourceId?: string | null | undefined;
 }
 
 export interface ImportSummary {
@@ -502,6 +505,9 @@ export async function importRecords(
         folderPath: record.folderPath.map((folder) => normalizeEntityTitle(folder, "Imported bookmarks")),
         normalizedUrl: normalized.normalizedUrl,
         hostname: normalized.hostname,
+        ...(record.source !== undefined ? { source: record.source } : {}),
+        ...(record.sourceId !== undefined ? { sourceId: record.sourceId } : {}),
+        ...(record.folderSourceId !== undefined ? { folderSourceId: record.folderSourceId } : {}),
       });
     } catch (error) {
       invalid.push({ row: index + 1, reason: error instanceof Error ? error.message : "Invalid URL" });
@@ -573,15 +579,35 @@ export async function importRecords(
       const board = existingBoards.find((candidate) => candidate.title === folderTitle);
       if (!board) throw new ImportError("Import destination Board could not be allocated");
       const current = (await database.bookmarks.where("boardId").equals(board.id).toArray()).filter((bookmark) => bookmark.deletedAt === null);
-      const known = new Set(current.map((bookmark) => bookmark.normalizedUrl));
-      const accepted = group.filter((record) => {
-        if (duplicateStrategy === "skip" && known.has(record.normalizedUrl)) {
+      const existingBySourceId = new Map<string, Bookmark>();
+      const existingByUrl = new Map<string, Bookmark>();
+      for (const b of current) {
+        if (b.sourceId) existingBySourceId.set(b.sourceId, b);
+        existingByUrl.set(b.normalizedUrl, b);
+      }
+      const toUpdate: Bookmark[] = [];
+      const accepted: typeof group = [];
+      for (const record of group) {
+        const matchBySource = record.sourceId ? existingBySourceId.get(record.sourceId) : undefined;
+        const matchByUrl = existingByUrl.get(record.normalizedUrl);
+        const matched = matchBySource ?? (duplicateStrategy === "skip" ? matchByUrl : undefined);
+        if (matched) {
+          if (record.sourceId && !matched.sourceId) {
+            matched.sourceId = record.sourceId;
+            if (record.source) matched.source = record.source;
+            matched.updatedAt = nowIso();
+            matched.version += 1;
+            toUpdate.push(matched);
+            existingBySourceId.set(record.sourceId, matched);
+          }
           skippedDuplicates += 1;
-          return false;
+        } else {
+          accepted.push(record);
+          if (record.sourceId) existingBySourceId.set(record.sourceId, {} as Bookmark);
+          existingByUrl.set(record.normalizedUrl, {} as Bookmark);
         }
-        known.add(record.normalizedUrl);
-        return true;
-      });
+      }
+      if (toUpdate.length > 0) await database.bookmarks.bulkPut(toUpdate);
       const timestamp = nowIso();
       const allocation = allocateManyAtEnd(current, accepted.length);
       const previousPositions = new Map(current.map((bookmark) => [bookmark.id, bookmark.position]));
@@ -595,6 +621,8 @@ export async function importRecords(
           normalizedUrl: record.normalizedUrl, hostname: record.hostname, description: record.description,
           faviconUrl: null, customIcon: null, position: allocation.positions[index]!, openMode: "current" as const, pinned: false,
           createdAt: timestamp, updatedAt: timestamp, deletedAt: null, deletedBatchId: null, version: 1,
+          source: record.source ?? "manual",
+          sourceId: record.sourceId ?? null,
         })));
       }
       imported += accepted.length;

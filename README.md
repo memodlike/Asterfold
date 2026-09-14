@@ -105,17 +105,15 @@ Asterfold is designed around local storage and least-privilege extension access.
 
 | Permission | Purpose |
 |---|---|
-| `activeTab` | Reads the active tab only after the user opens Quick Save |
-| `favicon` | Displays Chrome-provided favicons without broad website access |
-| `alarms` | Runs local maintenance and reminder tasks |
-| `contextMenus` | Adds explicit Asterfold browser actions |
 | `storage` | Stores only the transient cross-context Privacy Mode flag in `chrome.storage.session` |
 
 ### Optional permission
 
 | Permission | Purpose |
 |---|---|
-| `bookmarks` | Imports Chrome bookmarks after direct user approval |
+| `bookmarks` | Imports or refreshes Chrome bookmarks after direct user action (revoked immediately) |
+
+Asterfold 3.4.1 does not request `activeTab`, `favicon`, `alarms`, or `contextMenus`. No active-tab URLs/titles are queried, no background alarm loops run, and all favicons are replaced by deterministic local letter/monogram avatars.
 
 Detailed review material:
 
@@ -180,31 +178,32 @@ Contribution guidance is available in [docs/development/CONTRIBUTING.md](docs/de
 
 Asterfold 3.4.0 produces a reproducible, cryptographically verifiable release containing:
 
-- `Asterfold-Chrome.zip` — upload/install package with `manifest.json` at the ZIP root;
-- `chrome-unpacked.zip` — unpacked folder wrapper;
-- `extension-source.zip` — reviewable source snapshot;
-- `Asterfold-Store-Assets.zip` — listing, screenshots, promo images, and review documentation;
-- `checksums.txt` — SHA-256 checksums for release assets;
-- `provenance.json` — source commit, tree, build-run and artifact linkage;
-- `sbom.spdx.json` — SPDX 2.3 software bill of materials.
+Asterfold 3.4.1 produces a reproducible, cryptographically verifiable release containing:
+
+- `Asterfold-Chrome.zip` (runtime Chrome Web Store bundle)
+- `chrome-unpacked.zip` (unpacked developer distribution)
+- `Asterfold-Store-Assets.zip` (store promotional tiles and screenshots)
+- `extension-source.zip` (source archive with reproduction instructions)
+- Cryptographic provenance and SBOM attestation
+- `SHA256SUMS` and `SHA256SUMS.sig`
 
 The release pipeline verifies Manifest V3 structure, permission policy, CSP, forbidden files, remote-code patterns, Store asset dimensions, Windows packaging, CodeQL, accessibility, and real unpacked-extension behavior.
 
-## Current status
+## Release highlights
 
-**Asterfold 3.4.0** delivers a 6-tier hardware-aware rendering architecture (`auto`, `quality`, `balanced`, `compatibility`, `software`, `custom`) with legacy GPU heuristics and plain-language recommendations, a modernized Settings UX with non-destructive factory resets and onboarding replay, zero-leakage 100% localization across 12 European and regional languages, and modernized headless Playwright MV3 testing. The local-first architecture, zero telemetry, and least-privilege permission surface remain strictly preserved.
+**Asterfold 3.4.1** delivers comprehensive privacy hardening with zero privileged permissions (`activeTab`, `contextMenus`, `alarms`, `favicon` completely removed), idempotent Chrome bookmark import/refresh mapped via stable `sourceId` on IndexedDB Schema 9, fully local deterministic monogram avatars with zero history leakage, a privacy-neutral launcher popup, and 100% complete localization across 12 languages.
 
 The repository does not claim Chrome Web Store publication, approval, user counts, ratings, awards, or endorsements until those facts exist publicly.
 
 ## Version history
 
-1. **v3.4.0 — Multi-tier performance architecture and full localization.** Introduces 6-tier rendering hierarchy with legacy GPU heuristics and recommendation rationales, Settings "Restore Defaults" and "Restart Welcome Tour" controls, 100% complete localization across 12 locales with zero English leakage, and Chrome for Testing headless MV3 test runner upgrades.
+1. **v3.4.1 — Comprehensive privacy hardening and idempotent sync.** Strips privileged permissions to only `storage` and on-demand `bookmarks` (revoked immediately in a `finally` block), implements IndexedDB Schema 9 with `sourceId` indexing, replaces favicon requests with deterministic letter monograms, and refactors the extension popup into a zero-tab-query workspace dashboard.
+2. **v3.4.0 — Multi-tier performance architecture and full localization.** Introduces 6-tier rendering hierarchy with legacy GPU heuristics and recommendation rationales, Settings "Restore Defaults" and "Restart Welcome Tour" controls, 100% complete localization across 12 locales with zero English leakage, and Chrome for Testing headless MV3 test runner upgrades.
 1. **v3.3.0 — Interface clarity and accessibility.** Adds semantic Settings tabs, progressive appearance controls, a shorter first-run flow, bounded search input, responsive Quick Save surfaces and accessible popup status feedback without changing permissions or local-only storage.
 1. **v3.2.2 — Design-system hardening.** Unifies popup theming, startup motion, overlay lifecycle, responsive Board behavior, performance affordances, and regression coverage without changing permissions or the local-first architecture.
 1. **v3.2.1 — Store listing optimization.** Updates the manifest name to `Asterfold — Visual Bookmark Workspace`, refreshes English/Russian Store copy, removes stale rendering terminology, and keeps runtime permissions and functionality unchanged.
 1. **v3.2.0 — Guided first-run setup.** Adds localized language selection, preview-only Chrome/HTML/backup imports, appearance setup, migration-safe existing-user behavior, explicit skip confirmation and recovery-backed atomic completion.
 1. **v3.1.4 — Opaque settings and adaptive controls.** Makes all overlays fully opaque, introduces accessible theme-aware dropdowns with SVG flags, restores live Appearance controls, and preserves weak-GPU optimization.
-2. **v3.1.3 — Flash-free new-tab startup.** Adds a critical dark first paint, validated visual snapshot, layout-timed theme application, one-time compositor-safe entrance motion, reduced-motion support, and a frame-sampled MV3 regression.
 3. **v3.1.2 — Original-quality uploaded wallpapers.** Preserves uploaded raster files byte-for-byte at their original dimensions, broadens safe Chrome-decodable image support, adds backup format 4, and reserves the separate Full HD copy for software rendering only.
 4. **v3.1.1 — Wallpaper, Settings and import polish.** Replaces the three built-in backgrounds with licensed 4K sources and native-size compatibility variants, makes Settings fully opaque, adds emoji flags to every language option, and opens newly imported bookmark Pages immediately at the first position.
 5. **v3.1.0 — Windows 11 adaptive performance update.** Adds automatic Radeon R5 230/Caicos detection, Compatibility Glass, pre-rendered compatibility wallpaper, compositor-safe motion, Full-HD wallpaper caps, schema 7 migration, and 600-bookmark stress gates.

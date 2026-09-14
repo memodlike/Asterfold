@@ -1,8 +1,8 @@
 # Asterfold privacy policy
 
-Effective date: 7 August 2026<br>
-Policy version: 3.4.0<br>
-Applies to: Asterfold 3.4.0 for Chrome
+Effective date: 14 September 2026<br>
+Policy version: 3.4.1<br>
+Applies to: Asterfold 3.4.1 for Chrome
 
 Asterfold replaces the Chrome new tab with a local-first visual workspace for organizing and opening bookmarks. It processes the information needed for those features strictly on the user's device. It does not collect, record, track, or monitor general browsing history.
 
@@ -13,21 +13,20 @@ Asterfold may process and store:
 - bookmark URLs, titles, custom labels, opening mode and order;
 - Pages, Boards, layout choices and other workspace settings;
 - Trash records and retention settings;
-- Quick Save destination settings and the title and URL of the page the user explicitly chooses to save;
-- bookmark data from a file selected by the user, or the Chrome bookmark tree after the user chooses that import and grants the optional permission;
+- bookmark data from a file selected by the user, or the Chrome bookmark tree after the user chooses that import/refresh and grants the optional permission;
 - local backup and restore data;
 - a wallpaper image selected by the user, preserved locally in its original raster format and dimensions, plus a separate Full HD software-rendering copy and technical metadata such as dimensions and stored size;
-- legacy custom raster icon values when present in an imported Asterfold backup; version 3.4.0 does not provide a UI for adding or rendering them.
+- legacy custom raster icon values when present in an imported Asterfold backup; version 3.4.1 does not provide a UI for adding or rendering them.
 
 This information may include personal or sensitive content if the user puts such content in bookmark names, URLs, imported files or images. Asterfold uses it only to provide the requested bookmark-workspace features.
 
 ## Where information is stored
 
-Workspace records and uploaded assets are stored locally in the user's Chrome profile, primarily in IndexedDB. Search indexes and import previews are created locally. Older installations may retain legacy diagnostic snapshot records created by an earlier version; version 3.4.0 does not create new snapshots. The temporary Privacy Mode state is stored in `chrome.storage.session` so popup and New Tab stay consistent; Chrome clears that value when the browser session ends.
+Workspace records and uploaded assets are stored locally in the user's Chrome profile, primarily in IndexedDB. Search indexes and import previews are created locally. Older installations may retain legacy diagnostic snapshot records created by an earlier version; version 3.4.1 does not create new snapshots. The temporary Privacy Mode state is stored in `chrome.storage.session` so popup and New Tab stay consistent; Chrome clears that value when the browser session ends.
 
-Asterfold 3.4.0 has no application backend, account system or cloud synchronization. The default build has no host permissions and makes no application network requests. Data is not sent to the developer.
+Asterfold 3.4.1 has no application backend, account system or cloud synchronization. The default build has no host permissions, no active-tab queries, and makes no application network requests. Data is not sent to the developer.
 
-Chrome itself may use the network when the user opens a destination page or when Chrome supplies its browser-owned `_favicon` resource for a saved URL. Those browser actions are separate from an application request by Asterfold. Asterfold does not store or render a remote favicon URL.
+Bookmarks render deterministic local letter and monogram avatars. Asterfold makes no requests to external or Chrome-internal `_favicon` endpoints.
 
 ## How information is used
 
@@ -36,7 +35,6 @@ Local information is used to:
 - display and organize Pages, Boards and bookmarks;
 - open a bookmark in the user-selected mode;
 - search the local workspace;
-- perform Quick Save after an explicit user action;
 - import, export, restore and diagnose local data;
 - show an optional local wallpaper;
 - move deleted items to Trash and apply the selected retention period.
@@ -56,13 +54,13 @@ Asterfold does not:
 
 The local Chrome profile, operating system, browser sync settings outside Asterfold and destinations opened by the user remain subject to their own security and privacy behavior.
 
-## Quick Save and permissions
+## Permissions and Chrome Bookmarks sync
 
-Quick Save reads the active page's URL and title only after the user invokes the toolbar action, keyboard command or supported context-menu action. The information is saved to the user's local workspace.
+Asterfold 3.4.1 requires strictly `permissions: ["storage"]`. The `storage` permission is used only for the transient shoulder-surfing Privacy Mode flag in `chrome.storage.session`; workspace data is not migrated to Chrome sync storage.
 
-The optional `bookmarks` permission is requested only on-demand after the user chooses **Import Chrome bookmarks**. If granted, Asterfold reads the Chrome bookmark tree locally to create an import preview and immediately revokes the permission via `browser.permissions.remove`. Declining the permission does not affect the normal workspace or file import/export.
+Asterfold 3.4.1 does NOT request `activeTab`, `contextMenus`, `alarms`, or `favicon`. Asterfold never inspects active tabs, background browsing activity, or context menus.
 
-The required permissions are limited to the functions described in [Permission rationale](permissions.md). The `storage` permission is used only for the transient Privacy Mode flag in `chrome.storage.session`; workspace data is not migrated to Chrome sync storage.
+The optional `bookmarks` permission is requested only on-demand after the user chooses **Import Chrome bookmarks** or **Refresh from Chrome**. If granted, Asterfold reads the Chrome bookmark tree locally to update or create bookmarks and immediately revokes the permission via `browser.permissions.remove`. Declining the permission does not affect the normal workspace or file import/export.
 
 ## Import, backup and deletion
 

@@ -100,7 +100,7 @@ function backup(scope: AsterfoldBackup["scope"] = "full"): AsterfoldBackup {
   };
 }
 
-function renderSettings(options: { workspace?: WorkspaceData; initialSection?: "appearance" | "layout" | "language" | "quick-save" | "data-privacy" } = {}) {
+function renderSettings(options: { workspace?: WorkspaceData; initialSection?: "appearance" | "layout" | "language" | "data-privacy" } = {}) {
   const callbacks = { onClose: vi.fn(), onUpdated: vi.fn(), onError: vi.fn(), onOpenTrash: vi.fn() };
   const view = render(createElement(I18nProvider, {
     preference: "en",
@@ -202,8 +202,8 @@ describe("SettingsDialog behavior", () => {
     expect(callbacks.onClose).toHaveBeenCalledOnce();
   });
 
-  it("updates layout, language, Quick Save destinations, and shortcut settings", async () => {
-    const { container, callbacks } = renderSettings();
+  it("updates layout, language, and privacy settings", async () => {
+    const { callbacks } = renderSettings();
 
     fireEvent.click(screen.getByRole("tab", { name: "Layout" }));
     fireEvent.click(screen.getByRole("button", { name: "Free grid" }));
@@ -219,18 +219,8 @@ describe("SettingsDialog behavior", () => {
     fireEvent.click(screen.getByRole("button", { name: "Русский" }));
     await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ locale: "ru" }));
 
-    fireEvent.click(screen.getByRole("tab", { name: "Quick Save" }));
-    expect(screen.getByText("Ctrl+Shift+Y")).toBeVisible();
-    const selects = [...container.querySelectorAll<HTMLSelectElement>("select")];
-    expect(selects).toHaveLength(2);
-    fireEvent.change(selects[0]!, { target: { value: pageTwo.id } });
-    fireEvent.change(selects[1]!, { target: { value: board.id } });
-    fireEvent.click(screen.getByRole("button", { name: "Configure" }));
-    await waitFor(() => {
-      expect(mocks.updateSettings).toHaveBeenCalledWith({ quickSaveDefaultPageId: pageTwo.id, quickSaveDefaultBoardId: boardTwo.id });
-      expect(mocks.updateSettings).toHaveBeenCalledWith({ quickSaveDefaultBoardId: board.id });
-      expect(mocks.tabsCreate).toHaveBeenCalledWith({ url: "chrome://extensions/shortcuts" });
-    });
+    fireEvent.click(screen.getByRole("tab", { name: "Data & privacy" }));
+    expect(screen.getByRole("button", { name: /JSON backup/i })).toBeVisible();
     expect(callbacks.onUpdated).toHaveBeenCalled();
   });
 

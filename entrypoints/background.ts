@@ -1,80 +1,11 @@
 import { browser } from "wxt/browser";
 import { defineBackground } from "wxt/utils/define-background";
-import { createBookmark, ensureStarterWorkspace, getWorkspaceData, purgeTrash } from "../src/db/repository";
-import { DuplicateError } from "../src/domain/errors";
+import { ensureStarterWorkspace } from "../src/db/repository";
 import { parseSafeNavigationUrl } from "../src/domain/urls";
-import { resolveQuickSaveDestination } from "../src/domain/quickSave";
 import { parseExtensionMessage, type ExtensionResponse } from "../src/browser/messages";
-import { translate, type MessageKey } from "../src/i18n";
-
-const MENU_SAVE_PAGE = "asterfold-save-page";
-const MENU_SAVE_LINK = "asterfold-save-link";
-const MENU_OPEN = "asterfold-open";
-const TRASH_ALARM = "asterfold-trash-cleanup";
-const BADGE_CLEAR_ALARM = "asterfold-badge-clear";
-const BADGE_CLEAR_DELAY_MINUTES = 0.5;
 
 function runTask(task: Promise<unknown>, area: string): void {
   void task.catch(() => console.error(`Asterfold background task failed: ${area}`));
-}
-
-async function ensureTrashAlarm(): Promise<void> {
-  if (!await browser.alarms.get(TRASH_ALARM)) {
-    await browser.alarms.create(TRASH_ALARM, { delayInMinutes: 5, periodInMinutes: 24 * 60 });
-  }
-}
-
-async function ensureMenus(): Promise<void> {
-  const workspace = await getWorkspaceData();
-  const t = (key: MessageKey): string => translate(workspace.settings.locale, key);
-  await browser.contextMenus.removeAll();
-  browser.contextMenus.create({ id: MENU_SAVE_PAGE, title: t("context.savePage"), contexts: ["page"], documentUrlPatterns: ["http://*/*", "https://*/*"] });
-  browser.contextMenus.create({ id: MENU_SAVE_LINK, title: t("context.saveLink"), contexts: ["link"], targetUrlPatterns: ["http://*/*", "https://*/*", "mailto:*"], documentUrlPatterns: ["http://*/*", "https://*/*"] });
-  browser.contextMenus.create({ id: MENU_OPEN, title: t("context.openWorkspace"), contexts: ["page", "action"] });
-}
-
-async function setBadge(text: string, color: string): Promise<void> {
-  await browser.action.setBadgeBackgroundColor({ color });
-  await browser.action.setBadgeText({ text });
-  await browser.alarms.create(BADGE_CLEAR_ALARM, { delayInMinutes: BADGE_CLEAR_DELAY_MINUTES });
-}
-
-async function saveUrl(url: string, title: string): Promise<ExtensionResponse> {
-  let safeUrl: string;
-  try {
-    safeUrl = parseSafeNavigationUrl(url, { allowMailto: true });
-  } catch {
-    return { ok: false, code: "UNSAFE_URL" };
-  }
-  const workspace = await getWorkspaceData();
-  const boardId = resolveQuickSaveDestination(
-    workspace.settings,
-    workspace.pages,
-    workspace.boards,
-    "default",
-  )?.boardId;
-  if (!boardId) return { ok: false, code: "BOARD_REQUIRED" };
-  const t = (key: MessageKey): string => translate(workspace.settings.locale, key);
-  try {
-    const fallbackTitle = safeUrl.startsWith("mailto:") ? t("bookmark.email") : new URL(safeUrl).hostname;
-    await createBookmark({ boardId, title: title || fallbackTitle, url: safeUrl }, { allowDuplicate: workspace.settings.duplicateStrategy === "allow" });
-    await setBadge("✓", "#079455");
-    return { ok: true, data: { status: "saved" } };
-  } catch (error) {
-    if (error instanceof DuplicateError) {
-      await setBadge("=", "#b7791f");
-      return { ok: false, code: "DUPLICATE_BOOKMARK" };
-    }
-    await setBadge("!", "#d92d20");
-    return { ok: false, code: "SAVE_FAILED" };
-  }
-}
-
-async function saveActiveTab(tabId?: number): Promise<ExtensionResponse> {
-  const tabs = tabId === undefined ? await browser.tabs.query({ active: true, currentWindow: true }) : [await browser.tabs.get(tabId)];
-  const tab = tabs[0];
-  if (!tab?.url) return { ok: false, code: "ACTIVE_TAB_UNAVAILABLE" };
-  return saveUrl(tab.url, tab.title ?? "");
 }
 
 async function openWorkspace(pageId?: string): Promise<void> {
@@ -86,9 +17,9 @@ async function handleRuntimeMessage(raw: unknown, sender: chrome.runtime.Message
   const message = parseExtensionMessage(raw);
   if (!message) return { ok: false, code: "INVALID_MESSAGE" };
   switch (message.type) {
-    case "QUICK_SAVE": return saveActiveTab(message.tabId);
-    case "INSTANT_SAVE": return saveUrl(message.url, message.title);
-    case "OPEN_WORKSPACE": await openWorkspace(message.pageId); return { ok: true };
+    case "OPEN_WORKSPACE":
+      await openWorkspace(message.pageId);
+      return { ok: true };
     case "OPEN_URL": {
       let safeUrl: string;
       try {
@@ -109,69 +40,21 @@ async function handleRuntimeMessage(raw: unknown, sender: chrome.runtime.Message
       else await browser.tabs.update({ url: safeUrl });
       return { ok: true };
     }
-    case "SET_BADGE": {
-      const badge = message.status === "saved"
-        ? ["✓", "#079455"]
-        : message.status === "duplicate"
-          ? ["=", "#b7791f"]
-          : ["!", "#d92d20"];
-      await setBadge(badge[0]!, badge[1]!);
+    case "DATA_CHANGED":
       return { ok: true };
-    }
-    case "DATA_CHANGED": {
-      if (message.entity === "settings") await ensureMenus();
-      return { ok: true };
-    }
-    default: return { ok: false, code: "UNSUPPORTED_MESSAGE" };
+    default:
+      return { ok: false, code: "UNSUPPORTED_MESSAGE" };
   }
 }
 
 export default defineBackground(() => {
-  runTask(Promise.all([ensureStarterWorkspace(), ensureMenus(), ensureTrashAlarm()]), "initialize");
+  runTask(ensureStarterWorkspace(), "initialize");
 
   browser.runtime.onInstalled.addListener(() => {
-    runTask(Promise.all([ensureMenus(), ensureTrashAlarm()]), "installed");
+    runTask(ensureStarterWorkspace(), "installed");
   });
   browser.runtime.onStartup.addListener(() => {
-    runTask(Promise.all([ensureMenus(), ensureTrashAlarm(), purgeTrash()]), "startup");
-  });
-  browser.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === TRASH_ALARM) runTask(purgeTrash(), "trash-cleanup");
-    if (alarm.name === BADGE_CLEAR_ALARM) runTask(browser.action.setBadgeText({ text: "" }), "badge-clear");
-  });
-
-  browser.commands.onCommand.addListener((command) => {
-    if (command !== "quick-save") return;
-    runTask(getWorkspaceData().then(async (workspace) => {
-      if (workspace.settings.quickSaveMode === "instant") {
-        await saveActiveTab();
-        return;
-      }
-      try {
-        await browser.action.openPopup();
-      } catch {
-        await openWorkspace();
-      }
-    }), "quick-save-command");
-  });
-
-  browser.contextMenus.onClicked.addListener((info, tab) => {
-    if (info.menuItemId === MENU_OPEN) { runTask(openWorkspace(), "open-workspace-menu"); return; }
-    if (info.menuItemId === MENU_SAVE_LINK && info.linkUrl) {
-      let title = info.selectionText?.trim() || "";
-      try {
-        const safeUrl = parseSafeNavigationUrl(info.linkUrl, { allowMailto: true });
-        if (!info.selectionText?.trim()) title = safeUrl.startsWith("mailto:") ? "" : new URL(safeUrl).hostname;
-      } catch {
-        return;
-      }
-      runTask(saveUrl(info.linkUrl, title), "save-link-menu");
-      return;
-    }
-    if (info.menuItemId === MENU_SAVE_PAGE) {
-      const url = tab?.url ?? info.pageUrl;
-      if (url) runTask(saveUrl(url, tab?.title ?? ""), "save-page-menu");
-    }
+    runTask(ensureStarterWorkspace(), "startup");
   });
 
   chrome.runtime.onMessage.addListener((raw: unknown, sender, sendResponse) => {

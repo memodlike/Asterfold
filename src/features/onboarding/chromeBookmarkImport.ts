@@ -25,6 +25,9 @@ export function flattenChromeBookmarks(nodes: chrome.bookmarks.BookmarkTreeNode[
         url: current.node.url,
         description: null,
         folderPath: current.path,
+        source: "chrome",
+        sourceId: current.node.id,
+        folderSourceId: current.node.parentId ?? null,
       });
     }
     const childPath = current.node.title ? [...current.path, current.node.title.slice(0, 240)] : current.path;
@@ -39,17 +42,14 @@ export async function readChromeBookmarks(removePermissionAfterRead = true): Pro
   const granted = await browser.permissions.request({ permissions: ["bookmarks"] });
   if (!granted) return { status: "denied", records: [], permissionRemoved: false };
 
+  let records: ImportRecord[];
   let permissionRemoved = false;
   try {
-    const records = flattenChromeBookmarks(await browser.bookmarks.getTree());
+    records = flattenChromeBookmarks(await browser.bookmarks.getTree());
+  } finally {
     if (removePermissionAfterRead) {
       permissionRemoved = await browser.permissions.remove({ permissions: ["bookmarks"] }).catch(() => false);
     }
-    return { status: "granted", records, permissionRemoved };
-  } catch (error) {
-    if (removePermissionAfterRead) {
-      await browser.permissions.remove({ permissions: ["bookmarks"] }).catch(() => false);
-    }
-    throw error;
   }
+  return { status: "granted", records, permissionRemoved };
 }

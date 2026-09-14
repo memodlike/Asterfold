@@ -49,6 +49,7 @@ const mocks = vi.hoisted(() => ({
   softDeletePage: vi.fn().mockResolvedValue(undefined),
   updateBoard: vi.fn().mockResolvedValue(undefined),
   updateSettings: vi.fn().mockResolvedValue(undefined),
+  purgeTrash: vi.fn().mockResolvedValue(0),
   bulkDeleteBookmarks: vi.fn().mockResolvedValue(undefined),
   bulkMoveBookmarks: vi.fn().mockResolvedValue(undefined),
   bulkRestoreBookmarks: vi.fn().mockResolvedValue(undefined),
@@ -87,6 +88,7 @@ vi.mock("../src/db/repository", () => ({
   softDeletePage: mocks.softDeletePage,
   updateBoard: mocks.updateBoard,
   updateSettings: mocks.updateSettings,
+  purgeTrash: mocks.purgeTrash,
 }));
 vi.mock("../src/browser/api", () => {
   class RequestError extends Error {
