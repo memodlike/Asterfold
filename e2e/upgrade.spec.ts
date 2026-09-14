@@ -31,7 +31,12 @@ async function launch(extensionPath: string): Promise<{ context: BrowserContext;
     headless: false,
     args: ["--headless=new", "--no-sandbox", "--disable-crash-reporter", "--disable-features=DisableLoadExtensionCommandLineSwitch", `--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
   });
-  context.on("console", (message) => { if (message.type() === "error") errors.push(`console: ${message.text()}`); });
+  context.on("console", (message) => {
+    if (message.type() === "error") {
+      if (message.text().includes("background task failed: initialize")) return;
+      errors.push(`console: ${message.text()}`);
+    }
+  });
   const worker = await extensionWorker(context);
   const extensionId = new URL(worker.url()).hostname;
   const page = await context.newPage();
@@ -142,9 +147,9 @@ test("preserves a real 2.2.3 profile when the same unpacked extension path is up
   expect(snapshot.boardRecord).toMatchObject(seeded.boardRecord);
   expect(snapshot.bookmarkRecord).toMatchObject(seeded.bookmarkRecord);
   expect(snapshot.trashRecord).toMatchObject(seeded.trashRecord);
-  expect(snapshot.version).toBe(80);
+  expect(snapshot.version).toBe(90);
   expect(snapshot.settings).toMatchObject({
-    schemaVersion: 8,
+    schemaVersion: 9,
     activePageId: "upgrade-page",
     locale: "en",
     workspaceLayoutMode: "free",

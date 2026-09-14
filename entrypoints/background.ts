@@ -1,6 +1,6 @@
 import { browser } from "wxt/browser";
 import { defineBackground } from "wxt/utils/define-background";
-import { ensureStarterWorkspace } from "../src/db/repository";
+import { ensureStarterWorkspace, purgeTrash } from "../src/db/repository";
 import { parseSafeNavigationUrl } from "../src/domain/urls";
 import { parseExtensionMessage, type ExtensionResponse } from "../src/browser/messages";
 
@@ -48,13 +48,11 @@ async function handleRuntimeMessage(raw: unknown, sender: chrome.runtime.Message
 }
 
 export default defineBackground(() => {
-  runTask(ensureStarterWorkspace(), "initialize");
-
   browser.runtime.onInstalled.addListener(() => {
     runTask(ensureStarterWorkspace(), "installed");
   });
   browser.runtime.onStartup.addListener(() => {
-    runTask(ensureStarterWorkspace(), "startup");
+    runTask(Promise.all([ensureStarterWorkspace(), purgeTrash()]), "startup");
   });
 
   chrome.runtime.onMessage.addListener((raw: unknown, sender, sendResponse) => {

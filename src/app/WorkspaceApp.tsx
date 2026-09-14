@@ -14,7 +14,6 @@ import {
   moveBoardWithGridSwap,
   moveBookmarkToIndex,
   movePageToIndex,
-  purgeTrash,
   renamePage,
   restoreBoard,
   restoreBookmark,
@@ -97,7 +96,6 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
     if (initialSettingsSeen.current) return;
     initialSettingsSeen.current = true;
     performance.mark("asterfold-interactive");
-    void purgeTrash();
     const requestedPage = new URLSearchParams(location.search).get("page");
     if (requestedPage && workspace.pages.some((page) => page.id === requestedPage)) void updateSettings({ activePageId: requestedPage });
   }, [workspace.pages]);
