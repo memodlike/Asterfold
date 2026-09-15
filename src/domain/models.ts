@@ -76,7 +76,24 @@ export type ThemeMode = "system" | "light" | "dark";
 export type Density = "compact" | "comfortable" | "spacious";
 export type CardVariant = "minimal" | "standard" | "visual";
 export type GlassVariant = "regular" | "clear";
-export type BackgroundMode = "auto" | "solid" | "wallpaper";
+export type BackgroundMode = "auto" | "solid" | "wallpaper" | "gradient";
+export type GradientPresetId = "current" | "cool" | "aurora" | "warm" | "neutral" | "custom";
+
+export interface GradientPoint {
+  id: string;
+  color: string;
+  x: number;
+  y: number;
+  spread: number;
+  opacity: number;
+  enabled: boolean;
+}
+
+export interface GradientConfig {
+  preset: GradientPresetId;
+  points: GradientPoint[];
+}
+
 export type PerformanceMode = "auto" | "quality" | "balanced" | "compatibility" | "software" | "custom";
 export type LocalePreference =
   | "auto"
@@ -125,6 +142,7 @@ export interface ThemeConfig {
   wallpaperZoom: number;
   glassVariant: GlassVariant;
   backgroundMode: BackgroundMode;
+  gradient?: GradientConfig | undefined;
 }
 
 export interface AppSettings {

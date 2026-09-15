@@ -113,7 +113,7 @@ Asterfold is designed around local storage and least-privilege extension access.
 |---|---|
 | `bookmarks` | Imports or refreshes Chrome bookmarks after direct user action (revoked immediately) |
 
-Asterfold 3.4.1 does not request `activeTab`, `favicon`, `alarms`, or `contextMenus`. No active-tab URLs/titles are queried, no background alarm loops run, and all favicons are replaced by deterministic local letter/monogram avatars.
+Asterfold 3.5.0 does not request `activeTab`, `favicon`, `alarms`, or `contextMenus`. No active-tab URLs/titles are queried, no background alarm loops run, and all favicons are replaced by deterministic local letter/monogram avatars.
 
 Detailed review material:
 
@@ -176,9 +176,7 @@ Contribution guidance is available in [docs/development/CONTRIBUTING.md](docs/de
 
 ## Release artifacts
 
-Asterfold 3.4.0 produces a reproducible, cryptographically verifiable release containing:
-
-Asterfold 3.4.1 produces a reproducible, cryptographically verifiable release containing:
+Asterfold 3.5.0 produces a reproducible, cryptographically verifiable release containing:
 
 - `Asterfold-Chrome.zip` (runtime Chrome Web Store bundle)
 - `chrome-unpacked.zip` (unpacked developer distribution)
@@ -191,14 +189,15 @@ The release pipeline verifies Manifest V3 structure, permission policy, CSP, for
 
 ## Release highlights
 
-**Asterfold 3.4.1** delivers comprehensive privacy hardening with zero privileged permissions (`activeTab`, `contextMenus`, `alarms`, `favicon` completely removed), idempotent Chrome bookmark import/refresh mapped via stable `sourceId` on IndexedDB Schema 9, fully local deterministic monogram avatars with zero history leakage, a privacy-neutral launcher popup, and 100% complete localization across 12 languages.
+**Asterfold 3.5.0** introduces advanced multi-point gradient background customization (1–10 points, 5 starter presets, curated harmonic randomizer, progressive disclosure) and smart bookmark name recovery during import with clean brand identities and multi-part public suffix support, maintaining zero permissions expansion and zero telemetry.
 
 The repository does not claim Chrome Web Store publication, approval, user counts, ratings, awards, or endorsements until those facts exist publicly.
 
 ## Version history
 
-1. **v3.4.1 — Comprehensive privacy hardening and idempotent sync.** Strips privileged permissions to only `storage` and on-demand `bookmarks` (revoked immediately in a `finally` block), implements IndexedDB Schema 9 with `sourceId` indexing, replaces favicon requests with deterministic letter monograms, and refactors the extension popup into a zero-tab-query workspace dashboard.
-2. **v3.4.0 — Multi-tier performance architecture and full localization.** Introduces 6-tier rendering hierarchy with legacy GPU heuristics and recommendation rationales, Settings "Restore Defaults" and "Restart Welcome Tour" controls, 100% complete localization across 12 locales with zero English leakage, and Chrome for Testing headless MV3 test runner upgrades.
+1. **v3.5.0 — Advanced multi-point gradient backgrounds and smart bookmark naming.** Adds customizable 1–10 point radial gradient backgrounds with 5 starter presets and curated harmonic randomizer, smart bookmark title recovery for missing or generic titles across 100+ services with multi-part TLD support, and full 12-locale internationalization.
+2. **v3.4.1 — Comprehensive privacy hardening and idempotent sync.** Strips privileged permissions to only `storage` and on-demand `bookmarks` (revoked immediately in a `finally` block), implements IndexedDB Schema 9 with `sourceId` indexing, replaces favicon requests with deterministic letter monograms, and refactors the extension popup into a zero-tab-query workspace dashboard.
+3. **v3.4.0 — Multi-tier performance architecture and full localization.** Introduces 6-tier rendering hierarchy with legacy GPU heuristics and recommendation rationales, Settings "Restore Defaults" and "Restart Welcome Tour" controls, 100% complete localization across 12 locales with zero English leakage, and Chrome for Testing headless MV3 test runner upgrades.
 1. **v3.3.0 — Interface clarity and accessibility.** Adds semantic Settings tabs, progressive appearance controls, a shorter first-run flow, bounded search input, responsive Quick Save surfaces and accessible popup status feedback without changing permissions or local-only storage.
 1. **v3.2.2 — Design-system hardening.** Unifies popup theming, startup motion, overlay lifecycle, responsive Board behavior, performance affordances, and regression coverage without changing permissions or the local-first architecture.
 1. **v3.2.1 — Store listing optimization.** Updates the manifest name to `Asterfold — Visual Bookmark Workspace`, refreshes English/Russian Store copy, removes stale rendering terminology, and keeps runtime permissions and functionality unchanged.

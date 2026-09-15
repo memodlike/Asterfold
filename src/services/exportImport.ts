@@ -9,6 +9,7 @@ import { allocateBetween, allocateManyAtEnd, compareRanks } from "../domain/orde
 import { backupSchema, type AsterfoldBackup } from "../domain/schemas";
 import { normalizeUrl } from "../domain/urls";
 import { normalizeDescription, normalizeEntityTitle } from "../domain/text";
+import { recoverBookmarkTitle } from "../domain/bookmarkNaming";
 import { IMPORT_LIMITS } from "../domain/importLimits";
 import { WALLPAPER_LIMITS } from "../domain/mediaLimits";
 import { isWallpaperMimeType, type WallpaperMimeType } from "../domain/wallpaperFormats";
@@ -463,7 +464,7 @@ export function parseNetscapeHtml(text: string): ImportRecord[] {
     } else if (tag === "a" && closing && capture === "anchor") {
       try {
         const normalized = normalizeUrl(href, false);
-        lastRecord = { title: decode(buffer).trim().slice(0, 240) || normalized.hostname, url: normalized.url, description: null, folderPath: [...folders] };
+        lastRecord = { title: recoverBookmarkTitle(decode(buffer), normalized.url), url: normalized.url, description: null, folderPath: [...folders] };
         if (records.length >= IMPORT_LIMITS.bookmarks) throw new ImportError("Bookmark file contains too many bookmarks");
         records.push(lastRecord);
       } catch (error) {
@@ -499,7 +500,7 @@ export async function importRecords(
     try {
       const normalized = normalizeUrl(record.url);
       valid.push({
-        title: normalizeEntityTitle(record.title, normalized.hostname),
+        title: recoverBookmarkTitle(record.title, normalized.url),
         url: normalized.url,
         description: normalizeDescription(record.description),
         folderPath: record.folderPath.map((folder) => normalizeEntityTitle(folder, "Imported bookmarks")),

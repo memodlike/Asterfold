@@ -1,4 +1,5 @@
 import { browser } from "wxt/browser";
+import { recoverBookmarkTitle } from "../../domain/bookmarkNaming";
 import { ImportError } from "../../domain/errors";
 import { IMPORT_LIMITS } from "../../domain/importLimits";
 import type { ImportRecord } from "../../services/exportImport";
@@ -21,7 +22,7 @@ export function flattenChromeBookmarks(nodes: chrome.bookmarks.BookmarkTreeNode[
     if (current.node.url) {
       if (records.length >= IMPORT_LIMITS.bookmarks) throw new ImportError("Chrome bookmark tree contains too many bookmarks");
       records.push({
-        title: current.node.title.trim().slice(0, 240) || "Bookmark",
+        title: recoverBookmarkTitle(current.node.title, current.node.url),
         url: current.node.url,
         description: null,
         folderPath: current.path,

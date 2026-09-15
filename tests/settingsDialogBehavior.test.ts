@@ -400,5 +400,42 @@ describe("SettingsDialog behavior", () => {
       }));
     });
   });
+
+  it("supports customizing gradient background with presets and randomizer", async () => {
+    const { container } = renderSettings({ workspace: workspace(), initialSection: "appearance" });
+    fireEvent.click(container.querySelector("summary")!);
+
+    const gradientBtn = screen.getByRole("button", { name: "Gradient" });
+    fireEvent.click(gradientBtn);
+
+    await waitFor(() => {
+      expect(screen.getByRole("region", { name: "Gradient" })).toBeVisible();
+    });
+
+    // Switch preset to Cool
+    const coolBtn = screen.getByRole("button", { name: "Cool" });
+    fireEvent.click(coolBtn);
+
+    // Randomize gradient
+    const randomBtn = screen.getByRole("button", { name: "Random Gradient" });
+    fireEvent.click(randomBtn);
+
+    // Add a color
+    const addBtn = screen.getByRole("button", { name: "Add color" });
+    fireEvent.click(addBtn);
+
+    await waitFor(() => {
+      expect(mocks.updateSettings).toHaveBeenCalledWith(expect.objectContaining({
+        theme: expect.objectContaining({
+          backgroundMode: "gradient",
+          gradient: expect.objectContaining({
+            preset: "custom",
+            points: expect.any(Array),
+          }),
+        }),
+      }));
+    });
+  });
 });
+
 

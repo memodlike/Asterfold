@@ -26,9 +26,10 @@ import { Modal } from "../../components/Modal";
 import { SelectField, type SelectOption } from "../../components/SelectField";
 import { localeOptions, useI18n } from "../../i18n";
 import { publishThemePreview } from "../appearance/themePreview";
-import { BUILTIN_WALLPAPERS } from "../appearance/themeRuntime";
+import { BUILTIN_WALLPAPERS, isDarkTheme } from "../appearance/themeRuntime";
 import { browserPerformanceSignals, classifyPerformanceMode, recommendPerformanceProfile } from "../performance/performanceProfile";
 import { readChromeBookmarks } from "../onboarding/chromeBookmarkImport";
+import { GradientEditor } from "./GradientEditor";
 
 export type SettingsSection = "appearance" | "layout" | "language" | "data-privacy";
 
@@ -338,7 +339,25 @@ export function SettingsDialog(props: SettingsDialogProps) {
             <details className="settings-disclosure" open={themeDraft.backgroundMode !== "auto"}>
               <summary>{t("settings.background")}</summary>
               <div className="settings-disclosure__body">
-                <SettingRow label={t("settings.background")}><Segmented value={themeDraft.backgroundMode} items={[{ value: "auto", label: t("settings.backgroundAuto") }, { value: "solid", label: t("settings.backgroundSolid") }, { value: "wallpaper", label: t("settings.backgroundWallpaper") }]} onChange={(value) => patchTheme({ backgroundMode: value as ThemeConfig["backgroundMode"] })} /></SettingRow>
+                <SettingRow label={t("settings.background")}>
+                  <Segmented
+                    value={themeDraft.backgroundMode}
+                    items={[
+                      { value: "auto", label: t("settings.backgroundAuto") },
+                      { value: "solid", label: t("settings.backgroundSolid") },
+                      { value: "gradient", label: t("settings.backgroundGradient") },
+                      { value: "wallpaper", label: t("settings.backgroundWallpaper") },
+                    ]}
+                    onChange={(value) => patchTheme({ backgroundMode: value as ThemeConfig["backgroundMode"] })}
+                  />
+                </SettingRow>
+                {themeDraft.backgroundMode === "gradient" ? (
+                  <GradientEditor
+                    gradient={themeDraft.gradient}
+                    dark={isDarkTheme(themeDraft)}
+                    onChange={(gradient) => patchTheme({ gradient, backgroundMode: "gradient" })}
+                  />
+                ) : null}
                 {themeDraft.backgroundMode === "solid" ? <SettingRow label={t("settings.solidColor")}><input type="color" value={themeDraft.canvas} onChange={(event) => patchTheme({ canvas: event.target.value })} /></SettingRow> : null}
                 <SettingRow label={t("settings.glassStyle")}><Segmented disabled={expensiveEffectsDisabled} title={t("settings.performanceDescription")} value={themeDraft.glassVariant} items={[{ value: "regular", label: t("settings.glassRegular") }, { value: "clear", label: t("settings.glassClear") }]} onChange={(value) => patchTheme({ glassVariant: value as ThemeConfig["glassVariant"], surfaceOpacity: value === "clear" ? 0.34 : 0.62 })} /></SettingRow>
                 <div className="settings-range-grid">

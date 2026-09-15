@@ -273,7 +273,21 @@ export const ru = {
   "settings.resetDefaultsConfirm": "Сбросить настройки внешнего вида и расположения до значений по умолчанию? Ваши закладки и доски останутся нетронутыми.",
   "settings.resetDefaultsSuccess": "Настройки сброшены",
   "settings.rerunOnboarding": "Перезапустить приветственный тур",
-  "settings.rerunOnboardingDescription": "Ознакомиться с возможностями Asterfold заново."
+  "settings.rerunOnboardingDescription": "Ознакомиться с возможностями Asterfold заново.",
+  "settings.backgroundGradient": "Градиент",
+  "settings.gradientRandom": "Случайный градиент",
+  "settings.gradientPresets": "Пресеты",
+  "settings.gradientAddColor": "Добавить цвет",
+  "settings.gradientRemoveColor": "Удалить цвет",
+  "settings.gradientColor": "Цвет",
+  "settings.gradientIntensity": "Интенсивность",
+  "settings.gradientSpread": "Рассеивание",
+  "settings.gradientPosition": "Положение",
+  "settings.gradientPresetCurrent": "Текущий",
+  "settings.gradientPresetCool": "Холодный",
+  "settings.gradientPresetAurora": "Северное сияние",
+  "settings.gradientPresetWarm": "Тёплый",
+  "settings.gradientPresetNeutral": "Нейтральный",
 } as const;
 
 export type MessageKey = keyof typeof ru;

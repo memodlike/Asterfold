@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { ThemeConfig } from "../../domain/models";
 import type { ResolvedPerformanceMode } from "../performance/performanceProfile";
+import { compileGradientCss } from "./gradientEngine";
 import { semanticPalette } from "./semanticPalette";
 
 export const BUILTIN_WALLPAPERS = [
@@ -21,18 +22,31 @@ export function themeStyle(
   const dark = legacyCall ? compatibilityWallpaperOrDark : darkValue ?? false;
   const palette = semanticPalette(dark);
   const builtin = BUILTIN_WALLPAPERS.find((item) => item.id === theme.wallpaperId);
-  const wallpaperImage = theme.backgroundMode === "wallpaper" ? wallpaperUrl ? `url("${wallpaperUrl}")` : builtin?.value ?? "none" : "none";
-  const compatibilityImage = theme.backgroundMode === "wallpaper"
-    ? wallpaperUrl ? wallpaperImage : builtin?.compatibilityValue ?? wallpaperImage
-    : "none";
-  const softwareImage = theme.backgroundMode === "wallpaper"
-    ? compatibilityWallpaperUrl ? `url("${compatibilityWallpaperUrl}")` : builtin?.compatibilityValue ?? compatibilityImage
-    : "none";
+  const isGradient = theme.backgroundMode === "gradient";
+  const gradientQuality = isGradient ? compileGradientCss(theme.gradient, dark, "quality") : "none";
+  const gradientCompat = isGradient ? compileGradientCss(theme.gradient, dark, "compatibility") : "none";
+  const gradientSoftware = isGradient ? compileGradientCss(theme.gradient, dark, "software") : "none";
+
+  const wallpaperImage = isGradient
+    ? gradientQuality
+    : theme.backgroundMode === "wallpaper"
+      ? wallpaperUrl ? `url("${wallpaperUrl}")` : builtin?.value ?? "none"
+      : "none";
+  const compatibilityImage = isGradient
+    ? gradientCompat
+    : theme.backgroundMode === "wallpaper"
+      ? wallpaperUrl ? wallpaperImage : builtin?.compatibilityValue ?? wallpaperImage
+      : "none";
+  const softwareImage = isGradient
+    ? gradientSoftware
+    : theme.backgroundMode === "wallpaper"
+      ? compatibilityWallpaperUrl ? `url("${compatibilityWallpaperUrl}")` : builtin?.compatibilityValue ?? compatibilityImage
+      : "none";
   const canvas = theme.backgroundMode === "solid" ? theme.canvas : palette.canvas;
-  const wallpaperFilter = (performanceMode === "quality" || performanceMode === "balanced") && (theme.wallpaperBlur > 0 || theme.wallpaperSaturation !== 1)
+  const wallpaperFilter = !isGradient && (performanceMode === "quality" || performanceMode === "balanced") && (theme.wallpaperBlur > 0 || theme.wallpaperSaturation !== 1)
     ? `blur(${performanceMode === "balanced" ? Math.min(6, theme.wallpaperBlur) : theme.wallpaperBlur}px) saturate(${theme.wallpaperSaturation})`
     : "none";
-  const wallpaperTransform = performanceMode === "quality" && wallpaperImage !== "none" && theme.wallpaperZoom > 1 ? `scale(${theme.wallpaperZoom})` : "none";
+  const wallpaperTransform = !isGradient && performanceMode === "quality" && wallpaperImage !== "none" && theme.wallpaperZoom > 1 ? `scale(${theme.wallpaperZoom})` : "none";
   return {
     "--color-canvas": canvas, "--surface-rgb": palette.surface, "--color-surface": `rgb(${palette.surface} / ${theme.surfaceOpacity})`, "--surface-opacity": theme.surfaceOpacity,
     "--color-surface-solid": palette.surfaceSolid, "--color-surface-elevated": palette.surfaceElevated, "--color-text": palette.text, "--color-text-secondary": palette.secondary,
@@ -48,5 +62,5 @@ export function themeStyle(
 }
 
 export function isDarkTheme(theme: ThemeConfig): boolean {
-  return theme.mode === "dark" || (theme.mode === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+  return theme.mode === "dark" || (theme.mode === "system" && typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: dark)").matches);
 }

@@ -1,6 +1,6 @@
-# Chrome Web Store submission values — Asterfold 3.4.1
+# Chrome Web Store submission values — Asterfold 3.5.0
 
-Current version: 3.4.1
+Current version: 3.5.0
 Copy these values into the owner Dashboard only after checking them against the final release ZIP.
 
 ## Core values
@@ -36,7 +36,7 @@ Use only a privacy URL that has been opened publicly without authentication. The
 
 ### Removed permissions (`activeTab`, `favicon`, `alarms`, `contextMenus`)
 
-> Asterfold 3.4.1 does not request or require `activeTab`, `favicon`, `alarms`, or `contextMenus`. No active-tab URLs/titles are queried, no background alarm loops run, and all favicons are replaced by deterministic local letter/monogram avatars.
+> Asterfold 3.5.0 does not request or require `activeTab`, `favicon`, `alarms`, or `contextMenus`. No active-tab URLs/titles are queried, no background alarm loops run, and all favicons are replaced by deterministic local letter/monogram avatars.
 
 ## Remote code
 

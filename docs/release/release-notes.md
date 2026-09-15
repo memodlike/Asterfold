@@ -1,3 +1,31 @@
+# Asterfold 3.5.0
+
+## Advanced Multi-Point Gradient Background Customization
+
+- **Configurable 1–10 Gradient Points**: Users can customize background gradients with 1 to 10 points, tuning color, spatial position (X/Y coordinates with quick presets for Top-Left, Top-Right, Center, Bottom-Left, Bottom-Right), radial spread, opacity, and toggle visibility per point.
+- **5 Curated Starter Presets**: Built-in presets designed for visual harmony and contrast:
+  - **Current**: Dynamically derives from the workspace theme's accent color.
+  - **Cool**: Deep oceanic blues, teals, and cyan tones.
+  - **Aurora**: Vibrant northern lights with emerald greens, purples, and amber glows.
+  - **Warm**: Dusk and sunset glows featuring magenta, peach, and warm ambers.
+  - **Neutral**: Subtle, refined slate and graphite tones for focused minimalist workflows.
+- **Harmonic Random Gradient Generator**: One-click curated randomizer that uses color harmony algorithms (triadic, analogous, complementary) and spatial distribution anchors to create visually pleasing, non-clashing gradient layouts every time.
+- **Tiered Performance Profile Compatibility**: Gradient compilation integrates seamlessly into Asterfold's multi-tier rendering architecture. Quality and Balanced profiles render full multi-layer gradients, Compatibility mode supports clean layered fallbacks, and Software mode clamps to the top 3 dominant points for maximum responsiveness on legacy GPUs.
+- **Apple-Style Progressive Disclosure**: Settings Appearance UI presents a clean, non-overwhelming preset selector and quick randomizer by default, with an expandable point inspector for fine-grained coordinate and color editing.
+
+## Smart Bookmark Name Recovery During Import
+
+- **Human-Readable Brand Casings**: Automatically recovers clean, canonical brand casings for over 100 popular services (such as YouTube, GitHub, Google Docs, Notion, Figma, Linear, Spotify, Discord, Reddit, and more) when imported bookmark titles are missing or unusable.
+- **Service Subdomain & Multi-Part TLD Handling**: Accurately recognizes subdomains (e.g., `docs.google.com` → "Google Docs", `gist.github.com` → "GitHub Gist") and multi-part public suffixes (`.co.uk`, `.com.au`, `.co.jp`, etc.) without awkward truncations.
+- **100% User Title Preservation**: Strictly preserves meaningful user-assigned titles. Recovery triggers only when the title is empty, whitespace, a generic placeholder (such as "Bookmark", "Untitled", "New Tab"), or a raw URL string.
+- **Zero-Network Invariant**: Operates entirely in-memory on the client device with zero network calls, zero tracking, and absolute privacy.
+
+## Verification & Architecture
+
+- **Full Test Suite & E2E Verification**: 54 test files (418 tests) passing across Vitest and Playwright real-MV3 unpacked browser automation suites.
+- **Complete 12-Locale Localization**: All 14 new gradient customization keys fully localized across English, Russian, Kazakh, German, Spanish, French, Italian, Portuguese, Polish, Ukrainian, Turkish, and Dutch with zero untranslated English leakage.
+- **Zero Privileged Permissions**: Maintained strict least-privilege manifest (`permissions: ["storage"]`, optional on-demand `bookmarks` with immediate revocation, empty `host_permissions`).
+
 # Asterfold 3.4.1
 
 ## Comprehensive Privacy Hardening & Permission Minimization

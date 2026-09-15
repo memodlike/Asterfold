@@ -63,6 +63,21 @@ export const bookmarkSchema = baseEntitySchema.extend({
   sourceId: z.string().max(MAX_ID).nullable().optional(),
 }).strict();
 
+export const gradientPointSchema = z.object({
+  id: z.string().max(64),
+  color: z.string().regex(/^#[0-9a-f]{6}$/i),
+  x: finite.min(0).max(100),
+  y: finite.min(0).max(100),
+  spread: finite.min(10).max(150),
+  opacity: finite.min(0).max(1),
+  enabled: z.boolean().default(true),
+}).strict();
+
+export const gradientConfigSchema = z.object({
+  preset: z.enum(["current", "cool", "aurora", "warm", "neutral", "custom"]).default("current"),
+  points: z.array(gradientPointSchema).min(1).max(10),
+}).strict();
+
 export const themeSchema: z.ZodType<ThemeConfig> = z.object({
   preset: z.enum(["frost-light", "graphite-dark", "midnight", "aurora", "warm-paper", "high-contrast"]),
   mode: z.enum(["system", "light", "dark"]),
@@ -91,7 +106,8 @@ export const themeSchema: z.ZodType<ThemeConfig> = z.object({
   wallpaperPosition: z.string().max(64),
   wallpaperZoom: finite.min(0.25).max(4),
   glassVariant: z.enum(["regular", "clear"]).default("regular"),
-  backgroundMode: z.enum(["auto", "solid", "wallpaper"]).default("auto"),
+  backgroundMode: z.enum(["auto", "solid", "wallpaper", "gradient"]).default("auto"),
+  gradient: gradientConfigSchema.optional(),
 }).strict();
 
 export const appSettingsSchema = z.object({

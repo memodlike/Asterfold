@@ -256,7 +256,7 @@ describe("repository branch coverage", () => {
     const target = await createBoard(initial.pages[0]!.id, "Target", database);
 
     const first = await createBookmark({ boardId: source.id, title: "   ", url: "https://example.com/path", description: "   " }, {}, database);
-    expect(first).toMatchObject({ title: "example.com", description: null, openMode: "current", pinned: false });
+    expect(first).toMatchObject({ title: "Example", description: null, openMode: "current", pinned: false });
     const duplicate = await createBookmark({ boardId: source.id, title: "Allowed", url: first.url, openMode: "new-tab", pinned: true }, { allowDuplicate: true }, database);
     expect(duplicate).toMatchObject({ openMode: "new-tab", pinned: true });
     expect(await findDuplicate(source.id, first.url, database, first.id)).toMatchObject({ id: duplicate.id });

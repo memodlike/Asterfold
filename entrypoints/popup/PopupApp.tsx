@@ -156,7 +156,7 @@ export function PopupApp() {
 
       <footer>
         <span>{t("popup.localOnly")}</span>
-        <span>Asterfold 3.4.1</span>
+        <span>Asterfold 3.5.0</span>
       </footer>
     </main>
   );

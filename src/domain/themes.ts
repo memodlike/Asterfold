@@ -1,4 +1,4 @@
-import type { ThemeConfig, ThemePresetId } from "./models";
+import type { GradientConfig, GradientPoint, ThemeConfig, ThemePresetId } from "./models";
 import { themeSchema } from "./schemas";
 
 export interface ThemePreset {
@@ -32,6 +32,14 @@ const base: Omit<ThemeConfig, "preset" | "mode" | "accent" | "canvas"> = {
   wallpaperZoom: 1,
   glassVariant: "regular",
   backgroundMode: "auto",
+  gradient: {
+    preset: "current",
+    points: [
+      { id: "p-current-1", color: "#5b8cff", x: 18, y: 15, spread: 75, opacity: 0.40, enabled: true },
+      { id: "p-current-2", color: "#8da9dc", x: 82, y: 22, spread: 70, opacity: 0.32, enabled: true },
+      { id: "p-current-3", color: "#3b5998", x: 48, y: 88, spread: 80, opacity: 0.30, enabled: true },
+    ],
+  },
 };
 
 export const THEME_PRESETS: readonly ThemePreset[] = [
@@ -50,6 +58,35 @@ export function getThemePreset(id: ThemePresetId): ThemeConfig {
 
 export function isValidHexColor(value: string): boolean {
   return /^#[0-9a-f]{6}$/i.test(value);
+}
+
+function validateGradientPoint(point: unknown, index: number): GradientPoint | null {
+  if (typeof point !== "object" || point === null) return null;
+  const p = point as Record<string, unknown>;
+  const id = typeof p.id === "string" && p.id.length > 0 && p.id.length <= 64 ? p.id : `p-${index + 1}`;
+  const color = typeof p.color === "string" && isValidHexColor(p.color) ? p.color : "#5b8cff";
+  const x = typeof p.x === "number" && Number.isFinite(p.x) ? Math.min(100, Math.max(0, p.x)) : 50;
+  const y = typeof p.y === "number" && Number.isFinite(p.y) ? Math.min(100, Math.max(0, p.y)) : 50;
+  const spread = typeof p.spread === "number" && Number.isFinite(p.spread) ? Math.min(150, Math.max(10, p.spread)) : 65;
+  const opacity = typeof p.opacity === "number" && Number.isFinite(p.opacity) ? Math.min(1, Math.max(0, p.opacity)) : 0.35;
+  const enabled = typeof p.enabled === "boolean" ? p.enabled : true;
+  return { id, color, x, y, spread, opacity, enabled };
+}
+
+function validateGradientConfig(raw: unknown, fallback?: GradientConfig): GradientConfig | undefined {
+  if (typeof raw !== "object" || raw === null) return fallback;
+  const source = raw as Record<string, unknown>;
+  const preset = typeof source.preset === "string" && ["current", "cool", "aurora", "warm", "neutral", "custom"].includes(source.preset)
+    ? source.preset as GradientConfig["preset"]
+    : fallback?.preset ?? "current";
+  const pointsRaw = Array.isArray(source.points) ? source.points : fallback?.points ?? [];
+  const points: GradientPoint[] = [];
+  for (let i = 0; i < pointsRaw.length && points.length < 10; i += 1) {
+    const valid = validateGradientPoint(pointsRaw[i], i);
+    if (valid) points.push(valid);
+  }
+  if (points.length === 0) return fallback;
+  return { preset, points };
 }
 
 export function validateTheme(theme: ThemeConfig): ThemeConfig {
@@ -95,7 +132,8 @@ export function validateTheme(theme: ThemeConfig): ThemeConfig {
       : fallback.wallpaperPosition,
     wallpaperZoom: finiteNumber(source.wallpaperZoom, fallback.wallpaperZoom, 1, 2),
     glassVariant: enumValue(source.glassVariant, ["regular", "clear"], fallback.glassVariant),
-    backgroundMode: enumValue(source.backgroundMode, ["auto", "solid", "wallpaper"], fallback.backgroundMode),
+    backgroundMode: enumValue(source.backgroundMode, ["auto", "solid", "wallpaper", "gradient"], fallback.backgroundMode),
+    gradient: validateGradientConfig(source.gradient, fallback.gradient),
   };
   return themeSchema.parse(candidate);
 }

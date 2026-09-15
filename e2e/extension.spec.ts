@@ -344,7 +344,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
     await expect(popup.locator(".workspace-button")).toBeVisible();
     await expect(popup.locator(".save-button")).toBeVisible();
-    await expect(popup.getByText("Asterfold 3.4.1")).toBeVisible();
+    await expect(popup.getByText("Asterfold 3.5.0")).toBeVisible();
     await popup.close();
     await workspacePage.close();
   });

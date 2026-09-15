@@ -16,6 +16,7 @@ import { validateTheme } from "../domain/themes";
 import { appSettingsSchema, snapshotSchema, wallpaperMetadataSchema } from "../domain/schemas";
 import { WALLPAPER_LIMITS } from "../domain/mediaLimits";
 import { normalizeDescription, normalizeEntityTitle } from "../domain/text";
+import { recoverBookmarkTitle } from "../domain/bookmarkNaming";
 import { createId, nowIso } from "../utils/ids";
 import { processWallpaper } from "../services/wallpaper";
 import { createDefaultSettings } from "./defaults";
@@ -702,7 +703,7 @@ export async function createBookmark(
       id: createId(),
       userId: null,
       boardId: input.boardId,
-      title: normalizeEntityTitle(input.title, normalized.hostname || "Untitled bookmark"),
+      title: recoverBookmarkTitle(input.title, normalized.url),
       url: normalized.url,
       normalizedUrl: normalized.normalizedUrl,
       hostname: normalized.hostname,

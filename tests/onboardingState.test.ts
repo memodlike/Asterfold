@@ -144,11 +144,14 @@ describe("Chrome bookmark normalization", () => {
   });
 
   it("uses a safe fallback title and truncates untrusted labels", () => {
-    const nodes = [{ id: "root", title: "", children: [{ id: "a", title: "   ", url: "https://example.com" }] }] as unknown as chrome.bookmarks.BookmarkTreeNode[];
-    expect(flattenChromeBookmarks(nodes)[0]?.title).toBe("Bookmark");
+    const unresolvableNodes = [{ id: "root", title: "", children: [{ id: "a", title: "   ", url: "about:blank" }] }] as unknown as chrome.bookmarks.BookmarkTreeNode[];
+    expect(flattenChromeBookmarks(unresolvableNodes)[0]?.title).toBe("Bookmark");
+
+    const recoverableNodes = [{ id: "root", title: "", children: [{ id: "b", title: "   ", url: "https://example.com" }] }] as unknown as chrome.bookmarks.BookmarkTreeNode[];
+    expect(flattenChromeBookmarks(recoverableNodes)[0]?.title).toBe("Example");
 
     const long = "x".repeat(400);
-    const longNodes = [{ id: "root", title: long, children: [{ id: "a", title: long, url: "https://example.com" }] }] as unknown as chrome.bookmarks.BookmarkTreeNode[];
+    const longNodes = [{ id: "root", title: long, children: [{ id: "c", title: long, url: "https://example.com" }] }] as unknown as chrome.bookmarks.BookmarkTreeNode[];
     const record = flattenChromeBookmarks(longNodes)[0]!;
     expect(record.title).toHaveLength(240);
     expect(record.folderPath[0]).toHaveLength(240);
