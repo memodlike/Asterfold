@@ -144,6 +144,60 @@ describe("themes and runtime messages", () => {
     expect(validated).not.toHaveProperty("unknownExecutableSetting");
   });
 
+  it("validates, sanitizes, and clamps gradient configurations and points", () => {
+    const baseTheme = getThemePreset("aurora");
+    const validated = validateTheme({
+      ...baseTheme,
+      gradient: {
+        preset: "aurora",
+        points: [
+          { id: "valid-1", color: "#123456", x: -50, y: 150, spread: 200, opacity: 5, enabled: true },
+          { id: "", color: "invalid", x: 50, y: 50, spread: 0, opacity: -2, enabled: false },
+          null as unknown as { id: string; color: string; x: number; y: number; spread: number; opacity: number; enabled: boolean },
+        ],
+      },
+    });
+
+    expect(validated.gradient).toBeDefined();
+    expect(validated.gradient?.preset).toBe("aurora");
+    expect(validated.gradient?.points).toHaveLength(2);
+    expect(validated.gradient?.points[0]).toMatchObject({
+      id: "valid-1",
+      color: "#123456",
+      x: 0,
+      y: 100,
+      spread: 150,
+      opacity: 1,
+      enabled: true,
+    });
+    expect(validated.gradient?.points[1]).toMatchObject({
+      id: "p-2",
+      color: "#5b8cff",
+      x: 50,
+      y: 50,
+      spread: 10,
+      opacity: 0,
+      enabled: false,
+    });
+
+    // Test fallback behavior when points are empty or invalid
+    const emptyGradient = validateTheme({
+      ...baseTheme,
+      gradient: {
+        preset: "unknown" as unknown as "aurora",
+        points: [],
+      },
+    });
+    expect(emptyGradient.gradient?.preset).toBe(baseTheme.gradient?.preset);
+
+    // Test fallback when gradient is non-object
+    const nullGradient = validateTheme({
+      ...baseTheme,
+      gradient: null as unknown as typeof baseTheme.gradient,
+    });
+    expect(nullGradient.gradient).toEqual(baseTheme.gradient);
+  });
+
   it("accepts only the closed extension command union", () => {
     expect(parseExtensionMessage({ type: "OPEN_URL", url: "https://example.com", mode: "new-tab" })).toEqual({
       type: "OPEN_URL",
