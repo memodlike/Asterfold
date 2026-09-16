@@ -3,17 +3,15 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CURRENT_DB_SCHEMA_VERSION, V9_STORES } from "../src/db/migrations";
 import { flattenChromeBookmarks } from "../src/features/onboarding/chromeBookmarkImport";
-import { faviconUrl } from "../src/browser/api";
 import { AsterfoldDatabase } from "../src/db/database";
 import { importRecords } from "../src/services/exportImport";
 import "fake-indexeddb/auto";
 
-describe("Asterfold 3.4.1 Privacy Hardening & Invariants", () => {
-  it("enforces least privilege manifest configuration with zero activeTab, favicon, alarms, or contextMenus", async () => {
+describe("Asterfold privacy hardening invariants", () => {
+  it("enforces least privilege manifest configuration with Chrome-owned favicon access only", async () => {
     const config = await readFile(join(process.cwd(), "wxt.config.ts"), "utf8");
-    expect(config).toMatch(/permissions:\s*\[\s*["']storage["']\s*\]/u);
+    expect(config).toMatch(/permissions:\s*\[[^\]]*["']storage["'][^\]]*["']favicon["'][^\]]*\]/u);
     expect(config).not.toMatch(/["']activeTab["']/u);
-    expect(config).not.toMatch(/["']favicon["']/u);
     expect(config).not.toMatch(/["']alarms["']/u);
     expect(config).not.toMatch(/["']contextMenus["']/u);
     expect(config).not.toMatch(/commands:\s*\{/u);
@@ -30,12 +28,6 @@ describe("Asterfold 3.4.1 Privacy Hardening & Invariants", () => {
     expect(background).not.toContain("setBadge");
     expect(background).toContain("sender.id !== chrome.runtime.id");
     expect(background).toContain("parseSafeNavigationUrl");
-  });
-
-  it("ensures faviconUrl returns empty string to eliminate favicon leaks", () => {
-    expect(faviconUrl("https://github.com")).toBe("");
-    expect(faviconUrl("https://example.com/sub/page")).toBe("");
-    expect(faviconUrl("chrome://settings")).toBe("");
   });
 
   it("verifies Schema 9 indexes sourceId for bookmarks and boards", () => {
@@ -152,8 +144,8 @@ describe("Asterfold 3.4.1 Privacy Hardening & Invariants", () => {
     expect(scanScript).toContain("contextMenus");
   });
 
-  it("proves release validator enforces expectedPermissions = [\"storage\"]", async () => {
+  it("proves release validator allows only storage and Chrome favicon access", async () => {
     const releaseScript = await readFile(join(process.cwd(), "scripts/release.mjs"), "utf8");
-    expect(releaseScript).toContain('expectedPermissions = ["storage"]');
+    expect(releaseScript).toContain('expectedPermissions = ["storage", "favicon"]');
   });
 });

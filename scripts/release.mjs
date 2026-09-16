@@ -35,7 +35,7 @@ async function validateRuntime() {
   if (manifest.version !== packageJson.version) throw new Error("Package and manifest versions differ");
   if (manifest.chrome_url_overrides?.newtab !== "newtab.html") throw new Error("New-tab override is missing");
   if (manifest.action?.default_popup !== "popup.html") throw new Error("Popup entrypoint is missing");
-  const expectedPermissions = ["storage"];
+  const expectedPermissions = ["storage", "favicon"];
   const expectedOptionalPermissions = ["bookmarks"];
   const sameSet = (actual, expected) => actual.length === expected.length && expected.every((permission) => actual.includes(permission));
   if (!sameSet(manifest.permissions ?? [], expectedPermissions)) throw new Error("Release permissions differ from the least-privilege policy");

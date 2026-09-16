@@ -59,7 +59,7 @@ function callbacks() {
 
 function renderCard(overrides: Partial<ComponentProps<typeof BookmarkCard>> = {}) {
   const handlers = callbacks();
-  const props: ComponentProps<typeof BookmarkCard> = { bookmark, privacy: false, selected: false, ...handlers, ...overrides };
+  const props: ComponentProps<typeof BookmarkCard> = { bookmark, faviconSize: 32, privacy: false, selected: false, ...handlers, ...overrides };
   const view = render(createElement(I18nProvider, { preference: "en", children: createElement(BookmarkCard, props) }));
   return { ...view, handlers, props };
 }
@@ -102,11 +102,11 @@ describe("BookmarkCard complete behavior", () => {
     expect(handlers.onSelect).toHaveBeenCalledWith(bookmark, expect.any(Object));
   });
 
-  it("falls back from a failed favicon and resets when the source changes", () => {
+  it("falls back to a neutral icon after favicon failure and resets when the source changes", () => {
     const view = renderCard();
     fireEvent.error(view.container.querySelector("img")!);
     expect(view.container.querySelector("img")).toBeNull();
-    expect(screen.getByText("E")).toBeVisible();
+    expect(view.container.querySelector(".favicon svg")).toBeVisible();
 
     const changed = { ...bookmark, id: "changed", url: "https://changed.test/", normalizedUrl: "https://changed.test/", hostname: "changed.test" };
     mocks.faviconUrl.mockReturnValue("chrome-extension://test/_favicon/changed");
@@ -114,16 +114,11 @@ describe("BookmarkCard complete behavior", () => {
     expect(view.container.querySelector("img")).toHaveAttribute("src", "chrome-extension://test/_favicon/changed");
   });
 
-  it("uses hostname, title and question-mark monograms when no icon is available", () => {
+  it("uses a neutral globe instead of a site-identity fallback when no icon is available", () => {
     mocks.faviconUrl.mockReturnValue("");
     const view = renderCard();
-    expect(screen.getByText("E")).toBeVisible();
-    const titleFallback = { ...bookmark, hostname: "", title: "Title" };
-    view.rerender(createElement(I18nProvider, { preference: "en", children: createElement(BookmarkCard, { ...view.props, bookmark: titleFallback }) }));
-    expect(screen.getByText("T")).toBeVisible();
-    const unknown = { ...bookmark, hostname: "", title: "" };
-    view.rerender(createElement(I18nProvider, { preference: "en", children: createElement(BookmarkCard, { ...view.props, bookmark: unknown }) }));
-    expect(screen.getByText("?")).toBeVisible();
+    expect(view.container.querySelector(".favicon svg")).toBeVisible();
+    expect(view.container.querySelector(".favicon")).toHaveAttribute("aria-hidden", "true");
   });
 
   it("routes every context action and closes the menu", () => {
@@ -157,10 +152,18 @@ describe("BookmarkCard complete behavior", () => {
     renderCard({ privacy: true });
     expect(screen.getByRole("button", { name: "Open hidden bookmark" })).toBeVisible();
     expect(screen.getByText("••••••••")).toHaveClass("private-content", "private-placeholder");
-    expect(screen.getByText("•")).toBeVisible();
+    expect(document.querySelector(".favicon svg")).toBeVisible();
+    expect(mocks.faviconUrl).not.toHaveBeenCalled();
     fireEvent.contextMenu(document.querySelector("article")!);
     expect(screen.getByRole("menu", { name: "Hidden bookmark actions" })).toBeVisible();
     expect(screen.getByRole("menuitem", { name: "Copy URL" })).toBeDisabled();
     expect(screen.getByRole("menuitem", { name: "Copy Markdown" })).toBeDisabled();
+  });
+
+  it("keeps dnd-kit transform on the outer card while the visual surface owns hover motion", () => {
+    const { container } = renderCard();
+    const card = container.querySelector("article")!;
+    expect(card).toHaveStyle({ transform: "translate3d(2px, 3px, 0)" });
+    expect(container.querySelector(".bookmark-card__surface")).not.toBeNull();
   });
 });

@@ -4,6 +4,7 @@ import type { Board, Bookmark, BookmarkOpenMode, Page } from "../../domain/model
 import { createBookmark, findDuplicate, updateBookmark } from "../../db/repository";
 import { DuplicateError } from "../../domain/errors";
 import { Button } from "../../components/Button";
+import { BrowserFavicon } from "../../components/BrowserFavicon";
 import { Modal } from "../../components/Modal";
 import { SelectField, type SelectOption } from "../../components/SelectField";
 import { faviconUrl } from "../../browser/api";
@@ -71,7 +72,7 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
     { value: "new-window", label: t("bookmark.newWindow") },
     { value: "incognito", label: t("bookmark.incognito") },
   ], [t]);
-  const icon = !props.privacy && url.startsWith("http") ? faviconUrl(url, 48) : "";
+  const icon = props.privacy ? "" : faviconUrl(url, 32);
   const formId = "asterfold-bookmark-editor";
 
   const save = async (): Promise<void> => {
@@ -115,7 +116,7 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
         <div className="search-state search-private"><span className="search-state__icon"><BookmarkIcon size={22} /></span><div><strong>{t("search.privateTitle")}</strong><span>{t("search.privateBody")}</span></div></div>
       ) : <form id={formId} className="form-stack" onSubmit={(event) => { event.preventDefault(); void save(); }}>
         <div className="bookmark-preview">
-          <span className="favicon favicon--large">{icon ? <img src={icon} alt="" /> : <BookmarkIcon size={22} />}</span>
+          <span className="favicon--large"><BrowserFavicon key={icon} source={icon} /></span>
           <div><strong>{title || t("bookmark.untitled")}</strong><small>{url}</small></div>
         </div>
         <label>{t("generic.title")}<input autoFocus value={title} maxLength={240} onChange={(event) => setTitle(event.target.value)} placeholder={t("bookmark.untitled")} /></label>

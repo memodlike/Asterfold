@@ -11,7 +11,7 @@ export default defineConfig({
     description: "Turn Chrome New Tab into a visual bookmark workspace with Pages, Boards, search, and local-first storage.",
     version: packageVersion,
     minimum_chrome_version: "120",
-    permissions: ["storage"],
+    permissions: ["storage", "favicon"],
     optional_permissions: ["bookmarks"],
     host_permissions: [],
     action: {

@@ -42,6 +42,7 @@ function renderCard(privacy: boolean): ReturnType<typeof render> {
       null,
       createElement(BookmarkCard, {
         bookmark,
+        faviconSize: 32,
         privacy,
         selected: false,
         onOpen: callback,
@@ -78,6 +79,7 @@ describe("favicon and privacy contract", () => {
       preference: "en",
       children: createElement(DndContext, null, createElement(BookmarkCard, {
         bookmark: { ...bookmark, customIcon },
+        faviconSize: 32,
         privacy: false,
         selected: false,
         onOpen: callback,

@@ -43,7 +43,7 @@ function handlers() {
 function renderColumn(overrides: Partial<Parameters<typeof BoardColumn>[0]> = {}) {
   const callbacks = handlers();
   const props: Parameters<typeof BoardColumn>[0] = {
-    board, placement: { column: 1, row: 0, span: 3 }, bookmarks: [], privacy: false, selectedIds: new Set(),
+    board, placement: { column: 1, row: 0, span: 3 }, bookmarks: [], faviconSize: 32, privacy: false, selectedIds: new Set(),
     ...callbacks,
     ...overrides,
   };
@@ -124,6 +124,7 @@ describe("BoardColumn behavior", () => {
     const { container, callbacks } = renderColumn({ bookmarks: many, selectedIds: new Set([many[0]!.id]), placement: { column: 2, row: 1, span: 4 } });
     expect(mocks.cards).toHaveLength(12);
     expect(mocks.cards[0]?.selected).toBe(true);
+    expect(mocks.cards[0]?.faviconSize).toBe(32);
     expect(mocks.cards[0]?.onOpen).toBe(callbacks.onOpenBookmark);
     expect(container.querySelector(".board__items--columns-auto")).not.toBeNull();
     expect(container.querySelector<HTMLElement>("section.board")?.style.gridColumn).toContain("span 4");

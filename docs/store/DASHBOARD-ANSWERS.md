@@ -1,6 +1,6 @@
-# Chrome Web Store Developer Dashboard Answers — Asterfold 3.4.1
+# Chrome Web Store Developer Dashboard Answers — Asterfold 3.5.1
 
-This document provides the exact answers and disclosures to enter into the Chrome Web Store Developer Dashboard for **Asterfold 3.4.1**.
+This document provides the exact answers and disclosures to enter into the Chrome Web Store Developer Dashboard for **Asterfold 3.5.1**.
 
 ---
 
@@ -62,16 +62,21 @@ The use of information received from Google APIs will adhere to the Chrome Web S
 Stores only the temporary visual Privacy Mode flag in chrome.storage.session, allowing popup and New Tab to share the same visual-protection state without writing to disk. Chrome clears this session value when the browser session ends; all bookmark workspace data remains in local IndexedDB.
 ```
 
+### `favicon` (Required)
+```text
+Displays Chrome's browser-owned favicon resource for a saved, validated HTTP(S) bookmark. Asterfold does not use a third-party favicon service, make direct site requests, request host access, or store favicon blobs. Privacy Mode renders a neutral icon instead.
+```
+
 ### `bookmarks` (Optional)
 ```text
 Requested only on-demand when the user selects Import Chrome bookmarks or Refresh from Chrome. The Chrome bookmark tree is read locally to create or update bookmarks and the permission is immediately revoked via browser.permissions.remove; declining does not affect normal use.
 ```
 
 ### Removed Permissions Notice
-Notice to Reviewer: Asterfold 3.4.1 has removed `activeTab`, `favicon`, `alarms`, and `contextMenus`. The extension does not query active tabs, does not read page titles/URLs from tabs, does not run background alarm loops, and does not request Chrome `_favicon` endpoints.
+Notice to Reviewer: Asterfold 3.5.1 does not request `activeTab`, `alarms`, or `contextMenus`. The extension does not query active tabs, does not read page titles/URLs from tabs, and does not run background alarm loops. It uses the minimum `favicon` permission only for Chrome's local `_favicon` resource for saved safe HTTP(S) bookmarks.
 
 ---
 
 ## 4. Package Upload
 - File to upload: **`release/Asterfold-Chrome.zip`**
-- Verify version is **`3.4.1`** and `manifest_version: 3`.
+- Verify version is **`3.5.1`** and `manifest_version: 3`.

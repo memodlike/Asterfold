@@ -8,6 +8,7 @@ import { usePrivacyMode } from "../../src/app/usePrivacyMode";
 import { applyPopupTheme } from "../../src/features/appearance/popupTheme";
 import { readChromeBookmarks } from "../../src/features/onboarding/chromeBookmarkImport";
 import { importRecords } from "../../src/services/exportImport";
+import { version as packageVersion } from "../../package.json";
 
 export function PopupApp() {
   const { workspace, failed, retry } = useWorkspace();
@@ -156,7 +157,7 @@ export function PopupApp() {
 
       <footer>
         <span>{t("popup.localOnly")}</span>
-        <span>Asterfold 3.5.0</span>
+        <span>Asterfold {packageVersion}</span>
       </footer>
     </main>
   );

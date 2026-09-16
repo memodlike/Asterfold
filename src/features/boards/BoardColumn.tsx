@@ -13,6 +13,7 @@ interface BoardColumnProps {
   board: Board;
   placement?: BoardPlacement | undefined;
   bookmarks: Bookmark[];
+  faviconSize: number;
   privacy: boolean;
   selectedIds: Set<string>;
   onAddBookmark: (board: Board) => void;
@@ -95,6 +96,7 @@ export const BoardColumn = memo(function BoardColumn(props: BoardColumnProps) {
           {props.bookmarks.map((bookmark) => <BookmarkCard
             key={bookmark.id}
             bookmark={bookmark}
+            faviconSize={props.faviconSize}
             privacy={props.privacy}
             selected={props.selectedIds.has(bookmark.id)}
             onOpen={props.onOpenBookmark}

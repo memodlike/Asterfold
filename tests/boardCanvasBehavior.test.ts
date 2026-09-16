@@ -71,7 +71,7 @@ function renderCanvas(overrides: Partial<CanvasProps> = {}) {
   const settings = createDefaultSettings();
   const props: CanvasProps = {
     boards: [board, boardTwo], bookmarks: [bookmark, bookmarkTwo], privacy: false, selectedIds: new Set(),
-    settings: { workspaceLayoutMode: settings.workspaceLayoutMode, workspaceRows: settings.workspaceRows, workspaceAlignment: settings.workspaceAlignment },
+    settings: { workspaceLayoutMode: settings.workspaceLayoutMode, workspaceRows: settings.workspaceRows, workspaceAlignment: settings.workspaceAlignment, theme: settings.theme },
     ...handlers,
     ...overrides,
   };
@@ -102,6 +102,7 @@ describe("BoardCanvas behavior", () => {
     expect(mocks.columns).toHaveLength(2);
     expect(mocks.columns[0]?.bookmarks).toEqual([bookmark]);
     expect(mocks.columns[1]?.bookmarks).toEqual([bookmarkTwo]);
+    expect(mocks.columns[0]?.faviconSize).toBe(32);
     mocks.columns[0]?.onKeyboardMoveBoard(board, 1);
     expect(handlers.onMoveBoardIndex).toHaveBeenCalledWith(board.id, 1, boardTwo.id);
     mocks.columns[1]?.onKeyboardMoveBoard(boardTwo, -1);

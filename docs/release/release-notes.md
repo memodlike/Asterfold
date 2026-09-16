@@ -1,3 +1,13 @@
+# Asterfold 3.5.1
+
+## Chrome-Owned Favicons and Refined Bookmark Motion
+
+- **Real Favicons by Default**: Restores Chrome's browser-owned `_favicon` resource for saved, validated HTTP(S) bookmarks. Asterfold uses no third-party favicon provider, direct website request, host permission, binary icon cache, or remote favicon value from bookmark data.
+- **High-DPI Resource Selection**: Favicon resources are selected from standard Chrome-friendly sizes using the rendered icon size and device pixel ratio, while the UI preserves aspect ratio with `object-fit: contain` and a stable layout box.
+- **Privacy-Safe Fallback**: Missing or failed favicons use a neutral globe icon. Privacy Mode does not construct or render the favicon resource, so it does not disclose the saved site identity.
+- **Minimum Permission Surface**: Adds only the `favicon` permission beside `storage`; `bookmarks` remains optional, `host_permissions` remains empty, and `activeTab`, `alarms`, and `contextMenus` remain absent.
+- **Quiet Adaptive Motion**: Moves bookmark hover motion from the dnd-kit sortable wrapper to an inner visual surface, preventing transform contention during drag. Quality and Balanced profiles use a restrained lift; Compatibility, Software, Low Power, and reduced-motion states disable spatial hover motion.
+
 # Asterfold 3.5.0
 
 ## Advanced Multi-Point Gradient Background Customization

@@ -274,9 +274,9 @@ test.describe.serial("Asterfold MV3 release", () => {
     const probe = await worker.evaluate(() => ({ manifest: chrome.runtime.getManifest() }));
     expect(probe.manifest.manifest_version).toBe(3);
     expect(probe.manifest.chrome_url_overrides?.newtab).toBe("newtab.html");
-    expect(new Set(probe.manifest.permissions)).toEqual(new Set(["storage"]));
+    expect(new Set(probe.manifest.permissions)).toEqual(new Set(["storage", "favicon"]));
     expect(new Set(probe.manifest.optional_permissions ?? [])).toEqual(new Set(["bookmarks"]));
-    expect(probe.manifest.permissions).not.toEqual(expect.arrayContaining(["activeTab", "alarms", "contextMenus", "favicon", "tabs", "history", "scripting", "webRequest"]));
+    expect(probe.manifest.permissions).not.toEqual(expect.arrayContaining(["activeTab", "alarms", "contextMenus", "tabs", "history", "scripting", "webRequest"]));
     expect(probe.manifest.host_permissions ?? []).toEqual([]);
   });
 
@@ -344,7 +344,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
     await expect(popup.locator(".workspace-button")).toBeVisible();
     await expect(popup.locator(".save-button")).toBeVisible();
-    await expect(popup.getByText("Asterfold 3.5.0")).toBeVisible();
+    await expect(popup.getByText("Asterfold 3.5.1")).toBeVisible();
     await popup.close();
     await workspacePage.close();
   });
@@ -435,6 +435,22 @@ test.describe.serial("Asterfold MV3 release", () => {
     await dialog.getByLabel("Описание").fill("Extension testing reference");
     await dialog.getByRole("button", { name: "Сохранить" }).click();
     await expect(page.getByText("Playwright docs", { exact: true })).toBeVisible();
+    const faviconSource = await page.getByRole("button", { name: "Playwright docs" }).locator("img").getAttribute("src");
+    expect(faviconSource).not.toBeNull();
+    const favicon = new URL(faviconSource!);
+    expect(favicon.protocol).toBe("chrome-extension:");
+    expect(favicon.pathname).toBe("/_favicon/");
+    expect(favicon.searchParams.get("pageUrl")).toBe("https://playwright.dev/docs/chrome-extensions");
+    const bookmarkButton = page.getByRole("button", { name: "Playwright docs" });
+    await bookmarkButton.hover();
+    await page.waitForTimeout(240);
+    const hoverState = await bookmarkButton.evaluate((button) => {
+      const card = button.closest(".bookmark-card");
+      const surface = button.querySelector(".bookmark-card__surface");
+      return { cardTransform: card ? getComputedStyle(card).transform : null, surfaceTransform: surface ? getComputedStyle(surface).transform : null };
+    });
+    expect(hoverState.cardTransform).toBe("none");
+    expect(hoverState.surfaceTransform).not.toBe("none");
 
     await page.evaluate(async () => {
       const request = indexedDB.open("asterfold");
@@ -566,7 +582,6 @@ test.describe.serial("Asterfold MV3 release", () => {
     await expect(dialog).toBeVisible();
     const performanceRow = dialog.locator(".setting-row").filter({ hasText: "Режим рендеринга" });
     const compatibilityButton = performanceRow.getByRole("button", { name: "Плавное стекло", exact: true });
-    const autoButton = performanceRow.getByRole("button", { name: "Авто", exact: true });
     await expect(compatibilityButton).toHaveCount(1);
     await compatibilityButton.scrollIntoViewIfNeeded();
     await captureStoreScreenshot(page, "03-settings-1280x800.png");
@@ -620,9 +635,30 @@ test.describe.serial("Asterfold MV3 release", () => {
     });
     expect(wallpaperVariables.compatibility).toBe(wallpaperVariables.original);
     expect(wallpaperVariables.software).not.toBe(wallpaperVariables.original);
-    await autoButton.click();
-    await expect(autoButton).toHaveClass(/is-active/u);
+    await page.keyboard.press("Escape");
+    await bookmarkButton.hover();
+    await expect.poll(() => bookmarkButton.evaluate((button) => (
+      getComputedStyle(button.querySelector(".bookmark-card__surface")!).transform
+    ))).toBe("none");
+
+    await openLauncher(page);
+    await page.getByRole("menuitem", { name: "Настройки" }).click();
+    dialog = page.getByRole("dialog");
+    const restoredPerformanceRow = dialog.locator(".setting-row").filter({ hasText: "Режим рендеринга" });
+    const restoredAutoButton = restoredPerformanceRow.getByRole("button", { name: "Авто", exact: true });
+    await restoredAutoButton.click();
+    await expect(restoredAutoButton).toHaveClass(/is-active/u);
     await expect(page.locator("html")).toHaveAttribute("data-performance", /^(quality|compatibility|software)$/u);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.keyboard.press("Escape");
+    await bookmarkButton.hover();
+    await expect.poll(() => bookmarkButton.evaluate((button) => (
+      getComputedStyle(button.querySelector(".bookmark-card__surface")!).transform
+    ))).toBe("none");
+
+    await openLauncher(page);
+    await page.getByRole("menuitem", { name: "Настройки" }).click();
+    dialog = page.getByRole("dialog");
     await dialog.getByRole("tab", { name: "Язык" }).click();
     await dialog.getByRole("button", { name: "Қазақша" }).click();
     await expect(page).toHaveTitle("Жаңа қойынды");

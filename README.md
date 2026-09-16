@@ -37,7 +37,6 @@ Page: Work
 |---|---|
 | Pages and Boards | Organizes bookmarks by context and topic |
 | Drag and drop | Reorders Boards and Bookmarks visually |
-| Quick Save | Saves the active tab from the extension popup |
 | Search | Finds bookmarks by title or URL with `Ctrl/Cmd + K` |
 | Privacy Mode | Temporarily hides bookmark titles and URLs in New Tab and popup |
 | Trash | Restores accidentally deleted Pages, Boards, and Bookmarks |
@@ -106,6 +105,7 @@ Asterfold is designed around local storage and least-privilege extension access.
 | Permission | Purpose |
 |---|---|
 | `storage` | Stores only the transient cross-context Privacy Mode flag in `chrome.storage.session` |
+| `favicon` | Resolves a saved HTTP(S) bookmark through Chrome's browser-owned favicon resource without host access or an external provider |
 
 ### Optional permission
 
@@ -113,7 +113,7 @@ Asterfold is designed around local storage and least-privilege extension access.
 |---|---|
 | `bookmarks` | Imports or refreshes Chrome bookmarks after direct user action (revoked immediately) |
 
-Asterfold 3.5.0 does not request `activeTab`, `favicon`, `alarms`, or `contextMenus`. No active-tab URLs/titles are queried, no background alarm loops run, and all favicons are replaced by deterministic local letter/monogram avatars.
+Asterfold 3.5.1 does not request `activeTab`, `alarms`, or `contextMenus`. It uses the minimum `favicon` permission only for Chrome's local `_favicon` resource; it makes no third-party favicon request and has no host permissions. Privacy Mode intentionally replaces site favicons with a neutral icon.
 
 Detailed review material:
 
@@ -176,7 +176,7 @@ Contribution guidance is available in [docs/development/CONTRIBUTING.md](docs/de
 
 ## Release artifacts
 
-Asterfold 3.5.0 produces a reproducible, cryptographically verifiable release containing:
+Asterfold 3.5.1 produces a reproducible, cryptographically verifiable release containing:
 
 - `Asterfold-Chrome.zip` (runtime Chrome Web Store bundle)
 - `chrome-unpacked.zip` (unpacked developer distribution)
@@ -189,14 +189,15 @@ The release pipeline verifies Manifest V3 structure, permission policy, CSP, for
 
 ## Release highlights
 
-**Asterfold 3.5.0** introduces advanced multi-point gradient background customization (1–10 points, 5 starter presets, curated harmonic randomizer, progressive disclosure) and smart bookmark name recovery during import with clean brand identities and multi-part public suffix support, maintaining zero permissions expansion and zero telemetry.
+**Asterfold 3.5.1** restores Chrome-provided bookmark favicons with high-DPI resource selection, a privacy-safe neutral fallback, and refined performance-aware bookmark hover motion. It adds only the narrowly scoped Chrome `favicon` permission; no host permission, third-party icon service, analytics, or telemetry is introduced.
 
 The repository does not claim Chrome Web Store publication, approval, user counts, ratings, awards, or endorsements until those facts exist publicly.
 
 ## Version history
 
-1. **v3.5.0 — Advanced multi-point gradient backgrounds and smart bookmark naming.** Adds customizable 1–10 point radial gradient backgrounds with 5 starter presets and curated harmonic randomizer, smart bookmark title recovery for missing or generic titles across 100+ services with multi-part TLD support, and full 12-locale internationalization.
-2. **v3.4.1 — Comprehensive privacy hardening and idempotent sync.** Strips privileged permissions to only `storage` and on-demand `bookmarks` (revoked immediately in a `finally` block), implements IndexedDB Schema 9 with `sourceId` indexing, replaces favicon requests with deterministic letter monograms, and refactors the extension popup into a zero-tab-query workspace dashboard.
+1. **v3.5.1 — Chrome favicons and adaptive bookmark motion.** Restores browser-owned Chrome favicon rendering for safe saved HTTP(S) URLs, selects crisp high-DPI resources, uses neutral fallback icons and keeps Privacy Mode identity-safe; also moves bookmark hover motion inside the sortable surface so it never competes with drag transforms.
+2. **v3.5.0 — Advanced multi-point gradient backgrounds and smart bookmark naming.** Adds customizable 1–10 point radial gradient backgrounds with 5 starter presets and curated harmonic randomizer, smart bookmark title recovery for missing or generic titles across 100+ services with multi-part TLD support, and full 12-locale internationalization.
+3. **v3.4.1 — Comprehensive privacy hardening and idempotent sync.** Strips privileged permissions to only `storage` and on-demand `bookmarks` (revoked immediately in a `finally` block), implements IndexedDB Schema 9 with `sourceId` indexing, replaces favicon requests with deterministic letter monograms, and refactors the extension popup into a zero-tab-query workspace dashboard.
 3. **v3.4.0 — Multi-tier performance architecture and full localization.** Introduces 6-tier rendering hierarchy with legacy GPU heuristics and recommendation rationales, Settings "Restore Defaults" and "Restart Welcome Tour" controls, 100% complete localization across 12 locales with zero English leakage, and Chrome for Testing headless MV3 test runner upgrades.
 1. **v3.3.0 — Interface clarity and accessibility.** Adds semantic Settings tabs, progressive appearance controls, a shorter first-run flow, bounded search input, responsive Quick Save surfaces and accessible popup status feedback without changing permissions or local-only storage.
 1. **v3.2.2 — Design-system hardening.** Unifies popup theming, startup motion, overlay lifecycle, responsive Board behavior, performance affordances, and regression coverage without changing permissions or the local-first architecture.

@@ -6,9 +6,9 @@ Asterfold — Visual Bookmark Workspace
 
 ## Short description
 
-Turn Chrome New Tab into a visual bookmark workspace with Pages, Boards, search, Quick Save, and local-first storage.
+Turn Chrome New Tab into a visual bookmark workspace with Pages, Boards, search, and local-first storage.
 
-Character count: 117 including spaces.
+Character count: 101 including spaces.
 
 ## Detailed description
 
@@ -23,10 +23,9 @@ It replaces each new tab with a visual workspace where bookmarks are organized i
 - Reorder Boards and bookmarks with drag-and-drop or keyboard controls.
 - Choose whether a bookmark opens in the current tab, a new tab or a new window.
 
-### Find, save and import links
+### Find and import links
 
 - Search the local workspace for saved bookmarks.
-- Use Quick Save from the extension toolbar, keyboard shortcut or supported context-menu action.
 - Import Chrome bookmarks only after you explicitly grant the optional `bookmarks` permission.
 - Import browser-exported HTML bookmarks or a validated Asterfold backup.
 - Export local backups and supported bookmark formats.
@@ -44,7 +43,7 @@ It replaces each new tab with a visual workspace where bookmarks are organized i
 
 Asterfold stores the primary workspace locally in the Chrome profile. No Asterfold account is required. The current release has no application backend, cloud synchronization, analytics, advertising or telemetry. It requests no host permissions and injects no content scripts into websites.
 
-Quick Save reads the active page title and URL only after an explicit user action. Chrome bookmark access is optional and requested only when you choose to import Chrome bookmarks.
+Chrome bookmark access is optional and requested only when you choose to import Chrome bookmarks.
 
 Privacy Mode hides bookmark titles in the interface and prevents local search indexing while it is active. It is visual shoulder-surfing protection, not database encryption.
 
@@ -56,10 +55,7 @@ https://github.com/memodlike/Asterfold/blob/main/docs/security/privacy.md
 
 ## Permission summary
 
-- `activeTab`: reads the active page title and URL only after a user-invoked save action.
 - `favicon`: displays Chrome's browser-owned favicon resource for a saved URL.
-- `alarms`: schedules local Trash cleanup using the selected retention period.
-- `contextMenus`: adds user-invoked Save page, Save link and Open Asterfold commands.
 - `storage`: stores the temporary Privacy Mode flag in `chrome.storage.session`.
 - optional `bookmarks`: requested only when you choose Import Chrome bookmarks.
 

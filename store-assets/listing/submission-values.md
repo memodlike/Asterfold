@@ -1,6 +1,6 @@
-# Chrome Web Store submission values — Asterfold 3.5.0
+# Chrome Web Store submission values — Asterfold 3.5.1
 
-Current version: 3.5.0
+Current version: 3.5.1
 Copy these values into the owner Dashboard only after checking them against the final release ZIP.
 
 ## Core values
@@ -30,13 +30,17 @@ Use only a privacy URL that has been opened publicly without authentication. The
 
 > Stores only the temporary visual Privacy Mode flag in `chrome.storage.session`, allowing popup and New Tab to share the same visual-protection state without writing to disk. Chrome clears this session value when the browser session ends; bookmark workspace data remains in IndexedDB.
 
+### `favicon`
+
+> Displays Chrome's browser-owned favicon resource for a saved, validated HTTP(S) bookmark. Asterfold does not use a third-party favicon provider, make direct site requests, request host access, or store favicon blobs. Privacy Mode does not render site favicons.
+
 ### Optional `bookmarks`
 
 > Requested only on-demand when the user selects Import Chrome bookmarks or Refresh from Chrome. The Chrome bookmark tree is read locally to create or update bookmarks and the permission is immediately revoked via `browser.permissions.remove`; declining does not affect normal use.
 
-### Removed permissions (`activeTab`, `favicon`, `alarms`, `contextMenus`)
+### Removed permissions (`activeTab`, `alarms`, `contextMenus`)
 
-> Asterfold 3.5.0 does not request or require `activeTab`, `favicon`, `alarms`, or `contextMenus`. No active-tab URLs/titles are queried, no background alarm loops run, and all favicons are replaced by deterministic local letter/monogram avatars.
+> Asterfold 3.5.1 does not request or require `activeTab`, `alarms`, or `contextMenus`. No active-tab URLs/titles are queried and no background alarm loops run. The narrowly scoped `favicon` permission is used only for Chrome's local favicon resource.
 
 ## Remote code
 
@@ -52,7 +56,7 @@ Answer **No** (the extension does not collect or transmit user data).
 
 In the Developer Dashboard under **Privacy Practices → Data Usage**:
 - **Do NOT declare "Web history"**: Asterfold is a local-first visual bookmark workspace. It stores only user-created bookmarks locally in IndexedDB. It does NOT track, monitor, or collect browsing history. Selecting "Web history" causes Chrome and the Web Store to show false warnings that the extension reads historical records / browsing history (*"читает исторические записи"* / *"собирает историю просмотров"*).
-- **Do NOT declare "Website content"**: Asterfold does not scrape or read page content. Saving a bookmark passes only the active tab's URL/title to local IndexedDB via user-initiated `activeTab`.
+- **Do NOT declare "Website content"**: Asterfold does not scrape or read page content. Bookmark URLs are created, imported, or edited locally by the user; no active tab is inspected.
 - Do NOT select authentication, location, financial, health, personal communications or general user-activity collection.
 - Confirm that data is not sold, transferred to third parties, or used for creditworthiness/advertising.
 

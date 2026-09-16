@@ -27,7 +27,7 @@ interface BoardCanvasProps {
   bookmarks: Bookmark[];
   privacy: boolean;
   selectedIds: Set<string>;
-  settings: Pick<AppSettings, "workspaceLayoutMode" | "workspaceRows" | "workspaceAlignment">;
+  settings: Pick<AppSettings, "workspaceLayoutMode" | "workspaceRows" | "workspaceAlignment" | "theme">;
   onCreateBoard: () => void;
   onAddBookmark: (board: Board) => void;
   onEditBoard: (board: Board) => void;
@@ -159,6 +159,7 @@ export function BoardCanvas(props: BoardCanvasProps) {
                 board={board}
                 placement={placement}
                 bookmarks={bookmarksByBoard.get(board.id) ?? []}
+                faviconSize={props.settings.theme.faviconSize}
                 privacy={props.privacy}
                 selectedIds={props.selectedIds}
                 onAddBookmark={props.onAddBookmark}

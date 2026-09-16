@@ -74,7 +74,7 @@
 ## ADR-007 — Least-privilege permissions
 
 **Date:** 2026-07-17  
-**Status:** Accepted
+**Status:** Superseded by ADR-019
 
 **Context:** Quick Save and import must work without browsing-history or page-content access.  
 **Options:** broad tabs/host permissions; narrow event-scoped access.  
@@ -201,3 +201,14 @@
 **Context:** The optional adapter lacked the complete live two-user/two-device release gate required for a production privacy claim.
 **Decision:** Remove the Supabase dependency, runtime, host/identity permission, messages, setup UI/docs and sync claims from 2.2.0. Retain legacy IndexedDB stores only so upgrades are lossless.
 **Consequences:** Default build has no application backend. A future cloud feature is a new reviewed product boundary, not a compile-time toggle.
+
+## ADR-019 — Browser-owned favicons with privacy-safe rendering
+
+**Date:** 2026-09-16
+**Status:** Accepted
+
+**Context:** Asterfold 3.4.1 removed all favicon rendering to minimize permissions, leaving letter monograms as the normal bookmark identity. The product needs real site icons without host access, third-party icon providers, or application network requests.
+**Options:** retain monograms; call an external favicon service; fetch arbitrary sites; use Chrome's favicon resource.
+**Decision:** Request only Chrome's `favicon` permission beside `storage`, validate saved HTTP(S) URLs, and render `chrome-extension://…/_favicon/` at a normalized DPR-aware size. Keep `bookmarks` optional, `host_permissions` empty, and all other former permissions absent. Privacy Mode never constructs or renders a site favicon; unavailable or failed resources use a neutral local vector icon.
+**Consequences:** Chrome's own favicon cache/policy determines whether a site icon is available. Asterfold stores no favicon binary and makes no third-party request. Bookmark hover motion is isolated to an inner visual surface so dnd-kit retains ownership of the outer drag transform.
+**Validation:** URL, privacy, manifest, card fallback, real MV3 E2E, reduced-motion, low-power, and reproducible-package tests.

@@ -8,7 +8,7 @@ vi.mock("wxt/browser", () => ({
   },
 }));
 
-import { ExtensionRequestError, openUrl } from "../src/browser/api";
+import { ExtensionRequestError, faviconUrl, openUrl } from "../src/browser/api";
 
 describe("background navigation client", () => {
   beforeEach(() => {
@@ -41,5 +41,36 @@ describe("background navigation client", () => {
     await expect(openUrl("https://example.com", "incognito")).rejects.toMatchObject({
       code: "INCOGNITO_UNAVAILABLE",
     });
+  });
+
+  it("builds Chrome-owned favicon URLs with normalized DPR-aware resource sizes", () => {
+    const getURL = vi.fn(() => "chrome-extension://test-extension/_favicon/");
+    vi.stubGlobal("chrome", { runtime: { getURL } });
+
+    const icon = new URL(faviconUrl("HTTPS://GitHub.com:443/path?q=one two", 16, 2));
+    expect(icon.protocol).toBe("chrome-extension:");
+    expect(icon.hostname).toBe("test-extension");
+    expect(icon.pathname).toBe("/_favicon/");
+    expect(icon.searchParams.get("pageUrl")).toBe("https://github.com/path?q=one%20two");
+    expect(icon.searchParams.get("size")).toBe("32");
+    expect(faviconUrl("https://figma.com", 48, 2)).toContain("size=64");
+    expect(getURL).toHaveBeenCalledWith("/_favicon/");
+  });
+
+  it.each(["not a url", "javascript:alert(1)", "data:text/html,unsafe", "file:///private/secret"])(
+    "does not build a favicon URL for unsupported input: %s",
+    (url) => {
+      expect(faviconUrl(url, 16, 1)).toBe("");
+    },
+  );
+
+  it.each([
+    "https://github.com", "https://youtube.com", "https://google.com", "https://figma.com",
+    "https://linkedin.com", "https://pinterest.com", "https://intranet.example", "http://localhost:3000",
+  ])("uses the Chrome favicon resource for a supported bookmark URL: %s", (url) => {
+    const icon = new URL(faviconUrl(url, 16, 1));
+    expect(icon.pathname).toBe("/_favicon/");
+    expect(icon.searchParams.get("pageUrl")).toBe(new URL(url).toString());
+    expect(icon.searchParams.get("size")).toBe("16");
   });
 });
