@@ -100,6 +100,29 @@ async function setWorkspaceThemeMode(page: Page, mode: "light" | "dark"): Promis
   }, mode);
 }
 
+async function setWorkspacePerformanceMode(page: Page, performanceMode: "quality" | "balanced" | "compatibility" | "software"): Promise<void> {
+  await page.evaluate(async (nextMode) => {
+    const request = indexedDB.open("asterfold");
+    const database = await new Promise<IDBDatabase>((resolvePromise, reject) => {
+      request.onsuccess = () => resolvePromise(request.result);
+      request.onerror = () => reject(request.error ?? new Error("Unable to open IndexedDB"));
+    });
+    const transaction = database.transaction("settings", "readwrite");
+    const settingsStore = transaction.objectStore("settings");
+    const settings = await new Promise<{ theme: Record<string, unknown> }>((resolvePromise, reject) => {
+      const get = settingsStore.get("app");
+      get.onsuccess = () => resolvePromise(get.result as { theme: Record<string, unknown> });
+      get.onerror = () => reject(get.error ?? new Error("Unable to read settings"));
+    });
+    settingsStore.put({ ...settings, theme: { ...settings.theme, performanceMode: nextMode, lowPowerMode: false }, updatedAt: new Date().toISOString() });
+    await new Promise<void>((resolvePromise, reject) => {
+      transaction.oncomplete = () => resolvePromise();
+      transaction.onerror = () => reject(transaction.error ?? new Error("Unable to write settings"));
+    });
+    database.close();
+  }, performanceMode);
+}
+
 async function seedStoreShowcase(page: Page): Promise<void> {
   await page.evaluate(async () => {
     const request = indexedDB.open("asterfold");
@@ -435,6 +458,9 @@ test.describe.serial("Asterfold MV3 release", () => {
     await dialog.getByLabel("Описание").fill("Extension testing reference");
     await dialog.getByRole("button", { name: "Сохранить" }).click();
     await expect(page.getByText("Playwright docs", { exact: true })).toBeVisible();
+    await setWorkspacePerformanceMode(page, "quality");
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("data-performance", "quality");
     const faviconSource = await page.getByRole("button", { name: "Playwright docs" }).locator("img").getAttribute("src");
     expect(faviconSource).not.toBeNull();
     const favicon = new URL(faviconSource!);
