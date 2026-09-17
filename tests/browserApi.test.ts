@@ -43,18 +43,9 @@ describe("background navigation client", () => {
     });
   });
 
-  it("builds Chrome-owned favicon URLs with normalized DPR-aware resource sizes", () => {
-    const getURL = vi.fn(() => "chrome-extension://test-extension/_favicon/");
-    vi.stubGlobal("chrome", { runtime: { getURL } });
-
-    const icon = new URL(faviconUrl("HTTPS://GitHub.com:443/path?q=one two", 16, 2));
-    expect(icon.protocol).toBe("chrome-extension:");
-    expect(icon.hostname).toBe("test-extension");
-    expect(icon.pathname).toBe("/_favicon/");
-    expect(icon.searchParams.get("pageUrl")).toBe("https://github.com/path?q=one%20two");
-    expect(icon.searchParams.get("size")).toBe("32");
-    expect(faviconUrl("https://figma.com", 48, 2)).toContain("size=64");
-    expect(getURL).toHaveBeenCalledWith("/_favicon/");
+  it("returns empty string without requesting favicon permissions or network", () => {
+    expect(faviconUrl("https://github.com/")).toBe("");
+    expect(faviconUrl("https://figma.com", 48, 2)).toBe("");
   });
 
   it.each(["not a url", "javascript:alert(1)", "data:text/html,unsafe", "file:///private/secret"])(
@@ -67,10 +58,8 @@ describe("background navigation client", () => {
   it.each([
     "https://github.com", "https://youtube.com", "https://google.com", "https://figma.com",
     "https://linkedin.com", "https://pinterest.com", "https://intranet.example", "http://localhost:3000",
-  ])("uses the Chrome favicon resource for a supported bookmark URL: %s", (url) => {
-    const icon = new URL(faviconUrl(url, 16, 1));
-    expect(icon.pathname).toBe("/_favicon/");
-    expect(icon.searchParams.get("pageUrl")).toBe(new URL(url).toString());
-    expect(icon.searchParams.get("size")).toBe("16");
+  ])("returns empty favicon URL for supported bookmark URL to avoid favicon permission: %s", (url) => {
+    expect(faviconUrl(url, 16, 1)).toBe("");
   });
 });
+

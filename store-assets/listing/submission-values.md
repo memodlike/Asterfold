@@ -1,6 +1,6 @@
-# Chrome Web Store submission values — Asterfold 3.5.2
+# Chrome Web Store submission values — Asterfold 3.5.3
 
-Current version: 3.5.2
+Current version: 3.5.3
 Copy these values into the owner Dashboard only after checking them against the final release ZIP.
 
 ## Core values
@@ -30,17 +30,13 @@ Use only a privacy URL that has been opened publicly without authentication. The
 
 > Stores only the temporary visual Privacy Mode flag in `chrome.storage.session`, allowing popup and New Tab to share the same visual-protection state without writing to disk. Chrome clears this session value when the browser session ends; bookmark workspace data remains in IndexedDB.
 
-### `favicon`
-
-> Displays Chrome's browser-owned favicon resource for a saved, validated HTTP(S) bookmark. Asterfold does not use a third-party favicon provider, make direct site requests, request host access, or store favicon blobs. Privacy Mode does not render site favicons.
-
 ### Optional `bookmarks`
 
 > Requested only on-demand when the user selects Import Chrome bookmarks or Refresh from Chrome. The Chrome bookmark tree is read locally to create or update bookmarks and the permission is immediately revoked via `browser.permissions.remove`; declining does not affect normal use.
 
-### Removed permissions (`activeTab`, `alarms`, `contextMenus`)
+### Removed permissions (`favicon`, `activeTab`, `alarms`, `contextMenus`)
 
-> Asterfold 3.5.2 does not request or require `activeTab`, `alarms`, or `contextMenus`. No active-tab URLs/titles are queried and no background alarm loops run. The narrowly scoped `favicon` permission is used only for Chrome's local favicon resource.
+> Asterfold 3.5.3 does not request or require `favicon`, `activeTab`, `alarms`, or `contextMenus`. No active-tab URLs/titles are queried, no background alarm loops run, and no favicon resource permissions are requested, resulting in 0 required justifications in the Chrome Web Store Developer Dashboard.
 
 ## Remote code
 

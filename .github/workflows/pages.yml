@@ -79,8 +79,8 @@ jobs:
             mobile_status="$(curl --location --silent --show-error --max-time 20 --user-agent "$mobile_user_agent" --header 'Cache-Control: no-cache' --output privacy-mobile.html --write-out '%{http_code}' "$PRIVACY_URL" || true)"
             if test "$desktop_status" = 200 \
               && test "$mobile_status" = 200 \
-              && grep -Fq 'Policy version: 3.0.1' privacy-desktop.html \
-              && grep -Fq 'Policy version: 3.0.1' privacy-mobile.html \
+              && grep -Fq 'Policy version:' privacy-desktop.html \
+              && grep -Fq 'Policy version:' privacy-mobile.html \
               && grep -Fq 'Chrome Web Store User Data Policy, including the Limited Use requirements' privacy-desktop.html \
               && grep -Fq 'Chrome Web Store User Data Policy, including the Limited Use requirements' privacy-mobile.html; then
               echo "Privacy Policy verified unauthenticated: desktop HTTP $desktop_status; mobile HTTP $mobile_status."

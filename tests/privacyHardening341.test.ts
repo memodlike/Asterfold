@@ -8,9 +8,10 @@ import { importRecords } from "../src/services/exportImport";
 import "fake-indexeddb/auto";
 
 describe("Asterfold privacy hardening invariants", () => {
-  it("enforces least privilege manifest configuration with Chrome-owned favicon access only", async () => {
+  it("enforces least privilege manifest configuration with zero privileged permissions", async () => {
     const config = await readFile(join(process.cwd(), "wxt.config.ts"), "utf8");
-    expect(config).toMatch(/permissions:\s*\[[^\]]*["']storage["'][^\]]*["']favicon["'][^\]]*\]/u);
+    expect(config).toMatch(/permissions:\s*\[\s*["']storage["']\s*\]/u);
+    expect(config).not.toMatch(/["']favicon["']/u);
     expect(config).not.toMatch(/["']activeTab["']/u);
     expect(config).not.toMatch(/["']alarms["']/u);
     expect(config).not.toMatch(/["']contextMenus["']/u);
@@ -145,8 +146,8 @@ describe("Asterfold privacy hardening invariants", () => {
     expect(scanScript).toContain("contextMenus");
   });
 
-  it("proves release validator allows only storage and Chrome favicon access", async () => {
+  it("proves release validator allows only storage", async () => {
     const releaseScript = await readFile(join(process.cwd(), "scripts/release.mjs"), "utf8");
-    expect(releaseScript).toContain('expectedPermissions = ["storage", "favicon"]');
+    expect(releaseScript).toContain('expectedPermissions = ["storage"]');
   });
 });

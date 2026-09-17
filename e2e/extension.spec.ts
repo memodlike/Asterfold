@@ -297,9 +297,9 @@ test.describe.serial("Asterfold MV3 release", () => {
     const probe = await worker.evaluate(() => ({ manifest: chrome.runtime.getManifest() }));
     expect(probe.manifest.manifest_version).toBe(3);
     expect(probe.manifest.chrome_url_overrides?.newtab).toBe("newtab.html");
-    expect(new Set(probe.manifest.permissions)).toEqual(new Set(["storage", "favicon"]));
+    expect(new Set(probe.manifest.permissions)).toEqual(new Set(["storage"]));
     expect(new Set(probe.manifest.optional_permissions ?? [])).toEqual(new Set(["bookmarks"]));
-    expect(probe.manifest.permissions).not.toEqual(expect.arrayContaining(["activeTab", "alarms", "contextMenus", "tabs", "history", "scripting", "webRequest"]));
+    expect(probe.manifest.permissions).not.toEqual(expect.arrayContaining(["activeTab", "alarms", "contextMenus", "favicon", "tabs", "history", "scripting", "webRequest"]));
     expect(probe.manifest.host_permissions ?? []).toEqual([]);
   });
 
@@ -367,7 +367,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
     await expect(popup.locator(".workspace-button")).toBeVisible();
     await expect(popup.locator(".save-button")).toBeVisible();
-    await expect(popup.getByText("Asterfold 3.5.2")).toBeVisible();
+    await expect(popup.getByText("Asterfold 3.5.3")).toBeVisible();
     await popup.close();
     await workspacePage.close();
   });
@@ -461,13 +461,8 @@ test.describe.serial("Asterfold MV3 release", () => {
     await setWorkspacePerformanceMode(page, "quality");
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("data-performance", "quality");
-    const faviconSource = await page.getByRole("button", { name: "Playwright docs" }).locator("img").getAttribute("src");
-    expect(faviconSource).not.toBeNull();
-    const favicon = new URL(faviconSource!);
-    expect(favicon.protocol).toBe("chrome-extension:");
-    expect(favicon.pathname).toBe("/_favicon/");
-    expect(favicon.searchParams.get("pageUrl")).toBe("https://playwright.dev/docs/chrome-extensions");
     const bookmarkButton = page.getByRole("button", { name: "Playwright docs" });
+    await expect(bookmarkButton.locator(".favicon")).toBeVisible();
     await bookmarkButton.hover();
     await page.waitForTimeout(240);
     const hoverState = await bookmarkButton.evaluate((button) => {

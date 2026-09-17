@@ -51,8 +51,8 @@ describe("Chrome Web Store manifest policy", () => {
 
     expect(manifest.manifest_version).toBe(3);
     expect(manifest.version).toBe(packageVersion);
-    expect(new Set(manifest.permissions)).toEqual(new Set(["storage", "favicon"]));
-    expect(manifest.permissions).not.toEqual(expect.arrayContaining(["activeTab", "alarms", "contextMenus", "identity", "tabs", "history", "scripting", "webRequest", "cookies"]));
+    expect(new Set(manifest.permissions)).toEqual(new Set(["storage"]));
+    expect(manifest.permissions).not.toEqual(expect.arrayContaining(["activeTab", "alarms", "contextMenus", "favicon", "identity", "tabs", "history", "scripting", "webRequest", "cookies"]));
     expect(manifest.optional_permissions).toEqual(["bookmarks"]);
     expect(manifest.host_permissions).toEqual([]);
     expect(manifest.content_security_policy?.extension_pages).toBe("script-src 'self'; object-src 'self'; base-uri 'self'");

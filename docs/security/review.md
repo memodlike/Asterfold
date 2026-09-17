@@ -1,16 +1,16 @@
 # Security review
 
-## STATUS: CURRENT — Asterfold 3.5.2
+## STATUS: CURRENT — Asterfold 3.5.3
 
-Review date: 17 September 2026. Target: Asterfold 3.5.2 on `main`.
+Review date: 17 September 2026. Target: Asterfold 3.5.3 on `main`.
 
 ### Verified design controls
 
 | Control | Implementation |
 | --- | --- |
-| Permission minimization | Strictly `permissions: ["storage", "favicon"]` with optional `bookmarks` on-demand. Zero `activeTab`, zero `alarms`, zero `contextMenus`, zero host permissions (`host_permissions: []`), zero content scripts. |
+| Permission minimization | Strictly `permissions: ["storage"]` with optional `bookmarks` on-demand. Zero `activeTab`, zero `alarms`, zero `contextMenus`, zero `favicon`, zero host permissions (`host_permissions: []`), zero content scripts. |
 | Remote code and network isolation | Strict CSP (`script-src 'self'; object-src 'self'; base-uri 'self'`). Zero remote executable code, zero third-party network requests, zero analytics, telemetry, or remote backends. |
-| Chrome local favicon resolution | Favicons are fetched solely through Chrome's browser-internal `_favicon/` API for safe saved HTTP(S) URLs. Privacy Mode renders neutral icons to prevent identity disclosure. |
+| Local vector icon fallbacks | Bookmark icons render using local SVG vector icons (`Globe`). Zero `_favicon` API calls and zero favicon permissions required, guaranteeing 0 permission justifications on the Chrome Web Store. |
 | Cross-context Privacy Mode | Transient shoulder-surfing flag uses `chrome.storage.session` (cleared automatically by Chrome when the browser closes); persistent data stays in local IndexedDB. |
 | Schema 10 & Data Integrity | IndexedDB Schema 10 introduces machine-readable `source` and `sourceId` on `Page` and `Board` entities. Chrome bookmark refreshes match target pages and boards idempotently without creating duplicate pages or losing user local renames. |
 | Folder Identity Isolation | Chrome bookmark import groups by folder source ID (`chrome:<folderSourceId>`), preserving distinct boards for same-name folders under different parent trees and preventing URL cross-merging. |
@@ -21,7 +21,7 @@ Review date: 17 September 2026. Target: Asterfold 3.5.2 on `main`.
 
 ### Permission status
 
-Asterfold 3.5.2 requires strictly `permissions: ["storage", "favicon"]`. The `storage` permission is restricted to `chrome.storage.session` for transient privacy state synchronization. The `favicon` permission is used solely for Chrome's local `_favicon` cache resolver. The optional `bookmarks` permission is requested on-demand only when the user triggers Chrome bookmark import and can be removed at any time. Asterfold has zero host permissions and injects zero content scripts.
+Asterfold 3.5.3 requires strictly `permissions: ["storage"]`. The `storage` permission is restricted to `chrome.storage.session` for transient privacy state synchronization. The optional `bookmarks` permission is requested on-demand only when the user triggers Chrome bookmark import and is revoked immediately upon completion. Asterfold has zero host permissions, zero `favicon` permission, zero `activeTab`/`alarms`/`contextMenus`, and injects zero content scripts.
 
 ### Dependency status
 

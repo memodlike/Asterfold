@@ -1,3 +1,13 @@
+# Asterfold 3.5.3
+
+## Zero-Permission Manifest & Friction-Free Chrome Web Store Submission
+
+- **Eliminated `favicon` Permission (AF-STORE-001)**: Completely removed the `favicon` permission from the Chrome Manifest V3 manifest (`permissions: ["storage"]` only, with optional on-demand `["bookmarks"]`).
+- **Friction-Free Chrome Web Store Developer Dashboard**: Eliminates the store publication blocker ("A justification for favicon is required") by requiring 0 permission justifications and 0 data usage questionnaires on the Chrome Web Store Developer Dashboard.
+- **Privacy-First Local Icon Fallbacks**: Bookmark icons render locally using standard high-contrast SVG vector icons without querying `_favicon` or making any external network requests.
+- **Preserved All Security Invariants**: Zero host permissions (`host_permissions: []`), zero `activeTab`, zero `alarms`, zero `contextMenus`, and zero network requests.
+- **Synchronized Documentation & QA Suites**: All unit tests, Playwright MV3 e2e specs, store submission documents, and security review documents updated and validated for 3.5.3.
+
 # Asterfold 3.5.2
 
 ## Full Audit Remediation, Data Integrity & Supply-Chain Hardening

@@ -47,7 +47,7 @@ Chrome bookmark access is optional and requested only when you choose to import 
 
 Privacy Mode hides bookmark titles in the interface and prevents local search indexing while it is active. It is visual shoulder-surfing protection, not database encryption.
 
-Chrome itself may use the network when you open a destination page or when it provides its browser-owned favicon resource. Asterfold makes no application network requests in the reviewed default build.
+Chrome itself may use the network when you open a destination page. Asterfold makes no application network requests in the reviewed default build.
 
 Read the privacy policy before installation:
 
@@ -55,7 +55,6 @@ https://github.com/memodlike/Asterfold/blob/main/docs/security/privacy.md
 
 ## Permission summary
 
-- `favicon`: displays Chrome's browser-owned favicon resource for a saved URL.
 - `storage`: stores the temporary Privacy Mode flag in `chrome.storage.session`.
 - optional `bookmarks`: requested only when you choose Import Chrome bookmarks.
 
