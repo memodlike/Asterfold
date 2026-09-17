@@ -249,7 +249,11 @@ describe("SettingsDialog behavior", () => {
     fireEvent.change(textInput, { target: { value: "Chrome import" } });
     fireEvent.change(container.querySelector<HTMLSelectElement>(".import-preview select")!, { target: { value: "allow" } });
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
-    await waitFor(() => expect(mocks.importRecords).toHaveBeenCalledWith(expect.any(Array), { pageTitle: "Chrome import" }, "allow"));
+    await waitFor(() => expect(mocks.importRecords).toHaveBeenCalledWith(
+      expect.any(Array),
+      { pageTitle: "Chrome import", source: "chrome", sourceId: "chrome" },
+      "allow",
+    ));
     expect(callbacks.onClose).toHaveBeenCalledOnce();
 
     fireEvent.click(screen.getByRole("checkbox"));

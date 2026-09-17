@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { CURRENT_DB_SCHEMA_VERSION, V9_STORES } from "../src/db/migrations";
+import { CURRENT_DB_SCHEMA_VERSION, V9_STORES, V10_STORES } from "../src/db/migrations";
 import { flattenChromeBookmarks } from "../src/features/onboarding/chromeBookmarkImport";
 import { AsterfoldDatabase } from "../src/db/database";
 import { importRecords } from "../src/services/exportImport";
@@ -30,10 +30,11 @@ describe("Asterfold privacy hardening invariants", () => {
     expect(background).toContain("parseSafeNavigationUrl");
   });
 
-  it("verifies Schema 9 indexes sourceId for bookmarks and boards", () => {
-    expect(CURRENT_DB_SCHEMA_VERSION).toBe(9);
+  it("verifies Schema 10 indexes sourceId for bookmarks, boards, and pages", () => {
+    expect(CURRENT_DB_SCHEMA_VERSION).toBe(10);
     expect(V9_STORES.bookmarks).toContain("sourceId");
     expect(V9_STORES.boards).toContain("sourceId");
+    expect(V10_STORES.pages).toContain("sourceId");
   });
 
   it("extracts and preserves sourceId and folderSourceId in flattenChromeBookmarks", () => {

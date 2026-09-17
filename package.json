@@ -1,6 +1,6 @@
 {
   "name": "asterfold",
-  "version": "3.5.1",
+  "version": "3.5.2",
   "private": true,
   "type": "module",
   "packageManager": "npm@10.9.8",
@@ -24,6 +24,7 @@
     "validate:version": "node scripts/validate-version.mjs",
     "validate:package": "node scripts/validate-release-package.mjs",
     "validate:provenance": "node scripts/verify-provenance.mjs",
+    "validate:sbom": "node scripts/generate-sbom.mjs && node scripts/validate-sbom.mjs",
     "scan:source": "node scripts/scan-source.mjs",
     "audit:development": "npm audit --json > npm-audit.json || true && node scripts/check-audit-baseline.mjs npm-audit.json && rm -f npm-audit.json",
     "test:upgrade": "playwright test e2e/upgrade.spec.ts",
@@ -52,7 +53,7 @@
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
     "@vitejs/plugin-react": "5.1.0",
-    "@vitest/coverage-v8": "4.1.10",
+    "@vitest/coverage-v8": "4.1.11",
     "@wxt-dev/module-react": "1.1.3",
     "eslint": "10.8.0",
     "eslint-plugin-react-hooks": "7.1.1",
@@ -62,7 +63,7 @@
     "typescript": "5.9.3",
     "typescript-eslint": "8.65.0",
     "vite": "^7.3.6",
-    "vitest": "^4.1.10",
+    "vitest": "^4.1.11",
     "wxt": "0.21.2"
   },
   "engines": {

@@ -1,3 +1,16 @@
+# Asterfold 3.5.2
+
+## Full Audit Remediation, Data Integrity & Supply-Chain Hardening
+
+- **Chrome Refresh Idempotency (AF-DATA-001)**: Added machine-readable `source` and `sourceId` to `Page` entity model with Dexie Schema 10 migration. Chrome bookmark import and refresh identify the target page by identity rather than title, eliminating duplicate page creation on refresh and preserving user local renames.
+- **Folder Identity Isolation (AF-DATA-002)**: Chrome bookmark folders are grouped by stable folder source ID (`chrome:<folderSourceId>`). Folders with identical names under different parent paths remain distinct boards, bookmarks across different folders never cross-merge, and local board renames survive refreshes.
+- **Complete Supply-Chain SBOM (AF-SC-001)**: Rewrote SBOM generation to extract the full npm lockfile v3 dependency graph across all 461 packages with valid SPDX 2.3 identifiers, purl package coordinates, and dependency relationships. Added deterministic SBOM validation in release pipeline.
+- **Zero Vulnerabilities (AF-DEP-001)**: Upgraded test framework (`vitest`, `@vitest/coverage-v8` to 4.1.11), bringing both production and development vulnerability audits to 0.
+- **Safe Unicode Entity Decoding (AF-ROB-001)**: HTML bookmark import parser strictly checks Unicode scalar value boundaries (`0x0000..0xD7FF`, `0xE000..0x10FFFF`) and rejects surrogate code points, eliminating `RangeError` crashes on malformed files.
+- **Pruned Message Protocol (AF-MSG-001)**: Cleaned up browser extension messaging contracts, removing obsolete message types and legacy error codes.
+- **Clean CI Workflows (AF-CI-002)**: Removed 8 legacy versioned workflows, standardizing on the 4 canonical CI, CodeQL, Pages, and Release workflows.
+- **Synchronized Security Documentation (AF-DOC-001)**: Security review updated with `STATUS: CURRENT` for 3.5.2 and `STATUS: HISTORICAL` for 3.1.0; all privacy policies and store disclosures aligned to 3.5.2.
+
 # Asterfold 3.5.1
 
 ## Chrome-Owned Favicons and Refined Bookmark Motion

@@ -105,6 +105,8 @@ jobs:
         run: npm run validate:store
       - name: Reproducible release and package validation
         run: npm run release:repro
+      - name: Validate SBOM completeness and integrity
+        run: npm run validate:sbom
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Real MV3, accessibility and visual E2E

@@ -19,6 +19,7 @@ import {
   migrateToV7,
   migrateToV8,
   migrateToV9,
+  migrateToV10,
   V1_STORES,
   V2_STORES,
   V3_STORES,
@@ -28,6 +29,7 @@ import {
   V7_STORES,
   V8_STORES,
   V9_STORES,
+  V10_STORES,
 } from "./migrations";
 
 export class AsterfoldDatabase extends Dexie {
@@ -52,6 +54,7 @@ export class AsterfoldDatabase extends Dexie {
     this.version(7).stores(V7_STORES).upgrade(migrateToV7);
     this.version(8).stores(V8_STORES).upgrade(migrateToV8);
     this.version(9).stores(V9_STORES).upgrade(migrateToV9);
+    this.version(10).stores(V10_STORES).upgrade(migrateToV10);
 
     this.on("versionchange", () => {
       this.close();

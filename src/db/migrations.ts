@@ -11,7 +11,8 @@ const V5_DB_SCHEMA_VERSION = 5;
 const V6_DB_SCHEMA_VERSION = 6;
 const V7_DB_SCHEMA_VERSION = 7;
 const V8_DB_SCHEMA_VERSION = 8;
-export const CURRENT_DB_SCHEMA_VERSION = 9;
+const V9_DB_SCHEMA_VERSION = 9;
+export const CURRENT_DB_SCHEMA_VERSION = 10;
 
 export const V1_STORES = {
   pages: "id, userId, position, updatedAt, deletedAt, isDefault",
@@ -41,6 +42,10 @@ export const V9_STORES = {
   ...V8_STORES,
   boards: `${V8_STORES.boards}, sourceId`,
   bookmarks: `${V8_STORES.bookmarks}, sourceId`,
+} as const;
+export const V10_STORES = {
+  ...V9_STORES,
+  pages: `${V9_STORES.pages}, sourceId`,
 } as const;
 
 type LegacySettings = Partial<AppSettings> & Pick<AppSettings, "id">;
@@ -222,6 +227,22 @@ export async function migrateToV8(transaction: Transaction): Promise<void> {
  * bookmark synchronization and refresh without altering user data.
  */
 export async function migrateToV9(transaction: Transaction): Promise<void> {
+  const settingsTable = transaction.table<V2Settings, string>("settings");
+  const current = await settingsTable.get("app");
+  if (!current) return;
+  await settingsTable.put({
+    ...current,
+    id: "app",
+    schemaVersion: V9_DB_SCHEMA_VERSION,
+    updatedAt: nowIso(),
+  });
+}
+
+/**
+ * Introduces sourceId indexing on pages for non-destructive, truly idempotent
+ * Chrome bookmark synchronization and refresh without altering user customizations.
+ */
+export async function migrateToV10(transaction: Transaction): Promise<void> {
   const settingsTable = transaction.table<V2Settings, string>("settings");
   const current = await settingsTable.get("app");
   if (!current) return;

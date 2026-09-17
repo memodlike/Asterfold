@@ -56,7 +56,7 @@ export function PopupApp() {
         setError(t("error.chromeBookmarksUnavailable"));
         return;
       }
-      const summary = await importRecords(result.records, { pageTitle: t("settings.chromeBookmarks") }, "skip");
+      const summary = await importRecords(result.records, { pageTitle: t("settings.chromeBookmarks"), source: "chrome", sourceId: "chrome" }, "skip");
       setStatus(t("settings.imported", { count: summary.imported }));
     } catch {
       setError(t("error.chromeBookmarksUnavailable"));

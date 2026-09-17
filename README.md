@@ -113,7 +113,7 @@ Asterfold is designed around local storage and least-privilege extension access.
 |---|---|
 | `bookmarks` | Imports or refreshes Chrome bookmarks after direct user action (revoked immediately) |
 
-Asterfold 3.5.1 does not request `activeTab`, `alarms`, or `contextMenus`. It uses the minimum `favicon` permission only for Chrome's local `_favicon` resource; it makes no third-party favicon request and has no host permissions. Privacy Mode intentionally replaces site favicons with a neutral icon.
+Asterfold 3.5.2 does not request `activeTab`, `alarms`, or `contextMenus`. It uses the minimum `favicon` permission only for Chrome's local `_favicon` resource; it makes no third-party favicon request and has no host permissions. Privacy Mode intentionally replaces site favicons with a neutral icon.
 
 Detailed review material:
 
@@ -176,7 +176,7 @@ Contribution guidance is available in [docs/development/CONTRIBUTING.md](docs/de
 
 ## Release artifacts
 
-Asterfold 3.5.1 produces a reproducible, cryptographically verifiable release containing:
+Asterfold 3.5.2 produces a reproducible, cryptographically verifiable release containing:
 
 - `Asterfold-Chrome.zip` (runtime Chrome Web Store bundle)
 - `chrome-unpacked.zip` (unpacked developer distribution)
@@ -189,14 +189,15 @@ The release pipeline verifies Manifest V3 structure, permission policy, CSP, for
 
 ## Release highlights
 
-**Asterfold 3.5.1** restores Chrome-provided bookmark favicons with high-DPI resource selection, a privacy-safe neutral fallback, and refined performance-aware bookmark hover motion. It adds only the narrowly scoped Chrome `favicon` permission; no host permission, third-party icon service, analytics, or telemetry is introduced.
+**Asterfold 3.5.2** delivers comprehensive audit remediation, Schema 10 machine-readable Page/Board identity and Chrome refresh idempotency, folder identity isolation, a complete 461-package SBOM, safe Unicode entity parsing, and zero dependency vulnerabilities.
 
 The repository does not claim Chrome Web Store publication, approval, user counts, ratings, awards, or endorsements until those facts exist publicly.
 
 ## Version history
 
-1. **v3.5.1 — Chrome favicons and adaptive bookmark motion.** Restores browser-owned Chrome favicon rendering for safe saved HTTP(S) URLs, selects crisp high-DPI resources, uses neutral fallback icons and keeps Privacy Mode identity-safe; also moves bookmark hover motion inside the sortable surface so it never competes with drag transforms.
-2. **v3.5.0 — Advanced multi-point gradient backgrounds and smart bookmark naming.** Adds customizable 1–10 point radial gradient backgrounds with 5 starter presets and curated harmonic randomizer, smart bookmark title recovery for missing or generic titles across 100+ services with multi-part TLD support, and full 12-locale internationalization.
+1. **v3.5.2 — Full audit remediation, Chrome refresh idempotency, folder isolation, and supply-chain hardening.** Adds machine-readable Page/Board identity (Schema 10) for idempotent Chrome refreshes preserving local renames, folder identity isolation for same-name folders under different parent trees, full npm lockfile v3 SBOM generation (461 packages), safe Unicode entity parsing, and 0-vulnerability dependency upgrade.
+2. **v3.5.1 — Chrome favicons and adaptive bookmark motion.** Restores browser-owned Chrome favicon rendering for safe saved HTTP(S) URLs, selects crisp high-DPI resources, uses neutral fallback icons and keeps Privacy Mode identity-safe; also moves bookmark hover motion inside the sortable surface so it never competes with drag transforms.
+3. **v3.5.0 — Advanced multi-point gradient backgrounds and smart bookmark naming.** Adds customizable 1–10 point radial gradient backgrounds with 5 starter presets and curated harmonic randomizer, smart bookmark title recovery for missing or generic titles across 100+ services with multi-part TLD support, and full 12-locale internationalization.
 3. **v3.4.1 — Comprehensive privacy hardening and idempotent sync.** Strips privileged permissions to only `storage` and on-demand `bookmarks` (revoked immediately in a `finally` block), implements IndexedDB Schema 9 with `sourceId` indexing, replaces favicon requests with deterministic letter monograms, and refactors the extension popup into a zero-tab-query workspace dashboard.
 3. **v3.4.0 — Multi-tier performance architecture and full localization.** Introduces 6-tier rendering hierarchy with legacy GPU heuristics and recommendation rationales, Settings "Restore Defaults" and "Restart Welcome Tour" controls, 100% complete localization across 12 locales with zero English leakage, and Chrome for Testing headless MV3 test runner upgrades.
 1. **v3.3.0 — Interface clarity and accessibility.** Adds semantic Settings tabs, progressive appearance controls, a shorter first-run flow, bounded search input, responsive Quick Save surfaces and accessible popup status feedback without changing permissions or local-only storage.

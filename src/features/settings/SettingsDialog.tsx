@@ -250,7 +250,11 @@ export function SettingsDialog(props: SettingsDialogProps) {
   const commitRecordImport = async (): Promise<void> => {
     setImportBusy(true);
     try {
-      const summary = await importRecords(importRecordsPreview, { pageTitle: importPageTitle }, duplicateStrategy);
+      const isChrome = importSource === t("settings.chromeBookmarks") || (importRecordsPreview.length > 0 && importRecordsPreview.every((r) => r.source === "chrome"));
+      const destination = isChrome
+        ? { pageTitle: importPageTitle, source: "chrome" as const, sourceId: "chrome" }
+        : { pageTitle: importPageTitle };
+      const summary = await importRecords(importRecordsPreview, destination, duplicateStrategy);
       props.onUpdated(t("settings.imported", { count: summary.imported }));
       setImportRecordsPreview([]);
       setImportSource("");

@@ -1,6 +1,6 @@
-# Chrome Web Store Developer Dashboard Answers — Asterfold 3.5.1
+# Chrome Web Store Developer Dashboard Answers — Asterfold 3.5.2
 
-This document provides the exact answers and disclosures to enter into the Chrome Web Store Developer Dashboard for **Asterfold 3.5.1**.
+This document provides the exact answers and disclosures to enter into the Chrome Web Store Developer Dashboard for **Asterfold 3.5.2**.
 
 ---
 
@@ -73,10 +73,10 @@ Requested only on-demand when the user selects Import Chrome bookmarks or Refres
 ```
 
 ### Removed Permissions Notice
-Notice to Reviewer: Asterfold 3.5.1 does not request `activeTab`, `alarms`, or `contextMenus`. The extension does not query active tabs, does not read page titles/URLs from tabs, and does not run background alarm loops. It uses the minimum `favicon` permission only for Chrome's local `_favicon` resource for saved safe HTTP(S) bookmarks.
+Notice to Reviewer: Asterfold 3.5.2 does not request `activeTab`, `alarms`, or `contextMenus`. The extension does not query active tabs, does not read page titles/URLs from tabs, and does not run background alarm loops. It uses the minimum `favicon` permission only for Chrome's local `_favicon` resource for saved safe HTTP(S) bookmarks.
 
 ---
 
 ## 4. Package Upload
 - File to upload: **`release/Asterfold-Chrome.zip`**
-- Verify version is **`3.5.1`** and `manifest_version: 3`.
+- Verify version is **`3.5.2`** and `manifest_version: 3`.

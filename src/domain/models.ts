@@ -14,6 +14,8 @@ export interface Page {
   deletedAt: ISODate | null;
   deletedBatchId: string | null;
   version: number;
+  source?: "manual" | "chrome" | undefined;
+  sourceId?: string | null | undefined;
 }
 
 export interface Board {

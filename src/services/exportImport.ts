@@ -433,9 +433,26 @@ export function parseNetscapeHtml(text: string): ImportRecord[] {
   let buffer = "";
   let href = "";
   let lastRecord: ImportRecord | undefined;
+  const decodeNumericEntity = (match: string, codeStr: string, radix: number): string => {
+    const num = Number.parseInt(codeStr, radix);
+    if (
+      Number.isNaN(num) ||
+      !Number.isFinite(num) ||
+      num < 0 ||
+      num > 0x10ffff ||
+      (num >= 0xd800 && num <= 0xdfff)
+    ) {
+      return match;
+    }
+    try {
+      return String.fromCodePoint(num);
+    } catch {
+      return match;
+    }
+  };
   const decode = (value: string): string => value
-    .replace(/&#(\d+);/gu, (_, code: string) => String.fromCodePoint(Number(code)))
-    .replace(/&#x([\da-f]+);/giu, (_, code: string) => String.fromCodePoint(Number.parseInt(code, 16)))
+    .replace(/&#(\d+);/gu, (match, code: string) => decodeNumericEntity(match, code, 10))
+    .replace(/&#x([\da-f]+);/giu, (match, code: string) => decodeNumericEntity(match, code, 16))
     .replaceAll("&quot;", "\"").replaceAll("&apos;", "'").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&amp;", "&");
   const finishDescription = (): void => {
     if (capture === "description" && lastRecord) lastRecord.description = decode(buffer).trim().slice(0, 2_000) || null;
@@ -479,9 +496,16 @@ export function parseNetscapeHtml(text: string): ImportRecord[] {
   return records;
 }
 
+export interface ImportDestination {
+  pageTitle: string;
+  pageId?: string;
+  source?: "manual" | "chrome";
+  sourceId?: string | null;
+}
+
 export async function importRecords(
   records: ImportRecord[],
-  destination: { pageTitle: string; pageId?: string },
+  destination: ImportDestination,
   duplicateStrategy: "skip" | "allow",
   database: AsterfoldDatabase = db,
 ): Promise<ImportSummary> {
@@ -517,10 +541,33 @@ export async function importRecords(
   if (valid.length === 0 && records.length > 0) throw new ImportError("No valid bookmarks were found");
   return database.transaction("rw", [database.pages, database.boards, database.bookmarks, database.settings, database.wallpapers], async () => {
     let pageId = destination.pageId;
+    const isChromeImport = destination.source === "chrome" || (valid.length > 0 && valid.every((r) => r.source === "chrome"));
+    const chromeSourceId = destination.sourceId ?? "chrome";
+
     if (pageId) {
       const page = await database.pages.get(pageId);
       if (!page || page.deletedAt !== null) throw new ValidationError("Import destination Page not found");
-    } else {
+      if (isChromeImport && (page.source !== "chrome" || !page.sourceId)) {
+        await database.pages.update(pageId, { source: "chrome", sourceId: chromeSourceId, updatedAt: nowIso() });
+      }
+    } else if (isChromeImport) {
+      const existingPages = (await database.pages.toArray()).filter((page) => page.deletedAt === null);
+      const existingChromePage = existingPages.find((page) => page.source === "chrome" && (page.sourceId === chromeSourceId || page.sourceId === "chrome"));
+      if (existingChromePage) {
+        pageId = existingChromePage.id;
+      } else {
+        const allBoards = await database.boards.toArray();
+        const chromeBoards = allBoards.filter((b) => b.deletedAt === null && b.source === "chrome");
+        const chromeBoardPageIds = new Set(chromeBoards.map((b) => b.pageId));
+        const candidatePage = existingPages.find((p) => chromeBoardPageIds.has(p.id));
+        if (candidatePage) {
+          pageId = candidatePage.id;
+          await database.pages.update(pageId, { source: "chrome", sourceId: chromeSourceId, updatedAt: nowIso() });
+        }
+      }
+    }
+
+    if (!pageId) {
       const existingPages = (await database.pages.toArray()).filter((page) => page.deletedAt === null).sort((a, b) => compareRanks(a.position, b.position));
       pageId = createId();
       const timestamp = nowIso();
@@ -543,41 +590,117 @@ export async function importRecords(
         deletedAt: null,
         deletedBatchId: null,
         version: 1,
+        source: isChromeImport ? "chrome" : (destination.source ?? "manual"),
+        sourceId: isChromeImport ? chromeSourceId : (destination.sourceId ?? null),
       });
     }
 
-    const folderGroups = new Map<string, typeof valid>();
-    for (const record of valid) {
-      const folder = normalizeEntityTitle(record.folderPath.at(-1) ?? "", "Imported bookmarks");
-      const group = folderGroups.get(folder);
-      if (group) group.push(record);
-      else folderGroups.set(folder, [record]);
+    interface FolderGroup {
+      groupKey: string;
+      title: string;
+      source: "manual" | "chrome";
+      folderSourceId: string | null;
+      records: typeof valid;
     }
+
+    const folderGroups = new Map<string, FolderGroup>();
+    for (const record of valid) {
+      const folderTitle = normalizeEntityTitle(record.folderPath.at(-1) ?? "", "Imported bookmarks");
+      const isChromeFolder = record.source === "chrome" && record.folderSourceId !== undefined && record.folderSourceId !== null;
+      const groupKey = isChromeFolder
+        ? `chrome:${record.folderSourceId}`
+        : `folder:${record.folderPath.join("/") || folderTitle}`;
+      let group = folderGroups.get(groupKey);
+      if (!group) {
+        group = {
+          groupKey,
+          title: folderTitle,
+          source: record.source ?? (isChromeImport ? "chrome" : "manual"),
+          folderSourceId: record.folderSourceId ?? null,
+          records: [],
+        };
+        folderGroups.set(groupKey, group);
+      }
+      group.records.push(record);
+    }
+
     const existingBoards = (await database.boards.where("pageId").equals(pageId).toArray())
       .filter((board) => board.deletedAt === null)
       .sort((left, right) => compareRanks(left.position, right.position));
-    const missingBoardTitles = [...folderGroups.keys()]
-      .map((title) => normalizeEntityTitle(title, "Imported bookmarks"))
-      .filter((title, index, titles) => !existingBoards.some((board) => board.title === title) && titles.indexOf(title) === index);
-    const boardAllocation = allocateManyAtEnd(existingBoards, missingBoardTitles.length);
+
+    const boardByGroupKey = new Map<string, Board>();
+    const missingGroups: FolderGroup[] = [];
+    const boardsToUpdate: Board[] = [];
+
+    for (const group of folderGroups.values()) {
+      let matchedBoard: Board | undefined;
+      if (group.source === "chrome" && group.folderSourceId) {
+        matchedBoard = existingBoards.find((b) => b.source === "chrome" && b.sourceId === group.folderSourceId);
+        if (!matchedBoard) {
+          matchedBoard = existingBoards.find((b) => !b.sourceId && b.title === group.title);
+          if (matchedBoard) {
+            matchedBoard.source = "chrome";
+            matchedBoard.sourceId = group.folderSourceId;
+            matchedBoard.updatedAt = nowIso();
+            matchedBoard.version += 1;
+            boardsToUpdate.push(matchedBoard);
+          }
+        }
+      } else {
+        matchedBoard = existingBoards.find((b) => b.title === group.title);
+      }
+
+      if (matchedBoard) {
+        boardByGroupKey.set(group.groupKey, matchedBoard);
+      } else {
+        missingGroups.push(group);
+      }
+    }
+
+    if (boardsToUpdate.length > 0) {
+      await database.boards.bulkPut(boardsToUpdate);
+    }
+
+    const boardAllocation = allocateManyAtEnd(existingBoards, missingGroups.length);
     const previousBoardPositions = new Map(existingBoards.map((board) => [board.id, board.position]));
     const boardTimestamp = nowIso();
     const rebalancedBoards = boardAllocation.scope
       .filter((board) => previousBoardPositions.get(board.id) !== board.position)
       .map((board) => ({ ...board, updatedAt: boardTimestamp, version: board.version + 1 }));
     if (rebalancedBoards.length > 0) await database.boards.bulkPut(rebalancedBoards);
-    const newBoards = missingBoardTitles.map((title, index): Board => ({
-      id: createId(), userId: null, pageId, title, icon: "folder", accent: null,
-      position: boardAllocation.positions[index]!, collapsed: false, layout: "list",
-      bookmarkColumns: "auto", gridColumn: 1, gridRow: 0, gridSpan: 3,
-      createdAt: boardTimestamp, updatedAt: boardTimestamp, deletedAt: null, deletedBatchId: null, version: 1,
+
+    const newBoards = missingGroups.map((group, index): Board => ({
+      id: createId(),
+      userId: null,
+      pageId,
+      title: group.title,
+      icon: "folder",
+      accent: null,
+      position: boardAllocation.positions[index]!,
+      collapsed: false,
+      layout: "list",
+      bookmarkColumns: "auto",
+      gridColumn: 1,
+      gridRow: 0,
+      gridSpan: 3,
+      createdAt: boardTimestamp,
+      updatedAt: boardTimestamp,
+      deletedAt: null,
+      deletedBatchId: null,
+      version: 1,
+      source: group.source,
+      sourceId: group.folderSourceId,
     }));
     if (newBoards.length > 0) await database.boards.bulkAdd(newBoards);
-    existingBoards.splice(0, existingBoards.length, ...boardAllocation.scope, ...newBoards);
+
+    for (let i = 0; i < missingGroups.length; i += 1) {
+      boardByGroupKey.set(missingGroups[i]!.groupKey, newBoards[i]!);
+    }
+
     let imported = 0;
     let skippedDuplicates = 0;
-    for (const [folderTitle, group] of folderGroups) {
-      const board = existingBoards.find((candidate) => candidate.title === folderTitle);
+    for (const group of folderGroups.values()) {
+      const board = boardByGroupKey.get(group.groupKey);
       if (!board) throw new ImportError("Import destination Board could not be allocated");
       const current = (await database.bookmarks.where("boardId").equals(board.id).toArray()).filter((bookmark) => bookmark.deletedAt === null);
       const existingBySourceId = new Map<string, Bookmark>();
@@ -587,8 +710,8 @@ export async function importRecords(
         existingByUrl.set(b.normalizedUrl, b);
       }
       const toUpdate: Bookmark[] = [];
-      const accepted: typeof group = [];
-      for (const record of group) {
+      const accepted: typeof group.records = [];
+      for (const record of group.records) {
         const matchBySource = record.sourceId ? existingBySourceId.get(record.sourceId) : undefined;
         const matchByUrl = existingByUrl.get(record.normalizedUrl);
         const matched = matchBySource ?? (duplicateStrategy === "skip" ? matchByUrl : undefined);

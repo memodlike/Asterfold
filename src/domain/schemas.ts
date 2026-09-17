@@ -29,6 +29,8 @@ export const pageSchema = baseEntitySchema.extend({
   accent: z.string().max(64).nullable(),
   position: z.string().refine(isValidRank, "Invalid Page rank"),
   isDefault: z.boolean(),
+  source: z.enum(["manual", "chrome"]).optional(),
+  sourceId: z.string().max(MAX_ID).nullable().optional(),
 }).strict();
 
 export const boardSchema = baseEntitySchema.extend({

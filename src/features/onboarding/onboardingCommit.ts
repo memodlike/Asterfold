@@ -49,7 +49,10 @@ async function performCommit(plan: OnboardingPlan, database: AsterfoldDatabase):
       if (plan.records.length === 0) throw new ImportError("A validated bookmark preview is required");
       importSummary = await importRecords(
         plan.records,
-        { pageTitle: plan.importPageTitle },
+        {
+          pageTitle: plan.importPageTitle,
+          ...(plan.source === "chrome" ? { source: "chrome" as const, sourceId: "chrome" } : {}),
+        },
         plan.duplicateStrategy,
         database,
       );

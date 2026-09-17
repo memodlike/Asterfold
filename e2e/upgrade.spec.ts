@@ -147,9 +147,9 @@ test("preserves a real 2.2.3 profile when the same unpacked extension path is up
   expect(snapshot.boardRecord).toMatchObject(seeded.boardRecord);
   expect(snapshot.bookmarkRecord).toMatchObject(seeded.bookmarkRecord);
   expect(snapshot.trashRecord).toMatchObject(seeded.trashRecord);
-  expect(snapshot.version).toBe(90);
+  expect(snapshot.version).toBe(100);
   expect(snapshot.settings).toMatchObject({
-    schemaVersion: 9,
+    schemaVersion: 10,
     activePageId: "upgrade-page",
     locale: "en",
     workspaceLayoutMode: "free",

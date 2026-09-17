@@ -1,6 +1,6 @@
-# Chrome Web Store submission checklist — Asterfold 3.5.1
+# Chrome Web Store submission checklist — Asterfold 3.5.2
 
-Current version: 3.5.1
+Current version: 3.5.2
 This checklist separates repository readiness from the owner-only action of submitting through the Chrome Web Store Developer Dashboard. Check an item only after verifying it against the exact ZIP being uploaded.
 
 ## Identity and listing
@@ -19,7 +19,7 @@ This checklist separates repository readiness from the owner-only action of subm
 
 - [ ] Public privacy URL opens without authentication on desktop and mobile.
 - [ ] Published policy matches `docs/security/privacy.md` and `docs/store/privacy.html`.
-- [ ] Policy version is 3.5.1 and effective date is 16 September 2026.
+- [ ] Policy version is 3.5.2 and effective date is 17 September 2026.
 - [ ] Exact English Limited Use sentence is present.
 - [ ] Dashboard certifies that the extension does not collect or transmit user data.
 - [ ] **Web history** is NOT declared (Asterfold stores only local user bookmarks, not browsing history; declaring Web history triggers false browser warnings).
@@ -31,7 +31,7 @@ This checklist separates repository readiness from the owner-only action of subm
 
 ## Permissions and MV3
 
-- [ ] Uploaded ZIP has `manifest_version: 3` and version `3.5.1`.
+- [ ] Uploaded ZIP has `manifest_version: 3` and version `3.5.2`.
 - [ ] Background runs as a service worker.
 - [ ] New-tab override, popup and all required icons are present.
 - [ ] Required permissions are exactly `storage`, `favicon`.

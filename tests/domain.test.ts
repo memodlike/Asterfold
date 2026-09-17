@@ -207,11 +207,13 @@ describe("themes and runtime messages", () => {
     expect(parseExtensionMessage({ type: "DELETE_DATABASE" })).toBeNull();
     expect(parseExtensionMessage({ type: "OPEN_URL", url: "https://example.com", mode: "eval" })).toBeNull();
     expect(parseExtensionMessage({ type: "OPEN_URL", url: "https://example.com", mode: "current", extra: true })).toBeNull();
-    expect(parseExtensionMessage({ type: "QUICK_SAVE", tabId: 0 })).toBeNull();
-    expect(parseExtensionMessage({ type: "QUICK_SAVE", tabId: Number.MAX_SAFE_INTEGER + 1 })).toBeNull();
+    expect(parseExtensionMessage({ type: "QUICK_SAVE", tabId: 1 })).toBeNull();
     expect(parseExtensionMessage({ type: "OPEN_WORKSPACE", pageId: "" })).toBeNull();
-    expect(parseExtensionMessage({ type: "INSTANT_SAVE", url: "https://example.com", title: "x".repeat(241) })).toBeNull();
-    expect(parseExtensionMessage({ type: "SET_BADGE", status: "saved" })).toEqual({ type: "SET_BADGE", status: "saved" });
-    expect(parseExtensionMessage({ type: "SET_BADGE", status: "unknown" })).toBeNull();
+    expect(parseExtensionMessage({ type: "INSTANT_SAVE", url: "https://example.com", title: "Test" })).toBeNull();
+    expect(parseExtensionMessage({ type: "SET_BADGE", status: "saved" })).toBeNull();
+    expect(parseExtensionMessage({ type: "DATA_CHANGED", entity: "page" })).toEqual({
+      type: "DATA_CHANGED",
+      entity: "page",
+    });
   });
 });

@@ -109,7 +109,7 @@ for (const [script, args = []] of [["scripts/generate-sbom.mjs"], ["scripts/gene
 }
 const checksumNames = ["Asterfold-Chrome.zip", "chrome-unpacked.zip", "extension-source.zip", "Asterfold-Store-Assets.zip", "sbom.spdx.json", "provenance.json"];
 await writeFile(join(release, "checksums.txt"), `${(await Promise.all(checksumNames.map((name) => checksumLine(join(release, name))))).join("\n")}\n`, "utf8");
-for (const [script, args = []] of [["scripts/validate-release-package.mjs"], ["scripts/verify-provenance.mjs"]]) {
+for (const [script, args = []] of [["scripts/validate-release-package.mjs"], ["scripts/validate-sbom.mjs"], ["scripts/verify-provenance.mjs"]]) {
   const result = spawnSync(process.execPath, [script, ...args], { cwd: root, stdio: "inherit", env: process.env });
   if (result.status !== 0) throw new Error(`${script} failed with ${result.status}`);
 }
