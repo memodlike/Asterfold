@@ -4,6 +4,8 @@ import type { Board, Bookmark, Page } from "../../domain/models";
 import { BookmarkSearchEngine, createSearchDocuments, type SearchField, type SearchMode } from "../../search/searchEngine";
 import { Modal } from "../../components/Modal";
 import { SelectField } from "../../components/SelectField";
+import { BrowserFavicon } from "../../components/BrowserFavicon";
+import { faviconUrl } from "../../browser/api";
 import { useI18n } from "../../i18n";
 import { primaryShortcut } from "../../browser/platform";
 
@@ -86,9 +88,10 @@ export function SearchPalette(props: SearchPaletteProps) {
           {results.map((result, index) => {
             const bookmark = bookmarkById.get(result.id);
             if (!bookmark) return null;
+            const faviconSource = props.privacy ? "" : faviconUrl(bookmark.url, 20);
             return (
               <div key={result.id} role="listitem" className={`search-result ${index === activeIndex ? "is-active" : ""}`} onMouseEnter={() => setActiveIndex(index)}>
-                <button aria-current={index === activeIndex ? "true" : undefined} className="search-result__main" onClick={() => { props.onOpen(bookmark); close(); }}><span className="result-monogram">{result.hostname[0]?.toUpperCase()}</span><span><strong>{result.title}</strong><small>{result.hostname} · {result.pageTitle} / {result.boardTitle}</small><em>{result.description}</em></span></button>
+                <button aria-current={index === activeIndex ? "true" : undefined} className="search-result__main" onClick={() => { props.onOpen(bookmark); close(); }}><span className="result-monogram"><BrowserFavicon source={faviconSource} privacy={props.privacy} fallback={<span>{result.hostname[0]?.toUpperCase()}</span>} /></span><span><strong>{result.title}</strong><small>{result.hostname} · {result.pageTitle} / {result.boardTitle}</small><em>{result.description}</em></span></button>
                 <div className="search-result__actions">
                   <button aria-label={t("search.reveal")} onClick={() => { props.onReveal(bookmark, result.pageId); close(); }}><ExternalLink size={14} /></button>
                   <button aria-label={t("bookmark.edit")} onClick={() => { props.onEdit(bookmark); close(); }}><Edit3 size={14} /></button>

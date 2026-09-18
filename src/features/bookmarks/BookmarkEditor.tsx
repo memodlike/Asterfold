@@ -116,7 +116,7 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
         <div className="search-state search-private"><span className="search-state__icon"><BookmarkIcon size={22} /></span><div><strong>{t("search.privateTitle")}</strong><span>{t("search.privateBody")}</span></div></div>
       ) : <form id={formId} className="form-stack" onSubmit={(event) => { event.preventDefault(); void save(); }}>
         <div className="bookmark-preview">
-          <span className="favicon--large"><BrowserFavicon key={icon} source={icon} /></span>
+          <span className="favicon--large"><BrowserFavicon key={icon} source={icon} privacy={props.privacy} /></span>
           <div><strong>{title || t("bookmark.untitled")}</strong><small>{url}</small></div>
         </div>
         <label>{t("generic.title")}<input autoFocus value={title} maxLength={240} onChange={(event) => setTitle(event.target.value)} placeholder={t("bookmark.untitled")} /></label>

@@ -13,11 +13,38 @@ export class ExtensionRequestError extends Error {
   }
 }
 
+const CHROME_FAVICON_SIZES = [16, 32, 48, 64] as const;
+
+function nearestChromeFaviconSize(requestedSize: number): number {
+  const bounded = Math.min(64, Math.max(16, requestedSize));
+  return CHROME_FAVICON_SIZES.reduce((nearest, candidate) => (
+    Math.abs(candidate - bounded) < Math.abs(nearest - bounded) ? candidate : nearest
+  ));
+}
+
 export function faviconUrl(pageUrl?: string, cssSize = 16, devicePixelRatio = globalThis.devicePixelRatio || 1): string {
-  void pageUrl;
-  void cssSize;
-  void devicePixelRatio;
-  return "";
+  if (!pageUrl || typeof pageUrl !== "string") return "";
+  const trimmed = pageUrl.trim();
+  if (!trimmed) return "";
+  if (!Number.isFinite(cssSize) || cssSize <= 0) return "";
+  if (!Number.isFinite(devicePixelRatio) || devicePixelRatio <= 0) return "";
+
+  try {
+    const safeUrl = parseSafeNavigationUrl(trimmed);
+    const resourceSize = nearestChromeFaviconSize(Math.ceil(cssSize * Math.max(1, devicePixelRatio)));
+    const getURL = typeof chrome !== "undefined" && chrome.runtime?.getURL
+      ? chrome.runtime.getURL.bind(chrome.runtime)
+      : typeof browser !== "undefined" && browser.runtime?.getURL
+        ? (browser.runtime.getURL as (path: string) => string).bind(browser.runtime)
+        : null;
+    if (!getURL) return "";
+    const url = new URL(getURL("/_favicon/"));
+    url.searchParams.set("pageUrl", safeUrl);
+    url.searchParams.set("size", String(resourceSize));
+    return url.toString();
+  } catch {
+    return "";
+  }
 }
 
 export async function openUrl(url: string, mode: BookmarkOpenMode): Promise<void> {

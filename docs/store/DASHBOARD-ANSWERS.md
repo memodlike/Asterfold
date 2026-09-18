@@ -1,6 +1,6 @@
-# Chrome Web Store Developer Dashboard Answers — Asterfold 3.5.3
+# Chrome Web Store Developer Dashboard Answers — Asterfold 3.5.4
 
-This document provides the exact answers and disclosures to enter into the Chrome Web Store Developer Dashboard for **Asterfold 3.5.3**.
+This document provides the exact answers and disclosures to enter into the Chrome Web Store Developer Dashboard for **Asterfold 3.5.4**.
 
 ---
 
@@ -57,18 +57,22 @@ The use of information received from Google APIs will adhere to the Chrome Web S
 
 ## 3. Permission Justifications
 
-Under Chrome Web Store rules, the `storage` permission requires **0 justifications** (it is a standard low-risk permission). Because `favicon`, `activeTab`, `alarms`, and `contextMenus` are completely removed in Asterfold 3.5.3, **no permission justification prompts are displayed**.
+### `favicon`
+```text
+Displays website icons for user-saved bookmarks on New Tab bookmark cards, in the bookmark editor preview, and in the search palette via Chrome's native chrome.runtime.getURL("/_favicon/") API. Favicons are fetched solely from Chrome's local browser icon cache without third-party network requests.
+```
 
-If a justification prompt is displayed for `storage`:
+### `storage`
+Under Chrome Web Store rules, the `storage` permission typically requires **0 justifications** (it is a standard low-risk permission). If a justification prompt is displayed for `storage`:
 ```text
 Stores only the temporary visual Privacy Mode flag in chrome.storage.session, allowing popup and New Tab to share the same visual-protection state without writing to disk. Chrome clears this session value when the browser session ends; all bookmark workspace data remains in local IndexedDB.
 ```
 
 ### Removed Permissions Notice
-Notice to Reviewer: Asterfold 3.5.3 does not request `favicon`, `activeTab`, `alarms`, or `contextMenus`. The extension requests strictly `storage`. The optional `bookmarks` permission is requested on-demand only if the user explicitly triggers Chrome bookmark import, and is revoked immediately upon completion.
+Notice to Reviewer: Asterfold 3.5.4 does not request `activeTab`, `alarms`, or `contextMenus`. The extension requests strictly `storage` and `favicon`. The optional `bookmarks` permission is requested on-demand only if the user explicitly triggers Chrome bookmark import, and is revoked immediately upon completion.
 
 ---
 
 ## 4. Package Upload
 - File to upload: **`release/Asterfold-Chrome.zip`**
-- Verify version is **`3.5.3`** and `manifest_version: 3`.
+- Verify version is **`3.5.4`** and `manifest_version: 3`.

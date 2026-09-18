@@ -36,8 +36,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .bookmark-card { position: relative; min-width: 0; height: 20px; border-radius: 7px; contain: layout style; }
 .bookmark-card__open { display: block; width: 100%; height: 100%; min-width: 0; padding: 0; border-radius: inherit; text-align: left; background: transparent; }
 .bookmark-card__surface { display: flex; width: 100%; height: 100%; min-width: 0; align-items: center; gap: 7px; padding: 1px 6px; border-radius: inherit; transition: transform 180ms cubic-bezier(.2,.8,.2,1), background-color 140ms ease-out; }
+.bookmark-card .favicon { transition: transform 180ms cubic-bezier(.2,.8,.2,1); }
 .bookmark-card:not(.is-dragging):hover .bookmark-card__surface, .bookmark-card:not(.is-dragging):focus-within .bookmark-card__surface, .bookmark-card.is-selected:not(.is-dragging) .bookmark-card__surface { background-color: rgb(var(--border-rgb) / .075); transform: translateY(-1px); }
+.bookmark-card:not(.is-dragging):hover .favicon, .bookmark-card:not(.is-dragging):focus-within .favicon { transform: scale(1.05); }
 .bookmark-card:not(.is-dragging) .bookmark-card__open:active .bookmark-card__surface { transform: translateY(0); transition-duration: 90ms; }
+.bookmark-card:not(.is-dragging) .bookmark-card__open:active .favicon { transform: scale(0.98); transition-duration: 90ms; }
 .bookmark-card.is-dragging { z-index: 4; opacity: .22; }
 .bookmark-card__open strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.2px; font-weight: 475; line-height: 1; }
 .favicon { display: grid; width: min(18px, calc(var(--bookmark-row-height) - 4px), calc(var(--favicon-size) / 2)); height: min(18px, calc(var(--bookmark-row-height) - 4px), calc(var(--favicon-size) / 2)); place-items: center; flex: 0 0 min(18px, calc(var(--bookmark-row-height) - 4px), calc(var(--favicon-size) / 2)); overflow: hidden; color: var(--color-text-secondary); }
@@ -248,11 +251,12 @@ html[data-performance="compatibility"] .settings-modal,
 html[data-performance="software"] .settings-modal,
 .low-power-mode .settings-modal { background: var(--color-surface-elevated); box-shadow: 0 24px 70px rgb(0 0 0 / .34), inset 0 1px 0 rgb(255 255 255 / .08); }
 .motion-disabled *, .motion-disabled *::before, .motion-disabled *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
-.motion-hover-disabled .bookmark-card__surface { transition: none; }
-.motion-hover-disabled .bookmark-card:not(.is-dragging):hover .bookmark-card__surface, .motion-hover-disabled .bookmark-card:not(.is-dragging):focus-within .bookmark-card__surface, .motion-hover-disabled .bookmark-card.is-selected:not(.is-dragging) .bookmark-card__surface { transform: none; }
+.motion-hover-disabled .bookmark-card__surface, .motion-hover-disabled .bookmark-card .favicon { transition: none; }
+.motion-hover-disabled .bookmark-card:not(.is-dragging):hover .bookmark-card__surface, .motion-hover-disabled .bookmark-card:not(.is-dragging):focus-within .bookmark-card__surface, .motion-hover-disabled .bookmark-card.is-selected:not(.is-dragging) .bookmark-card__surface, .motion-hover-disabled .bookmark-card:not(.is-dragging):hover .favicon, .motion-hover-disabled .bookmark-card:not(.is-dragging):focus-within .favicon { transform: none; }
 .performance-balanced .bookmark-card__surface { transition-duration: 160ms, 120ms; }
 .performance-compatibility .bookmark-card__surface, .performance-software .bookmark-card__surface, .low-power-mode .bookmark-card__surface { transition: background-color 100ms ease-out; }
 .performance-compatibility .bookmark-card:not(.is-dragging):hover .bookmark-card__surface, .performance-compatibility .bookmark-card:not(.is-dragging):focus-within .bookmark-card__surface, .performance-compatibility .bookmark-card.is-selected:not(.is-dragging) .bookmark-card__surface, .performance-software .bookmark-card:not(.is-dragging):hover .bookmark-card__surface, .performance-software .bookmark-card:not(.is-dragging):focus-within .bookmark-card__surface, .performance-software .bookmark-card.is-selected:not(.is-dragging) .bookmark-card__surface, .low-power-mode .bookmark-card:not(.is-dragging):hover .bookmark-card__surface, .low-power-mode .bookmark-card:not(.is-dragging):focus-within .bookmark-card__surface, .low-power-mode .bookmark-card.is-selected:not(.is-dragging) .bookmark-card__surface { transform: none; }
+.performance-compatibility .bookmark-card .favicon, .performance-software .bookmark-card .favicon, .low-power-mode .bookmark-card .favicon { transform: none !important; transition: none !important; }
 .motion-menu-disabled .launcher-menu, .motion-menu-disabled .modal, .motion-menu-disabled .modal-backdrop { animation: none; }
 .motion-drag-disabled .board, .motion-drag-disabled .bookmark-card { transition: none !important; }
 .toast > span { flex: 1; }
@@ -284,6 +288,7 @@ html[data-performance="software"] .settings-modal,
 .search-result.is-active { transform: translateY(-1px); }
 .search-result__main { display: grid; grid-template-columns: 29px minmax(0, 1fr); align-items: center; gap: 9px; min-width: 0; padding: 4px; border-radius: 9px; text-align: left; color: var(--color-text); background: transparent; }
 .result-monogram { display: grid; width: 29px; height: 29px; place-items: center; overflow: hidden; border-radius: 9px; color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 12%, transparent); font-size: 11px; font-weight: 700; }
+.result-monogram .favicon { width: 18px; height: 18px; flex: 0 0 18px; }
 .search-result__main > span:last-child { display: grid; gap: 2px; min-width: 0; }
 .search-result__main strong, .search-result__main small, .search-result__main em { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .search-result__main strong { font-size: 12.5px; font-weight: 620; }
@@ -364,7 +369,7 @@ html[data-performance="software"] .settings-modal,
   .trash-row { grid-template-columns: 34px minmax(0, 1fr); }
   .trash-row__actions { grid-column: 2; justify-content: flex-end; }
 }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } .bookmark-card:not(.is-dragging):hover .bookmark-card__surface, .bookmark-card:not(.is-dragging):focus-within .bookmark-card__surface, .bookmark-card.is-selected:not(.is-dragging) .bookmark-card__surface { transform: none; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } .bookmark-card:not(.is-dragging):hover .bookmark-card__surface, .bookmark-card:not(.is-dragging):focus-within .bookmark-card__surface, .bookmark-card.is-selected:not(.is-dragging) .bookmark-card__surface, .bookmark-card .favicon { transform: none !important; } }
 @media (prefers-reduced-transparency: reduce) { .board, .modal, .launcher-menu, .launcher-discovery, .context-menu, .empty-state, .bulk-toolbar, .toast { background: var(--color-surface-solid); backdrop-filter: none; -webkit-backdrop-filter: none; } .wallpaper { filter: none; transform: none; } }
 @media (prefers-contrast: more) { .board, .modal, .launcher-menu, .launcher-discovery, .context-menu { border-width: 2px; background: var(--color-surface-solid); backdrop-filter: none; } .bookmark-card:hover, .bookmark-card:focus-within { outline: 2px solid currentColor; } }
 @media (forced-colors: active) { .board, .modal, .launcher-menu, .launcher-discovery, .context-menu, .toast { border: 1px solid CanvasText; background: Canvas; backdrop-filter: none; } .bookmark-card:hover, button:hover { outline: 1px solid Highlight; } .wallpaper { display: none; } }

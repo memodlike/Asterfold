@@ -56,6 +56,7 @@ https://github.com/memodlike/Asterfold/blob/main/docs/security/privacy.md
 ## Разрешения
 
 - `storage`: хранит временный флаг Privacy Mode в `chrome.storage.session`.
+- `favicon`: отображает иконки сохранённых сайтов из локального кэша Chrome.
 - опциональное `bookmarks`: запрашивается только при выборе импорта закладок Chrome.
 
 Доступ к истории браузера, cookies и host origins не запрашивается.

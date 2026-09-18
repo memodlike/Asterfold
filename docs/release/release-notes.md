@@ -1,3 +1,14 @@
+# Asterfold 3.5.4
+
+## Restore Chrome-Native Site Favicons & Refine Bookmark Motion
+
+- **Real Chrome-Provided Favicons Restored**: Restores browser-owned `chrome.runtime.getURL("/_favicon/")` resolution for saved, validated HTTP(S) bookmarks. Asterfold uses no third-party favicon provider, no direct website requests, no host permissions, no binary icon cache, and ignores legacy remote favicon fields.
+- **High-DPI Resource Selection**: Dynamically calculates optimal Chrome favicon sizes from rendered CSS icon dimensions and device pixel ratio, normalizing to bounded Chrome buckets (`[16, 32, 48, 64]`). Preserves aspect ratio with `object-fit: contain` in stable layout slots with zero layout shift.
+- **Consistently Applied Across Surfaces**: Real site favicons are seamlessly rendered in Bookmark Cards, Bookmark Editor previews, and Search Palette result items (with domain monogram fallback).
+- **Privacy-Safe Invariants**: Missing or failed favicons display a local neutral vector fallback (`Globe`). In Privacy Mode, favicon URLs are never constructed or rendered in the DOM, preventing site identity disclosure.
+- **Premium Bookmark Micro-Motion**: Refines bookmark card interactions with subtle favicon micro-scale (`scale(1.05)`) over `180ms cubic-bezier(.2,.8,.2,1)` and crisp active press feedback (`scale(0.98)` over `90ms`). Drag transforms are preserved on the outer sortable element without coordinate contention. Transforms are strictly suppressed in `prefers-reduced-motion: reduce`, compatibility/software performance profiles, and low-power modes.
+- **Explicit Manifest & Store Disclosures**: Adds intentional low-privilege `favicon` permission (`permissions: ["storage", "favicon"]`), keeping `optional_permissions: ["bookmarks"]` and empty `host_permissions: []`. Fully documented with Chrome Web Store permission justifications.
+
 # Asterfold 3.5.3
 
 ## Zero-Permission Manifest & Friction-Free Chrome Web Store Submission

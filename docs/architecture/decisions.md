@@ -204,11 +204,32 @@
 
 ## ADR-019 — Browser-owned favicons with privacy-safe rendering
 
-**Date:** 2026-09-16
-**Status:** Accepted
+**Date:** 2026-09-16  
+**Status:** Superseded by ADR-020
 
 **Context:** Asterfold 3.4.1 removed all favicon rendering to minimize permissions, leaving letter monograms as the normal bookmark identity. The product needs real site icons without host access, third-party icon providers, or application network requests.
 **Options:** retain monograms; call an external favicon service; fetch arbitrary sites; use Chrome's favicon resource.
 **Decision:** Request only Chrome's `favicon` permission beside `storage`, validate saved HTTP(S) URLs, and render `chrome-extension://…/_favicon/` at a normalized DPR-aware size. Keep `bookmarks` optional, `host_permissions` empty, and all other former permissions absent. Privacy Mode never constructs or renders a site favicon; unavailable or failed resources use a neutral local vector icon.
 **Consequences:** Chrome's own favicon cache/policy determines whether a site icon is available. Asterfold stores no favicon binary and makes no third-party request. Bookmark hover motion is isolated to an inner visual surface so dnd-kit retains ownership of the outer drag transform.
 **Validation:** URL, privacy, manifest, card fallback, real MV3 E2E, reduced-motion, low-power, and reproducible-package tests.
+
+## ADR-020 — Restore Chrome-native site favicons and refined bookmark motion
+
+**Date:** 2026-09-18  
+**Status:** Accepted
+
+**Context:** Asterfold 3.5.3 removed the `favicon` permission to publish with zero permission warnings on the Chrome Web Store. Users and product requirements accept the standard low-privilege `favicon` permission ("Read the icons of the websites you visit") to restore real website branding on New Tab bookmark cards, the editor preview, and search results.
+**Options:**
+1. Retain zero-favicon configuration with neutral SVG icons only.
+2. Third-party favicon APIs (Google S2, DuckDuckGo, etc.) — REJECTED: violates zero-telemetry policy.
+3. Direct `fetch()` to `/favicon.ico` — REJECTED: violates empty `host_permissions: []` invariant.
+4. Chrome Manifest V3 native `_favicon` API — ACCEPTED: resolves through browser-managed cache with zero network calls from extension code.
+**Decision:**
+1. Request standard Manifest V3 `favicon` permission beside `storage` (`permissions: ["storage", "favicon"]`).
+2. Construct browser-owned `chrome.runtime.getURL("/_favicon/?pageUrl=...&size=...")` with safe URL validation (`http:` and `https:` only, credentials/control chars rejected).
+3. Normalize resource sizes to DPR-aware Chrome buckets `[16, 32, 48, 64]`.
+4. Render real favicons across BookmarkCard, BookmarkEditor, and SearchPalette (with monogram fallback).
+5. Ensure zero-CLS with bounded layout containers and local neutral SVG `<Globe />` fallback on failure or in Privacy Mode.
+6. Refine bookmark motion with micro-scale (`scale(1.05)`) on `.favicon`, keeping dnd-kit transform isolated to outer `.bookmark-card`. Strictly disable transforms in reduced-motion and low-spec performance profiles.
+**Consequences:** Asterfold makes 0 third-party network requests and stores 0 favicon binaries. Chrome Web Store submission includes explicit justification for the `favicon` permission.
+**Validation:** Unit tests (`browserApi.test.ts`, `browserFavicon.test.tsx`, `bookmarkCardIntegration.test.tsx`), manifest policy tests, E2E Playwright tests, reproducible release validation.

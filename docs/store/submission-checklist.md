@@ -1,6 +1,6 @@
-# Chrome Web Store submission checklist — Asterfold 3.5.3
+# Chrome Web Store submission checklist — Asterfold 3.5.4
 
-Current version: 3.5.3
+Current version: 3.5.4
 This checklist separates repository readiness from the owner-only action of submitting through the Chrome Web Store Developer Dashboard. Check an item only after verifying it against the exact ZIP being uploaded.
 
 ## Identity and listing
@@ -19,7 +19,7 @@ This checklist separates repository readiness from the owner-only action of subm
 
 - [ ] Public privacy URL opens without authentication on desktop and mobile.
 - [ ] Published policy matches `docs/security/privacy.md` and `docs/store/privacy.html`.
-- [ ] Policy version is 3.5.3 and effective date is 17 September 2026.
+- [ ] Policy version is 3.5.4 and effective date is 18 September 2026.
 - [ ] Exact English Limited Use sentence is present.
 - [ ] Dashboard certifies that the extension does not collect or transmit user data.
 - [ ] **Web history** is NOT declared (Asterfold stores only local user bookmarks, not browsing history; declaring Web history triggers false browser warnings).
@@ -31,11 +31,11 @@ This checklist separates repository readiness from the owner-only action of subm
 
 ## Permissions and MV3
 
-- [ ] Uploaded ZIP has `manifest_version: 3` and version `3.5.3`.
+- [ ] Uploaded ZIP has `manifest_version: 3` and version `3.5.4`.
 - [ ] Background runs as a service worker.
 - [ ] New-tab override, popup and all required icons are present.
-- [ ] Required permissions are strictly `storage`.
-- [ ] `favicon` is not requested; icons render via local SVG vector fallbacks without remote or extension URL requests.
+- [ ] Required permissions are strictly `storage` and `favicon`.
+- [ ] `favicon` is used only to display Chrome-provided site icons for saved bookmarks via Chrome's browser-owned `/_favicon/` API; no external favicon services or host permissions.
 - [ ] `bookmarks` is optional, requested on-demand only during Chrome import or refresh, and immediately revoked post-import.
 - [ ] `storage` is used only for the transient Privacy Mode flag in `chrome.storage.session`.
 - [ ] `host_permissions` is empty.

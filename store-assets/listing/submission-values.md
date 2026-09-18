@@ -1,6 +1,6 @@
-# Chrome Web Store submission values — Asterfold 3.5.3
+# Chrome Web Store submission values — Asterfold 3.5.4
 
-Current version: 3.5.3
+Current version: 3.5.4
 Copy these values into the owner Dashboard only after checking them against the final release ZIP.
 
 ## Core values
@@ -30,13 +30,17 @@ Use only a privacy URL that has been opened publicly without authentication. The
 
 > Stores only the temporary visual Privacy Mode flag in `chrome.storage.session`, allowing popup and New Tab to share the same visual-protection state without writing to disk. Chrome clears this session value when the browser session ends; bookmark workspace data remains in IndexedDB.
 
+### `favicon`
+
+> Displays website icons for user-saved bookmarks on New Tab bookmark cards, in the bookmark editor preview, and in the search palette via Chrome's native `chrome.runtime.getURL("/_favicon/")` API. Favicons are fetched solely from Chrome's local browser icon cache without third-party network requests.
+
 ### Optional `bookmarks`
 
 > Requested only on-demand when the user selects Import Chrome bookmarks or Refresh from Chrome. The Chrome bookmark tree is read locally to create or update bookmarks and the permission is immediately revoked via `browser.permissions.remove`; declining does not affect normal use.
 
-### Removed permissions (`favicon`, `activeTab`, `alarms`, `contextMenus`)
+### Removed permissions (`activeTab`, `alarms`, `contextMenus`)
 
-> Asterfold 3.5.3 does not request or require `favicon`, `activeTab`, `alarms`, or `contextMenus`. No active-tab URLs/titles are queried, no background alarm loops run, and no favicon resource permissions are requested, resulting in 0 required justifications in the Chrome Web Store Developer Dashboard.
+> Asterfold 3.5.4 does not request or require `activeTab`, `alarms`, or `contextMenus`. No active-tab URLs/titles are queried, and no background alarm loops run.
 
 ## Remote code
 

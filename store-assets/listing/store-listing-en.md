@@ -56,6 +56,7 @@ https://github.com/memodlike/Asterfold/blob/main/docs/security/privacy.md
 ## Permission summary
 
 - `storage`: stores the temporary Privacy Mode flag in `chrome.storage.session`.
+- `favicon`: displays website icons for saved bookmarks using Chrome's local browser cache.
 - optional `bookmarks`: requested only when you choose Import Chrome bookmarks.
 
 No browsing-history, cookies or host-origin access is requested.

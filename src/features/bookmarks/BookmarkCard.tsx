@@ -72,7 +72,7 @@ export const BookmarkCard = memo(function BookmarkCard(props: BookmarkCardProps)
         {...sortable.listeners}
       >
         <span className="bookmark-card__surface">
-          <BrowserFavicon key={source} source={source} />
+          <BrowserFavicon key={source} source={source} privacy={props.privacy} />
           <strong className={props.privacy ? "private-content private-placeholder" : ""}>{displayTitle}</strong>
         </span>
       </button>
