@@ -8,7 +8,7 @@ Copy these values into the owner Dashboard only after checking them against the 
 | Field | English value | Russian value |
 | --- | --- | --- |
 | Name | Asterfold — Visual Bookmark Workspace | Asterfold — Visual Bookmark Workspace |
-| Single purpose | Asterfold replaces Chrome New Tab with a local-first visual bookmark workspace organized into Pages and Boards. | Asterfold заменяет новую вкладку Chrome локальным визуальным пространством закладок со Страницами и Блоками. |
+| Single purpose | Asterfold replaces Chrome New Tab with a local-first visual bookmark workspace for organizing, searching, and opening user-saved bookmarks in Pages and Boards. | Asterfold заменяет новую вкладку Chrome локальным визуальным пространством закладок для организации, поиска и открытия сохранённых закладок со Страницами и Блоками. |
 | Short description | Turn Chrome New Tab into a visual bookmark workspace with Pages, Boards, search, and local-first storage. | Новая вкладка Chrome как визуальное пространство закладок со Страницами, Блоками, поиском и локальным хранением. |
 | Category | Workflow & Planning | Workflow & Planning |
 | Language | English | Русский |
@@ -28,15 +28,15 @@ Use only a privacy URL that has been opened publicly without authentication. The
 
 ### `storage`
 
-> Stores only the temporary visual Privacy Mode flag in `chrome.storage.session`, allowing popup and New Tab to share the same visual-protection state without writing to disk. Chrome clears this session value when the browser session ends; bookmark workspace data remains in IndexedDB.
+> The storage permission is used only for the temporary Privacy Mode state in chrome.storage.session so the New Tab page and extension popup can share the same visual privacy state. Chrome clears this session value when the browser session ends. Asterfold bookmark workspace data remains stored locally in IndexedDB.
 
 ### `favicon`
 
-> Displays website icons for user-saved bookmarks on New Tab bookmark cards, in the bookmark editor preview, and in the search palette via Chrome's native `chrome.runtime.getURL("/_favicon/")` API. Favicons are fetched solely from Chrome's local browser icon cache without third-party network requests.
+> The favicon permission is required to display website icons for URLs that the user has explicitly saved as bookmarks in Asterfold. Asterfold uses Chrome's built-in Manifest V3 favicon resource only for visual bookmark identification. Asterfold does not read page content or browsing history, does not request host permissions, does not contact third-party favicon services, and does not store or transmit favicon data.
 
 ### Optional `bookmarks`
 
-> Requested only on-demand when the user selects Import Chrome bookmarks or Refresh from Chrome. The Chrome bookmark tree is read locally to create or update bookmarks and the permission is immediately revoked via `browser.permissions.remove`; declining does not affect normal use.
+> The bookmarks permission is requested only after the user explicitly chooses Import Chrome bookmarks or Refresh from Chrome. Asterfold reads the Chrome bookmark tree locally to import or refresh the user's selected bookmark workspace, then immediately removes the permission. Declining this permission does not affect normal Asterfold use.
 
 ### Removed permissions (`activeTab`, `alarms`, `contextMenus`)
 
