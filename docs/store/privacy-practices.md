@@ -1,6 +1,6 @@
-# Chrome Web Store Privacy Practices — Asterfold 3.5.4
+# Chrome Web Store Privacy Practices — Asterfold 3.5.5
 
-Prepared for the Asterfold 3.5.4 release. These are recommended dashboard answers for the reviewed default release. Recheck every answer against the final uploaded ZIP before submission.
+Prepared for the Asterfold 3.5.5 release. These are recommended dashboard answers for the reviewed default release. Recheck every answer against the final uploaded ZIP before submission.
 
 ## Single purpose
 
@@ -30,7 +30,7 @@ Category breakdown for the Dashboard:
 
 ## Data handling certifications
 
-The owner can certify the following for the reviewed 3.5.4 default build:
+The owner can certify the following for the reviewed 3.5.5 default build:
 
 - data is used only to provide the extension's single bookmark-workspace purpose;
 - workspace data is stored locally in the user's Chrome profile;
@@ -66,7 +66,7 @@ Do not submit the intended Pages URL until it opens publicly without authenticat
 | `favicon` | Displays website icons for saved bookmarks on New Tab bookmark cards, the editor preview, and the search palette using `chrome.runtime.getURL("/_favicon/")`. Icons are retrieved from the local browser cache without network calls to external servers. |
 | optional `bookmarks` | Requested only on-demand when the user selects Import Chrome bookmarks or Refresh from Chrome. The Chrome bookmark tree is read locally to create or update bookmarks and the permission is immediately revoked via `browser.permissions.remove`; declining does not affect normal use. |
 
-Asterfold 3.5.4 does NOT request `activeTab`, `alarms`, or `contextMenus`. The final 3.5.4 manifest must list only `permissions: ["storage", "favicon"]` and optional `bookmarks`; it must not list host permissions, content scripts, `tabs`, `history`, `identity`, `scripting`, `webRequest`, cookies or clipboard-read. If the final ZIP differs, stop submission and reconcile the manifest and disclosures.
+Asterfold 3.5.5 does NOT request `activeTab`, `alarms`, or `contextMenus`. The final 3.5.5 manifest must list only `permissions: ["storage", "favicon"]` and optional `bookmarks`; it must not list host permissions, content scripts, `tabs`, `history`, `identity`, `scripting`, `webRequest`, cookies or clipboard-read. If the final ZIP differs, stop submission and reconcile the manifest and disclosures.
 
 ## Privacy policy URL
 

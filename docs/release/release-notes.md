@@ -1,3 +1,12 @@
+# Asterfold 3.5.5
+
+## Chrome Web Store Packaging & Favicon Release Finalization
+
+- **Chrome-Native Site Favicons Preserved**: Preserves browser-owned native site favicon rendering via Chrome MV3 `favicon` API (`chrome.runtime.getURL("/_favicon/")`) with high-DPI resolution scaling (16/32/48/64px).
+- **Chrome Web Store Compliance**: Fully documented and synchronized `favicon` permission justification in store submission documentation and developer dashboard answers.
+- **Air-Gapped Privacy Invariants**: Strict zero-telemetry boundary, zero host permissions (`host_permissions: []`), zero third-party favicon network requests, and complete Privacy Mode icon suppression to local neutral vector graphics (`Globe`).
+- **Verified Production Release**: Fresh bit-for-bit reproducible release package generated from `main`, verified through complete multi-tier automated test suites, Windows 11 compatibility stress fixtures, and SLSA provenance attestation.
+
 # Asterfold 3.5.4
 
 ## Restore Chrome-Native Site Favicons & Refine Bookmark Motion

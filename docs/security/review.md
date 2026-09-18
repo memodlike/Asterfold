@@ -1,8 +1,8 @@
 # Security review
 
-## STATUS: CURRENT — Asterfold 3.5.4
+## STATUS: CURRENT — Asterfold 3.5.5
 
-Review date: 18 September 2026. Target: Asterfold 3.5.4 on `main`.
+Review date: 18 September 2026. Target: Asterfold 3.5.5 on `main`.
 
 ### Verified design controls
 
@@ -21,7 +21,7 @@ Review date: 18 September 2026. Target: Asterfold 3.5.4 on `main`.
 
 ### Permission status
 
-Asterfold 3.5.4 requires strictly `permissions: ["storage", "favicon"]`. The `storage` permission is restricted to `chrome.storage.session` for transient privacy state synchronization. The `favicon` permission accesses Chrome's local icon cache for user-saved bookmarks. The optional `bookmarks` permission is requested on-demand only when the user triggers Chrome bookmark import and is revoked immediately upon completion. Asterfold has zero host permissions, zero `activeTab`/`alarms`/`contextMenus`, and injects zero content scripts.
+Asterfold 3.5.5 requires strictly `permissions: ["storage", "favicon"]`. The `storage` permission is restricted to `chrome.storage.session` for transient privacy state synchronization. The `favicon` permission accesses Chrome's local icon cache for user-saved bookmarks. The optional `bookmarks` permission is requested on-demand only when the user triggers Chrome bookmark import and is revoked immediately upon completion. Asterfold has zero host permissions, zero `activeTab`/`alarms`/`contextMenus`, and injects zero content scripts.
 
 ### Dependency status
 
