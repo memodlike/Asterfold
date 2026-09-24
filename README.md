@@ -113,7 +113,7 @@ Asterfold is designed around local storage and least-privilege extension access.
 |---|---|
 | `bookmarks` | Imports or refreshes Chrome bookmarks after direct user action (revoked immediately) |
 
-Asterfold 3.5.5 does not request `activeTab`, `alarms`, or `contextMenus`. It performs zero active-tab queries, zero background polling alarms, zero context menus, zero host permissions, and makes no third-party favicon or network requests. Site favicons are served exclusively by Chrome's local icon cache via the standard MV3 `favicon` permission. Privacy Mode intentionally replaces site icons with a neutral icon.
+Asterfold 3.6.0 does not request `activeTab`, `alarms`, or `contextMenus`. It performs zero active-tab queries, zero background polling alarms, zero context menus, zero host permissions, and makes no third-party favicon or network requests. Site favicons are served exclusively by Chrome's local icon cache via the standard MV3 `favicon` permission. Privacy Mode intentionally replaces site icons with a neutral icon.
 
 Detailed review material:
 
@@ -176,7 +176,7 @@ Contribution guidance is available in [docs/development/CONTRIBUTING.md](docs/de
 
 ## Release artifacts
 
-Asterfold 3.5.5 produces a reproducible, cryptographically verifiable release containing:
+Asterfold 3.6.0 produces a reproducible, cryptographically verifiable release containing:
 
 - `Asterfold-Chrome.zip` (runtime Chrome Web Store bundle)
 - `chrome-unpacked.zip` (unpacked developer distribution)
@@ -189,13 +189,16 @@ The release pipeline verifies Manifest V3 structure, permission policy, CSP, for
 
 ## Release highlights
 
-**Asterfold 3.5.5** delivers finalized Chrome Web Store packaging and verified permission justification metadata while preserving Chrome-native website favicons via `chrome.runtime.getURL("/_favicon/")` with high-DPI DPR scaling, refined bookmark motion, and strict zero-telemetry and privacy guarantees.
+**Asterfold 3.6.0** gives every overlay the same glass material as the boards, with four rendering tiers from live blur to fully solid surfaces for PCs without a GPU, a spotlight search that lights matches on the boards, single-screen Settings and an accent colour that follows the background.
+
+Asterfold 3.5.5 delivered finalized Chrome Web Store packaging and verified permission justification metadata while preserving Chrome-native website favicons via `chrome.runtime.getURL("/_favicon/")` with high-DPI DPR scaling, refined bookmark motion, and strict zero-telemetry and privacy guarantees.
 
 The repository does not claim Chrome Web Store publication, approval, user counts, ratings, awards, or endorsements until those facts exist publicly.
 
 ## Version history
 
-1. **v3.5.5 — Chrome Web Store Packaging & Favicon Release Finalization.** Finalizes Chrome Web Store packaging and synchronizes permission justifications across store submission documentation and developer dashboard answers, preserving native Chrome favicon resolution and refined bookmark motion with bit-for-bit release reproducibility.
+1. **v3.6.0 — One glass material, spotlight search and single-screen Settings.** Replaces opaque overlays with a tokenised glass material resolved across four rendering tiers (applied before first paint), fixes the solid "No transparency" tier and the unused blur slider, adds in-place search highlights, a bento Settings screen, background-driven accessible accents and cached GPU detection.
+2. **v3.5.5 — Chrome Web Store Packaging & Favicon Release Finalization.** Finalizes Chrome Web Store packaging and synchronizes permission justifications across store submission documentation and developer dashboard answers, preserving native Chrome favicon resolution and refined bookmark motion with bit-for-bit release reproducibility.
 2. **v3.5.4 — Chrome-native site favicons and refined bookmark motion.** Restores browser-native site favicon rendering via Chrome MV3 `favicon` API (`chrome.runtime.getURL("/_favicon/")`) with DPR-aware resolution scaling (16/32/48/64px), adds smooth micro-hover scaling for bookmark icons, integrates real favicons into search results with monogram fallbacks, and enforces strict zero-telemetry and Privacy Mode protections.
 3. **v3.5.3 — Zero-permission manifest and friction-free Chrome Web Store submission.** Completely removes `favicon` permission from the extension manifest, leaving strictly `permissions: ["storage"]` and optional `["bookmarks"]`. Bookmark icons render locally with high-contrast SVG vector icons without remote or extension URL requests, requiring 0 permission justifications on the CWS Developer Dashboard.
 4. **v3.5.2 — Full audit remediation, Chrome refresh idempotency, folder isolation, and supply-chain hardening.** Adds machine-readable Page/Board identity (Schema 10) for idempotent Chrome refreshes preserving local renames, folder identity isolation for same-name folders under different parent trees, full npm lockfile v3 SBOM generation (461 packages), safe Unicode entity parsing, and 0-vulnerability dependency upgrade.

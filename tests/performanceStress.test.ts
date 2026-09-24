@@ -24,28 +24,60 @@ describe("Windows 11 adaptive rendering stress gates", () => {
   it("respects explicit rendering choices", () => {
     expect(classifyPerformanceMode("quality", false, { ...modern, renderer: "Google SwiftShader" })).toBe("quality");
     expect(classifyPerformanceMode("compatibility", false, modern)).toBe("compatibility");
+    // Settings writes lowPowerMode: true together with the solid tier; the solid tier must still apply.
+    expect(classifyPerformanceMode("software", true, modern)).toBe("software");
+    expect(classifyPerformanceMode("auto", true, modern)).toBe("compatibility");
   });
 
-  it("keeps compatibility mode free of live backdrop and layout-sized transitions", () => {
+  it("keeps compatibility and software tiers free of live backdrop and layout-sized transitions", () => {
     const css = readFileSync(`${process.cwd()}/src/styles/global.css`, "utf8");
-    const compatibilityRule = /html\[data-performance="compatibility"\][\s\S]+?\.motion-disabled/u.exec(css)?.[0] ?? "";
-    expect(compatibilityRule).toContain("backdrop-filter: none");
-    expect(compatibilityRule).toContain("--wallpaper-compat-image");
+    const material = readFileSync(`${process.cwd()}/src/styles/material.css`, "utf8");
+    const compatibilityWallpaper = /html\[data-performance="compatibility"\] \.wallpaper \{[^}]+\}/u.exec(css)?.[0] ?? "";
+    expect(compatibilityWallpaper).toContain("--wallpaper-compat-image");
     expect(css).toContain("--wallpaper-software-image");
-    expect(css).not.toMatch(/transition:\s*[^;]*(?:width|margin|box-shadow)/u);
+    for (const tier of ["compatibility", "software"]) {
+      const block = new RegExp(`html\\[data-performance="${tier}"\\] \\{[^}]+\\}`, "u").exec(material)?.[0] ?? "";
+      expect(block, tier).toContain("--mat-filter: none");
+      expect(block, tier).toContain("--settings-scrim-filter: none");
+    }
+    const software = /html\[data-performance="software"\] \{[^}]+\}/u.exec(material)?.[0] ?? "";
+    for (const token of ["--mat-alpha-menu: 1", "--mat-alpha-sheet: 1", "--mat-alpha-tile: 1", "--mat-alpha-pill: 1", "--enter-y: 0px", "--enter-scale: 1"]) expect(software).toContain(token);
+    const balanced = /html\[data-performance="balanced"\] \{[^}]+\}/u.exec(material)?.[0] ?? "";
+    expect(balanced).toContain("--settings-scrim-filter: none");
     expect(css).not.toContain(".private-content { filter:");
   });
 
+  it("animates only compositor properties across every stylesheet", () => {
+    const files = [
+      "src/styles/global.css", "src/styles/material.css", "src/styles/controls.css", "src/styles/design-hardening.css",
+      "src/app/launcher.css", "src/features/search/spotlight.css", "src/features/settings/settings.css",
+      "src/features/onboarding/onboarding.css", "entrypoints/popup/popup.css", "entrypoints/newtab/bootstrap.css",
+    ];
+    for (const file of files) {
+      const css = readFileSync(`${process.cwd()}/${file}`, "utf8");
+      expect(css, file).not.toMatch(/transition:\s*[^;]*(?:width|height|margin|padding|box-shadow|backdrop-filter|filter)\b/u);
+      expect(css, file).not.toMatch(/transition:\s*all\b/u);
+      for (const [, body] of css.matchAll(/@keyframes [\w-]+ \{([\s\S]*?)\n?\}\n/gu)) {
+        expect(body, file).not.toMatch(/(?:width|height|margin|box-shadow|blur|backdrop-filter)\s*:/u);
+      }
+    }
+  });
 
-  it("uses raster compatibility wallpapers and keeps Settings opaque", () => {
-    const css = readFileSync(`${process.cwd()}/src/styles/global.css`, "utf8");
+  it("blurs Settings once through the scrim instead of per tile", () => {
+    const settings = readFileSync(`${process.cwd()}/src/features/settings/settings.css`, "utf8");
+    const material = readFileSync(`${process.cwd()}/src/styles/material.css`, "utf8");
     const runtime = readFileSync(`${process.cwd()}/src/features/appearance/themeRuntime.ts`, "utf8");
     expect(runtime).toContain("quiet-aurora-compat.webp");
     expect(runtime).toContain("blue-mesh-compat.webp");
     expect(runtime).toContain("dusk-compat.webp");
     expect(runtime).not.toContain("-compat.svg");
-    expect(css).toMatch(/\.settings-modal\s*\{[^}]*background:\s*var\(--color-surface-elevated\)/u);
-    expect(css).toMatch(/\.settings-modal\s*\{[^}]*backdrop-filter:\s*none/u);
+    const tile = /\.settings-tile \{[^}]+\}/u.exec(settings)?.[0] ?? "";
+    expect(tile).not.toContain("backdrop-filter");
+    expect(settings).toMatch(/\.modal-backdrop--settings::before \{[^}]*backdrop-filter: var\(--settings-scrim-filter\)/u);
+    expect(settings).toMatch(/\.modal\.settings-modal \{[^}]*backdrop-filter: none/u);
+    // The scrim animates on a pseudo-element so the backdrop never becomes a Chrome backdrop root.
+    expect(material).toMatch(/\.modal-backdrop::before \{[^}]*animation: af-fade/u);
+    expect(material).not.toMatch(/\.modal-backdrop \{[^}]*animation/u);
   });
 
   it("preserves original uploads and limits only the software fallback", async () => {

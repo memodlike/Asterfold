@@ -118,6 +118,8 @@ export interface ThemeConfig {
   preset: ThemePresetId;
   mode: ThemeMode;
   accent: string;
+  /** "auto" re-derives `accent` from the wallpaper or gradient whenever the background changes. */
+  accentMode?: "auto" | "custom" | undefined;
   canvas: string;
   surfaceOpacity: number;
   blur: number;

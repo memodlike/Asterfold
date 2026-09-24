@@ -104,6 +104,7 @@ export function validateTheme(theme: ThemeConfig): ThemeConfig {
     preset,
     mode: enumValue(source.mode, ["system", "light", "dark"], fallback.mode),
     accent: typeof source.accent === "string" && isValidHexColor(source.accent) ? source.accent : fallback.accent,
+    accentMode: enumValue<"auto" | "custom">(source.accentMode, ["auto", "custom"], fallback.accentMode ?? "auto"),
     canvas: typeof source.canvas === "string" && isValidHexColor(source.canvas) ? source.canvas : fallback.canvas,
     surfaceOpacity: finiteNumber(source.surfaceOpacity, fallback.surfaceOpacity, 0.2, 1),
     blur: finiteNumber(source.blur, fallback.blur, 0, 32),

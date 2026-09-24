@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Copy, FolderPlus, Layers3, Pencil, Search, Settings, Shield, ShieldCheck, Star, Trash2 } from "lucide-react";
+import { Bookmark as BookmarkIcon, ChevronLeft, ChevronRight, Copy, FolderPlus, LayoutGrid, Layers3, Pencil, Plus, Search, Settings, Shield, ShieldCheck, Star, Trash2 } from "lucide-react";
 import type { Page } from "../domain/models";
 import { FloatingContextMenu, type ContextMenuPoint } from "../components/FloatingContextMenu";
+import { primaryShortcut } from "../browser/platform";
 import { useI18n } from "../i18n";
+import "./launcher.css";
 
 interface AppLauncherProps {
   pages: Page[];
   activePageId: string;
   privacy: boolean;
+  pageStats?: { boards: number; bookmarks: number };
   onCreateBoard: () => void;
   onCreatePage: () => void;
   onSelectPage: (id: string) => void;
@@ -33,6 +36,8 @@ export function AppLauncher(props: AppLauncherProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const searchShortcut = primaryShortcut("K");
+  const activePage = props.pages.find((page) => page.id === props.activePageId);
 
   const cancelClose = (): void => {
     if (closeTimer.current !== undefined) window.clearTimeout(closeTimer.current);
@@ -106,11 +111,37 @@ export function AppLauncher(props: AppLauncherProps) {
             items[next]?.focus();
           }
         }}>
+          <div className="launcher-menu__header" role="presentation">
+            <span className="launcher-menu__page"><span className="launcher-menu__dot" aria-hidden="true" />{props.privacy || !activePage ? t("generic.page") : activePage.title}</span>
+            {props.pageStats ? (
+              <span className="launcher-menu__stats" title={t("launcher.pageSummary", props.pageStats)}>
+                <span aria-hidden="true"><LayoutGrid size={12} />{props.pageStats.boards}</span>
+                <span aria-hidden="true"><BookmarkIcon size={12} />{props.pageStats.bookmarks}</span>
+                <span className="sr-only">{t("launcher.pageSummary", props.pageStats)}</span>
+              </span>
+            ) : null}
+          </div>
           <button role="menuitem" onClick={() => act(props.onCreateBoard)}><FolderPlus size={17} /><span>{t("launcher.newBoard")}</span></button>
-          <button role="menuitem" aria-expanded={pagesOpen} onClick={() => setPagesOpen((value) => !value)}><Layers3 size={17} /><span>{t("launcher.pages")}</span></button>
-          {pagesOpen ? <div className="launcher-pages"><button role="menuitem" className="launcher-pages__create" onClick={() => act(props.onCreatePage)}><FolderPlus size={14} />{t("name.newPage")}</button>{props.pages.map((page) => <button role="menuitem" key={page.id} className={page.id === props.activePageId ? "is-active" : ""} onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); setPageMenu({ page, point: { x: event.clientX, y: event.clientY } }); }} onKeyDown={(event) => { if (event.shiftKey && event.key === "F10") { event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect(); setPageMenu({ page, point: { x: rect.right, y: rect.bottom } }); } }} onClick={() => act(() => props.onSelectPage(page.id))}>{page.title}</button>)}</div> : null}
-          <button role="menuitem" onClick={() => act(props.onSearch)}><Search size={17} /><span>{t("generic.search")}</span></button>
-          <button role="menuitem" className={props.privacy ? "is-active" : ""} onClick={() => act(props.onPrivacy)}>{props.privacy ? <ShieldCheck size={17} /> : <Shield size={17} />}<span>{t(props.privacy ? "launcher.privacyOn" : "launcher.privacyOff")}</span></button>
+          <div className="launcher-menu__separator" role="separator" />
+          <button role="menuitem" aria-expanded={pagesOpen} onClick={() => setPagesOpen((value) => !value)}>
+            <Layers3 size={17} /><span>{t("launcher.pages")}</span>
+            <span className="launcher-menu__trail" aria-hidden="true"><span className="launcher-menu__count">{props.pages.length}</span><ChevronRight size={14} className="launcher-menu__chevron" /></span>
+          </button>
+          {pagesOpen ? (
+            <div className="launcher-pages" role="group" aria-label={t("launcher.pages")}>
+              {props.pages.map((page) => <button role="menuitem" key={page.id} aria-current={page.id === props.activePageId ? "page" : undefined} className={page.id === props.activePageId ? "is-active" : ""} onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); setPageMenu({ page, point: { x: event.clientX, y: event.clientY } }); }} onKeyDown={(event) => { if (event.shiftKey && event.key === "F10") { event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect(); setPageMenu({ page, point: { x: rect.right, y: rect.bottom } }); } }} onClick={() => act(() => props.onSelectPage(page.id))}>{page.title}</button>)}
+              <button role="menuitem" className="launcher-pages__create" aria-label={t("name.newPage")} title={t("name.newPage")} onClick={() => act(props.onCreatePage)}><Plus size={14} /></button>
+            </div>
+          ) : null}
+          <button role="menuitem" aria-keyshortcuts={searchShortcut.aria} onClick={() => act(props.onSearch)}>
+            <Search size={17} /><span>{t("generic.search")}</span>
+            <span className="launcher-menu__trail" aria-hidden="true"><kbd>{searchShortcut.visual}</kbd></span>
+          </button>
+          <button role="menuitemcheckbox" aria-checked={props.privacy} className={props.privacy ? "is-active" : ""} onClick={() => act(props.onPrivacy)}>
+            {props.privacy ? <ShieldCheck size={17} /> : <Shield size={17} />}<span>{t("launcher.privacy")}</span>
+            <span className="launcher-menu__trail" aria-hidden="true"><span className={`launcher-switch ${props.privacy ? "is-on" : ""}`} aria-hidden="true" /></span>
+          </button>
+          <div className="launcher-menu__separator" role="separator" />
           <button role="menuitem" onClick={() => act(props.onTrash)}><Trash2 size={17} /><span>{t("generic.trash")}</span></button>
           <button role="menuitem" onClick={() => act(props.onSettings)}><Settings size={17} /><span>{t("generic.settings")}</span></button>
         </div>

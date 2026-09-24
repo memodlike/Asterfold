@@ -233,3 +233,21 @@
 6. Refine bookmark motion with micro-scale (`scale(1.05)`) on `.favicon`, keeping dnd-kit transform isolated to outer `.bookmark-card`. Strictly disable transforms in reduced-motion and low-spec performance profiles.
 **Consequences:** Asterfold makes 0 third-party network requests and stores 0 favicon binaries. Chrome Web Store submission includes explicit justification for the `favicon` permission.
 **Validation:** Unit tests (`browserApi.test.ts`, `browserFavicon.test.tsx`, `bookmarkCardIntegration.test.tsx`), manifest policy tests, E2E Playwright tests, reproducible release validation.
+
+## ADR-021 — One glass material with four rendering tiers
+
+**Date:** 2026-09-24  
+**Status:** Accepted
+
+**Context:** Boards were translucent glass, but every overlay (launcher, Settings, search, Trash, dialogs, menus) was forced opaque grey by `opaque-ui.css` with `!important`, so the product looked like two applications. The Glass blur slider was not wired to anything, the GPU probe created a WebGL context on every new tab, and choosing the solid "Software" mode also set the legacy low-power flag, which resolved to the compatibility tier instead.
+**Options:** keep opaque overlays; blur every overlay surface individually; one tokenised material resolved per rendering tier.
+**Decision:**
+1. `src/styles/material.css` defines one material (tint density per surface: menu, sheet, tile, pill) and resolves it per `<html data-performance>` tier: **quality** (live backdrop blur on small surfaces plus one blurred scrim), **balanced** (short blur radius, no full-screen blur), **compatibility** (tint only, no `backdrop-filter`), **software** (solid surfaces, no transparency, fade-only motion). `prefers-reduced-transparency` overrides any glass tier.
+2. The rendering tier is stored in the startup snapshot (v3) and applied before first paint, so weak GPUs never render a frame of live blur.
+3. Settings is a single-screen bento of tiles over one blurred scrim; tiles never carry their own `backdrop-filter`. The scrim animates on `::before` so the backdrop element never becomes a Chrome backdrop root that would hide the page from child glass.
+4. Search is a floating spotlight; matches on the active page are marked in place with DOM data attributes batched per animation frame (no board re-render).
+5. Accent colour follows the background (measured built-in wallpaper accents, the most vivid gradient point, or a 48×32 sample of an upload) unless the user picks one, and is lightness-shifted to ≥ 3:1 against the surface.
+6. Only `transform` and `opacity` animate, via one spring token (`linear()` easing); tests reject heavy-property transitions and `transition: all` in every stylesheet.
+7. The WebGL renderer string is cached for a week per browser build and the probe context is released immediately.
+**Consequences:** Nine settings tiles cost one blur pass in the quality tier and none below it. The GPU probe no longer runs on every new tab. "No transparency" now really selects the solid tier.
+**Validation:** `performanceStress.test.ts` (tier tokens, compositor-only motion, single scrim blur, software precedence), `renderingSignals.test.ts`, `accent.test.ts`, `spotlightHighlights.test.tsx`, updated Settings/launcher suites, and real MV3 Playwright runs.

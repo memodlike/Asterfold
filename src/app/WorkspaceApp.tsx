@@ -263,6 +263,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
         pages={workspace.pages}
         activePageId={activePage.id}
         privacy={privacy}
+        pageStats={{ boards: boards.length, bookmarks: bookmarks.length }}
         onCreateBoard={() => setNameIntent({ kind: "new-board" })}
         onCreatePage={() => setNameIntent({ kind: "new-page" })}
         onSelectPage={selectPage}

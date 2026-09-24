@@ -367,7 +367,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
     await expect(popup.locator(".workspace-button")).toBeVisible();
     await expect(popup.locator(".save-button")).toBeVisible();
-    await expect(popup.getByText("Asterfold 3.5.5")).toBeVisible();
+    await expect(popup.getByText("Asterfold 3.6.0")).toBeVisible();
     await popup.close();
     await workspacePage.close();
   });
@@ -552,7 +552,10 @@ test.describe.serial("Asterfold MV3 release", () => {
       return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, isTopmost: target === menu || menu.contains(target), background: style.backgroundColor, color: style.color, zIndex: style.zIndex };
     });
     expect(sourceMenuBounds).toMatchObject({ isTopmost: true, color: "rgb(25, 26, 29)", zIndex: "2147483647" });
-    expect(sourceMenuBounds.background).toBe("rgb(255, 255, 255)");
+    // Light glass keeps at least 74% white tint under the text (solid in "No transparency").
+    const [, lightRed, lightGreen, lightBlue, lightAlpha = "1"] = /rgba?\((\d+), (\d+), (\d+)(?:, ([\d.]+))?\)/u.exec(sourceMenuBounds.background) ?? [];
+    expect([lightRed, lightGreen, lightBlue]).toEqual(["255", "255", "255"]);
+    expect(Number(lightAlpha)).toBeGreaterThanOrEqual(0.74);
     expect(sourceMenuBounds.left).toBeGreaterThanOrEqual(8);
     expect(sourceMenuBounds.top).toBeGreaterThanOrEqual(8);
     expect(sourceMenuBounds.right).toBeLessThanOrEqual(1440 - 8);
@@ -575,8 +578,9 @@ test.describe.serial("Asterfold MV3 release", () => {
 
     await page.keyboard.press("Control+K");
     dialog = page.getByRole("dialog");
-    await expect(dialog.locator(".search-palette__input")).toHaveCSS("border-radius", "15px");
-    await expect(dialog.locator(".search-state")).toHaveCSS("border-radius", "17px");
+    await expect(dialog.locator(".spotlight__field")).toHaveCSS("border-radius", "30px");
+    await expect(dialog.locator(".spotlight__panel")).toHaveCSS("border-radius", "22px");
+    await expect(dialog.locator(".spotlight__state")).toBeVisible();
     if (captureScreenshots) {
       await dialog.getByPlaceholder(/Название, URL/u).fill("design");
       await expect(dialog.getByRole("button", { name: /Design system/u })).toBeVisible();
@@ -584,10 +588,15 @@ test.describe.serial("Asterfold MV3 release", () => {
     await captureStoreScreenshot(page, "02-search-1280x800.png");
     await dialog.getByPlaceholder(/Название, URL/u).fill("playwrite");
     await expect(dialog.getByRole("button", { name: /Playwright docs/u })).toBeVisible();
+    // Spotlight lights the match in place on the board behind it and clears the mark on close.
+    await expect(page.locator("html")).toHaveAttribute("data-spotlight", "active");
+    await expect(page.locator(".bookmark-card[data-search-hit]")).toHaveCount(1);
     await page.keyboard.press("Escape");
+    await expect(page.locator(".bookmark-card[data-search-hit]")).toHaveCount(0);
+    await expect(page.locator("html")).not.toHaveAttribute("data-spotlight", /.+/u);
 
     await openLauncher(page);
-    await page.getByRole("menuitem", { name: "Включить приватность" }).click();
+    await page.getByRole("menuitemcheckbox", { name: "Режим приватности" }).click();
     await expect(page.locator(".app-shell")).toHaveClass(/privacy-mode/u);
     await expect(page.getByText("Playwright docs", { exact: true })).toHaveCount(0);
     await expect(page.locator('[title*="Playwright docs"]')).toHaveCount(0);
@@ -600,14 +609,15 @@ test.describe.serial("Asterfold MV3 release", () => {
     await expect(page.getByRole("menuitem", { name: "Копировать Markdown" })).toBeDisabled();
     await page.keyboard.press("Escape");
     await openLauncher(page);
-    await page.getByRole("menuitem", { name: "Выключить приватность" }).click();
+    await expect(page.getByRole("menuitemcheckbox", { name: "Режим приватности" })).toHaveAttribute("aria-checked", "true");
+    await page.getByRole("menuitemcheckbox", { name: "Режим приватности" }).click();
 
     if (captureScreenshots) await dismissToasts(page);
     await openLauncher(page);
     await page.getByRole("menuitem", { name: "Настройки" }).click();
     dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    const performanceRow = dialog.locator(".setting-row").filter({ hasText: "Режим рендеринга" });
+    const performanceRow = dialog.getByRole("group", { name: "Режим рендеринга" });
     const compatibilityButton = performanceRow.getByRole("button", { name: "Плавное стекло", exact: true });
     await expect(compatibilityButton).toHaveCount(1);
     await compatibilityButton.scrollIntoViewIfNeeded();
@@ -671,7 +681,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await openLauncher(page);
     await page.getByRole("menuitem", { name: "Настройки" }).click();
     dialog = page.getByRole("dialog");
-    const restoredPerformanceRow = dialog.locator(".setting-row").filter({ hasText: "Режим рендеринга" });
+    const restoredPerformanceRow = dialog.getByRole("group", { name: "Режим рендеринга" });
     const restoredAutoButton = restoredPerformanceRow.getByRole("button", { name: "Авто", exact: true });
     await restoredAutoButton.click();
     await expect(restoredAutoButton).toHaveClass(/is-active/u);
@@ -686,12 +696,12 @@ test.describe.serial("Asterfold MV3 release", () => {
     await openLauncher(page);
     await page.getByRole("menuitem", { name: "Настройки" }).click();
     dialog = page.getByRole("dialog");
-    await dialog.getByRole("tab", { name: "Язык" }).click();
-    await dialog.getByRole("button", { name: "Қазақша" }).click();
+    await dialog.getByRole("combobox", { name: "Язык", exact: true }).click();
+    await page.getByRole("option", { name: "Қазақша" }).click();
     await expect(page).toHaveTitle("Жаңа қойынды");
-    await dialog.getByRole("tab", { name: "Тіл", exact: true }).click();
-    await dialog.getByRole("button", { name: "Русский" }).click();
-    await dialog.getByRole("tab", { name: "Данные и приватность" }).click();
+    await dialog.getByRole("combobox", { name: "Тіл", exact: true }).click();
+    await page.getByRole("option", { name: "Русский" }).click();
+    await expect(page).toHaveTitle("Новая вкладка");
     const downloadPromise = page.waitForEvent("download");
     await dialog.getByRole("button", { name: /Резервная копия JSON/u }).click();
     expect((await downloadPromise).suggestedFilename()).toMatch(/^asterfold-backup-v4-\d{4}-\d{2}-\d{2}\.json$/u);
@@ -717,8 +727,11 @@ test.describe.serial("Asterfold MV3 release", () => {
     await setWorkspaceThemeMode(page, "dark");
     await page.reload();
     await page.getByRole("button", { name: "Playwright docs" }).click({ button: "right" });
+    // Menus are glass: the dark surface tint is at least 66% opaque in every tier (solid in "No transparency").
     const darkMenuBackground = await page.locator(".context-menu").evaluate((menu) => getComputedStyle(menu).backgroundColor);
-    expect(darkMenuBackground).toBe("rgb(45, 47, 52)");
+    const [, red, green, blue, alpha = "1"] = /rgba?\((\d+), (\d+), (\d+)(?:, ([\d.]+))?\)/u.exec(darkMenuBackground) ?? [];
+    expect([red, green, blue]).toEqual(["38", "40", "44"]);
+    expect(Number(alpha)).toBeGreaterThanOrEqual(0.66);
     await expect(page.locator(".context-menu")).toHaveCSS("color", "rgb(245, 245, 246)");
     await page.keyboard.press("Escape");
 

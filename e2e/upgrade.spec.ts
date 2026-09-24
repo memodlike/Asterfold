@@ -167,11 +167,11 @@ test("preserves a real 2.2.3 profile when the same unpacked extension path is up
   await expect(after.page.getByText("Preserved link", { exact: true })).toHaveCount(0);
   await expect(after.page.getByRole("button", { name: "Open hidden bookmark" })).toBeVisible();
   await after.page.getByRole("button", { name: "Open Asterfold menu" }).click();
-  await after.page.getByRole("menuitem", { name: "Turn privacy off" }).click();
+  await after.page.getByRole("menuitemcheckbox", { name: "Privacy mode" }).click();
   await expect(after.page.getByText("Preserved link", { exact: true })).toBeVisible();
   await after.page.keyboard.press("Control+K");
   await after.page.getByPlaceholder(/Title, URL/i).fill("Preserved");
-  await expect(after.page.locator(".search-result__main").filter({ hasText: "Preserved link" })).toBeVisible();
+  await expect(after.page.locator(".spotlight__open").filter({ hasText: "Preserved link" })).toBeVisible();
   await expect(after.page.locator(".launcher-discovery")).toHaveCount(0);
   expect(after.errors).toEqual([]);
   await after.context.close();

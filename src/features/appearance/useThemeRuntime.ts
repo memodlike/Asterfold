@@ -120,7 +120,7 @@ export function useThemeRuntime(theme: ThemeConfig | undefined): ResolvedPerform
     let firstFrame: number | null = null;
     let secondFrame: number | null = null;
     const root = document.documentElement;
-    storeStartupThemeSnapshot(dark, style as Record<string, unknown>, localStorage, activeTheme.motion);
+    storeStartupThemeSnapshot(dark, style as Record<string, unknown>, localStorage, activeTheme.motion, performanceMode);
     if (root.dataset.asterfoldReady === "true") return;
 
     void Promise.all([
@@ -153,7 +153,7 @@ export function useThemeRuntime(theme: ThemeConfig | undefined): ResolvedPerform
       if (firstFrame !== null && typeof cancelAnimationFrame === "function") cancelAnimationFrame(firstFrame);
       if (secondFrame !== null && typeof cancelAnimationFrame === "function") cancelAnimationFrame(secondFrame);
     };
-  }, [activeTheme, dark, style, wallpaperUrls.resolved, wallpaperUrls.sourceId]);
+  }, [activeTheme, dark, performanceMode, style, wallpaperUrls.resolved, wallpaperUrls.sourceId]);
 
   useEffect(() => () => {
     const root = document.documentElement;

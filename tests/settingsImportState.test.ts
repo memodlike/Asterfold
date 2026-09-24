@@ -39,7 +39,7 @@ import { I18nProvider } from "../src/i18n";
 const workspace: WorkspaceData = { pages: [], boards: [], bookmarks: [], settings: createDefaultSettings() };
 
 describe("Settings import state", () => {
-  it("keeps Data & privacy active when an import preview finishes parsing", async () => {
+  it("keeps the import preview inside the Data & privacy tile when parsing finishes", async () => {
     const view = render(createElement(I18nProvider, {
       preference: "en",
       children: createElement(SettingsDialog, {
@@ -52,7 +52,6 @@ describe("Settings import state", () => {
       }),
     }));
 
-    fireEvent.click(screen.getByRole("tab", { name: "Data & privacy" }));
     expect(screen.getByRole("heading", { name: "Data & privacy" })).toBeVisible();
 
     const input = view.container.querySelector<HTMLInputElement>('input[accept*=".json"]');
@@ -64,7 +63,8 @@ describe("Settings import state", () => {
 
     await waitFor(() => expect(mocks.parseHtmlOffThread).toHaveBeenCalledOnce());
     await waitFor(() => expect(screen.getByText("Bookmarks: 1. No changes written yet.")).toBeVisible());
-    expect(screen.getByRole("heading", { name: "Data & privacy" })).toBeVisible();
-    expect(screen.queryByRole("heading", { name: "Appearance" })).toBeNull();
+    // The preview renders inside the Data tile; other tiles stay mounted, nothing resets the filter.
+    expect(screen.getByRole("region", { name: "Data & privacy" })).toHaveTextContent("Bookmarks: 1. No changes written yet.");
+    expect(screen.getAllByRole("region")).toHaveLength(9);
   });
 });

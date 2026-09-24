@@ -1,4 +1,5 @@
 import type { ThemeConfig } from "../../domain/models";
+import { automaticAccent, onAccentColor, readableAccent } from "./accent";
 import { semanticPalette } from "./semanticPalette";
 
 export function isPopupDark(theme: ThemeConfig, systemDark: boolean): boolean {
@@ -9,6 +10,7 @@ export function applyPopupTheme(root: HTMLElement, theme: ThemeConfig, systemDar
   const dark = isPopupDark(theme, systemDark);
   const palette = semanticPalette(dark);
   const border = `rgb(${palette.border} / ${dark ? ".15" : ".10"})`;
+  const accent = readableAccent(theme.accentMode === "custom" ? theme.accent : automaticAccent(theme) ?? theme.accent, dark);
   root.dataset.theme = dark ? "dark" : "light";
   root.style.colorScheme = dark ? "dark" : "light";
   const variables: Record<string, string> = {
@@ -19,7 +21,9 @@ export function applyPopupTheme(root: HTMLElement, theme: ThemeConfig, systemDar
     "--color-text-secondary": palette.secondary,
     "--border-rgb": palette.border,
     "--color-border": border,
-    "--color-accent": theme.accent,
+    "--surface-rgb": palette.surface,
+    "--color-accent": accent,
+    "--color-on-accent": onAccentColor(accent),
     "--color-danger": palette.danger,
     "--color-success": palette.success,
   };

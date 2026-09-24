@@ -174,10 +174,12 @@ describe("SettingsDialog behavior", () => {
     fireEvent.click(screen.getByRole("button", { name: "Dark" }));
     await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ theme: expect.objectContaining({ mode: "dark" }) }));
 
-    fireEvent.click(container.querySelector("summary")!);
     fireEvent.click(screen.getByRole("button", { name: "Solid color" }));
     await waitFor(() => expect(screen.getByText("Background color")).toBeVisible());
+    // Wallpaper-only adjustments are hidden for a solid canvas.
+    expect(screen.queryByLabelText("Wallpaper blur")).toBeNull();
     fireEvent.change(container.querySelector('input[type="color"]')!, { target: { value: "#123456" } });
+    fireEvent.click(screen.getByRole("button", { name: "Wallpaper" }));
     fireEvent.click(screen.getByRole("button", { name: "Clear" }));
     fireEvent.change(screen.getByLabelText("Glass transparency"), { target: { value: "40" } });
     fireEvent.change(screen.getByLabelText("Blur"), { target: { value: "12" } });
@@ -205,7 +207,6 @@ describe("SettingsDialog behavior", () => {
   it("updates layout, language, and privacy settings", async () => {
     const { callbacks } = renderSettings();
 
-    fireEvent.click(screen.getByRole("tab", { name: "Layout" }));
     fireEvent.click(screen.getByRole("button", { name: "Free grid" }));
     fireEvent.click(screen.getByRole("button", { name: "One row" }));
     fireEvent.click(screen.getByRole("button", { name: "Right" }));
@@ -215,11 +216,10 @@ describe("SettingsDialog behavior", () => {
       expect(mocks.updateSettings).toHaveBeenCalledWith({ workspaceAlignment: "right" });
     });
 
-    fireEvent.click(screen.getByRole("tab", { name: "Language" }));
-    fireEvent.click(screen.getByRole("button", { name: "Русский" }));
+    fireEvent.click(screen.getByRole("combobox", { name: "Language" }));
+    fireEvent.click(await screen.findByRole("option", { name: "Русский" }));
     await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ locale: "ru" }));
 
-    fireEvent.click(screen.getByRole("tab", { name: "Data & privacy" }));
     expect(screen.getByRole("button", { name: /JSON backup/i })).toBeVisible();
     expect(callbacks.onUpdated).toHaveBeenCalled();
   });
@@ -256,9 +256,9 @@ describe("SettingsDialog behavior", () => {
     ));
     expect(callbacks.onClose).toHaveBeenCalledOnce();
 
-    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("switch", { name: "Remember privacy mode" }));
     await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ privacyPersist: true, privacyEnabled: true }));
-    const retention = container.querySelector<HTMLSelectElement>('.setting-row select')!;
+    const retention = container.querySelector<HTMLSelectElement>('#settings-tile-data .setting-row select')!;
     fireEvent.change(retention, { target: { value: "never" } });
     await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ trashRetentionDays: null }));
 
@@ -304,11 +304,9 @@ describe("SettingsDialog behavior", () => {
     const { container, callbacks } = renderSettings();
 
     mocks.updateSettings.mockRejectedValueOnce(new Error("settings"));
-    fireEvent.click(screen.getByRole("tab", { name: "Layout" }));
     fireEvent.click(screen.getByRole("button", { name: "Free grid" }));
     await waitFor(() => expect(callbacks.onError).toHaveBeenCalledWith("Unable to update settings"));
 
-    fireEvent.click(screen.getByRole("tab", { name: "Data & privacy" }));
     mocks.createBackup.mockRejectedValueOnce(new Error("export"));
     fireEvent.click(screen.getByRole("button", { name: /JSON backup/ }));
     await waitFor(() => expect(callbacks.onError).toHaveBeenCalledWith("Export failed"));
@@ -335,12 +333,10 @@ describe("SettingsDialog behavior", () => {
     fireEvent.click(screen.getByRole("button", { name: "Merge" }));
     await waitFor(() => expect(callbacks.onError).toHaveBeenCalledWith("Restore failed"));
 
-    fireEvent.click(screen.getByRole("tab", { name: "Appearance" }));
     mocks.saveWallpaper.mockRejectedValueOnce(new Error("wallpaper"));
     fireEvent.change(wallpaperInput(container), { target: { files: [fileWithText("wallpaper.webp", "image", "image/webp")] } });
     await waitFor(() => expect(callbacks.onError).toHaveBeenCalledWith("Wallpaper could not be saved"));
 
-    fireEvent.click(screen.getByRole("tab", { name: "Data & privacy" }));
     mocks.auditInvariants.mockRejectedValueOnce(new Error("diagnostics"));
     fireEvent.click(screen.getByRole("button", { name: "Repeat diagnostics" }));
     await waitFor(() => expect(callbacks.onError).toHaveBeenCalledWith("Unable to complete the action"));
@@ -348,7 +344,7 @@ describe("SettingsDialog behavior", () => {
 
   it("writes the current privacy state when persistence is disabled", async () => {
     const { callbacks } = renderSettings({ workspace: workspace({ privacyPersist: true, privacyEnabled: true }), initialSection: "data-privacy" });
-    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("switch", { name: "Remember privacy mode" }));
     await waitFor(() => {
       expect(mocks.writeSessionPrivacy).toHaveBeenCalledWith(true);
       expect(mocks.updateSettings).toHaveBeenCalledWith({ privacyPersist: false, privacyEnabled: false });
@@ -396,7 +392,7 @@ describe("SettingsDialog behavior", () => {
       }));
     });
 
-    const softwareBtn = screen.getByRole("button", { name: "Software (No effects)" });
+    const softwareBtn = screen.getByRole("button", { name: "No transparency" });
     fireEvent.click(softwareBtn);
     await waitFor(() => {
       expect(mocks.updateSettings).toHaveBeenCalledWith(expect.objectContaining({
@@ -406,8 +402,7 @@ describe("SettingsDialog behavior", () => {
   });
 
   it("supports customizing gradient background with presets and randomizer", async () => {
-    const { container } = renderSettings({ workspace: workspace(), initialSection: "appearance" });
-    fireEvent.click(container.querySelector("summary")!);
+    renderSettings({ workspace: workspace(), initialSection: "appearance" });
 
     const gradientBtn = screen.getByRole("button", { name: "Gradient" });
     fireEvent.click(gradientBtn);
@@ -439,6 +434,52 @@ describe("SettingsDialog behavior", () => {
         }),
       }));
     });
+  });
+
+  it("switches between background-driven and chosen accents and follows the system theme", async () => {
+    renderSettings({ workspace: workspace() });
+    const auto = screen.getByRole("button", { name: "From background" });
+    expect(auto).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Accent #e36fb0" }));
+    await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ theme: expect.objectContaining({ accent: "#e36fb0", accentMode: "custom" }) }));
+    expect(screen.getByRole("button", { name: "Accent #e36fb0" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(auto);
+    await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ theme: expect.objectContaining({ accentMode: "auto" }) }));
+
+    const system = screen.getByRole("switch", { name: "Match system" });
+    expect(system).toBeChecked();
+    fireEvent.click(screen.getByRole("button", { name: "Light" }));
+    await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ theme: expect.objectContaining({ mode: "light" }) }));
+    expect(system).not.toBeChecked();
+    fireEvent.click(system);
+    await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ theme: expect.objectContaining({ mode: "system" }) }));
+  });
+
+  it("measures an uploaded wallpaper's accent unless the user chose one", async () => {
+    vi.stubGlobal("createImageBitmap", vi.fn().mockResolvedValue({ close: vi.fn() }));
+    const pixels = new Uint8ClampedArray(48 * 32 * 4);
+    for (let index = 0; index < pixels.length; index += 4) pixels.set([200, 60, 90, 255], index);
+    vi.stubGlobal("OffscreenCanvas", class { getContext() { return { drawImage: vi.fn(), getImageData: () => ({ data: pixels }) }; } });
+    const { container } = renderSettings();
+    fireEvent.change(wallpaperInput(container), { target: { files: [fileWithText("pink.webp", "image", "image/webp")] } });
+    await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ theme: expect.objectContaining({ wallpaperId: "upload-1", accent: expect.stringMatching(/^#[0-9a-f]{6}$/) }) }));
+
+    cleanup();
+    mocks.updateSettings.mockClear();
+    const chosen = workspace({ theme: { ...settings().theme, accent: "#2fb58f", accentMode: "custom" } });
+    const view = renderSettings({ workspace: chosen });
+    fireEvent.change(wallpaperInput(view.container), { target: { files: [fileWithText("pink.webp", "image", "image/webp")] } });
+    await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ theme: expect.objectContaining({ wallpaperId: "upload-1", accent: "#2fb58f" }) }));
+  });
+
+  it("explains why glass controls are locked in the solid rendering tiers", () => {
+    renderSettings({ workspace: workspace({ theme: { ...settings().theme, performanceMode: "software", lowPowerMode: true } }) });
+    expect(screen.getByLabelText("Glass transparency")).toBeDisabled();
+    expect(screen.getByLabelText("Blur")).toBeDisabled();
+    expect(screen.getByText("Glass effects are off in this rendering mode.")).toBeVisible();
+    expect(document.querySelector(".settings-resolved-mode")).toHaveTextContent("Rendering mode: No transparency");
+    expect(screen.getByRole("button", { name: "No transparency" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "No transparency" })).toHaveAccessibleDescription("Solid surfaces for PCs without a GPU");
   });
 });
 

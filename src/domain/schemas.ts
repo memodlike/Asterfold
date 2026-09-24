@@ -84,6 +84,7 @@ export const themeSchema: z.ZodType<ThemeConfig> = z.object({
   preset: z.enum(["frost-light", "graphite-dark", "midnight", "aurora", "warm-paper", "high-contrast"]),
   mode: z.enum(["system", "light", "dark"]),
   accent: z.string().max(64),
+  accentMode: z.enum(["auto", "custom"]).optional(),
   canvas: z.string().max(64),
   surfaceOpacity: finite.min(0).max(1),
   blur: finite.min(0).max(32),

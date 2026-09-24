@@ -1,0 +1,176 @@
+/* ==========================================================================
+   Asterfold material & motion system
+   --------------------------------------------------------------------------
+   One glass material for every surface that opens over the boards. Components
+   never set blur, tint or shadow directly; they pick a density token
+   (--mat-alpha-menu / -sheet / -tile / -pill) and this file resolves it per
+   rendering tier, written to <html data-performance> before first paint:
+
+     quality        live backdrop blur on small surfaces + one blurred scrim
+     balanced       short blur radius on small surfaces, no full-screen blur
+     compatibility  translucent tint only, no backdrop-filter anywhere
+     software       solid surfaces, no transparency, fade-only motion
+
+   Only transform and opacity are animated. Durations and travel distances are
+   tokens, so lower tiers and reduced motion shorten or neutralise them.
+   ========================================================================== */
+
+:root {
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  /* Critically damped spring with a ~1.5% settle, close to UIKit's default sheet spring. */
+  --ease-spring: linear(0, .009, .035 2.1%, .141 4.4%, .281 6.7%, .723 12.9%, .938 16.7%, 1.017 20.5%, 1.036 23.7%, 1.028 28.4%, 1.007 36%, .999 43.5%, 1);
+  --dur-quick: 140ms;
+  --dur-base: 260ms;
+  --dur-sheet: 380ms;
+  --stagger: 18ms;
+
+  --mat-alpha-menu: .66;
+  --mat-alpha-sheet: .8;
+  --mat-alpha-tile: .5;
+  --mat-alpha-pill: .7;
+  --mat-alpha: var(--mat-alpha-menu);
+  --mat-filter: blur(var(--overlay-blur, 28px)) saturate(170%);
+  --mat-sheen: linear-gradient(180deg, rgb(255 255 255 / .075), rgb(255 255 255 / 0) 44%);
+  --mat-edge: rgb(255 255 255 / .13);
+  --mat-divider: rgb(var(--border-rgb, 255 255 255) / .09);
+  --mat-shadow: 0 24px 64px rgb(0 0 0 / .3), 0 2px 8px rgb(0 0 0 / .14);
+
+  --scrim: rgb(6 6 10 / .24);
+  --scrim-filter: none;
+  --settings-scrim: rgb(6 6 10 / .3);
+  --settings-scrim-filter: blur(var(--overlay-blur, 28px)) saturate(140%);
+
+  --control-fill: rgb(var(--border-rgb, 255 255 255) / .07);
+  --control-fill-hover: rgb(var(--border-rgb, 255 255 255) / .12);
+  --control-track: rgb(var(--border-rgb, 255 255 255) / .18);
+  --control-selected: rgb(255 255 255 / .16);
+  --control-selected-edge: inset 0 1px 0 rgb(255 255 255 / .2), 0 2px 6px rgb(0 0 0 / .22);
+}
+
+html[data-theme="light"] {
+  --mat-alpha-menu: .74;
+  --mat-alpha-sheet: .86;
+  --mat-alpha-tile: .62;
+  --mat-alpha-pill: .78;
+  --mat-sheen: linear-gradient(180deg, rgb(255 255 255 / .5), rgb(255 255 255 / 0) 50%);
+  --mat-edge: rgb(255 255 255 / .7);
+  --mat-shadow: 0 24px 60px rgb(24 28 40 / .16), 0 0 0 1px rgb(19 20 23 / .06);
+  --scrim: rgb(20 22 30 / .12);
+  --settings-scrim: rgb(20 22 30 / .16);
+  --control-selected: rgb(255 255 255 / .92);
+  --control-selected-edge: 0 1px 3px rgb(20 22 30 / .14), 0 0 0 .5px rgb(20 22 30 / .06);
+}
+
+/* -------- Rendering tiers -------- */
+
+html[data-performance="balanced"] {
+  --mat-filter: blur(min(14px, var(--overlay-blur, 14px))) saturate(140%);
+  --mat-alpha-tile: .78;
+  --settings-scrim: rgb(6 6 10 / .5);
+  --settings-scrim-filter: none;
+}
+html[data-performance="balanced"][data-theme="light"] { --mat-alpha-tile: .86; --settings-scrim: rgb(20 22 30 / .3); }
+
+html[data-performance="compatibility"] {
+  --mat-filter: none;
+  --mat-alpha-menu: .94;
+  --mat-alpha-sheet: .96;
+  --mat-alpha-tile: .9;
+  --mat-alpha-pill: .95;
+  --mat-shadow: 0 14px 36px rgb(0 0 0 / .26);
+  --settings-scrim: rgb(6 6 10 / .52);
+  --settings-scrim-filter: none;
+}
+html[data-performance="compatibility"][data-theme="light"] { --mat-shadow: 0 14px 34px rgb(24 28 40 / .14), 0 0 0 1px rgb(19 20 23 / .07); --settings-scrim: rgb(20 22 30 / .34); }
+
+html[data-performance="software"] {
+  --mat-filter: none;
+  --mat-alpha-menu: 1;
+  --mat-alpha-sheet: 1;
+  --mat-alpha-tile: 1;
+  --mat-alpha-pill: 1;
+  --mat-sheen: none;
+  --mat-shadow: 0 1px 2px rgb(0 0 0 / .2);
+  --scrim: rgb(6 6 10 / .4);
+  --settings-scrim: rgb(6 6 10 / .56);
+  --settings-scrim-filter: none;
+  --dur-base: 150ms;
+  --dur-sheet: 170ms;
+  --stagger: 0ms;
+  --enter-y: 0px;
+  --enter-scale: 1;
+}
+html[data-performance="software"][data-theme="light"] { --mat-shadow: 0 0 0 1px rgb(19 20 23 / .1); --settings-scrim: rgb(20 22 30 / .36); }
+
+/* The OS-level request wins over a manually chosen glass tier. */
+@media (prefers-reduced-transparency: reduce) {
+  html:not([data-performance="software"]) {
+    --mat-filter: none;
+    --mat-alpha-menu: .96;
+    --mat-alpha-sheet: .98;
+    --mat-alpha-tile: .95;
+    --mat-alpha-pill: .97;
+    --settings-scrim-filter: none;
+    --settings-scrim: rgb(6 6 10 / .52);
+  }
+}
+
+/* -------- Glass surfaces -------- */
+
+:is(.launcher-menu, .launcher-discovery, .context-menu, .toast, .bulk-toolbar, .select-popover, .modal:not(.settings-modal, .spotlight), .spotlight__field, .spotlight__panel, .empty-state),
+.app-launcher:hover .launcher-trigger::before,
+.launcher-trigger:focus-visible::before,
+.app-launcher.is-open .launcher-trigger::before {
+  border: 1px solid var(--mat-edge);
+  background: var(--mat-sheen), rgb(var(--surface-rgb) / var(--mat-alpha));
+  box-shadow: inset 0 1px 0 var(--glass-highlight), var(--mat-shadow);
+  -webkit-backdrop-filter: var(--mat-filter);
+  backdrop-filter: var(--mat-filter);
+}
+.launcher-trigger::before { --mat-alpha: var(--mat-alpha-pill); }
+.context-menu, .select-popover, .toast, .bulk-toolbar { --mat-alpha: var(--mat-alpha-pill); }
+.modal { --mat-alpha: var(--mat-alpha-sheet); }
+.empty-state { --mat-alpha: var(--mat-alpha-tile); }
+/* The empty state sits on the canvas itself; it never needs live blur. */
+.empty-state { -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* The scrim lives on a pseudo-element. Animating opacity on the backdrop element itself would make
+   it a Chrome "backdrop root", and glass children (spotlight field/panel) would stop seeing the page. */
+.modal-backdrop::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: var(--scrim); -webkit-backdrop-filter: var(--scrim-filter); backdrop-filter: var(--scrim-filter); animation: af-fade var(--dur-quick) var(--ease-out) both; }
+.modal-backdrop > * { position: relative; }
+
+/* -------- Motion primitives -------- */
+
+@keyframes af-pop {
+  from { opacity: 0; transform: translate3d(0, var(--enter-y, 8px), 0) scale(var(--enter-scale, .97)); }
+}
+@keyframes af-drop {
+  from { opacity: 0; transform: translate3d(0, calc(var(--enter-y, 8px) * -1), 0) scale(var(--enter-scale, .97)); }
+}
+@keyframes af-fade { from { opacity: 0; } }
+
+.modal { --enter-y: 12px; --enter-scale: .98; animation: af-pop var(--dur-base) var(--ease-spring) both; }
+.context-menu, .select-popover { --enter-y: 4px; --enter-scale: .97; animation: af-pop var(--dur-quick) var(--ease-out) both; }
+.toast { --enter-y: 10px; --enter-scale: .98; animation: af-pop var(--dur-base) var(--ease-spring) both; }
+html[data-performance="software"] :is(.modal, .launcher-menu, .context-menu, .select-popover, .toast, .settings-tile, .spotlight__field, .spotlight__panel) { --enter-y: 0px; --enter-scale: 1; }
+
+.motion-disabled .modal-backdrop::before,
+.motion-menu-disabled .modal-backdrop::before,
+.motion-disabled :is(.modal, .launcher-menu, .launcher-pages, .context-menu, .select-popover, .toast, .settings-tile, .spotlight__field, .spotlight__panel),
+.motion-menu-disabled :is(.modal, .launcher-menu, .launcher-pages, .context-menu, .select-popover, .settings-tile, .spotlight__field, .spotlight__panel) {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --enter-y: 0px; --enter-scale: 1; --stagger: 0ms; }
+  :is(.modal, .launcher-menu, .context-menu, .select-popover, .toast, .settings-tile, .spotlight__field, .spotlight__panel) { --enter-y: 0px; --enter-scale: 1; animation-duration: 120ms !important; animation-timing-function: linear !important; }
+}
+
+@media (forced-colors: active) {
+  :is(.launcher-menu, .launcher-discovery, .context-menu, .toast, .bulk-toolbar, .select-popover, .modal, .spotlight__field, .spotlight__panel, .settings-tile) {
+    border: 1px solid CanvasText;
+    background: Canvas;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

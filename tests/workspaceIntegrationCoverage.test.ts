@@ -271,7 +271,7 @@ describe("workspace integration coverage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Close editor" }));
 
     openLauncher();
-    fireEvent.click(screen.getByRole("menuitem", { name: "Turn privacy on" }));
+    fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Privacy mode" }));
     await waitFor(() => expect(mocks.privacyState.setPrivacy).toHaveBeenCalledWith(true));
 
     openLauncher();

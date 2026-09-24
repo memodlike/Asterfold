@@ -9,6 +9,10 @@
   --color-text-secondary: #6e7077;
   --color-border: rgb(19 20 23 / .10);
   --color-accent: #155eef;
+  --color-on-accent: #ffffff;
+  --surface-rgb: 255 255 255;
+  --border-rgb: 19 20 23;
+  --glass-highlight: rgb(255 255 255 / .7);
   --color-danger: #c9342f;
   --color-success: #237c4b;
   --popup-canvas: var(--color-canvas);
@@ -31,6 +35,9 @@
     --color-text: #f5f5f6;
     --color-text-secondary: #a1a3aa;
     --color-border: rgb(255 255 255 / .15);
+    --surface-rgb: 45 47 52;
+    --border-rgb: 255 255 255;
+    --glass-highlight: rgb(255 255 255 / .12);
     --color-danger: #ff7772;
     --color-success: #64d79b;
   }
@@ -74,7 +81,7 @@ textarea { resize: vertical; }
 .popup-success { background: color-mix(in srgb, var(--popup-success) 10%, var(--popup-surface)); color: var(--popup-success); border: 1px solid color-mix(in srgb, var(--popup-success) 28%, var(--popup-border)); }
 .popup__actions { flex: 0 0 auto; display: grid; gap: 8px; padding: 10px 18px 12px; border-top: 1px solid var(--popup-border); background: var(--popup-surface); }
 .save-button, .workspace-button { width: 100%; min-height: 38px; border-radius: 9px; font-weight: 680; font-size: 12px; }
-.save-button { border: 0; color: #fff; background: var(--popup-accent); box-shadow: 0 4px 12px color-mix(in srgb, var(--popup-accent) 22%, transparent); }
+.save-button { border: 0; color: var(--color-on-accent, #fff); background: var(--popup-accent); box-shadow: 0 4px 12px color-mix(in srgb, var(--popup-accent) 22%, transparent); }
 .save-button:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
 .workspace-button { display: flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid var(--popup-border); color: var(--popup-text); background: var(--popup-surface-low); }
 footer { flex: 0 0 43px; height: 43px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 18px; color: var(--popup-text-secondary); border-top: 1px solid var(--popup-border); background: var(--popup-surface); font-size: 10px; }

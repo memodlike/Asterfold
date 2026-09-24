@@ -1,3 +1,19 @@
+# Asterfold 3.6.0
+
+## One Glass Material, Spotlight Search and Single-Screen Settings
+
+- **One material everywhere**: the launcher, search, Settings, Trash, dialogs, context menus and toasts now use the same glass as the boards instead of opaque grey panels. Surfaces differ only in tint density.
+- **Four rendering tiers**: Maximum quality (live blur), Balanced (lighter blur for integrated graphics), Smooth glass (transparency without live blur) and **No transparency** (solid surfaces for PCs without a GPU). The tier is applied before first paint; `prefers-reduced-transparency` is always respected.
+- **Fixed: "No transparency" actually applies**: choosing the solid mode previously resolved to Smooth glass because of the legacy low-power flag.
+- **Fixed: Blur slider**: the glass blur setting now drives the blur of menus, search and the Settings backdrop.
+- **Launcher menu**: current page and counts, page chips, search shortcut hint and a privacy switch with proper `menuitemcheckbox` semantics.
+- **Spotlight search**: a floating search field with results below it; matches on the current page are lit directly on the boards while everything else dims, and cleared when search closes.
+- **Settings on one screen**: tiles for background, glass, theme, layout, rendering, animations, data & privacy, language and diagnostics, with a live background preview, visual alignment diagrams and a settings filter.
+- **Accent from the background**: the accent colour follows the wallpaper or gradient (or a colour you pick) and is automatically adjusted to at least 3:1 contrast.
+- **Smoother, lighter motion**: a single spring curve, compositor-only animation (`transform`/`opacity`), shorter fade-only motion in No transparency mode and with reduced motion.
+- **Faster new tabs on weak PCs**: the GPU renderer probe is cached for a week and its WebGL context is released immediately.
+- **Permissions unchanged**: `permissions: ["storage", "favicon"]`, optional `bookmarks`, empty `host_permissions`, no remote code, no network requests.
+
 # Asterfold 3.5.5
 
 ## Chrome Web Store Packaging & Favicon Release Finalization

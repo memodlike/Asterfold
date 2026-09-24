@@ -115,8 +115,9 @@ function renderSettings(overrides: Partial<Parameters<typeof SettingsDialog>[0]>
   return { ...view, handlers, props };
 }
 
-function openSection(name: string): void {
-  fireEvent.click(within(screen.getByRole("navigation", { name: "Settings" })).getByRole("tab", { name }));
+async function chooseLanguage(name: string): Promise<void> {
+  fireEvent.click(screen.getByRole("combobox", { name: "Language" }));
+  fireEvent.click(await screen.findByRole("option", { name }));
 }
 
 function importInput(container: HTMLElement): HTMLInputElement {
@@ -161,13 +162,35 @@ afterEach(() => {
 });
 
 describe("SettingsDialog appearance and navigation", () => {
-  it("uses roving keyboard tabs for Settings sections", () => {
+  it("shows every section as a tile and filters them from the header search", () => {
     renderSettings();
-    const appearance = screen.getByRole("tab", { name: "Appearance" });
-    appearance.focus();
-    fireEvent.keyDown(appearance, { key: "ArrowRight" });
-    expect(screen.getByRole("tab", { name: "Layout" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("tabpanel", { name: "Layout" })).toBeVisible();
+    for (const name of ["Background", "Glass", "Theme mode", "Layout", "Performance", "Animations", "Data & privacy", "Language", "Diagnostics"]) {
+      expect(screen.getByRole("region", { name })).toBeVisible();
+    }
+    const find = screen.getByRole("searchbox", { name: "Find a setting…" });
+    fireEvent.change(find, { target: { value: "markdown" } });
+    expect(screen.getByRole("region", { name: "Data & privacy" })).toBeVisible();
+    expect(screen.queryByRole("region", { name: "Background" })).toBeNull();
+    fireEvent.change(find, { target: { value: "saturation" } });
+    expect(screen.getByRole("region", { name: "Background" })).toBeVisible();
+    fireEvent.change(find, { target: { value: "zzzz" } });
+    expect(screen.getByText("No settings match “zzzz”")).toHaveAttribute("role", "status");
+    fireEvent.change(find, { target: { value: "" } });
+    expect(screen.getAllByRole("region")).toHaveLength(9);
+  });
+
+  it("scrolls to and highlights the requested section", async () => {
+    vi.useFakeTimers();
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { configurable: true, value: scrollIntoView });
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { callback(0); return 1; });
+    renderSettings({ initialSection: "layout" });
+    const layout = screen.getByRole("region", { name: "Layout" });
+    expect(layout).toHaveClass("is-attention");
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "center" });
+    await act(async () => { vi.advanceTimersByTime(1601); await Promise.resolve(); });
+    expect(layout).not.toHaveClass("is-attention");
+    vi.unstubAllGlobals();
   });
 
   it("loads runtime metadata and changes every appearance control with a debounced commit", async () => {
@@ -177,6 +200,7 @@ describe("SettingsDialog appearance and navigation", () => {
     fireEvent.click(screen.getByRole("button", { name: "Dark" }));
     fireEvent.click(screen.getByRole("button", { name: "Solid color" }));
     fireEvent.change(screen.getByDisplayValue(/^#/), { target: { value: "#123456" } });
+    fireEvent.click(screen.getByRole("button", { name: "Wallpaper" }));
     fireEvent.click(screen.getByRole("button", { name: "Clear" }));
     for (const [name, value] of [
       ["Glass transparency", "30"],
@@ -192,7 +216,7 @@ describe("SettingsDialog appearance and navigation", () => {
     }
     fireEvent.click(screen.getByRole("button", { name: "Smooth glass" }));
     for (const name of ["Bookmark hover", "Menus and dialogs", "Board rearranging", "All animations"] as const) {
-      const control = screen.getByRole("checkbox", { name });
+      const control = screen.getByRole("switch", { name });
       fireEvent.click(control);
     }
     fireEvent.click(screen.getByRole("button", { name: "Quiet Aurora" }));
@@ -228,7 +252,6 @@ describe("SettingsDialog appearance and navigation", () => {
 
   it("routes layout and language settings without quick-save", async () => {
     renderSettings();
-    openSection("Layout");
     fireEvent.click(screen.getByRole("button", { name: "Free grid" }));
     fireEvent.click(screen.getByRole("button", { name: "One row" }));
     fireEvent.click(screen.getByRole("button", { name: "Left" }));
@@ -236,11 +259,10 @@ describe("SettingsDialog appearance and navigation", () => {
     expect(mocks.updateSettings).toHaveBeenCalledWith({ workspaceRows: 1 });
     expect(mocks.updateSettings).toHaveBeenCalledWith({ workspaceAlignment: "left" });
 
-    openSection("Language");
-    fireEvent.click(screen.getByRole("button", { name: "Русский" }));
+    await chooseLanguage("Русский");
     await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ locale: "ru" }));
 
-    expect(screen.queryByRole("tab", { name: /quick save/i })).toBeNull();
+    expect(screen.queryByRole("region", { name: /quick save/i })).toBeNull();
   });
 });
 
@@ -348,9 +370,10 @@ describe("SettingsDialog exports and file imports", () => {
     const pending = new File(["wait"], "wait.html", { type: "text/html" });
     Object.defineProperty(pending, "text", { value: vi.fn().mockResolvedValue("wait") });
     fireEvent.change(importInput(container), { target: { files: [pending] } });
-    expect(await screen.findByRole("status")).toHaveTextContent("Checking the import file");
-    fireEvent.click(within(screen.getByRole("status")).getByRole("button", { name: "Cancel" }));
-    await waitFor(() => expect(screen.queryByRole("status")).toBeNull());
+    const dataTile = screen.getByRole("region", { name: "Data & privacy" });
+    expect(await within(dataTile).findByRole("status")).toHaveTextContent("Checking the import file");
+    fireEvent.click(within(within(dataTile).getByRole("status")).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(within(dataTile).queryByRole("status")).toBeNull());
     handlers.onError.mockClear();
     rejectParse?.(new DOMException("aborted", "AbortError"));
     expect(handlers.onError).not.toHaveBeenCalled();
@@ -388,13 +411,13 @@ describe("SettingsDialog Chrome import, privacy and diagnostics", () => {
 
   it("enables and disables persistent privacy with session state", async () => {
     const enabled = renderSettings({ initialSection: "data-privacy", workspace: workspace({ privacyPersist: false, privacyEnabled: false }) });
-    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("switch", { name: "Remember privacy mode" }));
     await waitFor(() => expect(mocks.readSessionPrivacy).toHaveBeenCalled());
     expect(mocks.updateSettings).toHaveBeenCalledWith({ privacyPersist: true, privacyEnabled: true });
     enabled.unmount();
 
     renderSettings({ initialSection: "data-privacy", workspace: workspace({ privacyPersist: true, privacyEnabled: true }) });
-    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("switch", { name: "Remember privacy mode" }));
     await waitFor(() => expect(mocks.writeSessionPrivacy).toHaveBeenCalledWith(true));
     expect(mocks.updateSettings).toHaveBeenCalledWith({ privacyPersist: false, privacyEnabled: false });
   });
@@ -402,10 +425,10 @@ describe("SettingsDialog Chrome import, privacy and diagnostics", () => {
   it("maps privacy/settings failures and updates retention", async () => {
     mocks.readSessionPrivacy.mockRejectedValueOnce(new Error("session"));
     const { handlers } = renderSettings({ initialSection: "data-privacy" });
-    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("switch", { name: "Remember privacy mode" }));
     await waitFor(() => expect(handlers.onError).toHaveBeenCalledWith("Unable to update settings"));
 
-    const retention = screen.getByRole("combobox");
+    const retention = screen.getByRole("combobox", { name: "Keep deleted items" });
     fireEvent.change(retention, { target: { value: "never" } });
     expect(mocks.updateSettings).toHaveBeenCalledWith({ trashRetentionDays: null });
     fireEvent.change(retention, { target: { value: "90" } });
@@ -416,9 +439,8 @@ describe("SettingsDialog Chrome import, privacy and diagnostics", () => {
     mocks.auditInvariants.mockResolvedValueOnce(["broken relation"]);
     let finish: ((value: string[]) => void) | undefined;
     const { handlers } = renderSettings({ initialSection: "data-privacy" });
-    expect(await screen.findByText("2.0 MB")).toBeVisible();
-    expect(await screen.findByText("Issues: 1")).toHaveClass("is-warning");
-    expect(screen.getByText("2 / 2 / 1")).toBeVisible();
+    expect(await screen.findByText("2 / 2 / 1 · 2.0 MB")).toBeVisible();
+    expect((await screen.findByText("Issues: 1")).closest(".settings-health")).toHaveClass("is-warning");
     fireEvent.click(screen.getByRole("button", { name: "Open trash" }));
     expect(handlers.onOpenTrash).toHaveBeenCalledOnce();
 
@@ -438,7 +460,7 @@ describe("SettingsDialog Chrome import, privacy and diagnostics", () => {
     Object.defineProperty(navigator, "storage", { configurable: true, value: { estimate: vi.fn().mockRejectedValue(new Error("storage")) } });
     mocks.auditInvariants.mockRejectedValue(new Error("audit"));
     const { handlers } = renderSettings({ initialSection: "data-privacy" });
-    await waitFor(() => expect(screen.getAllByText("—").length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.getByText("2 / 2 / 1 · —")).toBeVisible());
     expect(screen.getByText("Workspace checks passed")).toBeVisible();
     mocks.auditInvariants.mockRejectedValueOnce(new Error("repeat"));
     fireEvent.click(screen.getByRole("button", { name: "Repeat diagnostics" }));

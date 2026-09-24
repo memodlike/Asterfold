@@ -20,8 +20,9 @@ export function classifyPerformanceMode(
 ): ResolvedPerformanceMode {
   if (preference === "quality") return "quality";
   if (preference === "balanced") return "balanced";
-  if (preference === "compatibility" || legacyLowPower) return "compatibility";
+  // Software must win over the legacy low-power flag: the UI sets both when "No transparency" is chosen.
   if (preference === "software") return "software";
+  if (preference === "compatibility" || legacyLowPower) return "compatibility";
   if (preference === "custom") {
     return signals.reducedTransparency ? "compatibility" : "quality";
   }
@@ -64,15 +65,53 @@ export function recommendPerformanceProfile(signals: PerformanceSignals): {
   return { recommendedMode: "quality", reason: "hardwareAccelerated" };
 }
 
-function rendererName(): string | null {
+const RENDERER_CACHE_KEY = "asterfold:gpu-renderer:v1";
+const RENDERER_CACHE_TTL = 7 * 24 * 60 * 60 * 1000;
+
+interface RendererCacheEntry { renderer: string | null; agent: string; checkedAt: number }
+
+function probeRenderer(): string | null {
   try {
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("webgl", { failIfMajorPerformanceCaveat: false });
     if (!context) return null;
     const extension = context.getExtension("WEBGL_debug_renderer_info");
-    return extension
+    const renderer = extension
       ? String(context.getParameter(extension.UNMASKED_RENDERER_WEBGL))
       : String(context.getParameter(context.RENDERER));
+    // Release the probe context immediately so weak GPUs do not keep an extra context alive.
+    context.getExtension("WEBGL_lose_context")?.loseContext();
+    return renderer;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Creating a WebGL context costs 5–60 ms and is slowest on exactly the machines that need
+ * the fallback tiers, so the renderer string is cached per browser build for a week.
+ */
+export function rendererName(storage: Pick<Storage, "getItem" | "setItem"> | null = safeLocalStorage(), now = Date.now()): string | null {
+  const agent = typeof navigator === "undefined" ? "" : navigator.userAgent;
+  try {
+    const cached = JSON.parse(storage?.getItem(RENDERER_CACHE_KEY) ?? "null") as Partial<RendererCacheEntry> | null;
+    if (cached && cached.agent === agent && typeof cached.checkedAt === "number" && now - cached.checkedAt < RENDERER_CACHE_TTL
+      && (cached.renderer === null || typeof cached.renderer === "string")) return cached.renderer;
+  } catch {
+    // A corrupt cache entry is replaced by a fresh probe below.
+  }
+  const renderer = probeRenderer();
+  try {
+    storage?.setItem(RENDERER_CACHE_KEY, JSON.stringify({ renderer, agent, checkedAt: now } satisfies RendererCacheEntry));
+  } catch {
+    // Storage denial only costs a repeated probe on the next tab.
+  }
+  return renderer;
+}
+
+function safeLocalStorage(): Storage | null {
+  try {
+    return typeof localStorage === "undefined" ? null : localStorage;
   } catch {
     return null;
   }
@@ -86,7 +125,19 @@ function reducedTransparencyPreference(): boolean {
   }
 }
 
+let sessionSignals: PerformanceSignals | null = null;
+
+/** Signals are stable for the lifetime of a tab; the new-tab page and Settings share one read. */
 export function browserPerformanceSignals(): PerformanceSignals {
+  sessionSignals ??= readBrowserPerformanceSignals();
+  return sessionSignals;
+}
+
+export function resetPerformanceSignalsForTests(): void {
+  sessionSignals = null;
+}
+
+function readBrowserPerformanceSignals(): PerformanceSignals {
   const extendedNavigator = navigator as Navigator & { deviceMemory?: number; userAgentData?: { platform?: string } };
   return {
     renderer: rendererName(),

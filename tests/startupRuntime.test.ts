@@ -15,6 +15,7 @@ describe("new-tab startup runtime", () => {
     localStorage.removeItem(STARTUP_SNAPSHOT_KEY);
     document.documentElement.removeAttribute("data-theme");
     document.documentElement.removeAttribute("data-asterfold-motion");
+    document.documentElement.removeAttribute("data-performance");
     document.documentElement.style.removeProperty("--startup-canvas");
     document.documentElement.style.removeProperty("--startup-wallpaper");
     document.documentElement.style.colorScheme = "";
@@ -30,7 +31,10 @@ describe("new-tab startup runtime", () => {
     });
     expect(parseStartupThemeSnapshot(JSON.stringify({ version: 2, theme: "dark", canvas: "#16171a", wallpaper: "none", motion: false }))?.motion).toBe(false);
     expect(parseStartupThemeSnapshot("not-json")).toBeNull();
-    expect(parseStartupThemeSnapshot(JSON.stringify({ version: 3, theme: "dark", canvas: "#16171a" }))).toBeNull();
+    expect(parseStartupThemeSnapshot(JSON.stringify({ version: 4, theme: "dark", canvas: "#16171a" }))).toBeNull();
+    expect(parseStartupThemeSnapshot(JSON.stringify({ version: 3, theme: "dark", canvas: "#16171a", wallpaper: "none", motion: true, performance: "software" }))?.performance).toBe("software");
+    expect(parseStartupThemeSnapshot(JSON.stringify({ version: 3, theme: "dark", canvas: "#16171a", wallpaper: "none", performance: "turbo" }))).not.toHaveProperty("performance");
+    expect(parseStartupThemeSnapshot(JSON.stringify({ version: 2, theme: "dark", canvas: "#16171a", performance: "software" }))).not.toHaveProperty("performance");
     expect(parseStartupThemeSnapshot(JSON.stringify({ version: 1, theme: "dark", canvas: "white" }))).toBeNull();
     expect(parseStartupThemeSnapshot(JSON.stringify({ version: 1, theme: "dark", canvas: "#16171a", wallpaper: 'url("https://example.com/remote.jpg")' }))?.wallpaper).toBe("none");
   });
@@ -40,7 +44,7 @@ describe("new-tab startup runtime", () => {
       "--color-canvas": "#16171a",
       "--wallpaper-image": 'url("/wallpapers/quiet-aurora.webp")',
       "--color-text": "sensitive-value-that-is-not-persisted",
-    }, localStorage, false);
+    }, localStorage, false, "compatibility");
     const raw = localStorage.getItem(STARTUP_SNAPSHOT_KEY);
     expect(raw).not.toContain("sensitive-value");
     const snapshot = readStartupThemeSnapshot();
@@ -48,6 +52,8 @@ describe("new-tab startup runtime", () => {
     applyStartupThemeSnapshot(document.documentElement, snapshot!);
     expect(document.documentElement.dataset.theme).toBe("dark");
     expect(document.documentElement.dataset.asterfoldMotion).toBe("off");
+    // The rendering tier is painted before React so weak GPUs never render a first frame of live blur.
+    expect(document.documentElement.dataset.performance).toBe("compatibility");
     expect(document.documentElement.style.getPropertyValue("--startup-canvas")).toBe("#16171a");
     expect(document.documentElement.style.getPropertyValue("--startup-wallpaper")).toContain("quiet-aurora.webp");
   });

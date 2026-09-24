@@ -71,18 +71,28 @@ afterEach(() => {
 describe("AppLauncher complete interaction coverage", () => {
   it("routes every primary launcher command and closes after actions", () => {
     const { handlers } = renderLauncher();
-    for (const [name, callback] of [
-      ["New board", handlers.onCreateBoard],
-      ["Search", handlers.onSearch],
-      ["Turn privacy on", handlers.onPrivacy],
-      ["Trash", handlers.onTrash],
-      ["Settings", handlers.onSettings],
+    for (const [role, name, callback] of [
+      ["menuitem", "New board", handlers.onCreateBoard],
+      ["menuitem", "Search", handlers.onSearch],
+      ["menuitemcheckbox", "Privacy mode", handlers.onPrivacy],
+      ["menuitem", "Trash", handlers.onTrash],
+      ["menuitem", "Settings", handlers.onSettings],
     ] as const) {
       openMenu();
-      fireEvent.click(screen.getByRole("menuitem", { name }));
+      fireEvent.click(screen.getByRole(role, { name }));
       expect(callback).toHaveBeenCalledOnce();
       expect(screen.queryByRole("menu")).toBeNull();
     }
+  });
+
+  it("summarises the active page and exposes state instead of decorative hints", () => {
+    renderLauncher({ privacy: true, pageStats: { boards: 3, bookmarks: 12 } });
+    openMenu();
+    expect(screen.getByText("Boards: 3 · Bookmarks: 12")).toBeInTheDocument();
+    // Privacy hides the page title in the header, and the switch reports its state.
+    expect(screen.getByRole("menu")).not.toHaveTextContent("Secondary");
+    expect(screen.getByRole("menuitemcheckbox", { name: "Privacy mode" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("menuitem", { name: "Search" })).toHaveAttribute("aria-keyshortcuts");
   });
 
   it("creates and selects pages and marks the active page", () => {

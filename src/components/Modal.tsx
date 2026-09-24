@@ -16,6 +16,11 @@ interface ModalProps {
   closeOnBackdrop?: boolean;
   closeOnEscape?: boolean;
   showCloseButton?: boolean;
+  /** "hidden" keeps the dialog name for assistive technology while the body draws its own header. */
+  header?: "visible" | "hidden";
+  /** Controls placed in the header before the close button (for example a settings filter). */
+  headerExtra?: ReactNode;
+  backdropClassName?: string;
 }
 
 const FOCUSABLE = "button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex='-1'])";
@@ -33,6 +38,9 @@ export function Modal({
   closeOnBackdrop = true,
   closeOnEscape = true,
   showCloseButton = true,
+  header = "visible",
+  headerExtra,
+  backdropClassName = "",
 }: ModalProps) {
   const { t } = useI18n();
   const titleId = useId();
@@ -87,7 +95,7 @@ export function Modal({
   if (!open) return null;
   return (
     <div
-      className={`modal-backdrop ${side ? "modal-backdrop--side" : ""}`}
+      className={`modal-backdrop ${side ? "modal-backdrop--side" : ""} ${backdropClassName}`}
       role="presentation"
       onPointerDown={(event) => { backdropPointerRef.current = event.target === event.currentTarget; }}
       onPointerUp={(event) => {
@@ -104,12 +112,13 @@ export function Modal({
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
       >
-        <header className="modal__header">
-          <div>
+        <header className={`modal__header ${header === "hidden" ? "sr-only" : ""}`}>
+          <div className="modal__heading">
             <h2 id={titleId}>{title}</h2>
             {description ? <p id={descriptionId}>{description}</p> : null}
           </div>
-          {showCloseButton ? <IconButton label={t("generic.close")} onClick={onClose}><X size={18} /></IconButton> : null}
+          {headerExtra}
+          {showCloseButton && header !== "hidden" ? <IconButton label={t("generic.close")} onClick={onClose}><X size={18} /></IconButton> : null}
         </header>
         <div className="modal__body">{children}</div>
         {footer ? <footer className="modal__footer">{footer}</footer> : null}

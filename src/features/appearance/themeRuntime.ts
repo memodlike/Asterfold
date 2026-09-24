@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { ThemeConfig } from "../../domain/models";
 import type { ResolvedPerformanceMode } from "../performance/performanceProfile";
+import { automaticAccent, onAccentColor, readableAccent } from "./accent";
 import { compileGradientCss } from "./gradientEngine";
 import { semanticPalette } from "./semanticPalette";
 
@@ -46,12 +47,14 @@ export function themeStyle(
   const wallpaperFilter = !isGradient && (performanceMode === "quality" || performanceMode === "balanced") && (theme.wallpaperBlur > 0 || theme.wallpaperSaturation !== 1)
     ? `blur(${performanceMode === "balanced" ? Math.min(6, theme.wallpaperBlur) : theme.wallpaperBlur}px) saturate(${theme.wallpaperSaturation})`
     : "none";
+  const accent = readableAccent(theme.accentMode === "custom" ? theme.accent : automaticAccent(theme) ?? theme.accent, dark);
   const wallpaperTransform = !isGradient && performanceMode === "quality" && wallpaperImage !== "none" && theme.wallpaperZoom > 1 ? `scale(${theme.wallpaperZoom})` : "none";
   return {
     "--color-canvas": canvas, "--surface-rgb": palette.surface, "--color-surface": `rgb(${palette.surface} / ${theme.surfaceOpacity})`, "--surface-opacity": theme.surfaceOpacity,
     "--color-surface-solid": palette.surfaceSolid, "--color-surface-elevated": palette.surfaceElevated, "--color-text": palette.text, "--color-text-secondary": palette.secondary,
-    "--border-rgb": palette.border, "--color-border": `rgb(${palette.border} / ${dark ? ".15" : ".10"})`, "--color-accent": theme.accent, "--color-danger": palette.danger,
+    "--border-rgb": palette.border, "--color-border": `rgb(${palette.border} / ${dark ? ".15" : ".10"})`, "--color-accent": accent, "--color-on-accent": onAccentColor(accent), "--color-danger": palette.danger,
     "--color-success": palette.success, "--shadow-panel": palette.shadow, "--glass-blur": `${Math.min(32, theme.blur)}px`,
+    "--overlay-blur": theme.blur <= 0 ? "0px" : `${Math.round(Math.min(40, Math.max(10, theme.blur * 1.3 + 6)))}px`,
     "--glass-highlight": dark ? "rgb(255 255 255 / .14)" : "rgb(255 255 255 / .70)", "--glass-sheen": theme.glassVariant === "clear" ? ".09" : ".18",
     "--radius-card": `${theme.radius}px`, "--font-scale": theme.fontScale, "--board-width": `${theme.boardWidth}px`, "--favicon-size": `${theme.faviconSize}px`,
     "--bookmark-row-height": theme.density === "compact" ? "18px" : theme.density === "spacious" ? "22px" : "20px",
