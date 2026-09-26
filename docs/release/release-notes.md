@@ -1,3 +1,15 @@
+# Asterfold 3.6.1
+
+## Real Frosted Glass on Boards
+
+- **Boards are now frosted glass**: boards had no backdrop blur in any rendering tier, so the wallpaper showed through sharply and the Glass blur setting had no effect on them. Boards now blur the wallpaper through a tiered `--board-filter` token driven by the Glass blur setting.
+- **Tiered by rendering mode**: Maximum quality uses the full blur with saturation, Balanced caps the blur at 8px for integrated graphics, Smooth glass and No transparency keep boards blur-free; `prefers-reduced-transparency` always disables it.
+- **Bookmarks inherit the glass**: bookmark rows sit on the frosted board surface; their hover and selection fills stay translucent.
+- **Glass drag preview**: the floating preview while dragging a bookmark or board uses the shared glass material instead of a hard-coded opaque grey.
+- **Empty state frost**: the empty-workspace card uses the same board frost.
+- **Tests**: new invariants require boards to blur only through the tier token and keep the drag preview on the shared material.
+- **Permissions unchanged**: `permissions: ["storage", "favicon"]`, optional `bookmarks`, empty `host_permissions`.
+
 # Asterfold 3.6.0
 
 ## One Glass Material, Spotlight Search and Single-Screen Settings

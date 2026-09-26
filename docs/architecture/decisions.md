@@ -251,3 +251,13 @@
 7. The WebGL renderer string is cached for a week per browser build and the probe context is released immediately.
 **Consequences:** Nine settings tiles cost one blur pass in the quality tier and none below it. The GPU probe no longer runs on every new tab. "No transparency" now really selects the solid tier.
 **Validation:** `performanceStress.test.ts` (tier tokens, compositor-only motion, single scrim blur, software precedence), `renderingSignals.test.ts`, `accent.test.ts`, `spotlightHighlights.test.tsx`, updated Settings/launcher suites, and real MV3 Playwright runs.
+
+## ADR-022 — Boards frost the wallpaper through a tier token
+
+**Date:** 2026-09-26  
+**Status:** Accepted (amends ADR-021)
+
+**Context:** Boards were a translucent tint with no `backdrop-filter` in any tier (a test forbade it), so the wallpaper showed through sharply and the Glass blur setting had no effect on the main screen. Instrumenting the real MV3 page confirmed no ancestor forms a backdrop root and that blur applies with the boards' `contain`/`content-visibility`.
+**Decision:** `.board` and the empty state use `backdrop-filter: var(--board-filter)`. `material.css` resolves the token per tier: `blur(var(--glass-blur)) saturate(165%)` in quality, `blur(min(8px, …))` in balanced, `none` in compatibility, software and under `prefers-reduced-transparency`. The drag preview joins the shared glass material instead of a hard-coded opaque colour.
+**Consequences:** Boards cost one blur region each only on quality/balanced machines; off-screen boards are skipped by `content-visibility: auto`. Lower tiers are unchanged.
+**Validation:** `performance.test.ts` (board blur only through the token, per-tier values, glass drag preview), real MV3 screenshots in every tier and theme, full e2e.
