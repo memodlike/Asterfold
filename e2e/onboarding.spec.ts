@@ -62,7 +62,8 @@ test("fresh profile completes accessible guided setup and never reopens it", asy
     await expect(dialog).toBeVisible();
     await expect(dialog).toHaveAttribute("aria-modal", "true");
     await expect(dialog).toHaveAccessibleName(/\S/u);
-    await expect(page.locator(".onboarding-progress span")).toHaveCount(3);
+    await expect(page.locator(".onboarding-tile")).toHaveCount(3);
+    await expect(dialog.getByRole("button", { name: "Continue" })).toHaveCount(0);
 
     const bounds = await dialog.boundingBox();
     expect(bounds).not.toBeNull();
@@ -78,6 +79,8 @@ test("fresh profile completes accessible guided setup and never reopens it", asy
       return Boolean(active && modal?.contains(active));
     });
     expect(activeInside).toBe(true);
+    // The language picker keeps initial focus; the modal must not move it to the first header button.
+    expect(await page.evaluate(() => document.activeElement?.getAttribute("aria-label"))).toBe("Interface language");
 
     await page.keyboard.press("Shift+Tab");
     expect(await page.evaluate(() => document.querySelector("[role='dialog']")?.contains(document.activeElement))).toBe(true);
@@ -90,14 +93,20 @@ test("fresh profile completes accessible guided setup and never reopens it", asy
       .filter(Boolean));
     expect(transitionDurations.every((duration) => Number.parseFloat(duration) <= 0.001)).toBe(true);
 
-    await dialog.locator(".modal__header button").click();
+    // The skip link stays inside the viewport and inside the dialog header.
+    const skip = dialog.locator(".onboarding-skip");
+    const skipBounds = await skip.boundingBox();
+    expect(skipBounds!.x + skipBounds!.width).toBeLessThanOrEqual(1280);
+
+    await skip.click();
     const confirmation = page.locator(".onboarding-confirm-modal");
     await expect(confirmation).toBeVisible();
     await confirmation.locator(".modal__footer button").first().click();
-    await expect(page.locator(".launcher-discovery")).toBeVisible();
+    await expect(page.locator(".onboarding-modal")).toBeVisible();
 
-    await page.locator(".launcher-discovery__dismiss").click();
-    await expect(page.locator(".launcher-discovery")).toHaveCount(0);
+    await dialog.locator(".onboarding-skip").click();
+    await confirmation.locator(".modal__footer button").last().click();
+    await expect(page.locator(".onboarding-modal")).toHaveCount(0);
     await expect(page.locator(".app-shell")).toBeVisible();
 
     const lifecycle = await page.evaluate(async () => {

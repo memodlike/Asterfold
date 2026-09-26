@@ -123,7 +123,7 @@ html[data-performance="software"][data-theme="light"] { --mat-shadow: 0 0 0 1px 
 
 /* -------- Glass surfaces -------- */
 
-:is(.launcher-menu, .launcher-discovery, .context-menu, .toast, .bulk-toolbar, .select-popover, .drag-overlay, .modal:not(.settings-modal, .spotlight), .spotlight__field, .spotlight__panel, .empty-state),
+:is(.launcher-menu, .launcher-discovery, .context-menu, .toast, .bulk-toolbar, .select-popover, .drag-overlay, .modal:not(.settings-modal, .spotlight, .onboarding-modal), .spotlight__field, .spotlight__panel, .empty-state),
 .app-launcher:hover .launcher-trigger::before,
 .launcher-trigger:focus-visible::before,
 .app-launcher.is-open .launcher-trigger::before {

@@ -47,9 +47,6 @@ function PendingOnboarding() {
   return <I18nProvider preference={workspace.settings.locale} documentTitle="tab.title">
     <div className="onboarding-shell" aria-hidden="true">
       <div className="onboarding-shell__wallpaper" />
-      <div className="onboarding-shell__preview">
-        <span /><span /><span /><span /><span /><span />
-      </div>
     </div>
     <Suspense fallback={<div className="app-loading"><Sparkles size={22} /><span>{translate(workspace.settings.locale, "loading.opening")}</span></div>}>
       <OnboardingWizard workspace={workspace} />

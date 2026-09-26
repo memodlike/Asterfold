@@ -4,23 +4,26 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type CSSProperties,
   type FormEvent,
-  type KeyboardEvent,
 } from "react";
 import {
   Check,
-  ChevronRight,
   Chrome,
   FileJson,
   FileText,
   FolderOpen,
+  Languages,
+  Moon,
   Palette,
+  RotateCcw,
   ShieldCheck,
   Sparkles,
+  Sun,
 } from "lucide-react";
-import type { LocalePreference, ThemeMode, ThemePresetId, WorkspaceData } from "../../domain/models";
+import type { Density, LocalePreference, ThemeMode, WorkspaceData } from "../../domain/models";
 import { IMPORT_LIMITS } from "../../domain/importLimits";
-import { getThemePreset, THEME_PRESETS, validateTheme } from "../../domain/themes";
+import { validateTheme } from "../../domain/themes";
 import { Button } from "../../components/Button";
 import { LocaleFlag } from "../../components/LocaleFlag";
 import { Modal } from "../../components/Modal";
@@ -33,18 +36,11 @@ import { readChromeBookmarks } from "./chromeBookmarkImport";
 import { commitOnboardingPlan } from "./onboardingCommit";
 import { onboardingText, type OnboardingMessageKey } from "./onboardingMessages";
 import {
-  ONBOARDING_STEPS,
   backupPreview,
   canContinue,
-  greetingPeriod,
-  nextStep,
-  previousStep,
   recordPreview,
-  stepIndex,
-  type OnboardingImportPreview,
   type OnboardingPlan,
   type OnboardingSource,
-  type OnboardingStep,
 } from "./onboardingState";
 
 interface OnboardingWizardProps {
@@ -52,25 +48,10 @@ interface OnboardingWizardProps {
   onCompleted?: () => void;
 }
 
-const SOURCE_ICONS = {
-  default: Sparkles,
-  chrome: Chrome,
-  html: FileText,
-  backup: FileJson,
-} as const;
-
-function previewParams(preview: OnboardingImportPreview): Record<string, string | number> {
-  return {
-    bookmarks: preview.bookmarks,
-    folders: preview.folders,
-    pages: preview.pages,
-    boards: preview.boards,
-  };
-}
+const SOURCE_ORDER: readonly OnboardingSource[] = ["default", "chrome", "html", "backup"];
 
 export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardProps) {
   const initialLocale = workspace.settings.locale;
-  const [step, setStep] = useState<OnboardingStep>("welcome");
   const [plan, setPlan] = useState<OnboardingPlan>(() => ({
     locale: initialLocale,
     source: "default",
@@ -207,17 +188,8 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
     patchPlan({ theme: validateTheme({ ...plan.theme, mode }) });
   };
 
-  const setPreset = (preset: ThemePresetId): void => {
-    const selected = getThemePreset(preset);
-    patchPlan({
-      theme: validateTheme({
-        ...selected,
-        mode: plan.theme.mode,
-        density: plan.theme.density,
-        performanceMode: plan.theme.performanceMode,
-        motion: plan.theme.motion,
-      }),
-    });
+  const setDensity = (density: Density): void => {
+    patchPlan({ theme: validateTheme({ ...plan.theme, density }) });
   };
 
   const setWallpaper = (wallpaperId: string | null): void => {
@@ -230,13 +202,24 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
     });
   };
 
-  const submit = (event: FormEvent): void => {
-    event.preventDefault();
-    if (step === "appearance") {
-      void finish(false);
+  // Choosing a source starts it in the same click: Chrome's permission prompt and the file
+  // picker both require the user gesture, so nothing may await before them.
+  const chooseSource = (source: OnboardingSource): void => {
+    if (source === "chrome") {
+      selectSource("chrome");
+      void loadChrome();
       return;
     }
-    if (canContinue(step, plan, parsing)) setStep(nextStep(step));
+    selectSource(source);
+    if (source === "html") htmlInputRef.current?.click();
+    if (source === "backup") backupInputRef.current?.click();
+  };
+
+  const ready = canContinue("import", plan, parsing);
+
+  const submit = (event: FormEvent): void => {
+    event.preventDefault();
+    if (ready) void finish(false);
   };
 
   const finish = async (skip: boolean): Promise<void> => {
@@ -271,179 +254,49 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
     }
   };
 
-  const handleStepKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
-    if (event.key === "ArrowLeft" && event.altKey && stepIndex(step) > 0 && !busy) {
-      event.preventDefault();
-      setStep(previousStep(step));
-    }
+  const sources: Record<OnboardingSource, { title: string; body: string; icon: typeof Sparkles }> = {
+    default: { title: t("import.default.title"), body: t("import.default.body"), icon: Sparkles },
+    chrome: { title: t("import.chrome.title"), body: t("import.chrome.body"), icon: Chrome },
+    html: { title: t("import.html.title"), body: t("import.html.body"), icon: FileText },
+    backup: { title: t("import.backup.title"), body: t("import.backup.body"), icon: FileJson },
   };
+  const wallpaperLabel = translate(plan.locale, "settings.backgroundWallpaper");
+  const themeLabel = translate(plan.locale, "settings.themeMode");
 
-  const sourceCards: Array<{ source: OnboardingSource; title: string; body: string }> = [
-    { source: "default", title: t("import.default.title"), body: t("import.default.body") },
-    { source: "chrome", title: t("import.chrome.title"), body: t("import.chrome.body") },
-    { source: "html", title: t("import.html.title"), body: t("import.html.body") },
-    { source: "backup", title: t("import.backup.title"), body: t("import.backup.body") },
-  ];
-
-  const renderWelcome = () => {
-    const greetingKey: OnboardingMessageKey = `greeting.${greetingPeriod(new Date().getHours())}`;
+  const renderImportStatus = () => {
+    if (parsing) return <p className="onboarding-status" role="status">{t("import.parsing")}</p>;
+    if (plan.source === "chrome" && chromeDenied) {
+      return (
+        <div className="onboarding-status is-warning" role="status">
+          <span>{t("import.chrome.denied")}</span>
+          <button type="button" className="onboarding-link" onClick={() => void loadChrome()}><RotateCcw size={14} aria-hidden="true" />{t("action.retry")}</button>
+        </div>
+      );
+    }
+    if (!plan.preview) return plan.source === "chrome" ? <p className="onboarding-status">{t("import.chrome.permission")}</p> : null;
     return (
-      <section className="onboarding-step onboarding-welcome" aria-labelledby="onboarding-welcome-title">
-        <div className="onboarding-hero-icon" aria-hidden="true"><Sparkles size={28} /></div>
-        <p className="onboarding-eyebrow">{t(greetingKey)}</p>
-        <h3 id="onboarding-welcome-title">{t("welcome.title")}</h3>
-        <p className="onboarding-lead">{t("welcome.body")}</p>
-        <div className="onboarding-privacy"><ShieldCheck size={18} aria-hidden="true" /><span>{t("welcome.privacy")}</span></div>
-        <label className="onboarding-field">
-          <span>{t("welcome.language")}</span>
-          <SelectField value={plan.locale} options={languageOptions} onChange={setLocale} label={t("welcome.language")} autoFocus />
-        </label>
-      </section>
+      <div className="onboarding-status is-ready" aria-live="polite">
+        <span className="onboarding-status__title"><Check size={15} aria-hidden="true" /><strong>{plan.preview.label}</strong></span>
+        <span>{t("import.summary", { bookmarks: plan.preview.bookmarks, boards: plan.preview.boards })}</span>
+        {plan.preview.bookmarks === 0 ? <em>{t("import.empty")}</em> : null}
+        {permissionRemoved ? <span className="onboarding-status__note">{translate(plan.locale, "settings.permissionOnDemand")}</span> : null}
+        {plan.source === "chrome" || plan.source === "html" ? (
+          <label className="onboarding-switch">
+            <span>{t("import.skipDuplicates")}</span>
+            <input type="checkbox" role="switch" checked={plan.duplicateStrategy === "skip"} onChange={(event) => patchPlan({ duplicateStrategy: event.target.checked ? "skip" : "allow" })} />
+            <i aria-hidden="true" />
+          </label>
+        ) : null}
+      </div>
     );
   };
-
-  const renderImport = () => (
-    <section className="onboarding-step" aria-labelledby="onboarding-import-title">
-      <div className="onboarding-section-heading">
-        <div className="onboarding-heading-icon" aria-hidden="true"><FolderOpen size={20} /></div>
-        <div><h3 id="onboarding-import-title">{t("import.title")}</h3><p>{t("import.body")}</p></div>
-      </div>
-      <div className="onboarding-source-grid" role="radiogroup" aria-label={t("import.title")}>
-        {sourceCards.map((item) => {
-          const Icon = SOURCE_ICONS[item.source];
-          const selected = plan.source === item.source;
-          return (
-            <button
-              key={item.source}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              className={`onboarding-source-card ${selected ? "is-selected" : ""}`}
-              onClick={() => selectSource(item.source)}
-            >
-              <span className="onboarding-source-icon" aria-hidden="true"><Icon size={20} /></span>
-              <span><strong>{item.title}</strong><small>{item.body}</small></span>
-              {selected ? <Check className="onboarding-source-check" size={17} aria-hidden="true" /> : null}
-            </button>
-          );
-        })}
-      </div>
-      {plan.source === "chrome" ? (
-        <div className="onboarding-source-action">
-          <p>{t("import.chrome.permission")}</p>
-          <Button variant="primary" onClick={() => void loadChrome()} disabled={parsing}>{chromeDenied ? t("action.retry") : t("import.chrome.title")}</Button>
-          {chromeDenied ? <p className="onboarding-warning" role="status">{t("import.chrome.denied")}</p> : null}
-          {permissionRemoved ? <p className="onboarding-note" role="status">{translate(plan.locale, "settings.permissionOnDemand")}</p> : null}
-        </div>
-      ) : null}
-      {plan.source === "html" ? (
-        <div className="onboarding-source-action">
-          <Button variant="primary" onClick={() => htmlInputRef.current?.click()} disabled={parsing}>{t("import.html.title")}</Button>
-          <input ref={htmlInputRef} type="file" accept=".html,.htm,text/html" hidden onChange={handleFile("html")} />
-        </div>
-      ) : null}
-      {plan.source === "backup" ? (
-        <div className="onboarding-source-action">
-          <Button variant="primary" onClick={() => backupInputRef.current?.click()} disabled={parsing}>{t("import.backup.title")}</Button>
-          <input ref={backupInputRef} type="file" accept=".json,application/json" hidden onChange={handleFile("backup")} />
-        </div>
-      ) : null}
-      {parsing ? <div className="onboarding-busy" role="status" aria-live="polite">{t("import.parsing")}</div> : null}
-      {plan.preview ? (
-        <div className="onboarding-preview" aria-live="polite">
-          <strong>{plan.preview.label}</strong>
-          <span>{t("import.preview", previewParams(plan.preview))}</span>
-          {plan.preview.bookmarks === 0 ? <em>{t("import.empty")}</em> : null}
-          {plan.source === "chrome" || plan.source === "html" ? (
-            <div className="onboarding-inline-choice">
-              <span>{t("review.duplicates")}</span>
-              <div role="group" aria-label={t("review.duplicates")}>
-                {(["skip", "allow"] as const).map((value) => (
-                  <button key={value} type="button" aria-pressed={plan.duplicateStrategy === value} onClick={() => patchPlan({ duplicateStrategy: value })}>
-                    {translate(plan.locale, value === "skip" ? "settings.skip" : "settings.allow")}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-    </section>
-  );
-
-  const renderAppearance = () => (
-    <section className="onboarding-step" aria-labelledby="onboarding-appearance-title">
-      <div className="onboarding-section-heading">
-        <div className="onboarding-heading-icon" aria-hidden="true"><Palette size={20} /></div>
-        <div><h3 id="onboarding-appearance-title">{t("appearance.title")}</h3><p>{t("appearance.body")}</p></div>
-      </div>
-      <div className="onboarding-setting-group">
-        <span>{translate(plan.locale, "settings.themeMode")}</span>
-        <div className="onboarding-segmented" role="group" aria-label={translate(plan.locale, "settings.themeMode")}>
-          {(["system", "light", "dark"] as const).map((mode) => (
-            <button key={mode} type="button" aria-pressed={plan.theme.mode === mode} onClick={() => setThemeMode(mode)}>
-              {translate(plan.locale, mode === "system" ? "settings.auto" : mode === "light" ? "settings.light" : "settings.dark")}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="onboarding-setting-group">
-        <span>{t("appearance.preset")}</span>
-        <div className="onboarding-preset-grid" role="radiogroup" aria-label={t("appearance.preset")}>
-          {THEME_PRESETS.map((preset) => (
-            <button key={preset.id} type="button" role="radio" aria-checked={plan.theme.preset === preset.id} className={plan.theme.preset === preset.id ? "is-selected" : ""} onClick={() => setPreset(preset.id)}>
-              <span style={{ background: preset.config.canvas }} /><strong>{preset.name}</strong>
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="onboarding-setting-grid">
-        <div className="onboarding-setting-group">
-          <span>{t("appearance.density")}</span>
-          <div className="onboarding-segmented" role="group" aria-label={t("appearance.density")}>
-            {(["compact", "comfortable", "spacious"] as const).map((density) => (
-              <button key={density} type="button" aria-pressed={plan.theme.density === density} onClick={() => patchPlan({ theme: validateTheme({ ...plan.theme, density }) })}>
-                {t(`appearance.${density}`)}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="onboarding-setting-group">
-          <span>{t("appearance.rows")}</span>
-          <div className="onboarding-segmented" role="group" aria-label={t("appearance.rows")}>
-            {([1, 2] as const).map((rows) => (
-              <button key={rows} type="button" aria-pressed={plan.workspaceRows === rows} onClick={() => patchPlan({ workspaceRows: rows })}>
-                {translate(plan.locale, rows === 1 ? "settings.oneRow" : "settings.twoRows")}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="onboarding-setting-group">
-        <span>{translate(plan.locale, "settings.backgroundWallpaper")}</span>
-        <div className="onboarding-wallpaper-row" role="radiogroup" aria-label={translate(plan.locale, "settings.backgroundWallpaper")}>
-          <button type="button" role="radio" aria-checked={!plan.theme.wallpaperId} className={!plan.theme.wallpaperId ? "is-selected" : ""} onClick={() => setWallpaper(null)}>
-            {translate(plan.locale, "settings.noWallpaper")}
-          </button>
-          {BUILTIN_WALLPAPERS.map((wallpaper) => (
-            <button key={wallpaper.id} type="button" role="radio" aria-checked={plan.theme.wallpaperId === wallpaper.id} className={plan.theme.wallpaperId === wallpaper.id ? "is-selected" : ""} onClick={() => setWallpaper(wallpaper.id)}>
-              {translate(plan.locale, wallpaper.labelKey)}
-            </button>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-
-  const currentBody = step === "welcome" ? renderWelcome() : step === "import" ? renderImport() : renderAppearance();
-  const currentTitle = t(`step.${step}`);
 
   if (confirmSkip) {
     return (
       <Modal
         open
         size="small"
-        className="onboarding-modal onboarding-confirm-modal"
+        className="onboarding-confirm-modal"
         title={t("skip.title")}
         description={t("skip.body")}
         closeOnBackdrop={false}
@@ -465,32 +318,92 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
   return (
     <Modal
       open
-      size="large"
-      className="onboarding-modal launcher-discovery"
-      title={currentTitle}
-      description={`${stepIndex(step) + 1} / ${ONBOARDING_STEPS.length}`}
+      size="fullscreen"
+      className="onboarding-modal"
+      backdropClassName="modal-backdrop--onboarding"
+      title={t("welcome.title")}
+      description={t("welcome.summary")}
       closeOnBackdrop={false}
+      showCloseButton={false}
+      headerExtra={<button type="button" className="onboarding-link onboarding-skip" onClick={() => setConfirmSkip(true)}>{t("action.skip")}</button>}
       onClose={() => setConfirmSkip(true)}
       footer={(
-        <div className="onboarding-footer-content">
-          <Button className="launcher-discovery__dismiss" variant="ghost" onClick={() => void finish(true)} disabled={busy}>{t("action.skip")}</Button>
-          <div className="onboarding-footer-actions">
-            {stepIndex(step) > 0 ? <Button onClick={() => setStep(previousStep(step))} disabled={busy || parsing}>{t("action.back")}</Button> : null}
-            <Button variant="primary" type="submit" form="onboarding-form" disabled={busy || !canContinue(step, plan, parsing)}>
-              {busy ? t("action.finishing") : step === "appearance" ? t("action.finish") : t("action.continue")}<ChevronRight size={15} aria-hidden="true" />
-            </Button>
-          </div>
-        </div>
+        <>
+          <p className="onboarding-footnote">{t("import.body")}</p>
+          <Button variant="primary" className="onboarding-open" type="submit" form="onboarding-form" disabled={busy || !ready}>
+            {busy ? t("action.finishing") : t("action.open")}
+          </Button>
+        </>
       )}
     >
-      <div className="onboarding-progress" aria-label={currentTitle}>
-        {ONBOARDING_STEPS.map((item, index) => <span key={item} className={index <= stepIndex(step) ? "is-active" : ""}><i />{t(`step.${item}`)}</span>)}
-      </div>
-      <form id="onboarding-form" onSubmit={submit} aria-busy={busy || parsing}>
-        <div onKeyDown={handleStepKeyDown}>{currentBody}</div>
+      <form id="onboarding-form" className="onboarding-grid" onSubmit={submit} aria-busy={busy || parsing}>
+        <section className="onboarding-tile" aria-labelledby="onboarding-language-title">
+          <header className="onboarding-tile__header"><span className="onboarding-tile__icon" aria-hidden="true"><Languages size={16} /></span><h3 id="onboarding-language-title">{t("welcome.language")}</h3></header>
+          <SelectField value={plan.locale} options={languageOptions} onChange={setLocale} label={t("welcome.language")} autoFocus />
+          <p className="onboarding-privacy"><ShieldCheck size={16} aria-hidden="true" />{t("welcome.privacy")}</p>
+        </section>
+
+        <section className="onboarding-tile" aria-labelledby="onboarding-import-title">
+          <header className="onboarding-tile__header"><span className="onboarding-tile__icon" aria-hidden="true"><FolderOpen size={16} /></span><h3 id="onboarding-import-title">{t("step.import")}</h3></header>
+          <div className="onboarding-sources" role="radiogroup" aria-labelledby="onboarding-import-title">
+            {SOURCE_ORDER.map((source) => {
+              const item = sources[source];
+              const Icon = item.icon;
+              const selected = plan.source === source;
+              return (
+                <button key={source} type="button" role="radio" aria-checked={selected} className={`onboarding-source ${selected ? "is-selected" : ""}`} disabled={busy} onClick={() => chooseSource(source)}>
+                  <span className="onboarding-source__icon" aria-hidden="true"><Icon size={18} /></span>
+                  <span className="onboarding-source__text"><strong>{item.title}</strong><small>{item.body}</small></span>
+                  {selected ? <span className="onboarding-source__check" aria-hidden="true"><Check size={13} /></span> : null}
+                </button>
+              );
+            })}
+          </div>
+          {renderImportStatus()}
+          <input ref={htmlInputRef} type="file" accept=".html,.htm,text/html" hidden onChange={handleFile("html")} />
+          <input ref={backupInputRef} type="file" accept=".json,application/json" hidden onChange={handleFile("backup")} />
+        </section>
+
+        <section className="onboarding-tile" aria-labelledby="onboarding-appearance-title">
+          <header className="onboarding-tile__header"><span className="onboarding-tile__icon" aria-hidden="true"><Palette size={16} /></span><h3 id="onboarding-appearance-title">{t("step.appearance")}</h3></header>
+          <div className="onboarding-preview" aria-hidden="true">
+            {[0, 1, 2, 3].map((index) => <span key={index} className="onboarding-preview__board"><i /><i /><i /></span>)}
+          </div>
+          <div className="onboarding-walls" role="radiogroup" aria-label={wallpaperLabel}>
+            <button type="button" role="radio" aria-checked={!plan.theme.wallpaperId} className={!plan.theme.wallpaperId ? "is-selected" : ""} onClick={() => setWallpaper(null)}>
+              <span className="onboarding-walls__thumb onboarding-walls__thumb--none" /><span>{translate(plan.locale, "settings.noWallpaper")}</span>
+            </button>
+            {BUILTIN_WALLPAPERS.map((wallpaper) => (
+              <button key={wallpaper.id} type="button" role="radio" aria-checked={plan.theme.wallpaperId === wallpaper.id} className={plan.theme.wallpaperId === wallpaper.id ? "is-selected" : ""} onClick={() => setWallpaper(wallpaper.id)}>
+                <span className="onboarding-walls__thumb" style={{ backgroundImage: wallpaper.compatibilityValue } as CSSProperties} /><span>{translate(plan.locale, wallpaper.labelKey)}</span>
+              </button>
+            ))}
+          </div>
+          <div className="onboarding-row">
+            <span>{themeLabel}</span>
+            <div className="segmented" role="group" aria-label={themeLabel}>
+              {(["light", "dark", "system"] as const).map((mode) => (
+                <button key={mode} type="button" aria-pressed={plan.theme.mode === mode} className={plan.theme.mode === mode ? "is-active" : ""} onClick={() => setThemeMode(mode)}>
+                  {mode === "light" ? <Sun size={13} aria-hidden="true" /> : mode === "dark" ? <Moon size={13} aria-hidden="true" /> : null}
+                  {translate(plan.locale, mode === "system" ? "settings.auto" : mode === "light" ? "settings.light" : "settings.dark")}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="onboarding-row">
+            <span>{t("appearance.density")}</span>
+            <div className="segmented" role="group" aria-label={t("appearance.density")}>
+              {(["compact", "comfortable", "spacious"] as const).map((density) => (
+                <button key={density} type="button" aria-pressed={plan.theme.density === density} className={plan.theme.density === density ? "is-active" : ""} onClick={() => setDensity(density)}>
+                  {t(`appearance.${density}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
         <div className="onboarding-announcer" aria-live="polite" aria-atomic="true">{parsing ? t("import.parsing") : error ?? ""}</div>
-        {error ? <p className="onboarding-error" role="alert">{error}</p> : null}
       </form>
+      {error ? <p className="onboarding-error" role="alert">{error}</p> : null}
     </Modal>
   );
 }

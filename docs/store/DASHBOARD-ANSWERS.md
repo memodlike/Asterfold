@@ -1,6 +1,6 @@
-# Chrome Web Store Developer Dashboard Answers — Asterfold 3.6.1
+# Chrome Web Store Developer Dashboard Answers — Asterfold 3.6.2
 
-This document provides the exact answers and disclosures to enter into the Chrome Web Store Developer Dashboard for **Asterfold 3.6.1**.
+This document provides the exact answers and disclosures to enter into the Chrome Web Store Developer Dashboard for **Asterfold 3.6.2**.
 
 ---
 
@@ -75,10 +75,10 @@ The bookmarks permission is requested only after the user explicitly chooses Imp
 ```
 
 ### Removed Permissions Notice
-Notice to Reviewer: Asterfold 3.6.1 does not request `activeTab`, `alarms`, or `contextMenus`. The extension requests strictly `storage` and `favicon`. The optional `bookmarks` permission is requested on-demand only if the user explicitly triggers Chrome bookmark import, and is revoked immediately upon completion.
+Notice to Reviewer: Asterfold 3.6.2 does not request `activeTab`, `alarms`, or `contextMenus`. The extension requests strictly `storage` and `favicon`. The optional `bookmarks` permission is requested on-demand only if the user explicitly triggers Chrome bookmark import, and is revoked immediately upon completion.
 
 ---
 
 ## 4. Package Upload
 - File to upload: **`release/Asterfold-Chrome.zip`**
-- Verify version is **`3.6.1`** and `manifest_version: 3`.
+- Verify version is **`3.6.2`** and `manifest_version: 3`.

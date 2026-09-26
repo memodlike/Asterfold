@@ -272,12 +272,50 @@ test.describe.serial("Asterfold MV3 release", () => {
 
   test.afterAll(async () => { await context.close(); });
 
-  test("shows a localized, non-blocking first-use hint once and keeps it within a 1280×720 viewport", async () => {
+  test("fits first-run setup and the launcher hint within a 1280×720 viewport and shows each once", async () => {
     const page = await context.newPage();
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto(`chrome-extension://${extensionId}/newtab.html`);
+
+    // A fresh profile opens the one-screen setup; it fits the viewport and is skipped with confirmation.
+    const setup = page.locator(".onboarding-modal");
+    await expect(setup).toBeVisible();
+    await expect(page.locator(".onboarding-tile")).toHaveCount(3);
+    const setupBounds = await setup.boundingBox();
+    expect(setupBounds!.x).toBeGreaterThanOrEqual(0);
+    expect(setupBounds!.y).toBeGreaterThanOrEqual(0);
+    expect(setupBounds!.x + setupBounds!.width).toBeLessThanOrEqual(1280);
+    expect(setupBounds!.y + setupBounds!.height).toBeLessThanOrEqual(720);
+    await setup.locator(".onboarding-skip").click();
+    await page.locator(".onboarding-confirm-modal .modal__footer button").last().click();
+    await expect(setup).toHaveCount(0);
+    await expect(page.locator(".app-shell")).toBeVisible();
+
+    // Profiles that bypass guided setup (for example upgrades) get the launcher hint instead.
+    await page.evaluate(async () => {
+      const request = indexedDB.open("asterfold");
+      const database = await new Promise<IDBDatabase>((resolvePromise, reject) => {
+        request.onsuccess = () => resolvePromise(request.result);
+        request.onerror = () => reject(request.error ?? new Error("Unable to open IndexedDB"));
+      });
+      const transaction = database.transaction("settings", "readwrite");
+      const store = transaction.objectStore("settings");
+      const settings = await new Promise<Record<string, unknown>>((resolvePromise, reject) => {
+        const get = store.get("app");
+        get.onsuccess = () => resolvePromise(get.result as Record<string, unknown>);
+        get.onerror = () => reject(get.error ?? new Error("Unable to read settings"));
+      });
+      store.put({ ...settings, onboardingVersion: 0, onboardingComplete: false });
+      await new Promise<void>((resolvePromise, reject) => {
+        transaction.oncomplete = () => resolvePromise();
+        transaction.onerror = () => reject(transaction.error ?? new Error("Unable to write settings"));
+      });
+      database.close();
+    });
+    await page.reload();
     const hint = page.locator(".launcher-discovery");
     await expect(hint).toBeVisible();
+    await expect(page.locator(".onboarding-modal")).toHaveCount(0);
     const bounds = await hint.boundingBox();
     expect(bounds).not.toBeNull();
     expect(bounds!.x).toBeGreaterThanOrEqual(0);
@@ -367,7 +405,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
     await expect(popup.locator(".workspace-button")).toBeVisible();
     await expect(popup.locator(".save-button")).toBeVisible();
-    await expect(popup.getByText("Asterfold 3.6.1")).toBeVisible();
+    await expect(popup.getByText("Asterfold 3.6.2")).toBeVisible();
     await popup.close();
     await workspacePage.close();
   });

@@ -1,3 +1,14 @@
+# Asterfold 3.6.2
+
+## One-Screen First Run
+
+- **Setup on one screen**: the three-step wizard is replaced by one screen with three glass tiles (language, bookmarks, appearance) and a single "Open my workspace" button. No step counter, close button or Continue/Back.
+- **Import in one click**: choosing Chrome requests bookmark access in the same click; choosing an HTML file or Asterfold backup opens the file picker directly. The tile shows the result ("Bookmarks: 3 · boards: 2"), a Skip duplicates switch and Retry after a denied permission.
+- **Live appearance preview**: wallpaper thumbnails, theme and density apply to a live preview and to the wallpaper behind the dialog; the accent follows the chosen wallpaper.
+- **Fixed**: the setup dialog reused the launcher hint's class, which pushed "Skip setup" outside the window; the step bar covered content while scrolling; the dialog moved initial focus away from the language picker; tile shadows were clipped into a visible rectangle in the light theme; empty placeholder boards behind the dialog were removed.
+- **Unchanged**: nothing is written until the button is pressed; skipping asks for confirmation and keeps defaults; permissions stay `storage` + `favicon`, optional `bookmarks`, no host access.
+- **Localization**: new copy in all 12 languages.
+
 # Asterfold 3.6.1
 
 ## Real Frosted Glass on Boards

@@ -14,7 +14,7 @@ const keys = [
   "import.preview", "import.empty", "import.parsing", "appearance.title", "appearance.body", "appearance.preset", "appearance.density", "appearance.compact",
   "appearance.comfortable", "appearance.spacious", "appearance.rows", "review.title", "review.body", "review.source", "review.language", "review.theme", "review.layout",
   "review.duplicates", "action.continue", "action.back", "action.finish", "action.finishing", "action.skip", "action.retry", "skip.title", "skip.body", "skip.continue",
-  "skip.confirm", "status.ready", "status.error",
+  "skip.confirm", "status.ready", "status.error", "welcome.summary", "import.summary", "import.skipDuplicates", "action.open",
 ] as const satisfies readonly OnboardingMessageKey[];
 
 describe("onboarding localization", () => {

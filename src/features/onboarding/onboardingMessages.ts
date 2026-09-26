@@ -53,7 +53,11 @@ export type OnboardingMessageKey =
   | "skip.continue"
   | "skip.confirm"
   | "status.ready"
-  | "status.error";
+  | "status.error"
+  | "welcome.summary"
+  | "import.summary"
+  | "import.skipDuplicates"
+  | "action.open";
 
 type AppLocale = Exclude<LocalePreference, "auto">;
 type Dictionary = Record<OnboardingMessageKey, string>;
@@ -112,6 +116,10 @@ const en: Dictionary = {
   "skip.confirm": "Skip and use defaults",
   "status.ready": "Setup complete",
   "status.error": "Setup could not be completed. Your previous workspace was restored.",
+  "welcome.summary": "Three quick choices turn this new tab into your bookmark desk. You can change everything later in Settings.",
+  "import.summary": "Bookmarks: {bookmarks} · boards: {boards}",
+  "import.skipDuplicates": "Skip duplicates",
+  "action.open": "Open my workspace",
 };
 
 const ru: Dictionary = {
@@ -168,6 +176,10 @@ const ru: Dictionary = {
   "skip.confirm": "Пропустить и оставить стандартные настройки",
   "status.ready": "Настройка завершена",
   "status.error": "Не удалось завершить настройку. Предыдущее пространство восстановлено.",
+  "welcome.summary": "Три быстрых решения, и новая вкладка станет вашим столом закладок. Всё можно поменять позже в настройках.",
+  "import.summary": "Закладок: {bookmarks} · блоков: {boards}",
+  "import.skipDuplicates": "Пропускать дубликаты",
+  "action.open": "Открыть мой стол",
 };
 
 const kk: Dictionary = {
@@ -224,6 +236,10 @@ const kk: Dictionary = {
   "skip.confirm": "Өткізіп, әдепкі мәндерді қолдану",
   "status.ready": "Баптау аяқталды",
   "status.error": "Баптауды аяқтау мүмкін болмады. Алдыңғы кеңістік қалпына келтірілді.",
+  "welcome.summary": "Үш жылдам таңдау жасаңыз, сонда жаңа қойынды бетбелгілер үстеліне айналады. Барлығын кейін баптауларда өзгертуге болады.",
+  "import.summary": "Бетбелгілер: {bookmarks} · блоктар: {boards}",
+  "import.skipDuplicates": "Қайталанғандарды өткізу",
+  "action.open": "Үстелімді ашу",
 };
 
 const es: Dictionary = {
@@ -240,7 +256,11 @@ const es: Dictionary = {
   "review.title": "Revisa la configuración", "review.body": "Asterfold aplicará todo en una sola operación controlada.",
   "review.source": "Origen de datos", "review.language": "Idioma", "review.theme": "Tema", "review.layout": "Diseño", "review.duplicates": "Duplicados",
   "action.continue": "Continuar", "action.back": "Atrás", "action.finish": "Finalizar configuración", "action.finishing": "Finalizando…", "action.skip": "Omitir configuración", "action.retry": "Reintentar",
-  "skip.title": "¿Omitir la configuración guiada?", "skip.body": "Asterfold conservará los valores predeterminados. Podrás importar y personalizar más tarde.", "skip.continue": "Continuar configuración", "skip.confirm": "Omitir y usar valores predeterminados", "status.ready": "Configuración completada", "status.error": "No se pudo completar. Se restauró el espacio anterior."
+  "skip.title": "¿Omitir la configuración guiada?", "skip.body": "Asterfold conservará los valores predeterminados. Podrás importar y personalizar más tarde.", "skip.continue": "Continuar configuración", "skip.confirm": "Omitir y usar valores predeterminados", "status.ready": "Configuración completada", "status.error": "No se pudo completar. Se restauró el espacio anterior.",
+  "welcome.summary": "Tres decisiones rápidas y esta pestaña nueva será tu escritorio de marcadores. Puedes cambiarlo todo después en Ajustes.",
+  "import.summary": "Marcadores: {bookmarks} · tableros: {boards}",
+  "import.skipDuplicates": "Omitir duplicados",
+  "action.open": "Abrir mi espacio",
 };
 
 const de: Dictionary = {
@@ -257,7 +277,11 @@ const de: Dictionary = {
   "review.title": "Einrichtung prüfen", "review.body": "Asterfold übernimmt alles in einem kontrollierten Vorgang.",
   "review.source": "Datenquelle", "review.language": "Sprache", "review.theme": "Design", "review.layout": "Layout", "review.duplicates": "Duplikate",
   "action.continue": "Weiter", "action.back": "Zurück", "action.finish": "Einrichtung abschließen", "action.finishing": "Einrichtung wird abgeschlossen…", "action.skip": "Einrichtung überspringen", "action.retry": "Erneut versuchen",
-  "skip.title": "Geführte Einrichtung überspringen?", "skip.body": "Asterfold behält die Standardwerte. Import und Anpassung sind später möglich.", "skip.continue": "Einrichtung fortsetzen", "skip.confirm": "Überspringen und Standardwerte nutzen", "status.ready": "Einrichtung abgeschlossen", "status.error": "Einrichtung fehlgeschlagen. Der vorherige Arbeitsbereich wurde wiederhergestellt."
+  "skip.title": "Geführte Einrichtung überspringen?", "skip.body": "Asterfold behält die Standardwerte. Import und Anpassung sind später möglich.", "skip.continue": "Einrichtung fortsetzen", "skip.confirm": "Überspringen und Standardwerte nutzen", "status.ready": "Einrichtung abgeschlossen", "status.error": "Einrichtung fehlgeschlagen. Der vorherige Arbeitsbereich wurde wiederhergestellt.",
+  "welcome.summary": "Drei schnelle Entscheidungen, und dieser neue Tab wird zu deinem Lesezeichen-Arbeitsplatz. Alles lässt sich später in den Einstellungen ändern.",
+  "import.summary": "Lesezeichen: {bookmarks} · Boards: {boards}",
+  "import.skipDuplicates": "Duplikate überspringen",
+  "action.open": "Meinen Arbeitsbereich öffnen",
 };
 
 const fr: Dictionary = {
@@ -274,7 +298,11 @@ const fr: Dictionary = {
   "review.title": "Vérifiez la configuration", "review.body": "Asterfold appliquera les choix en une opération contrôlée.",
   "review.source": "Source de données", "review.language": "Langue", "review.theme": "Thème", "review.layout": "Disposition", "review.duplicates": "Doublons",
   "action.continue": "Continuer", "action.back": "Retour", "action.finish": "Terminer la configuration", "action.finishing": "Finalisation…", "action.skip": "Ignorer la configuration", "action.retry": "Réessayer",
-  "skip.title": "Ignorer la configuration guidée ?", "skip.body": "Asterfold conservera les valeurs par défaut. Vous pourrez importer et personnaliser plus tard.", "skip.continue": "Poursuivre la configuration", "skip.confirm": "Ignorer et utiliser les valeurs par défaut", "status.ready": "Configuration terminée", "status.error": "La configuration a échoué. L’espace précédent a été restauré."
+  "skip.title": "Ignorer la configuration guidée ?", "skip.body": "Asterfold conservera les valeurs par défaut. Vous pourrez importer et personnaliser plus tard.", "skip.continue": "Poursuivre la configuration", "skip.confirm": "Ignorer et utiliser les valeurs par défaut", "status.ready": "Configuration terminée", "status.error": "La configuration a échoué. L’espace précédent a été restauré.",
+  "welcome.summary": "Trois choix rapides et ce nouvel onglet devient votre bureau de favoris. Tout reste modifiable dans les Réglages.",
+  "import.summary": "Favoris : {bookmarks} · tableaux : {boards}",
+  "import.skipDuplicates": "Ignorer les doublons",
+  "action.open": "Ouvrir mon espace",
 };
 
 const it: Dictionary = {
@@ -291,7 +319,11 @@ const it: Dictionary = {
   "review.title": "Controlla la configurazione", "review.body": "Asterfold applicherà tutto in un’unica operazione controllata.",
   "review.source": "Sorgente dati", "review.language": "Lingua", "review.theme": "Tema", "review.layout": "Layout", "review.duplicates": "Duplicati",
   "action.continue": "Continua", "action.back": "Indietro", "action.finish": "Termina configurazione", "action.finishing": "Completamento…", "action.skip": "Salta configurazione", "action.retry": "Riprova",
-  "skip.title": "Saltare la configurazione guidata?", "skip.body": "Asterfold manterrà i valori predefiniti. Potrai importare e personalizzare in seguito.", "skip.continue": "Continua configurazione", "skip.confirm": "Salta e usa i valori predefiniti", "status.ready": "Configurazione completata", "status.error": "Configurazione non riuscita. Lo spazio precedente è stato ripristinato."
+  "skip.title": "Saltare la configurazione guidata?", "skip.body": "Asterfold manterrà i valori predefiniti. Potrai importare e personalizzare in seguito.", "skip.continue": "Continua configurazione", "skip.confirm": "Salta e usa i valori predefiniti", "status.ready": "Configurazione completata", "status.error": "Configurazione non riuscita. Lo spazio precedente è stato ripristinato.",
+  "welcome.summary": "Tre scelte rapide e questa nuova scheda diventa la tua scrivania dei preferiti. Puoi cambiare tutto più tardi nelle Impostazioni.",
+  "import.summary": "Preferiti: {bookmarks} · bacheche: {boards}",
+  "import.skipDuplicates": "Salta i duplicati",
+  "action.open": "Apri il mio spazio",
 };
 
 const pt: Dictionary = {
@@ -308,7 +340,11 @@ const pt: Dictionary = {
   "review.title": "Reveja a configuração", "review.body": "O Asterfold aplicará tudo numa operação controlada.",
   "review.source": "Origem de dados", "review.language": "Idioma", "review.theme": "Tema", "review.layout": "Disposição", "review.duplicates": "Duplicados",
   "action.continue": "Continuar", "action.back": "Voltar", "action.finish": "Concluir configuração", "action.finishing": "A concluir…", "action.skip": "Ignorar configuração", "action.retry": "Tentar novamente",
-  "skip.title": "Ignorar a configuração guiada?", "skip.body": "O Asterfold manterá os valores predefinidos. Poderá importar e personalizar depois.", "skip.continue": "Continuar configuração", "skip.confirm": "Ignorar e usar predefinições", "status.ready": "Configuração concluída", "status.error": "Não foi possível concluir. O espaço anterior foi restaurado."
+  "skip.title": "Ignorar a configuração guiada?", "skip.body": "O Asterfold manterá os valores predefinidos. Poderá importar e personalizar depois.", "skip.continue": "Continuar configuração", "skip.confirm": "Ignorar e usar predefinições", "status.ready": "Configuração concluída", "status.error": "Não foi possível concluir. O espaço anterior foi restaurado.",
+  "welcome.summary": "Três escolhas rápidas e este novo separador torna-se a sua secretária de favoritos. Pode alterar tudo mais tarde nas Definições.",
+  "import.summary": "Favoritos: {bookmarks} · quadros: {boards}",
+  "import.skipDuplicates": "Ignorar duplicados",
+  "action.open": "Abrir o meu espaço",
 };
 
 const pl: Dictionary = {
@@ -325,7 +361,11 @@ const pl: Dictionary = {
   "review.title": "Sprawdź konfigurację", "review.body": "Asterfold zastosuje ustawienia w jednej kontrolowanej operacji.",
   "review.source": "Źródło danych", "review.language": "Język", "review.theme": "Motyw", "review.layout": "Układ", "review.duplicates": "Duplikaty",
   "action.continue": "Dalej", "action.back": "Wstecz", "action.finish": "Zakończ konfigurację", "action.finishing": "Kończenie…", "action.skip": "Pomiń konfigurację", "action.retry": "Spróbuj ponownie",
-  "skip.title": "Pominąć konfigurację krok po kroku?", "skip.body": "Asterfold zachowa wartości domyślne. Import i personalizacja będą dostępne później.", "skip.continue": "Kontynuuj konfigurację", "skip.confirm": "Pomiń i użyj domyślnych", "status.ready": "Konfiguracja zakończona", "status.error": "Konfiguracja nie powiodła się. Przywrócono poprzedni obszar."
+  "skip.title": "Pominąć konfigurację krok po kroku?", "skip.body": "Asterfold zachowa wartości domyślne. Import i personalizacja będą dostępne później.", "skip.continue": "Kontynuuj konfigurację", "skip.confirm": "Pomiń i użyj domyślnych", "status.ready": "Konfiguracja zakończona", "status.error": "Konfiguracja nie powiodła się. Przywrócono poprzedni obszar.",
+  "welcome.summary": "Trzy szybkie wybory i nowa karta stanie się Twoim biurkiem zakładek. Wszystko zmienisz później w Ustawieniach.",
+  "import.summary": "Zakładki: {bookmarks} · tablice: {boards}",
+  "import.skipDuplicates": "Pomijaj duplikaty",
+  "action.open": "Otwórz mój obszar",
 };
 
 const uk: Dictionary = {
@@ -342,7 +382,11 @@ const uk: Dictionary = {
   "review.title": "Перевірте налаштування", "review.body": "Asterfold застосує вибір однією контрольованою операцією.",
   "review.source": "Джерело даних", "review.language": "Мова", "review.theme": "Тема", "review.layout": "Компонування", "review.duplicates": "Дублікати",
   "action.continue": "Продовжити", "action.back": "Назад", "action.finish": "Завершити налаштування", "action.finishing": "Завершення…", "action.skip": "Пропустити налаштування", "action.retry": "Повторити",
-  "skip.title": "Пропустити покрокове налаштування?", "skip.body": "Asterfold збереже стандартні параметри. Імпорт і персоналізація будуть доступні пізніше.", "skip.continue": "Продовжити налаштування", "skip.confirm": "Пропустити й використати стандартні", "status.ready": "Налаштування завершено", "status.error": "Не вдалося завершити. Попередній простір відновлено."
+  "skip.title": "Пропустити покрокове налаштування?", "skip.body": "Asterfold збереже стандартні параметри. Імпорт і персоналізація будуть доступні пізніше.", "skip.continue": "Продовжити налаштування", "skip.confirm": "Пропустити й використати стандартні", "status.ready": "Налаштування завершено", "status.error": "Не вдалося завершити. Попередній простір відновлено.",
+  "welcome.summary": "Три швидкі рішення, і нова вкладка стане вашим столом закладок. Усе можна змінити пізніше в налаштуваннях.",
+  "import.summary": "Закладок: {bookmarks} · дошок: {boards}",
+  "import.skipDuplicates": "Пропускати дублікати",
+  "action.open": "Відкрити мій стіл",
 };
 
 const tr: Dictionary = {
@@ -359,7 +403,11 @@ const tr: Dictionary = {
   "review.title": "Kurulumu gözden geçirin", "review.body": "Asterfold seçimleri tek kontrollü işlemde uygular.",
   "review.source": "Veri kaynağı", "review.language": "Dil", "review.theme": "Tema", "review.layout": "Düzen", "review.duplicates": "Yinelenenler",
   "action.continue": "Devam", "action.back": "Geri", "action.finish": "Kurulumu tamamla", "action.finishing": "Tamamlanıyor…", "action.skip": "Kurulumu atla", "action.retry": "Tekrar dene",
-  "skip.title": "Yönlendirmeli kurulum atlansın mı?", "skip.body": "Asterfold varsayılanları korur. Daha sonra içe aktarabilir ve özelleştirebilirsiniz.", "skip.continue": "Kuruluma devam et", "skip.confirm": "Atla ve varsayılanları kullan", "status.ready": "Kurulum tamamlandı", "status.error": "Kurulum tamamlanamadı. Önceki alan geri yüklendi."
+  "skip.title": "Yönlendirmeli kurulum atlansın mı?", "skip.body": "Asterfold varsayılanları korur. Daha sonra içe aktarabilir ve özelleştirebilirsiniz.", "skip.continue": "Kuruluma devam et", "skip.confirm": "Atla ve varsayılanları kullan", "status.ready": "Kurulum tamamlandı", "status.error": "Kurulum tamamlanamadı. Önceki alan geri yüklendi.",
+  "welcome.summary": "Üç hızlı seçimle bu yeni sekme yer imi masanıza dönüşür. Her şeyi daha sonra Ayarlar’dan değiştirebilirsiniz.",
+  "import.summary": "Yer imleri: {bookmarks} · panolar: {boards}",
+  "import.skipDuplicates": "Yinelenenleri atla",
+  "action.open": "Çalışma alanımı aç",
 };
 
 const nl: Dictionary = {
@@ -376,7 +424,11 @@ const nl: Dictionary = {
   "review.title": "Controleer de installatie", "review.body": "Asterfold past alles toe in één gecontroleerde bewerking.",
   "review.source": "Gegevensbron", "review.language": "Taal", "review.theme": "Thema", "review.layout": "Indeling", "review.duplicates": "Duplicaten",
   "action.continue": "Doorgaan", "action.back": "Terug", "action.finish": "Installatie afronden", "action.finishing": "Afronden…", "action.skip": "Installatie overslaan", "action.retry": "Opnieuw proberen",
-  "skip.title": "Begeleide installatie overslaan?", "skip.body": "Asterfold behoudt de standaardwaarden. Importeren en aanpassen kan later.", "skip.continue": "Installatie voortzetten", "skip.confirm": "Overslaan en standaardwaarden gebruiken", "status.ready": "Installatie voltooid", "status.error": "Installatie mislukt. De vorige werkruimte is hersteld."
+  "skip.title": "Begeleide installatie overslaan?", "skip.body": "Asterfold behoudt de standaardwaarden. Importeren en aanpassen kan later.", "skip.continue": "Installatie voortzetten", "skip.confirm": "Overslaan en standaardwaarden gebruiken", "status.ready": "Installatie voltooid", "status.error": "Installatie mislukt. De vorige werkruimte is hersteld.",
+  "welcome.summary": "Drie snelle keuzes en dit nieuwe tabblad wordt je bladwijzerbureau. Je kunt alles later wijzigen in Instellingen.",
+  "import.summary": "Bladwijzers: {bookmarks} · borden: {boards}",
+  "import.skipDuplicates": "Duplicaten overslaan",
+  "action.open": "Mijn werkruimte openen",
 };
 
 const dictionaries: Record<AppLocale, Dictionary> = { en, ru, kk, es, de, fr, it, pt, pl, uk, tr, nl };

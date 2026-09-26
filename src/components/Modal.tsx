@@ -62,7 +62,8 @@ export function Modal({
     const first = panel?.querySelector<HTMLElement>(FOCUSABLE);
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    (first ?? panel)?.focus();
+    // A child that focused itself on mount (for example an autoFocus field) keeps focus.
+    if (!panel?.contains(document.activeElement)) (first ?? panel)?.focus();
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === "Escape" && closeOnEscapeRef.current) {
         event.preventDefault();
