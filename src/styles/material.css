@@ -11,6 +11,13 @@
      compatibility  translucent tint only, no backdrop-filter anywhere
      software       solid surfaces, no transparency, fade-only motion
 
+   Liquid Glass layering (quality and balanced): frosted body, a specular sheen
+   from the top-left, and a rim — bright upper edge, faint lower counter-light,
+   hairline inner ring. Radii are concentric tokens so nested controls line up.
+   In Quality only, the launcher menu and the search field may also bend the
+   backdrop at their rim (src/features/performance/liquidGlass.ts); every lower
+   tier and accessibility override removes that without touching components.
+
    Only transform and opacity are animated. Durations and travel distances are
    tokens, so lower tiers and reduced motion shorten or neutralise them.
    ========================================================================== */
@@ -30,8 +37,14 @@
   --mat-alpha-pill: .7;
   --mat-alpha: var(--mat-alpha-menu);
   --mat-filter: blur(var(--overlay-blur, 28px)) saturate(170%);
-  --mat-sheen: linear-gradient(180deg, rgb(255 255 255 / .075), rgb(255 255 255 / 0) 44%);
+  --mat-filter-lens: blur(min(12px, var(--overlay-blur, 12px))) saturate(175%);
+  --mat-sheen: radial-gradient(130% 90% at 0 0, rgb(255 255 255 / .06), rgb(255 255 255 / 0) 52%), linear-gradient(180deg, rgb(255 255 255 / .06), rgb(255 255 255 / 0) 44%);
   --mat-edge: rgb(255 255 255 / .13);
+  --mat-rim: inset 0 1px 0 var(--glass-highlight), inset 0 -1px 0 rgb(255 255 255 / .035), inset 0 0 0 .5px rgb(255 255 255 / .045);
+  --mat-radius-popover: 14px;
+  --mat-radius-bar: 18px;
+  --mat-radius-menu: 20px;
+  --mat-radius-sheet: 22px;
   --mat-divider: rgb(var(--border-rgb, 255 255 255) / .09);
   --mat-shadow: 0 24px 64px rgb(0 0 0 / .3), 0 2px 8px rgb(0 0 0 / .14);
   /* Boards frost the wallpaper directly; the Glass blur setting (--glass-blur) drives it. */
@@ -54,8 +67,9 @@ html[data-theme="light"] {
   --mat-alpha-sheet: .86;
   --mat-alpha-tile: .62;
   --mat-alpha-pill: .78;
-  --mat-sheen: linear-gradient(180deg, rgb(255 255 255 / .5), rgb(255 255 255 / 0) 50%);
+  --mat-sheen: radial-gradient(130% 90% at 0 0, rgb(255 255 255 / .34), rgb(255 255 255 / 0) 55%), linear-gradient(180deg, rgb(255 255 255 / .42), rgb(255 255 255 / 0) 50%);
   --mat-edge: rgb(255 255 255 / .7);
+  --mat-rim: inset 0 1px 0 var(--glass-highlight), inset 0 -1px 0 rgb(255 255 255 / .28), inset 0 0 0 .5px rgb(20 22 30 / .05);
   --mat-shadow: 0 24px 60px rgb(24 28 40 / .16), 0 0 0 1px rgb(19 20 23 / .06);
   --scrim: rgb(20 22 30 / .12);
   --settings-scrim: rgb(20 22 30 / .16);
@@ -95,6 +109,7 @@ html[data-performance="software"] {
   --mat-alpha-tile: 1;
   --mat-alpha-pill: 1;
   --mat-sheen: none;
+  --mat-rim: inset 0 1px 0 var(--glass-highlight);
   --mat-shadow: 0 1px 2px rgb(0 0 0 / .2);
   --scrim: rgb(6 6 10 / .4);
   --settings-scrim: rgb(6 6 10 / .56);
@@ -129,7 +144,7 @@ html[data-performance="software"][data-theme="light"] { --mat-shadow: 0 0 0 1px 
 .app-launcher.is-open .launcher-trigger::before {
   border: 1px solid var(--mat-edge);
   background: var(--mat-sheen), rgb(var(--surface-rgb) / var(--mat-alpha));
-  box-shadow: inset 0 1px 0 var(--glass-highlight), var(--mat-shadow);
+  box-shadow: var(--mat-rim), var(--mat-shadow);
   -webkit-backdrop-filter: var(--mat-filter);
   backdrop-filter: var(--mat-filter);
 }
@@ -139,6 +154,19 @@ html[data-performance="software"][data-theme="light"] { --mat-shadow: 0 0 0 1px 
 .empty-state { --mat-alpha: var(--mat-alpha-tile); }
 /* The empty state sits on the wallpaper like a board, so it uses the board frost. */
 .empty-state { -webkit-backdrop-filter: var(--board-filter); backdrop-filter: var(--board-filter); }
+
+/* Edge refraction (Quality only). The hook only sets --lg-refraction and data-refraction;
+   this rule is the single place that turns them into pixels. A lens surface uses a
+   shorter blur than plain frost so the rim bending stays visible; its tint (the same
+   --mat-alpha token) still carries legibility. Blur runs before the lens so the interior
+   stays calm and only the rim bends. */
+.liquid-glass-defs { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+@media (prefers-reduced-transparency: no-preference) and (prefers-contrast: no-preference) and (forced-colors: none) {
+  html[data-performance="quality"] [data-refraction="on"] {
+    -webkit-backdrop-filter: var(--mat-filter-lens) var(--lg-refraction);
+    backdrop-filter: var(--mat-filter-lens) var(--lg-refraction);
+  }
+}
 
 /* The scrim lives on a pseudo-element. Animating opacity on the backdrop element itself would make
    it a Chrome "backdrop root", and glass children (spotlight field/panel) would stop seeing the page. */
@@ -172,8 +200,20 @@ html[data-performance="software"] :is(.modal, .launcher-menu, .context-menu, .se
   :is(.modal, .launcher-menu, .context-menu, .select-popover, .toast, .settings-tile, .spotlight__field, .spotlight__panel) { --enter-y: 0px; --enter-scale: 1; animation-duration: 120ms !important; animation-timing-function: linear !important; }
 }
 
+/* Increased contrast: every glass surface becomes a solid sheet with a defined edge. */
+@media (prefers-contrast: more) {
+  :is(.launcher-menu, .launcher-discovery, .context-menu, .toast, .bulk-toolbar, .select-popover, .drag-overlay, .modal:not(.settings-modal, .spotlight, .onboarding-modal), .spotlight__field, .spotlight__panel, .empty-state, .settings-tile, .onboarding-tile, .settings-modal .modal__header),
+  .app-launcher:hover .launcher-trigger::before, .launcher-trigger:focus-visible::before, .app-launcher.is-open .launcher-trigger::before {
+    border-color: color-mix(in srgb, var(--color-text) 55%, transparent);
+    background: var(--color-surface-solid);
+    box-shadow: var(--mat-shadow);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 @media (forced-colors: active) {
-  :is(.launcher-menu, .launcher-discovery, .context-menu, .toast, .bulk-toolbar, .select-popover, .modal, .spotlight__field, .spotlight__panel, .settings-tile) {
+  :is(.launcher-menu, .launcher-discovery, .context-menu, .toast, .bulk-toolbar, .select-popover, .drag-overlay, .modal, .spotlight__field, .spotlight__panel, .empty-state, .settings-tile, .onboarding-tile, .settings-modal .modal__header) {
     border: 1px solid CanvasText;
     background: Canvas;
     -webkit-backdrop-filter: none;

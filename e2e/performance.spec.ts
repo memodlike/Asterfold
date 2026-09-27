@@ -31,8 +31,8 @@ async function extensionWorker(context: BrowserContext): Promise<Worker> {
     ?? context.waitForEvent("serviceworker", { predicate: (candidate) => candidate.url().startsWith("chrome-extension://"), timeout: 15_000 });
 }
 
-async function seedStressFixture(page: Page): Promise<void> {
-  await page.evaluate(async () => {
+async function seedStressFixture(page: Page, performanceMode: "quality" | "compatibility" = "compatibility"): Promise<void> {
+  await page.evaluate(async (performanceMode) => {
     const request = indexedDB.open("asterfold");
     const database = await new Promise<IDBDatabase>((resolvePromise, reject) => {
       request.onsuccess = () => resolvePromise(request.result);
@@ -56,13 +56,13 @@ async function seedStressFixture(page: Page): Promise<void> {
         transaction.objectStore("bookmarks").put({ id: `stress-${boardIndex}-${index}`, userId: null, boardId, title: `Bookmark ${boardIndex + 1}.${index + 1}`, url, normalizedUrl: url, hostname: "example.com", description: null, faviconUrl: null, customIcon: null, position: `m${String(index).padStart(3, "0")}`, openMode: "new-tab", pinned: false, createdAt: timestamp, updatedAt: timestamp, deletedAt: null, deletedBatchId: null, version: 1 });
       }
     }
-    settingsStore.put({ ...settings, onboardingComplete: true, workspaceRows: 2, workspaceLayoutMode: "auto", workspaceAlignment: "center", theme: { ...settings.theme, mode: "dark", performanceMode: "compatibility", lowPowerMode: true, backgroundMode: "wallpaper", wallpaperId: "builtin-aurora", surfaceOpacity: 0.62, wallpaperBlur: 18, wallpaperSaturation: 1.15 }, updatedAt: timestamp });
+    settingsStore.put({ ...settings, onboardingComplete: true, workspaceRows: 2, workspaceLayoutMode: "auto", workspaceAlignment: "center", theme: { ...settings.theme, mode: "dark", performanceMode, lowPowerMode: performanceMode === "compatibility", backgroundMode: "wallpaper", wallpaperId: "builtin-aurora", surfaceOpacity: 0.62, wallpaperBlur: 18, wallpaperSaturation: 1.15 }, updatedAt: timestamp });
     await new Promise<void>((resolvePromise, reject) => {
       transaction.oncomplete = () => resolvePromise();
       transaction.onerror = () => reject(transaction.error ?? new Error("Unable to seed stress fixture"));
     });
     database.close();
-  });
+  }, performanceMode);
 }
 
 async function frameSample(page: Page): Promise<number[]> {
@@ -113,6 +113,46 @@ test("compatibility glass survives a 600-bookmark Windows-style stress fixture",
     const p95 = sorted[Math.floor(sorted.length * 0.95)] ?? Number.POSITIVE_INFINITY;
     expect(p95).toBeLessThan(100);
     expect(Math.max(...intervals)).toBeLessThan(300);
+  } finally {
+    await context.close();
+  }
+});
+
+test("quality glass bends only the menu and search rims and releases every filter", async () => {
+  const context = await chromium.launchPersistentContext(join(tmpdir(), `asterfold-lens-${Date.now()}`), {
+    executablePath: browserPath(), headless: false,
+    args: ["--headless=new", "--no-sandbox", "--disable-crash-reporter", "--disable-features=DisableLoadExtensionCommandLineSwitch", `--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
+  });
+  try {
+    const worker = await extensionWorker(context);
+    const page = await context.newPage();
+    const failures: string[] = [];
+    page.on("pageerror", (error) => failures.push(error.message));
+    page.on("console", (message) => { if (message.type() === "error") failures.push(message.text()); });
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto(`chrome-extension://${new URL(worker.url()).hostname}/newtab.html`);
+    await seedStressFixture(page, "quality");
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("data-performance", "quality");
+    await expect(page.locator(".bookmark-card")).toHaveCount(600);
+
+    for (let iteration = 0; iteration < 10; iteration += 1) {
+      await page.locator(".launcher-trigger").click();
+      await expect(page.locator(".launcher-menu")).toHaveAttribute("data-refraction", "on");
+      await page.locator(".launcher-trigger").click();
+      await expect(page.locator(".launcher-menu")).toHaveCount(0);
+    }
+    await expect(page.locator(".liquid-glass-defs")).toHaveCount(0);
+
+    await page.locator(".launcher-trigger").click();
+    await page.locator(".launcher-menu [role=menuitem][aria-keyshortcuts]").click();
+    const field = page.locator(".spotlight__field");
+    await expect(field).toHaveAttribute("data-refraction", "on");
+    expect(await field.evaluate((element) => getComputedStyle(element).backdropFilter)).toMatch(/url\("#af-lg-\d+"\)/u);
+    expect(await page.locator(".board").first().evaluate((element) => element.hasAttribute("data-refraction"))).toBe(false);
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".liquid-glass-defs")).toHaveCount(0);
+    expect(failures).toEqual([]);
   } finally {
     await context.close();
   }

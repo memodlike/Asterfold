@@ -1,3 +1,15 @@
+# Asterfold 3.6.3
+
+## Liquid Glass Finish
+
+- **One finish on every glass surface**: the launcher, its menu and hint, spotlight search, context menus, dropdowns, dialogs, Settings and first-run tiles, toasts, the selection toolbar, the drag preview and the empty state now share one layered material: frosted body, a soft specular sheen from the top-left, and a lit rim (bright upper edge, faint lower counter-light, hairline inner ring).
+- **Concentric corners**: corner radii come from shared tokens and nested rows follow them, so menu items and popovers line up with their container.
+- **Edge lens in Maximum quality only**: the launcher menu and the search field bend the frosted backdrop slightly at their rim; the interior and all text stay sharp. At most two surfaces refract at once, displacement maps are bounded to 320 px and regenerated only on size changes, and everything is released when the surface closes or the tier changes.
+- **Other tiers unchanged**: Balanced keeps its short blur; Smooth glass and No transparency stay free of live blur and refraction.
+- **Accessibility**: Reduce transparency, Increase contrast and forced colors switch the lens off immediately; increased contrast now turns every glass surface solid with a defined edge, and forced colors covers the drag preview, empty state and first-run tiles too.
+- **Boards untouched**: the main screen, Pages → Boards → Bookmarks, launcher placement and drag and drop behave exactly as before.
+- **Permissions unchanged**: `permissions: ["storage", "favicon"]`, optional `bookmarks`, empty `host_permissions`, no remote code, no network requests.
+
 # Asterfold 3.6.2
 
 ## One-Screen First Run

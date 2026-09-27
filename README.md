@@ -113,7 +113,7 @@ Asterfold is designed around local storage and least-privilege extension access.
 |---|---|
 | `bookmarks` | Imports or refreshes Chrome bookmarks after direct user action (revoked immediately) |
 
-Asterfold 3.6.2 does not request `activeTab`, `alarms`, or `contextMenus`. It performs zero active-tab queries, zero background polling alarms, zero context menus, zero host permissions, and makes no third-party favicon or network requests. Site favicons are served exclusively by Chrome's local icon cache via the standard MV3 `favicon` permission. Privacy Mode intentionally replaces site icons with a neutral icon.
+Asterfold 3.6.3 does not request `activeTab`, `alarms`, or `contextMenus`. It performs zero active-tab queries, zero background polling alarms, zero context menus, zero host permissions, and makes no third-party favicon or network requests. Site favicons are served exclusively by Chrome's local icon cache via the standard MV3 `favicon` permission. Privacy Mode intentionally replaces site icons with a neutral icon.
 
 Detailed review material:
 
@@ -176,7 +176,7 @@ Contribution guidance is available in [docs/development/CONTRIBUTING.md](docs/de
 
 ## Release artifacts
 
-Asterfold 3.6.2 produces a reproducible, cryptographically verifiable release containing:
+Asterfold 3.6.3 produces a reproducible, cryptographically verifiable release containing:
 
 - `Asterfold-Chrome.zip` (runtime Chrome Web Store bundle)
 - `chrome-unpacked.zip` (unpacked developer distribution)
@@ -189,7 +189,9 @@ The release pipeline verifies Manifest V3 structure, permission policy, CSP, for
 
 ## Release highlights
 
-**Asterfold 3.6.2** replaces the first-run wizard with one screen: language, bookmark import in one click and a live appearance preview, then a single "Open my workspace" button.
+**Asterfold 3.6.3** gives every glass surface one Liquid Glass finish: a specular sheen, a lit rim and concentric corner radii, plus a subtle edge lens on the launcher menu and search field in Maximum quality only.
+
+Asterfold 3.6.2 replaced the first-run wizard with one screen: language, bookmark import in one click and a live appearance preview, then a single "Open my workspace" button.
 
 Asterfold 3.6.1 made boards real frosted glass: they blur the wallpaper according to the rendering tier and the Glass blur setting, and the drag preview uses the same glass.
 
@@ -201,7 +203,8 @@ The repository does not claim Chrome Web Store publication, approval, user count
 
 ## Version history
 
-1. **v3.6.2 — One-screen first run.** Replaces the three-step setup wizard with three glass tiles (language, bookmarks, appearance), one-click Chrome/HTML/backup import with an inline result, a live wallpaper preview, and fixes for the clipped Skip button, focus handling and light-theme shadow clipping.
+1. **v3.6.3 — Liquid Glass finish.** Unifies the rim highlight, specular sheen and concentric radii across menus, search, dialogs, Settings, first run, toasts and toolbars; adds a bounded, Quality-only edge lens on the launcher menu and search field that lower tiers and accessibility settings switch off; extends increased-contrast and forced-colors handling to every glass surface.
+2. **v3.6.2 — One-screen first run.** Replaces the three-step setup wizard with three glass tiles (language, bookmarks, appearance), one-click Chrome/HTML/backup import with an inline result, a live wallpaper preview, and fixes for the clipped Skip button, focus handling and light-theme shadow clipping.
 2. **v3.6.1 — Real frosted glass on boards.** Boards blur the wallpaper through a tiered `--board-filter` token (full blur in Quality, ≤8px in Balanced, none in Smooth glass and No transparency), driven by the Glass blur setting; the drag preview and empty state use the shared glass.
 2. **v3.6.0 — One glass material, spotlight search and single-screen Settings.** Replaces opaque overlays with a tokenised glass material resolved across four rendering tiers (applied before first paint), fixes the solid "No transparency" tier and the unused blur slider, adds in-place search highlights, a bento Settings screen, background-driven accessible accents and cached GPU detection.
 2. **v3.5.5 — Chrome Web Store Packaging & Favicon Release Finalization.** Finalizes Chrome Web Store packaging and synchronizes permission justifications across store submission documentation and developer dashboard answers, preserving native Chrome favicon resolution and refined bookmark motion with bit-for-bit release reproducibility.

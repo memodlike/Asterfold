@@ -23,7 +23,7 @@
 
 .onboarding-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.2fr) minmax(0, 1.2fr); gap: 14px; align-items: stretch; }
 
-.onboarding-tile { --mat-alpha: var(--mat-alpha-tile); --enter-y: 14px; --enter-scale: .985; display: flex; min-width: 0; flex-direction: column; gap: 14px; padding: 18px 20px 20px; border: 1px solid var(--mat-edge); border-radius: 24px; background: var(--mat-sheen), rgb(var(--surface-rgb) / var(--mat-alpha)); box-shadow: inset 0 1px 0 var(--glass-highlight), 0 10px 30px rgb(0 0 0 / .1); animation: af-pop var(--dur-sheet) var(--ease-spring) both; }
+.onboarding-tile { --mat-alpha: var(--mat-alpha-tile); --enter-y: 14px; --enter-scale: .985; display: flex; min-width: 0; flex-direction: column; gap: 14px; padding: 18px 20px 20px; border: 1px solid var(--mat-edge); border-radius: 24px; background: var(--mat-sheen), rgb(var(--surface-rgb) / var(--mat-alpha)); box-shadow: var(--mat-rim), 0 10px 30px rgb(0 0 0 / .1); animation: af-pop var(--dur-sheet) var(--ease-spring) both; }
 .onboarding-tile:nth-child(2) { animation-delay: var(--stagger); }
 .onboarding-tile:nth-child(3) { animation-delay: calc(var(--stagger) * 2); }
 html[data-performance="software"] .onboarding-tile { --enter-y: 0px; --enter-scale: 1; box-shadow: var(--mat-shadow); }

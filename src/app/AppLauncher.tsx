@@ -4,6 +4,7 @@ import type { Page } from "../domain/models";
 import { FloatingContextMenu, type ContextMenuPoint } from "../components/FloatingContextMenu";
 import { primaryShortcut } from "../browser/platform";
 import { useI18n } from "../i18n";
+import { useLiquidGlass } from "../features/performance/liquidGlass";
 import "./launcher.css";
 
 interface AppLauncherProps {
@@ -27,6 +28,9 @@ interface AppLauncherProps {
   onDismissFirstRunHint?: () => void;
 }
 
+/** Subtle rim lens for the menu; the tier CSS decides whether it renders. */
+const MENU_REFRACTION = { scale: -64, chroma: 4, mapBlur: 14 } as const;
+
 export function AppLauncher(props: AppLauncherProps) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -36,6 +40,7 @@ export function AppLauncher(props: AppLauncherProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  useLiquidGlass(menuRef, open, MENU_REFRACTION);
   const searchShortcut = primaryShortcut("K");
   const activePage = props.pages.find((page) => page.id === props.activePageId);
 

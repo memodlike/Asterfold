@@ -3,7 +3,7 @@
 
 .app-launcher { position: fixed; z-index: 60; left: 18px; bottom: 16px; display: grid; width: 116px; justify-items: start; gap: 8px; }
 
-.launcher-discovery { --mat-alpha: var(--mat-alpha-menu); position: relative; width: min(286px, calc(100vw - 36px)); padding: 15px 40px 14px 15px; border-radius: 18px; color: var(--color-text); }
+.launcher-discovery { --mat-alpha: var(--mat-alpha-menu); position: relative; width: min(286px, calc(100vw - 36px)); padding: 15px 40px 14px 15px; border-radius: var(--mat-radius-bar); color: var(--color-text); }
 .launcher-discovery::after { content: ""; position: absolute; left: 17px; bottom: -7px; width: 12px; height: 12px; border-right: 1px solid var(--mat-edge); border-bottom: 1px solid var(--mat-edge); background: rgb(var(--surface-rgb) / var(--mat-alpha)); transform: rotate(45deg); }
 .launcher-discovery strong { display: block; margin-bottom: 4px; font-size: 13px; font-weight: 680; }
 .launcher-discovery p { margin: 0 0 10px; color: var(--color-text-secondary); font-size: 12px; line-height: 1.45; }
@@ -22,13 +22,13 @@
 .app-launcher:hover .launcher-trigger span, .launcher-trigger:focus-visible span, .app-launcher.is-open .launcher-trigger span { opacity: 1; transform: none; }
 
 /* Menu */
-.launcher-menu { --mat-alpha: var(--mat-alpha-menu); --enter-y: 10px; --enter-scale: .94; display: grid; width: 264px; padding: 6px; border-radius: 20px; color: var(--color-text); transform-origin: 18px calc(100% + 24px); animation: af-pop var(--dur-base) var(--ease-spring) both; }
+.launcher-menu { --mat-alpha: var(--mat-alpha-menu); --enter-y: 10px; --enter-scale: .94; display: grid; width: 264px; padding: 6px; border-radius: var(--mat-radius-menu); color: var(--color-text); transform-origin: 18px calc(100% + 24px); animation: af-pop var(--dur-base) var(--ease-spring) both; }
 .launcher-menu__header { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 34px; margin-bottom: 4px; padding: 4px 8px 8px; border-bottom: 1px solid var(--mat-divider); }
 .launcher-menu__page { display: flex; min-width: 0; align-items: center; gap: 8px; overflow: hidden; font-size: 12.5px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
 .launcher-menu__dot { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: var(--color-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 22%, transparent); }
 .launcher-menu__stats { display: flex; flex: 0 0 auto; gap: 9px; color: var(--color-text-secondary); font-size: 11.5px; font-variant-numeric: tabular-nums; }
 .launcher-menu__stats > span[aria-hidden] { display: inline-flex; align-items: center; gap: 4px; }
-.launcher-menu > button { display: flex; align-items: center; min-height: 36px; gap: 11px; padding: 0 10px; border-radius: 11px; text-align: left; background: transparent; font-size: 13.5px; font-weight: 500; transition: background-color var(--dur-quick) var(--ease-out); }
+.launcher-menu > button { display: flex; align-items: center; min-height: 36px; gap: 11px; padding: 0 10px; border-radius: 14px; text-align: left; background: transparent; font-size: 13.5px; font-weight: 500; transition: background-color var(--dur-quick) var(--ease-out); }
 .launcher-menu > button > svg { flex: 0 0 auto; opacity: .78; }
 .launcher-menu > button:hover, .launcher-menu > button:focus-visible { background: var(--control-fill-hover); outline-offset: -2px; }
 .launcher-menu > button.is-active > svg { color: var(--color-accent); opacity: 1; }

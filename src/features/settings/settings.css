@@ -6,7 +6,7 @@
 .modal-backdrop--settings::before { background: var(--settings-scrim); -webkit-backdrop-filter: var(--settings-scrim-filter); backdrop-filter: var(--settings-scrim-filter); }
 
 .modal.settings-modal { width: min(1240px, calc(100vw - 48px)); height: calc(100dvh - 48px); max-height: none; overflow: visible; border: 0; border-radius: 0; background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; animation: none; }
-.settings-modal .modal__header { --mat-alpha: var(--mat-alpha-tile); flex: 0 0 auto; gap: 12px; margin: 0 6px 12px; padding: 8px 8px 8px 20px; border: 1px solid var(--mat-edge); border-radius: 20px; background: var(--mat-sheen), rgb(var(--surface-rgb) / var(--mat-alpha)); box-shadow: inset 0 1px 0 var(--glass-highlight); animation: af-fade var(--dur-base) var(--ease-out) both; }
+.settings-modal .modal__header { --mat-alpha: var(--mat-alpha-tile); flex: 0 0 auto; gap: 12px; margin: 0 6px 12px; padding: 8px 8px 8px 20px; border: 1px solid var(--mat-edge); border-radius: 20px; background: var(--mat-sheen), rgb(var(--surface-rgb) / var(--mat-alpha)); box-shadow: var(--mat-rim); animation: af-fade var(--dur-base) var(--ease-out) both; }
 .settings-modal .modal__heading { margin-right: auto; }
 .settings-modal .modal__header h2 { font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
 .settings-modal .modal__header .icon-button { width: 36px; height: 36px; border-radius: 50%; border-color: var(--mat-edge); background: var(--control-fill); }
@@ -19,7 +19,7 @@
 
 .settings-bento { container-type: inline-size; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-flow: row dense; gap: 12px; }
 
-.settings-tile { --mat-alpha: var(--mat-alpha-tile); --enter-y: 14px; --enter-scale: .985; position: relative; display: flex; min-width: 0; flex-direction: column; gap: 14px; padding: 16px 18px 18px; border: 1px solid var(--mat-edge); border-radius: 22px; color: var(--color-text); background: var(--mat-sheen), rgb(var(--surface-rgb) / var(--mat-alpha)); box-shadow: inset 0 1px 0 var(--glass-highlight), 0 10px 30px rgb(0 0 0 / .1); scroll-margin: 16px; animation: af-pop var(--dur-sheet) var(--ease-spring) both; animation-delay: calc(var(--i, 0) * var(--stagger)); }
+.settings-tile { --mat-alpha: var(--mat-alpha-tile); --enter-y: 14px; --enter-scale: .985; position: relative; display: flex; min-width: 0; flex-direction: column; gap: 14px; padding: 16px 18px 18px; border: 1px solid var(--mat-edge); border-radius: 22px; color: var(--color-text); background: var(--mat-sheen), rgb(var(--surface-rgb) / var(--mat-alpha)); box-shadow: var(--mat-rim), 0 10px 30px rgb(0 0 0 / .1); scroll-margin: 16px; animation: af-pop var(--dur-sheet) var(--ease-spring) both; animation-delay: calc(var(--i, 0) * var(--stagger)); }
 html[data-performance="software"] .settings-tile { box-shadow: var(--mat-shadow); }
 .settings-tile--wide { grid-column: span 6; }
 .settings-tile--half { grid-column: span 5; }

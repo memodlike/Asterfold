@@ -8,6 +8,7 @@ import { BrowserFavicon } from "../../components/BrowserFavicon";
 import { faviconUrl } from "../../browser/api";
 import { useI18n } from "../../i18n";
 import { primaryShortcut } from "../../browser/platform";
+import { useLiquidGlass } from "../performance/liquidGlass";
 import { highlightMatch } from "./highlightMatch";
 import { useBoardHighlights } from "./useBoardHighlights";
 import "./spotlight.css";
@@ -28,6 +29,9 @@ interface SearchPaletteProps {
   onDelete: (bookmark: Bookmark) => void;
 }
 
+/** The search pill is short, so its rim lens is gentler than the menu's. */
+const FIELD_REFRACTION = { scale: -46, chroma: 3, border: 0.1, mapBlur: 10 } as const;
+
 export function SearchPalette(props: SearchPaletteProps) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
@@ -37,6 +41,8 @@ export function SearchPalette(props: SearchPaletteProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const fieldRef = useRef<HTMLDivElement>(null);
+  useLiquidGlass(fieldRef, props.open, FIELD_REFRACTION);
   const engine = useMemo(() => props.privacy ? null : new BookmarkSearchEngine(createSearchDocuments(props.pages, props.boards, props.bookmarks)), [props.boards, props.bookmarks, props.pages, props.privacy]);
   const results = useMemo(() => engine?.search(query, { mode, field, ...(scope === "page" ? { pageId: props.activePageId } : {}), limit: 40 }) ?? [], [engine, field, mode, props.activePageId, query, scope]);
   const bookmarkById = useMemo(() => new Map(props.bookmarks.map((bookmark) => [bookmark.id, bookmark])), [props.bookmarks]);
@@ -86,7 +92,7 @@ export function SearchPalette(props: SearchPaletteProps) {
 
   return (
     <Modal open={props.open} size="large" header="hidden" className="spotlight" backdropClassName="modal-backdrop--spotlight" title={t("search.title")} description={t("search.placeholder")} onClose={close}>
-      <div className="spotlight__field">
+      <div ref={fieldRef} className="spotlight__field">
         <Search size={20} aria-hidden="true" />
         <input ref={inputRef} maxLength={240} disabled={props.privacy} value={props.privacy ? t("search.protected") : query} onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }} onKeyDown={handleSearchKeyDown} placeholder={t("search.placeholder")} aria-label={t("search.title")} aria-keyshortcuts={searchShortcut.aria} aria-controls="spotlight-results" aria-activedescendant={activeResult ? `spotlight-result-${activeResult.id}` : undefined} />
         {!props.privacy && query.trim() ? <span className="spotlight__count" role="status">{t("search.found", { count: results.length })}</span> : null}

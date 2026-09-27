@@ -86,7 +86,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   border: 1px solid var(--color-border, #d5dbe6);
-  border-radius: 12px;
+  border-radius: var(--mat-radius-popover, 14px);
   color: var(--color-text, #172033);
   animation: select-popover-in 120ms cubic-bezier(.2,.8,.2,1) both;
 }
@@ -111,7 +111,7 @@
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: 9px;
   color: inherit;
   background: transparent;
   text-align: left;
