@@ -299,6 +299,7 @@ export const pl: Record<MessageKey, string> = {
   "settings.accentAuto": "Z tła",
   "settings.glass": "Szkło",
   "settings.glassUnavailable": "W tym trybie efekty szkła są wyłączone.",
+  "settings.blurUnavailable": "W trybie Płynne szkło rozmycie na żywo jest wyłączone; przezroczystość i styl szkła nadal działają.",
   "settings.preview": "Podgląd",
   "settings.tierAutoHint": "Dobrany do tego komputera",
   "settings.tierQualityHint": "Rozmycie na żywo w menu i panelach",

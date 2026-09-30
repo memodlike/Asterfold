@@ -299,6 +299,7 @@ export const es: Record<MessageKey, string> = {
   "settings.accentAuto": "Del fondo",
   "settings.glass": "Cristal",
   "settings.glassUnavailable": "Los efectos de cristal están desactivados en este modo.",
+  "settings.blurUnavailable": "En Cristal suave el desenfoque en vivo está desactivado; la transparencia y el estilo del cristal siguen aplicándose.",
   "settings.preview": "Vista previa",
   "settings.tierAutoHint": "Elegido para este equipo",
   "settings.tierQualityHint": "Desenfoque en vivo en menús y paneles",

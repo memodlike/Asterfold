@@ -125,6 +125,15 @@ describe("accent runtime wiring", () => {
     expect((themeStyle(theme({ blur: 32 }), null, null, true) as Record<string, string>)["--overlay-blur"]).toBe("40px");
   });
 
+  it("makes Clear a lighter board tint and ships a visibly translucent default", () => {
+    const regular = themeStyle(theme({ glassVariant: "regular" }), null, null, false) as Record<string, string>;
+    const clear = themeStyle(theme({ glassVariant: "clear" }), null, null, false) as Record<string, string>;
+    expect(regular["--glass-tint"]).toBe("1");
+    expect(clear["--glass-tint"]).toBe(".8");
+    expect(regular["--color-text-secondary-base"]).toBe(regular["--color-text-secondary"]);
+    expect(getThemePreset("frost-light").surfaceOpacity).toBeLessThanOrEqual(0.7);
+  });
+
   it("gives the popup the same accent and surface tokens as the new tab", () => {
     const root = document.createElement("div");
     applyPopupTheme(root, theme({ backgroundMode: "wallpaper", wallpaperId: "builtin-mesh" }), true);

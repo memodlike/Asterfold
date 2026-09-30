@@ -299,6 +299,7 @@ export const kk: Record<MessageKey, string> = {
   "settings.accentAuto": "Фоннан",
   "settings.glass": "Әйнек",
   "settings.glassUnavailable": "Бұл көрсету режимінде әйнек әсерлері өшірулі.",
+  "settings.blurUnavailable": "«Бірқалыпты әйнек» режимінде тірі бұлыңғырлау өшірулі; мөлдірлік пен шыны стилі жұмыс істей береді.",
   "settings.preview": "Алдын ала көру",
   "settings.tierAutoHint": "Осы компьютерге таңдалған",
   "settings.tierQualityHint": "Мәзір мен панельдерде тірі бұлыңғырлық",

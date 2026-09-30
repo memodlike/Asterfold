@@ -299,6 +299,7 @@ export const de: Record<MessageKey, string> = {
   "settings.accentAuto": "Vom Hintergrund",
   "settings.glass": "Glas",
   "settings.glassUnavailable": "In diesem Darstellungsmodus sind Glaseffekte aus.",
+  "settings.blurUnavailable": "Im Modus „Flüssiges Glas“ ist die Live-Unschärfe aus; Transparenz und Glasstil gelten weiterhin.",
   "settings.preview": "Vorschau",
   "settings.tierAutoHint": "Für diesen Computer gewählt",
   "settings.tierQualityHint": "Echtzeit-Unschärfe in Menüs und Feldern",

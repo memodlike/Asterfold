@@ -8,7 +8,7 @@ export interface ThemePreset {
 }
 
 const base: Omit<ThemeConfig, "preset" | "mode" | "accent" | "canvas"> = {
-  surfaceOpacity: 0.82,
+  surfaceOpacity: 0.66,
   blur: 20,
   radius: 14,
   density: "comfortable",

@@ -21,8 +21,8 @@ metadata:
 - **Quality Mode**:
   - Full backdrop blur (`backdrop-filter: blur(20px)`), dynamic glass reflections, high-resolution textures.
 - **Compatibility Mode**:
-  - Solid, opaque, theme-aware surfaces without live CSS blur filters (prevents lag on low-end integrated graphics, e.g. AMD Radeon R5 230 / Intel HD Graphics).
-  - High contrast card boundaries, responsive hit areas, and zero wallpaper bleed-through.
+  - Shown as "Smooth glass": light translucency driven by the Glass transparency setting, but no live CSS blur and no SVG refraction (prevents lag on low-end integrated graphics, e.g. AMD Radeon R5 230 / Intel HD Graphics).
+  - Slightly more tint than Quality at the same setting, since the wallpaper behind text stays sharp; never more transparent than Quality.
 - **Software Mode**:
   - Absolute minimal GPU overhead, flat colors, zero transparency.
 

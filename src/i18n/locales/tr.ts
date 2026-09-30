@@ -299,6 +299,7 @@ export const tr: Record<MessageKey, string> = {
   "settings.accentAuto": "Arka plandan",
   "settings.glass": "Cam",
   "settings.glassUnavailable": "Bu işleme modunda cam efektleri kapalı.",
+  "settings.blurUnavailable": "Akıcı cam modunda canlı bulanıklık kapalıdır; saydamlık ve cam stili uygulanmaya devam eder.",
   "settings.preview": "Önizleme",
   "settings.tierAutoHint": "Bu bilgisayar için seçildi",
   "settings.tierQualityHint": "Menü ve panellerde canlı bulanıklık",

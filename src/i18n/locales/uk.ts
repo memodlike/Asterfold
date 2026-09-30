@@ -299,6 +299,7 @@ export const uk: Record<MessageKey, string> = {
   "settings.accentAuto": "З тла",
   "settings.glass": "Скло",
   "settings.glassUnavailable": "У цьому режимі ефекти скла вимкнено.",
+  "settings.blurUnavailable": "У режимі «Плавне скло» живе розмиття вимкнено; прозорість і стиль скла продовжують діяти.",
   "settings.preview": "Попередній перегляд",
   "settings.tierAutoHint": "Підібрано для цього комп’ютера",
   "settings.tierQualityHint": "Живе розмиття в меню та панелях",

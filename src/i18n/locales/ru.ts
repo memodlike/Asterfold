@@ -297,6 +297,7 @@ export const ru = {
   "settings.accentAuto": "Из фона",
   "settings.glass": "Стекло",
   "settings.glassUnavailable": "В этом режиме отрисовки эффекты стекла выключены.",
+  "settings.blurUnavailable": "В режиме «Плавное стекло» живое размытие выключено; прозрачность и стиль стекла продолжают работать.",
   "settings.preview": "Предпросмотр",
   "settings.tierAutoHint": "Подобран под этот компьютер",
   "settings.tierQualityHint": "Живое размытие в меню и панелях",
