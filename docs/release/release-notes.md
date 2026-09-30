@@ -10,6 +10,7 @@
 - **Readable secondary text on glass**: the empty-board hint and empty-workspace text use a stronger secondary colour on glass (about 5:1 in both themes).
 - **Unchanged**: Reduce transparency, increased contrast and forced colours always give solid boards; Pages → Boards → Bookmarks, launcher placement, drag and drop, Privacy Mode and the pre-paint theme are untouched. Permissions stay `storage` + `favicon`, optional `bookmarks`, no host access.
 - **Tests**: a new real-extension pixel test measures how much of the background passes through a board in every tier and both themes.
+- **Build tooling**: the development-only `brace-expansion` override moves from 5.0.9 to 5.0.12 to close three newly published denial-of-service advisories in the ESLint toolchain. It is not part of the extension package.
 
 # Asterfold 3.6.3
 
