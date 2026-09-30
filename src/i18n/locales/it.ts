@@ -299,6 +299,7 @@ export const it: Record<MessageKey, string> = {
   "settings.accentAuto": "Dallo sfondo",
   "settings.glass": "Vetro",
   "settings.glassUnavailable": "Gli effetti vetro sono disattivati in questa modalità.",
+  "settings.blurUnavailable": "In Vetro fluido la sfocatura dal vivo è disattivata; trasparenza e stile del vetro restano attivi.",
   "settings.preview": "Anteprima",
   "settings.tierAutoHint": "Scelto per questo computer",
   "settings.tierQualityHint": "Sfocatura dal vivo in menu e pannelli",

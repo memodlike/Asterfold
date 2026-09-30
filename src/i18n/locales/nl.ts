@@ -299,6 +299,7 @@ export const nl: Record<MessageKey, string> = {
   "settings.accentAuto": "Uit achtergrond",
   "settings.glass": "Glas",
   "settings.glassUnavailable": "Glaseffecten staan uit in deze weergavemodus.",
+  "settings.blurUnavailable": "In Vloeiend glas staat live vervaging uit; transparantie en glasstijl blijven van kracht.",
   "settings.preview": "Voorbeeld",
   "settings.tierAutoHint": "Gekozen voor deze computer",
   "settings.tierQualityHint": "Live vervaging in menu’s en panelen",

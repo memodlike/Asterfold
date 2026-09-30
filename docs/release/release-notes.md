@@ -1,3 +1,16 @@
+# Asterfold 3.6.4
+
+## Main-Screen Glass Follows Your Settings
+
+- **Boards are glass again in the light theme**: new profiles start at 34% glass transparency instead of 18%, so boards show the wallpaper through a frosted tint in Maximum quality and Balanced instead of reading as flat white or grey cards. Existing profiles keep the transparency they saved; move the Glass transparency slider to change it.
+- **Smooth glass follows the slider**: boards in Smooth glass used a fixed 72% tint and ignored Glass transparency, so they looked more transparent than Maximum quality. They now use your setting with a little extra tint (no live blur, no refraction) and are never more transparent than Maximum quality at the same setting.
+- **No transparency is fully opaque**: boards previously kept a 4% see-through tint; they are now solid.
+- **Regular and Clear**: Clear is a lighter tint of the same glass (80% of the Regular tint). Switching the style no longer overwrites the transparency you set with a fixed value. Profiles that chose Clear before keep the 66% transparency that choice saved, so their boards become slightly clearer.
+- **Settings say what is actually off**: in Smooth glass, Glass transparency and Glass style stay adjustable and only Blur and wallpaper filters are locked, with a note that says so. No transparency still locks all glass controls.
+- **Readable secondary text on glass**: the empty-board hint and empty-workspace text use a stronger secondary colour on glass (about 5:1 in both themes).
+- **Unchanged**: Reduce transparency, increased contrast and forced colours always give solid boards; Pages → Boards → Bookmarks, launcher placement, drag and drop, Privacy Mode and the pre-paint theme are untouched. Permissions stay `storage` + `favicon`, optional `bookmarks`, no host access.
+- **Tests**: a new real-extension pixel test measures how much of the background passes through a board in every tier and both themes.
+
 # Asterfold 3.6.3
 
 ## Liquid Glass Finish

@@ -299,6 +299,7 @@ export const pt: Record<MessageKey, string> = {
   "settings.accentAuto": "Do fundo",
   "settings.glass": "Vidro",
   "settings.glassUnavailable": "Os efeitos de vidro estão desligados neste modo.",
+  "settings.blurUnavailable": "No modo Vidro fluido o desfoque ao vivo está desligado; a transparência e o estilo do vidro continuam a aplicar-se.",
   "settings.preview": "Pré-visualização",
   "settings.tierAutoHint": "Escolhido para este computador",
   "settings.tierQualityHint": "Desfoque ao vivo em menus e painéis",

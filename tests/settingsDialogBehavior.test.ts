@@ -481,6 +481,20 @@ describe("SettingsDialog behavior", () => {
     expect(screen.getByRole("button", { name: "No transparency" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "No transparency" })).toHaveAccessibleDescription("Solid surfaces for PCs without a GPU");
   });
+
+  it("keeps transparency and glass style adjustable in Smooth glass and locks only live blur", async () => {
+    renderSettings({ workspace: workspace({ theme: { ...settings().theme, performanceMode: "compatibility", lowPowerMode: false } }) });
+    expect(screen.getByLabelText("Glass transparency")).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Clear" })).toBeEnabled();
+    expect(screen.getByLabelText("Blur")).toBeDisabled();
+    expect(screen.getByText("Live blur is off in Smooth glass; transparency and glass style still apply.")).toBeVisible();
+    expect(screen.queryByText("Glass effects are off in this rendering mode.")).toBeNull();
+    fireEvent.input(screen.getByLabelText("Glass transparency"), { target: { value: "50" } });
+    await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ theme: expect.objectContaining({ surfaceOpacity: 0.5 }) }));
+    // The glass style changes the tint only; it must not overwrite the transparency the user chose.
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+    await waitFor(() => expect(mocks.updateSettings).toHaveBeenLastCalledWith({ theme: expect.objectContaining({ glassVariant: "clear", surfaceOpacity: 0.5 }) }));
+  });
 });
 
 

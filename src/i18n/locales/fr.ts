@@ -299,6 +299,7 @@ export const fr: Record<MessageKey, string> = {
   "settings.accentAuto": "Depuis le fond",
   "settings.glass": "Verre",
   "settings.glassUnavailable": "Les effets de verre sont désactivés dans ce mode.",
+  "settings.blurUnavailable": "En mode Verre fluide, le flou en direct est désactivé ; la transparence et le style de verre restent appliqués.",
   "settings.preview": "Aperçu",
   "settings.tierAutoHint": "Choisi pour cet ordinateur",
   "settings.tierQualityHint": "Flou en direct dans les menus et panneaux",

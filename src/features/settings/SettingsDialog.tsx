@@ -89,7 +89,9 @@ export function SettingsDialog(props: SettingsDialogProps) {
   const performanceSignals = useMemo(() => browserPerformanceSignals(), []);
   const resolvedPerformanceMode = useMemo(() => classifyPerformanceMode(themeDraft.performanceMode, themeDraft.lowPowerMode, performanceSignals), [performanceSignals, themeDraft.lowPowerMode, themeDraft.performanceMode]);
   const recommendation = useMemo(() => recommendPerformanceProfile(performanceSignals), [performanceSignals]);
-  const expensiveEffectsDisabled = resolvedPerformanceMode === "compatibility" || resolvedPerformanceMode === "software";
+  // Smooth glass drops only live blur and wallpaper filters; No transparency makes every surface solid.
+  const liveBlurDisabled = resolvedPerformanceMode === "compatibility" || resolvedPerformanceMode === "software";
+  const transparencyDisabled = resolvedPerformanceMode === "software";
   const resolvedPerformanceLabel = t(resolvedPerformanceMode === "quality"
     ? "settings.performanceQuality"
     : resolvedPerformanceMode === "balanced"
@@ -348,7 +350,8 @@ export function SettingsDialog(props: SettingsDialogProps) {
   };
 
 
-  const expensiveHint = expensiveEffectsDisabled ? t("settings.glassUnavailable") : undefined;
+  const glassHint = transparencyDisabled ? t("settings.glassUnavailable") : undefined;
+  const blurHint = glassHint ?? (liveBlurDisabled ? t("settings.blurUnavailable") : undefined);
   const followsBackground = themeDraft.accentMode !== "custom";
   const performanceOptions = [
     { value: "auto", label: t("settings.performanceAuto"), hint: t("settings.tierAutoHint") },
@@ -390,8 +393,8 @@ export function SettingsDialog(props: SettingsDialogProps) {
         {themeDraft.backgroundMode === "wallpaper" || themeDraft.backgroundMode === "gradient" ? <div className="settings-ranges">
           <Range label={t("settings.wallpaperDim")} min={0} max={80} value={Math.round(themeDraft.wallpaperDim * 100)} suffix="%" onChange={(value) => patchTheme({ wallpaperDim: value / 100 })} />
           {themeDraft.backgroundMode === "wallpaper" ? <>
-            <Range disabled={expensiveEffectsDisabled} title={expensiveHint} label={t("settings.wallpaperBlur")} min={0} max={20} value={themeDraft.wallpaperBlur} suffix="px" onChange={(value) => patchTheme({ wallpaperBlur: value })} />
-            <Range disabled={expensiveEffectsDisabled} title={expensiveHint} label={t("settings.wallpaperSaturation")} min={0} max={180} value={Math.round(themeDraft.wallpaperSaturation * 100)} suffix="%" onChange={(value) => patchTheme({ wallpaperSaturation: value / 100 })} />
+            <Range disabled={liveBlurDisabled} title={blurHint} label={t("settings.wallpaperBlur")} min={0} max={20} value={themeDraft.wallpaperBlur} suffix="px" onChange={(value) => patchTheme({ wallpaperBlur: value })} />
+            <Range disabled={liveBlurDisabled} title={blurHint} label={t("settings.wallpaperSaturation")} min={0} max={180} value={Math.round(themeDraft.wallpaperSaturation * 100)} suffix="%" onChange={(value) => patchTheme({ wallpaperSaturation: value / 100 })} />
           </> : null}
         </div> : null}
         <input ref={wallpaperInputRef} hidden type="file" accept={WALLPAPER_FILE_ACCEPT} onChange={(event) => { const file = event.target.files?.[0]; if (file) void saveUploadedWallpaper(file); event.currentTarget.value = ""; }} />
@@ -401,10 +404,10 @@ export function SettingsDialog(props: SettingsDialogProps) {
       id: "glass", title: t("settings.glass"), icon: <Wind size={16} />, span: "narrow",
       keywords: [t("settings.glassStyle"), t("settings.transparency"), t("settings.blur"), t("settings.glassRegular"), t("settings.glassClear")],
       body: <>
-        <Segmented label={t("settings.glassStyle")} disabled={expensiveEffectsDisabled} title={expensiveHint} value={themeDraft.glassVariant} items={[{ value: "regular", label: t("settings.glassRegular") }, { value: "clear", label: t("settings.glassClear") }]} onChange={(value) => patchTheme({ glassVariant: value as ThemeConfig["glassVariant"], surfaceOpacity: value === "clear" ? 0.34 : 0.62 })} />
-        <Range disabled={expensiveEffectsDisabled} title={expensiveHint} label={t("settings.transparency")} min={4} max={80} value={Math.round((1 - themeDraft.surfaceOpacity) * 100)} suffix="%" onChange={(value) => patchTheme({ surfaceOpacity: 1 - value / 100 })} />
-        <Range disabled={expensiveEffectsDisabled} title={expensiveHint} label={t("settings.blur")} min={0} max={32} value={themeDraft.blur} suffix="px" onChange={(value) => patchTheme({ blur: value })} />
-        {expensiveEffectsDisabled ? <p className="settings-note">{expensiveHint}</p> : null}
+        <Segmented label={t("settings.glassStyle")} disabled={transparencyDisabled} title={glassHint} value={themeDraft.glassVariant} items={[{ value: "regular", label: t("settings.glassRegular") }, { value: "clear", label: t("settings.glassClear") }]} onChange={(value) => patchTheme({ glassVariant: value as ThemeConfig["glassVariant"] })} />
+        <Range disabled={transparencyDisabled} title={glassHint} label={t("settings.transparency")} min={4} max={80} value={Math.round((1 - themeDraft.surfaceOpacity) * 100)} suffix="%" onChange={(value) => patchTheme({ surfaceOpacity: 1 - value / 100 })} />
+        <Range disabled={liveBlurDisabled} title={blurHint} label={t("settings.blur")} min={0} max={32} value={themeDraft.blur} suffix="px" onChange={(value) => patchTheme({ blur: value })} />
+        {blurHint ? <p className="settings-note">{blurHint}</p> : null}
       </>,
     },
     {

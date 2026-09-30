@@ -49,6 +49,9 @@
   --mat-shadow: 0 24px 64px rgb(0 0 0 / .3), 0 2px 8px rgb(0 0 0 / .14);
   /* Boards frost the wallpaper directly; the Glass blur setting (--glass-blur) drives it. */
   --board-filter: blur(var(--glass-blur, 14px)) saturate(165%);
+  /* Board tint = the Glass transparency setting (--surface-opacity), lightened for Clear. */
+  --board-alpha-base: calc(var(--surface-opacity, .66) * var(--glass-tint, 1));
+  --board-alpha: var(--board-alpha-base);
 
   --scrim: rgb(6 6 10 / .24);
   --scrim-filter: none;
@@ -91,6 +94,9 @@ html[data-performance="balanced"][data-theme="light"] { --mat-alpha-tile: .86; -
 html[data-performance="compatibility"] {
   --mat-filter: none;
   --board-filter: none;
+  /* Without live blur the wallpaper stays sharp behind text, so the same setting keeps a
+     little more tint. It still follows the slider and never exceeds Quality's transparency. */
+  --board-alpha: calc(var(--board-alpha-base) + (1 - var(--board-alpha-base)) * .22);
   --mat-alpha-menu: .94;
   --mat-alpha-sheet: .96;
   --mat-alpha-tile: .9;

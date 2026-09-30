@@ -299,6 +299,7 @@ export const en: Record<MessageKey, string> = {
   "settings.accentAuto": "From background",
   "settings.glass": "Glass",
   "settings.glassUnavailable": "Glass effects are off in this rendering mode.",
+  "settings.blurUnavailable": "Live blur is off in Smooth glass; transparency and glass style still apply.",
   "settings.preview": "Preview",
   "settings.tierAutoHint": "Picked for this computer",
   "settings.tierQualityHint": "Live blur on menus and panels",
