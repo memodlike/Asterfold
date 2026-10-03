@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDefaultSettings } from "../src/db/defaults";
 import type { AppSettings, Board, Bookmark, Page, WorkspaceData } from "../src/domain/models";
@@ -476,6 +476,8 @@ describe("SettingsDialog behavior", () => {
     renderSettings({ workspace: workspace({ theme: { ...settings().theme, performanceMode: "software", lowPowerMode: true } }) });
     expect(screen.getByLabelText("Glass transparency")).toBeEnabled();
     expect(screen.getByLabelText("Glass transparency")).toHaveAttribute("min", "0");
+    // Above 60% the boards' text no longer holds AA contrast on the built-in wallpapers.
+    expect(screen.getByLabelText("Glass transparency")).toHaveAttribute("max", "60");
     expect(screen.getByLabelText("Blur")).toBeDisabled();
     expect(screen.getByText("Live blur is off in this rendering mode; transparency and glass style still apply. Set transparency to 0% for solid boards.")).toBeVisible();
     expect(document.querySelector(".settings-resolved-mode")).toHaveTextContent("Rendering mode: Lightweight");
@@ -485,10 +487,14 @@ describe("SettingsDialog behavior", () => {
 
   it("says when the system asks for reduced transparency instead of silently showing solid surfaces", () => {
     const original = Object.getOwnPropertyDescriptor(window, "matchMedia");
-    Object.defineProperty(window, "matchMedia", { configurable: true, value: vi.fn((query: string) => ({ matches: query.includes("reduced-transparency"), addEventListener: vi.fn(), removeEventListener: vi.fn() })) });
+    const listeners: ((event: { matches: boolean }) => void)[] = [];
+    Object.defineProperty(window, "matchMedia", { configurable: true, value: vi.fn((query: string) => ({ matches: query.includes("reduced-transparency"), addEventListener: (_type: string, listener: (event: { matches: boolean }) => void) => { if (query.includes("reduced-transparency")) listeners.push(listener); }, removeEventListener: vi.fn() })) });
     try {
       renderSettings({ workspace: workspace({ theme: { ...settings().theme, performanceMode: "quality", lowPowerMode: false } }) });
       expect(screen.getByText("Your system asks apps to reduce transparency, so boards and panels are solid. Turn that system setting off to see glass.")).toBeVisible();
+      // The note follows the system setting while Settings stays open.
+      act(() => { for (const listener of listeners) listener({ matches: false }); });
+      expect(screen.queryByText(/Your system asks apps to reduce transparency/u)).toBeNull();
     } finally {
       if (original) Object.defineProperty(window, "matchMedia", original);
     }

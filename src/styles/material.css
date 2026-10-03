@@ -51,9 +51,13 @@
   --board-filter: blur(var(--glass-blur, 14px)) saturate(165%);
   /* Board tint = the Glass transparency setting (--surface-opacity), lightened for Clear.
      --board-clear is the share of the background that shows through; 0% transparency stays solid. */
-  --board-clear: calc(1 - var(--surface-opacity, .66) * var(--glass-tint, 1));
+  --board-t: calc((1 - var(--surface-opacity, .66)) * var(--glass-gain, 1));
+  --board-clear: min(var(--board-clear-max, .6), var(--board-t));
   --board-alpha-base: calc(1 - var(--board-clear));
   --board-alpha: var(--board-alpha-base);
+  /* Extra tint for the no-blur tiers (Smooth glass, Lightweight), where the wallpaper behind text
+     stays sharp. The light theme needs less: its base tint is already the brighter backdrop. */
+  --board-no-blur-tint: .2;
   /* Pointer highlight strength (white light on the board material). */
   --glare-strength: .16;
 
@@ -70,10 +74,12 @@
 }
 
 html[data-theme="light"] {
-  /* A white tint hides the background far more than a dark one at equal alpha, so the same
-     setting lets 1.5× as much background through in the light theme, capped at 80% — the most
-     the slider allowed before, so its top end never gets less readable than it was. */
-  --board-clear: min(.8, calc((1 - var(--surface-opacity, .66) * var(--glass-tint, 1)) * 1.5));
+  /* A white tint hides the background far more than a dark one at equal alpha, so the light theme
+     lets more of it through for the same setting: t × (1.6 − t) is ~1.5× at low settings and meets
+     the 60% cap exactly at the slider's 60% top, so the whole slider range still does something.
+     --board-clear-max (from themeRuntime) keeps text AA over known backgrounds. */
+  --board-clear: min(var(--board-clear-max, .6), calc(var(--board-t) * (1.6 - var(--board-t))));
+  --board-no-blur-tint: .12;
   --glare-strength: .55;
   --mat-alpha-menu: .74;
   --mat-alpha-sheet: .86;
@@ -105,7 +111,7 @@ html[data-performance="compatibility"] {
   --board-filter: none;
   /* Without live blur the wallpaper stays sharp behind text, so the same setting keeps a
      little more tint. It still follows the slider and never exceeds Quality's transparency. */
-  --board-alpha: calc(var(--board-alpha-base) + (1 - var(--board-alpha-base)) * .2);
+  --board-alpha: calc(var(--board-alpha-base) + (1 - var(--board-alpha-base)) * var(--board-no-blur-tint));
   --mat-alpha-menu: .94;
   --mat-alpha-sheet: .96;
   --mat-alpha-tile: .9;
@@ -119,7 +125,7 @@ html[data-performance="compatibility"][data-theme="light"] { --mat-shadow: 0 14p
 html[data-performance="software"] {
   /* Lightweight: plain alpha blending only — no live blur, refraction or moving highlight —
      with the same extra tint as Smooth glass; it simply drops the sheen layers and highlight. */
-  --board-alpha: calc(var(--board-alpha-base) + (1 - var(--board-alpha-base)) * .2);
+  --board-alpha: calc(var(--board-alpha-base) + (1 - var(--board-alpha-base)) * var(--board-no-blur-tint));
   --mat-filter: none;
   --board-filter: none;
   --mat-alpha-menu: 1;

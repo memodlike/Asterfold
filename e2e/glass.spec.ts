@@ -97,10 +97,16 @@ async function boardLuminance(page: Page, decoder: Page): Promise<number> {
   }, png.toString("base64"));
 }
 
+// Black and white canvases would each get their own contrast cap (--board-clear-max), so the
+// tint mechanics are measured with the cap pinned to its global value; the cap is tested below.
+const UNCAPPED = "html { --board-clear-max: .6 !important; }";
+
 async function glass(page: Page, decoder: Page, theme: Theme): Promise<{ T: number; V: number }> {
   await seedTheme(page, { ...theme, backgroundMode: "solid", canvas: "#000000" });
+  await page.addStyleTag({ content: UNCAPPED });
   const overBlack = await boardLuminance(page, decoder);
   await seedTheme(page, { ...theme, backgroundMode: "solid", canvas: "#ffffff" });
+  await page.addStyleTag({ content: UNCAPPED });
   const overWhite = await boardLuminance(page, decoder);
   return { T: (overWhite - overBlack) / 255, V: (overWhite - overBlack) / Math.max(1, (overWhite + overBlack) / 2) };
 }
@@ -133,7 +139,8 @@ test("main-screen boards follow the glass settings in every rendering tier", asy
       const quality = await measure("quality", 0.6);
       expect.soft(quality, `${mode} quality`).toBeGreaterThan(0.34);
       expect.soft(await measure("balanced", 0.6), `${mode} balanced`).toBeGreaterThan(0.34);
-      expect.soft(await measure("quality", 0.35), `${mode} quality follows the slider`).toBeGreaterThan(quality + 0.15);
+      expect.soft(await measure("quality", 0.45), `${mode} quality follows the slider`).toBeGreaterThan(quality + 0.06);
+      expect.soft(await measure("quality", 0.7), `${mode} quality follows the slider down`).toBeLessThan(quality - 0.06);
       // Clear is a lighter tint than Regular, not only a different sheen.
       expect.soft(await measure("quality", 0.6, "clear"), `${mode} clear vs regular`).toBeGreaterThan(quality + 0.05);
 
@@ -152,10 +159,12 @@ test("main-screen boards follow the glass settings in every rendering tier", asy
       expect.soft(lightweight, `${mode} lightweight ≤ smooth glass`).toBeLessThanOrEqual(smoothClear + 0.02);
       expect.soft(await measure("software", 0.8), `${mode} lightweight follows the slider`).toBeLessThan(lightweight - 0.05);
 
-      // Glass transparency at 0% is the explicit, in-app way to get solid boards in every tier.
+      // Glass transparency at 0% is the explicit, in-app way to get solid boards in every tier,
+      // whatever the glass style.
       for (const performanceMode of ["quality", "compatibility", "software"] as const) {
         expect.soft(await measure(performanceMode, 1), `${mode} ${performanceMode} at 0% transparency`).toBeLessThan(0.01);
       }
+      expect.soft(await measure("quality", 1, "clear"), `${mode} clear at 0% transparency`).toBeLessThan(0.01);
 
       // OS-level transparency and contrast requests win over every translucent tier.
       const client = await context.newCDPSession(page);
@@ -174,7 +183,18 @@ test("main-screen boards follow the glass settings in every rendering tier", asy
     for (const performanceMode of ["quality", "compatibility", "software"] as const) {
       const light = await glass(page, decoder, { mode: "light", performanceMode, surfaceOpacity: 0.6, blur: 16 });
       const dark = await glass(page, decoder, { mode: "dark", performanceMode, surfaceOpacity: 0.6, blur: 16 });
-      expect.soft(light.V / dark.V, `${performanceMode} light/dark visibility`).toBeGreaterThan(0.6);
+      // 3.6.4 measured 0.38–0.44 here. The light boost is bounded by the 60% contrast cap, so the
+      // gate is "clearly comparable", not equal.
+      expect.soft(light.V / dark.V, `${performanceMode} light/dark visibility`).toBeGreaterThan(0.5);
+    }
+
+    // Over a known background in the opposite range (black under the light theme, white under the
+    // dark theme) the board keeps AA contrast for its text at the top of the slider.
+    const lin = (value: number): number => { const c = value / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+    const ratio = (a: number, b: number): number => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    for (const [mode, canvas, text, performanceMode] of [["light", "#000000", 0.0103, "quality"], ["light", "#000000", 0.0103, "software"], ["dark", "#ffffff", 0.913, "software"], ["dark", "#ffffff", 0.913, "quality"]] as const) {
+      await seedTheme(page, { mode, performanceMode, surfaceOpacity: 0.4, blur: 16, backgroundMode: "solid", canvas });
+      expect.soft(ratio(lin(await boardLuminance(page, decoder)), text), `${mode} ${performanceMode} text over ${canvas}`).toBeGreaterThanOrEqual(4.5);
     }
 
     // Boards frost the wallpaper only through the live-blur tiers.

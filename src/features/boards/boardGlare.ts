@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from "react";
+import { useCallback } from "react";
 
 /*
  * Pointer highlight on glass boards. One delegated listener on the board track, at most one
@@ -7,15 +7,17 @@ import { useEffect, type RefObject } from "react";
  * board's transform, which belongs to the drag-and-drop wrapper. Opacity is driven by the
  * `is-lit` class (CSS), so the layer fades in and out only on enter/leave.
  * Off for touch/pen, while a button is held (dragging), in the Lightweight tier and with
- * reduced motion; CSS repeats those gates for the cases JavaScript does not see.
+ * reduced motion; CSS repeats those gates for the cases JavaScript does not see. Scrolling or
+ * resizing under a still pointer puts the light out; the next pointer move relights it.
+ * Returned as a callback ref with cleanup (React 19), so it attaches whenever the track mounts —
+ * including after an empty page gets its first board — without an extra render.
  */
 
 const LIT = "is-lit";
 
-export function useBoardGlare(trackRef: RefObject<HTMLElement | null>): void {
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
+export function useBoardGlare(): (track: HTMLElement | null) => (() => void) | undefined {
+  return useCallback((track: HTMLElement | null) => {
+    if (!track) return undefined;
     const reducedMotion = typeof matchMedia === "function" ? matchMedia("(prefers-reduced-motion: reduce)") : null;
     let board: HTMLElement | null = null;
     let layer: HTMLElement | null = null;
@@ -62,21 +64,19 @@ export function useBoardGlare(trackRef: RefObject<HTMLElement | null>): void {
       y = event.clientY;
       frame ||= requestAnimationFrame(paint);
     };
-    // Boards move on scroll and resize; the next pointer move re-measures the hovered board.
-    const invalidate = (): void => { if (board) rect = board.getBoundingClientRect(); };
 
     track.addEventListener("pointermove", onMove, { passive: true });
     track.addEventListener("pointerleave", release);
     track.addEventListener("pointerdown", release);
-    window.addEventListener("scroll", invalidate, { passive: true, capture: true });
-    window.addEventListener("resize", invalidate, { passive: true });
+    window.addEventListener("scroll", release, { passive: true, capture: true });
+    window.addEventListener("resize", release, { passive: true });
     return () => {
       track.removeEventListener("pointermove", onMove);
       track.removeEventListener("pointerleave", release);
       track.removeEventListener("pointerdown", release);
-      window.removeEventListener("scroll", invalidate, { capture: true });
-      window.removeEventListener("resize", invalidate);
+      window.removeEventListener("scroll", release, { capture: true });
+      window.removeEventListener("resize", release);
       release();
     };
-  }, [trackRef]);
+  }, []);
 }

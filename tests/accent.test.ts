@@ -128,10 +128,32 @@ describe("accent runtime wiring", () => {
   it("makes Clear a lighter board tint and ships a visibly translucent default", () => {
     const regular = themeStyle(theme({ glassVariant: "regular" }), null, null, false) as Record<string, string>;
     const clear = themeStyle(theme({ glassVariant: "clear" }), null, null, false) as Record<string, string>;
-    expect(regular["--glass-tint"]).toBe("1");
-    expect(clear["--glass-tint"]).toBe(".8");
+    // Clear lets more background through but never touches the solid 0% endpoint (gain × (1 − opacity)).
+    expect(regular["--glass-gain"]).toBe("1");
+    expect(clear["--glass-gain"]).toBe("1.25");
     expect(regular["--color-text-secondary-base"]).toBe(regular["--color-text-secondary"]);
     expect(getThemePreset("frost-light").surfaceOpacity).toBeLessThanOrEqual(0.7);
+  });
+
+  it("caps board transparency so text keeps AA contrast over a known background", () => {
+    const lin = (value: number): number => { const c = value / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+    const luminance = ([r, g, b]: readonly number[]): number => 0.2126 * lin(r ?? 0) + 0.7152 * lin(g ?? 0) + 0.0722 * lin(b ?? 0);
+    const ratio = (a: number, b: number): number => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    const composite = (surface: readonly number[], background: readonly number[], clear: number): number[] => surface.map((value, index) => value * (1 - clear) + (background[index] ?? 0) * clear);
+    const cases = [
+      { dark: false, canvas: "#000000", surface: [255, 255, 255], text: [25, 26, 29], background: [0, 0, 0] },
+      { dark: true, canvas: "#ffffff", surface: [38, 40, 44], text: [245, 245, 246], background: [255, 255, 255] },
+    ];
+    for (const item of cases) {
+      const style = themeStyle(theme({ backgroundMode: "solid", canvas: item.canvas }), null, null, item.dark) as Record<string, string>;
+      const clearMax = Number(style["--board-clear-max"]);
+      expect(clearMax).toBeGreaterThanOrEqual(0);
+      expect(clearMax).toBeLessThan(0.6);
+      expect(ratio(luminance(composite(item.surface, item.background, clearMax)), luminance(item.text))).toBeGreaterThanOrEqual(4.5);
+    }
+    // A background in the theme's own range does not restrict the slider.
+    expect((themeStyle(theme({ backgroundMode: "solid", canvas: "#f6f7f9" }), null, null, false) as Record<string, string>)["--board-clear-max"]).toBe(".6");
+    expect((themeStyle(theme({ backgroundMode: "wallpaper", wallpaperId: "builtin-aurora" }), null, null, true) as Record<string, string>)["--board-clear-max"]).toBe(".6");
   });
 
   it("gives the popup the same accent and surface tokens as the new tab", () => {

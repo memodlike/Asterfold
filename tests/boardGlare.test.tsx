@@ -1,13 +1,12 @@
-import { useRef } from "react";
 import { render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useBoardGlare } from "../src/features/boards/boardGlare";
 
-function Track() {
-  const ref = useRef<HTMLDivElement>(null);
-  useBoardGlare(ref);
+function Track({ mounted = true }: { mounted?: boolean }) {
+  const glareRef = useBoardGlare();
+  if (!mounted) return <p>No boards</p>;
   return (
-    <div ref={ref} className="board-track">
+    <div ref={glareRef} className="board-track">
       <section className="board" data-board-id="a"><span className="board__glare" /><p className="inside">A</p></section>
       <section className="board" data-board-id="b"><span className="board__glare" /></section>
     </div>
@@ -74,6 +73,25 @@ describe("board pointer highlight", () => {
     pointer(reduced.container.querySelector('[data-board-id="a"]')!, "pointermove");
     expect(frames).toHaveLength(0);
     expect(document.querySelectorAll(".is-lit")).toHaveLength(0);
+  });
+
+  it("attaches to a board track that appears after the first render", () => {
+    const view = render(<Track mounted={false} />);
+    view.rerender(<Track />);
+    const board = view.container.querySelector<HTMLElement>('[data-board-id="a"]')!;
+    pointer(board, "pointermove", { x: 130, y: 90 });
+    expect(board).toHaveClass("is-lit");
+  });
+
+  it("puts the highlight out when the page scrolls or resizes under a still pointer", () => {
+    const view = render(<Track />);
+    const board = view.container.querySelector<HTMLElement>('[data-board-id="a"]')!;
+    pointer(board, "pointermove", { x: 130, y: 90 });
+    window.dispatchEvent(new Event("scroll"));
+    expect(board).not.toHaveClass("is-lit");
+    pointer(board, "pointermove", { x: 130, y: 90 });
+    window.dispatchEvent(new Event("resize"));
+    expect(board).not.toHaveClass("is-lit");
   });
 
   it("cancels the pending frame and drops listeners on unmount", () => {

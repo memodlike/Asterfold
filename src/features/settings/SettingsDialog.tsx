@@ -92,13 +92,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
   // Smooth glass and Lightweight drop only live blur and wallpaper filters; transparency still applies
   // (0% gives solid boards). The OS "reduce transparency" request makes surfaces solid in every tier.
   const liveBlurDisabled = resolvedPerformanceMode === "compatibility" || resolvedPerformanceMode === "software";
-  const systemReducedTransparency = useMemo(() => {
-    try {
-      return typeof matchMedia === "function" && matchMedia("(prefers-reduced-transparency: reduce)").matches;
-    } catch {
-      return false;
-    }
-  }, []);
+  const systemReducedTransparency = useReducedTransparency();
   const resolvedPerformanceLabel = t(resolvedPerformanceMode === "quality"
     ? "settings.performanceQuality"
     : resolvedPerformanceMode === "balanced"
@@ -411,7 +405,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
       keywords: [t("settings.glassStyle"), t("settings.transparency"), t("settings.blur"), t("settings.glassRegular"), t("settings.glassClear")],
       body: <>
         <Segmented label={t("settings.glassStyle")} value={themeDraft.glassVariant} items={[{ value: "regular", label: t("settings.glassRegular") }, { value: "clear", label: t("settings.glassClear") }]} onChange={(value) => patchTheme({ glassVariant: value as ThemeConfig["glassVariant"] })} />
-        <Range label={t("settings.transparency")} min={0} max={80} value={Math.round((1 - themeDraft.surfaceOpacity) * 100)} suffix="%" onChange={(value) => patchTheme({ surfaceOpacity: 1 - value / 100 })} />
+        <Range label={t("settings.transparency")} min={0} max={60} value={Math.round((1 - themeDraft.surfaceOpacity) * 100)} suffix="%" onChange={(value) => patchTheme({ surfaceOpacity: 1 - value / 100 })} />
         <Range disabled={liveBlurDisabled} title={blurHint} label={t("settings.blur")} min={0} max={32} value={themeDraft.blur} suffix="px" onChange={(value) => patchTheme({ blur: value })} />
         {systemReducedTransparency ? <p className="settings-note">{t("settings.glassUnavailable")}</p> : null}
         {blurHint ? <p className="settings-note">{blurHint}</p> : null}
@@ -561,6 +555,25 @@ function Range({ label, min, max, value, suffix, onChange, disabled = false, tit
   const progress = max === min ? 0 : Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
   const style = { "--range-progress": `${progress}%` } as CSSProperties;
   return <label className={`range-control ${disabled ? "is-disabled" : ""}`} title={disabled ? title : undefined}><span><strong>{label}</strong><span className="range-control__value" aria-hidden="true">{Math.round(value)}{suffix}</span></span><input type="range" aria-label={label} min={min} max={max} value={value} aria-valuetext={`${Math.round(value)}${suffix}`} disabled={disabled} style={style} onInput={(event) => onChange(Number(event.currentTarget.value))} /></label>;
+}
+
+/** Follows the OS "reduce transparency" setting while Settings is open. */
+function useReducedTransparency(): boolean {
+  const [query] = useState(() => {
+    try {
+      return typeof matchMedia === "function" ? matchMedia("(prefers-reduced-transparency: reduce)") : null;
+    } catch {
+      return null;
+    }
+  });
+  const [reduced, setReduced] = useState(() => query?.matches ?? false);
+  useEffect(() => {
+    if (!query) return;
+    const update = (event: { matches: boolean }): void => setReduced(event.matches);
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, [query]);
+  return reduced;
 }
 
 function Switch({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
