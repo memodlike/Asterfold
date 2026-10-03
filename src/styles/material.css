@@ -118,8 +118,8 @@ html[data-performance="compatibility"][data-theme="light"] { --mat-shadow: 0 14p
 
 html[data-performance="software"] {
   /* Lightweight: plain alpha blending only — no live blur, refraction or moving highlight —
-     with a little more tint than Smooth glass because nothing softens the wallpaper. */
-  --board-alpha: calc(var(--board-alpha-base) + (1 - var(--board-alpha-base)) * .25);
+     with the same extra tint as Smooth glass; it simply drops the sheen layers and highlight. */
+  --board-alpha: calc(var(--board-alpha-base) + (1 - var(--board-alpha-base)) * .2);
   --mat-filter: none;
   --board-filter: none;
   --mat-alpha-menu: 1;
