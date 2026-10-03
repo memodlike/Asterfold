@@ -392,7 +392,7 @@ describe("SettingsDialog behavior", () => {
       }));
     });
 
-    const softwareBtn = screen.getByRole("button", { name: "No transparency" });
+    const softwareBtn = screen.getByRole("button", { name: "Lightweight" });
     fireEvent.click(softwareBtn);
     await waitFor(() => {
       expect(mocks.updateSettings).toHaveBeenCalledWith(expect.objectContaining({
@@ -472,14 +472,26 @@ describe("SettingsDialog behavior", () => {
     await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ theme: expect.objectContaining({ wallpaperId: "upload-1", accent: "#2fb58f" }) }));
   });
 
-  it("explains why glass controls are locked in the solid rendering tiers", () => {
+  it("keeps glass translucency adjustable in the lightweight tier and explains that only blur is off", () => {
     renderSettings({ workspace: workspace({ theme: { ...settings().theme, performanceMode: "software", lowPowerMode: true } }) });
-    expect(screen.getByLabelText("Glass transparency")).toBeDisabled();
+    expect(screen.getByLabelText("Glass transparency")).toBeEnabled();
+    expect(screen.getByLabelText("Glass transparency")).toHaveAttribute("min", "0");
     expect(screen.getByLabelText("Blur")).toBeDisabled();
-    expect(screen.getByText("Glass effects are off in this rendering mode.")).toBeVisible();
-    expect(document.querySelector(".settings-resolved-mode")).toHaveTextContent("Rendering mode: No transparency");
-    expect(screen.getByRole("button", { name: "No transparency" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "No transparency" })).toHaveAccessibleDescription("Solid surfaces for PCs without a GPU");
+    expect(screen.getByText("Live blur is off in this rendering mode; transparency and glass style still apply. Set transparency to 0% for solid boards.")).toBeVisible();
+    expect(document.querySelector(".settings-resolved-mode")).toHaveTextContent("Rendering mode: Lightweight");
+    expect(screen.getByRole("button", { name: "Lightweight" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Lightweight" })).toHaveAccessibleDescription("Light translucency without blur for PCs without a GPU");
+  });
+
+  it("says when the system asks for reduced transparency instead of silently showing solid surfaces", () => {
+    const original = Object.getOwnPropertyDescriptor(window, "matchMedia");
+    Object.defineProperty(window, "matchMedia", { configurable: true, value: vi.fn((query: string) => ({ matches: query.includes("reduced-transparency"), addEventListener: vi.fn(), removeEventListener: vi.fn() })) });
+    try {
+      renderSettings({ workspace: workspace({ theme: { ...settings().theme, performanceMode: "quality", lowPowerMode: false } }) });
+      expect(screen.getByText("Your system asks apps to reduce transparency, so boards and panels are solid. Turn that system setting off to see glass.")).toBeVisible();
+    } finally {
+      if (original) Object.defineProperty(window, "matchMedia", original);
+    }
   });
 
   it("keeps transparency and glass style adjustable in Smooth glass and locks only live blur", async () => {
@@ -487,8 +499,7 @@ describe("SettingsDialog behavior", () => {
     expect(screen.getByLabelText("Glass transparency")).toBeEnabled();
     expect(screen.getByRole("button", { name: "Clear" })).toBeEnabled();
     expect(screen.getByLabelText("Blur")).toBeDisabled();
-    expect(screen.getByText("Live blur is off in Smooth glass; transparency and glass style still apply.")).toBeVisible();
-    expect(screen.queryByText("Glass effects are off in this rendering mode.")).toBeNull();
+    expect(screen.getByText("Live blur is off in this rendering mode; transparency and glass style still apply. Set transparency to 0% for solid boards.")).toBeVisible();
     fireEvent.input(screen.getByLabelText("Glass transparency"), { target: { value: "50" } });
     await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ theme: expect.objectContaining({ surfaceOpacity: 0.5 }) }));
     // The glass style changes the tint only; it must not overwrite the transparency the user chose.

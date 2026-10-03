@@ -72,6 +72,7 @@ export const BoardColumn = memo(function BoardColumn(props: BoardColumnProps) {
       onContextMenu={openContext}
       onKeyDown={(event) => { if (event.shiftKey && event.key === "F10") openKeyboardContext(event); }}
     >
+      <span className="board__glare" aria-hidden="true" />
       <header className="board__header">
         <button
           className="board__title"

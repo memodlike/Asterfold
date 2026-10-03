@@ -259,7 +259,7 @@ export const ru = {
   "popup.createBoardFailed": "Не удалось создать блок",
   "popup.boardRequired": "На выбранной странице нет блока. Создайте блок перед сохранением.",
   "settings.performanceBalanced": "Сбалансированный",
-  "settings.performanceSoftware": "Без прозрачности",
+  "settings.performanceSoftware": "Лёгкий режим",
   "settings.performanceCustom": "Пользовательский",
   "settings.performanceRecommendation": "Рекомендация: {mode} ({reason})",
   "settings.performanceReasonSoftware": "Обнаружен программный рендерер",
@@ -296,14 +296,14 @@ export const ru = {
   "settings.accent": "Акцент",
   "settings.accentAuto": "Из фона",
   "settings.glass": "Стекло",
-  "settings.glassUnavailable": "В этом режиме отрисовки эффекты стекла выключены.",
-  "settings.blurUnavailable": "В режиме «Плавное стекло» живое размытие выключено; прозрачность и стиль стекла продолжают работать.",
+  "settings.glassUnavailable": "Система просит приложения уменьшить прозрачность, поэтому доски и панели сплошные. Отключите этот системный параметр, чтобы увидеть стекло.",
+  "settings.blurUnavailable": "В этом режиме живое размытие выключено; прозрачность и стиль стекла продолжают работать. Установите прозрачность 0%, чтобы доски стали сплошными.",
   "settings.preview": "Предпросмотр",
   "settings.tierAutoHint": "Подобран под этот компьютер",
   "settings.tierQualityHint": "Живое размытие в меню и панелях",
   "settings.tierBalancedHint": "Лёгкое размытие для встроенной графики",
   "settings.tierSmoothHint": "Прозрачность без живого размытия",
-  "settings.tierSoftwareHint": "Сплошные поверхности для ПК без видеокарты",
+  "settings.tierSoftwareHint": "Лёгкая прозрачность без размытия для ПК без видеокарты",
 } as const;
 
 export type MessageKey = keyof typeof ru;

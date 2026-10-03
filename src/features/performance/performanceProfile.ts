@@ -20,7 +20,7 @@ export function classifyPerformanceMode(
 ): ResolvedPerformanceMode {
   if (preference === "quality") return "quality";
   if (preference === "balanced") return "balanced";
-  // Software must win over the legacy low-power flag: the UI sets both when "No transparency" is chosen.
+  // Software must win over the legacy low-power flag: the UI sets both when "Lightweight" is chosen.
   if (preference === "software") return "software";
   if (preference === "compatibility" || legacyLowPower) return "compatibility";
   if (preference === "custom") {

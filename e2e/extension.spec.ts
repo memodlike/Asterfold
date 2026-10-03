@@ -405,7 +405,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
     await expect(popup.locator(".workspace-button")).toBeVisible();
     await expect(popup.locator(".save-button")).toBeVisible();
-    await expect(popup.getByText("Asterfold 3.6.4")).toBeVisible();
+    await expect(popup.getByText("Asterfold 3.7.0")).toBeVisible();
     await popup.close();
     await workspacePage.close();
   });
@@ -590,7 +590,7 @@ test.describe.serial("Asterfold MV3 release", () => {
       return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, isTopmost: target === menu || menu.contains(target), background: style.backgroundColor, color: style.color, zIndex: style.zIndex };
     });
     expect(sourceMenuBounds).toMatchObject({ isTopmost: true, color: "rgb(25, 26, 29)", zIndex: "2147483647" });
-    // Light glass keeps at least 74% white tint under the text (solid in "No transparency").
+    // Light glass keeps at least 74% white tint under the text (solid in the Lightweight tier, where only boards stay translucent).
     const [, lightRed, lightGreen, lightBlue, lightAlpha = "1"] = /rgba?\((\d+), (\d+), (\d+)(?:, ([\d.]+))?\)/u.exec(sourceMenuBounds.background) ?? [];
     expect([lightRed, lightGreen, lightBlue]).toEqual(["255", "255", "255"]);
     expect(Number(lightAlpha)).toBeGreaterThanOrEqual(0.74);
@@ -765,7 +765,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await setWorkspaceThemeMode(page, "dark");
     await page.reload();
     await page.getByRole("button", { name: "Playwright docs" }).click({ button: "right" });
-    // Menus are glass: the dark surface tint is at least 66% opaque in every tier (solid in "No transparency").
+    // Menus are glass: the dark surface tint is at least 66% opaque in every tier (solid in the Lightweight tier, where only boards stay translucent).
     const darkMenuBackground = await page.locator(".context-menu").evaluate((menu) => getComputedStyle(menu).backgroundColor);
     const [, red, green, blue, alpha = "1"] = /rgba?\((\d+), (\d+), (\d+)(?:, ([\d.]+))?\)/u.exec(darkMenuBackground) ?? [];
     expect([red, green, blue]).toEqual(["38", "40", "44"]);

@@ -23,8 +23,8 @@ metadata:
 - **Compatibility Mode**:
   - Shown as "Smooth glass": light translucency driven by the Glass transparency setting, but no live CSS blur and no SVG refraction (prevents lag on low-end integrated graphics, e.g. AMD Radeon R5 230 / Intel HD Graphics).
   - Slightly more tint than Quality at the same setting, since the wallpaper behind text stays sharp; never more transparent than Quality.
-- **Software Mode**:
-  - Absolute minimal GPU overhead, flat colors, zero transparency.
+- **Software Mode** (shown as "Lightweight"):
+  - Absolute minimal GPU overhead: boards use plain alpha translucency only (no blur, refraction or pointer highlight); overlays stay solid. Glass transparency at 0% makes boards solid.
 
 ## Theme Tokens & Semantic Palettes
 - Never hardcode raw hex values (`#fff`, `#000`) in component files.

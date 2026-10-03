@@ -49,9 +49,13 @@
   --mat-shadow: 0 24px 64px rgb(0 0 0 / .3), 0 2px 8px rgb(0 0 0 / .14);
   /* Boards frost the wallpaper directly; the Glass blur setting (--glass-blur) drives it. */
   --board-filter: blur(var(--glass-blur, 14px)) saturate(165%);
-  /* Board tint = the Glass transparency setting (--surface-opacity), lightened for Clear. */
-  --board-alpha-base: calc(var(--surface-opacity, .66) * var(--glass-tint, 1));
+  /* Board tint = the Glass transparency setting (--surface-opacity), lightened for Clear.
+     --board-clear is the share of the background that shows through; 0% transparency stays solid. */
+  --board-clear: calc(1 - var(--surface-opacity, .66) * var(--glass-tint, 1));
+  --board-alpha-base: calc(1 - var(--board-clear));
   --board-alpha: var(--board-alpha-base);
+  /* Pointer highlight strength (white light on the board material). */
+  --glare-strength: .16;
 
   --scrim: rgb(6 6 10 / .24);
   --scrim-filter: none;
@@ -66,6 +70,11 @@
 }
 
 html[data-theme="light"] {
+  /* A white tint hides the background far more than a dark one at equal alpha, so the same
+     setting lets 1.5× as much background through in the light theme, capped at 80% — the most
+     the slider allowed before, so its top end never gets less readable than it was. */
+  --board-clear: min(.8, calc((1 - var(--surface-opacity, .66) * var(--glass-tint, 1)) * 1.5));
+  --glare-strength: .55;
   --mat-alpha-menu: .74;
   --mat-alpha-sheet: .86;
   --mat-alpha-tile: .62;
@@ -96,7 +105,7 @@ html[data-performance="compatibility"] {
   --board-filter: none;
   /* Without live blur the wallpaper stays sharp behind text, so the same setting keeps a
      little more tint. It still follows the slider and never exceeds Quality's transparency. */
-  --board-alpha: calc(var(--board-alpha-base) + (1 - var(--board-alpha-base)) * .22);
+  --board-alpha: calc(var(--board-alpha-base) + (1 - var(--board-alpha-base)) * .2);
   --mat-alpha-menu: .94;
   --mat-alpha-sheet: .96;
   --mat-alpha-tile: .9;
@@ -108,6 +117,9 @@ html[data-performance="compatibility"] {
 html[data-performance="compatibility"][data-theme="light"] { --mat-shadow: 0 14px 34px rgb(24 28 40 / .14), 0 0 0 1px rgb(19 20 23 / .07); --settings-scrim: rgb(20 22 30 / .34); }
 
 html[data-performance="software"] {
+  /* Lightweight: plain alpha blending only — no live blur, refraction or moving highlight —
+     with a little more tint than Smooth glass because nothing softens the wallpaper. */
+  --board-alpha: calc(var(--board-alpha-base) + (1 - var(--board-alpha-base)) * .25);
   --mat-filter: none;
   --board-filter: none;
   --mat-alpha-menu: 1;
@@ -158,6 +170,8 @@ html[data-performance="software"][data-theme="light"] { --mat-shadow: 0 0 0 1px 
 .context-menu, .select-popover, .toast, .bulk-toolbar, .drag-overlay { --mat-alpha: var(--mat-alpha-pill); }
 .modal { --mat-alpha: var(--mat-alpha-sheet); }
 .empty-state { --mat-alpha: var(--mat-alpha-tile); }
+/* On the main screen the empty state is board material, so it follows the board tint per tier. */
+html[data-performance="software"] .empty-state { --mat-alpha: var(--board-alpha); }
 /* The empty state sits on the wallpaper like a board, so it uses the board frost. */
 .empty-state { -webkit-backdrop-filter: var(--board-filter); backdrop-filter: var(--board-filter); }
 

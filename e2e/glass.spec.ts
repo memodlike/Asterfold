@@ -9,6 +9,8 @@ import { chromium, expect, test, type BrowserContext, type Page, type Worker } f
  * rendering the same board over a solid black and a solid white canvas:
  *   T = (board over white − board over black) / (white − black), 0 = opaque, 1 = clear.
  * The sample is the empty lower part of a board, so text and icons do not take part.
+ * Visibility V = (board over white − board over black) / their mean: how strongly the background
+ * modulates the board relative to its own brightness, so light and dark themes can be compared.
  */
 
 const extensionPath = resolve(process.env.ASTERFOLD_EXTENSION_PATH ?? ".output/chrome-mv3");
@@ -95,12 +97,16 @@ async function boardLuminance(page: Page, decoder: Page): Promise<number> {
   }, png.toString("base64"));
 }
 
-async function transmission(page: Page, decoder: Page, theme: Theme): Promise<number> {
+async function glass(page: Page, decoder: Page, theme: Theme): Promise<{ T: number; V: number }> {
   await seedTheme(page, { ...theme, backgroundMode: "solid", canvas: "#000000" });
   const overBlack = await boardLuminance(page, decoder);
   await seedTheme(page, { ...theme, backgroundMode: "solid", canvas: "#ffffff" });
   const overWhite = await boardLuminance(page, decoder);
-  return (overWhite - overBlack) / 255;
+  return { T: (overWhite - overBlack) / 255, V: (overWhite - overBlack) / Math.max(1, (overWhite + overBlack) / 2) };
+}
+
+async function transmission(page: Page, decoder: Page, theme: Theme): Promise<number> {
+  return (await glass(page, decoder, theme)).T;
 }
 
 test("main-screen boards follow the glass settings in every rendering tier", async () => {
@@ -139,8 +145,17 @@ test("main-screen boards follow the glass settings in every rendering tier", asy
       expect.soft(smoothClear, `${mode} smooth glass follows the slider`).toBeGreaterThan(smoothOpaque + 0.1);
       expect.soft(await measure("compatibility", 0.6), `${mode} smooth glass ≤ quality`).toBeLessThanOrEqual(quality + 0.02);
 
-      // No transparency: fully opaque whatever the setting says.
-      expect.soft(await measure("software", 0.4), `${mode} software`).toBeLessThan(0.01);
+      // Lightweight (software tier): plain alpha blending, more tint than Smooth glass, still
+      // following the slider — no live blur, so it stays cheap on PCs without a GPU.
+      const lightweight = await measure("software", 0.4);
+      expect.soft(lightweight, `${mode} lightweight stays translucent`).toBeGreaterThan(0.05);
+      expect.soft(lightweight, `${mode} lightweight ≤ smooth glass`).toBeLessThanOrEqual(smoothClear + 0.02);
+      expect.soft(await measure("software", 0.8), `${mode} lightweight follows the slider`).toBeLessThan(lightweight - 0.05);
+
+      // Glass transparency at 0% is the explicit, in-app way to get solid boards in every tier.
+      for (const performanceMode of ["quality", "compatibility", "software"] as const) {
+        expect.soft(await measure(performanceMode, 1), `${mode} ${performanceMode} at 0% transparency`).toBeLessThan(0.01);
+      }
 
       // OS-level transparency and contrast requests win over every translucent tier.
       const client = await context.newCDPSession(page);
@@ -154,6 +169,14 @@ test("main-screen boards follow the glass settings in every rendering tier", asy
       await client.detach();
     }
 
+    // The same setting reads comparably in both themes: a white tint hides the background far
+    // more than a dark one at equal alpha, so the light theme must not look like a solid card.
+    for (const performanceMode of ["quality", "compatibility", "software"] as const) {
+      const light = await glass(page, decoder, { mode: "light", performanceMode, surfaceOpacity: 0.6, blur: 16 });
+      const dark = await glass(page, decoder, { mode: "dark", performanceMode, surfaceOpacity: 0.6, blur: 16 });
+      expect.soft(light.V / dark.V, `${performanceMode} light/dark visibility`).toBeGreaterThan(0.6);
+    }
+
     // Boards frost the wallpaper only through the live-blur tiers.
     for (const [performanceMode, pattern] of [["quality", /blur\(16px\)/u], ["balanced", /blur\(8px\)/u], ["compatibility", /^none$/u], ["software", /^none$/u]] as const) {
       await seedTheme(page, { mode: "light", performanceMode, blur: 16, backgroundMode: "wallpaper", wallpaperId: "builtin-aurora" });
@@ -161,6 +184,57 @@ test("main-screen boards follow the glass settings in every rendering tier", asy
     }
     await seedTheme(page, { mode: "light", performanceMode: "quality", blur: 0, backgroundMode: "wallpaper", wallpaperId: "builtin-aurora" });
     expect(await page.locator(".board").first().evaluate((element) => getComputedStyle(element).backdropFilter)).not.toMatch(/blur\([1-9]/u);
+    expect(failures).toEqual([]);
+  } finally {
+    await context.close();
+  }
+});
+
+test("a restrained highlight follows the pointer on glass boards and stays off where it should", async () => {
+  const context = await chromium.launchPersistentContext(join(tmpdir(), `asterfold-glare-${String(Date.now())}`), {
+    executablePath: browserPath(), headless: false,
+    args: ["--headless=new", "--no-sandbox", "--disable-crash-reporter", "--disable-features=DisableLoadExtensionCommandLineSwitch", `--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
+  });
+  try {
+    const worker = await extensionWorker(context);
+    const page = await context.newPage();
+    const failures: string[] = [];
+    page.on("pageerror", (error) => failures.push(error.message));
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto(`chrome-extension://${new URL(worker.url()).hostname}/newtab.html`);
+    const glare = (): Promise<{ opacity: number; transform: string; boardTransform: string }> => page.locator(".board").first().evaluate((board) => {
+      const layer = board.querySelector<HTMLElement>(".board__glare");
+      return { opacity: layer ? Number(getComputedStyle(layer).opacity) : -1, transform: layer?.style.transform ?? "", boardTransform: (board as HTMLElement).style.transform };
+    });
+    const hover = async (fx: number, fy: number): Promise<void> => {
+      const box = await page.locator(".board").first().boundingBox();
+      if (!box) throw new Error("Board is not visible");
+      await page.mouse.move(box.x + box.width * fx, box.y + box.height * fy, { steps: 4 });
+      await page.waitForTimeout(260);
+    };
+
+    await seedTheme(page, { mode: "light", performanceMode: "quality", surfaceOpacity: 0.6, blur: 16, backgroundMode: "wallpaper", wallpaperId: "builtin-aurora" });
+    await page.mouse.move(2, 2);
+    expect((await glare()).opacity, "no highlight without a pointer").toBe(0);
+    await hover(0.25, 0.3);
+    const first = await glare();
+    expect(first.opacity, "highlight appears under the pointer").toBeGreaterThan(0);
+    await hover(0.75, 0.7);
+    const second = await glare();
+    expect(second.transform, "highlight follows the pointer").not.toBe(first.transform);
+    expect(second.boardTransform, "the drag-and-drop transform stays untouched").toBe("");
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(260);
+    expect((await glare()).opacity, "highlight leaves with the pointer").toBe(0);
+
+    await seedTheme(page, { mode: "dark", performanceMode: "software", surfaceOpacity: 0.6, backgroundMode: "wallpaper", wallpaperId: "builtin-aurora" });
+    await hover(0.5, 0.5);
+    expect((await glare()).opacity, "no moving highlight in the lightweight tier").toBe(0);
+
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await seedTheme(page, { mode: "dark", performanceMode: "quality", surfaceOpacity: 0.6, blur: 16, backgroundMode: "wallpaper", wallpaperId: "builtin-aurora" });
+    await hover(0.5, 0.5);
+    expect((await glare()).opacity, "no moving highlight with reduced motion").toBe(0);
     expect(failures).toEqual([]);
   } finally {
     await context.close();
