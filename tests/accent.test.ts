@@ -153,7 +153,7 @@ describe("accent runtime wiring", () => {
     }
     // A background in the theme's own range does not restrict the slider.
     expect((themeStyle(theme({ backgroundMode: "solid", canvas: "#f6f7f9" }), null, null, false) as Record<string, string>)["--board-clear-max"]).toBe(".6");
-    expect((themeStyle(theme({ backgroundMode: "wallpaper", wallpaperId: "builtin-aurora" }), null, null, true) as Record<string, string>)["--board-clear-max"]).toBe(".6");
+
   });
 
   it("gives the popup the same accent and surface tokens as the new tab", () => {

@@ -12,11 +12,9 @@ function pixels(colors: readonly (readonly [number, number, number])[]): Uint8Cl
 }
 
 describe("board contrast against uploaded wallpapers", () => {
-  it("reads the dark and bright ends of a wallpaper sample, ignoring a few outliers", () => {
-    const sample = pixels([...Array<readonly [number, number, number]>(60).fill([120, 120, 120]), ...Array<readonly [number, number, number]>(30).fill([250, 250, 250]), ...Array<readonly [number, number, number]>(10).fill([0, 0, 0])]);
-    const [dark, bright] = extremesFromPixels(sample);
-    expect(dark).toBe("#787878");
-    expect(bright).toBe("#fafafa");
+  it("keeps the true dark and bright ends of a wallpaper sample, even a thin stripe", () => {
+    const sample = pixels([...Array<readonly [number, number, number]>(95).fill([30, 30, 30]), ...Array<readonly [number, number, number]>(5).fill([250, 250, 250])]);
+    expect(extremesFromPixels(sample)).toEqual(["#1e1e1e", "#fafafa"]);
   });
 
   it("caps glass over a bright uploaded wallpaper so dark-theme text keeps AA", () => {
@@ -31,8 +29,21 @@ describe("board contrast against uploaded wallpapers", () => {
     // Until the sample is ready an upload gets the conservative cap; built-in wallpapers are measured.
     const pending = themeStyle(theme, "blob:wallpaper", "blob:thumb", true, "quality") as Record<string, string>;
     expect(Number(pending["--board-clear-max"])).toBeLessThanOrEqual(clear);
-    const builtin = themeStyle({ ...theme, wallpaperId: "builtin-aurora" }, null, null, true, "quality") as Record<string, string>;
-    expect(builtin["--board-clear-max"]).toBe(".6");
+  });
+
+  it("caps built-in wallpapers by their measured ends, including the pointer highlight", () => {
+    for (const [wallpaperId, bright] of [["builtin-aurora", [254, 240, 196]], ["builtin-mesh", [205, 207, 166]], ["builtin-dusk", [255, 240, 254]]] as const) {
+      const theme = { ...getThemePreset("graphite-dark"), backgroundMode: "wallpaper" as const, wallpaperId, wallpaperDim: 0 };
+      const style = themeStyle(theme, null, null, true, "quality") as Record<string, string>;
+      const clear = Number(style["--board-clear-max"]);
+      expect(clear, wallpaperId).toBeLessThan(0.6);
+      const board = [38, 40, 44].map((value, index) => value * (1 - clear) + (bright[index] ?? 0) * clear);
+      expect(ratio(luminance(board), luminance([245, 245, 246])), `${wallpaperId} plain`).toBeGreaterThanOrEqual(4.8);
+      // The dark-theme highlight is white light on top of the capped board.
+      const strength = Number(style["--glare-strength"]);
+      const lit = board.map((value) => value + strength * (255 - value));
+      expect(ratio(luminance(lit), luminance([245, 245, 246])), `${wallpaperId} under the highlight`).toBeGreaterThanOrEqual(4.5);
+    }
   });
 
   it("keeps Clear lighter than Regular without an inert top of the slider", () => {

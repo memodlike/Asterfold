@@ -3,14 +3,14 @@
  * colours are known (solid, gradient, theme canvas), the share is lowered further until board
  * text keeps WCAG AA over each of them: CSS composites the board tint over the background in
  * sRGB, so the check uses the same mix. Primary text gets a margin for the sheen/highlight
- * layers; secondary (vibrancy) text gets the plain 4.5:1. Uploaded wallpapers contribute their
- * dark and bright ends from a 48×32 decode; the built-in ones are measured in e2e/glass.spec.ts.
+ * layers and must still hold 4.5:1 under the white pointer highlight. Text on board glass uses
+ * the primary colour (the empty-board hint included), so no gray text limits the material. Wallpapers contribute their darkest and brightest colours from a 48×32
+ * decode: measured once for the built-in ones, sampled at load for uploads.
  */
 
 export const BOARD_CLEAR_MAX = 0.6;
 const PRIMARY_TARGET = 4.8;
-const SECONDARY_TARGET = 4.5;
-const VIBRANCY_MIX = 0.4;
+const LIT_TARGET = 4.5;
 
 type Rgb = readonly [number, number, number];
 
@@ -43,15 +43,22 @@ function mix(a: Rgb, b: Rgb, share: number): Rgb {
   return [a[0] * (1 - share) + b[0] * share, a[1] * (1 - share) + b[1] * share, a[2] * (1 - share) + b[2] * share];
 }
 
+/** Darkest and brightest colours of the shipped wallpapers (full and lightweight files, 48×32). */
+export const BUILTIN_WALLPAPER_EXTREMES: Readonly<Record<string, readonly [string, string]>> = {
+  "builtin-aurora": ["#060202", "#fef0c4"],
+  "builtin-mesh": ["#162829", "#cdcfa6"],
+  "builtin-dusk": ["#050109", "#fff0fe"],
+};
+
 /** Largest background share (0…BOARD_CLEAR_MAX, 0.01 steps) that keeps board text readable. */
-export function boardClearMax(surface: Rgb, text: Rgb, secondary: Rgb, backgrounds: readonly Rgb[]): number {
-  const vibrancy = mix(secondary, text, VIBRANCY_MIX);
+export function boardClearMax(surface: Rgb, text: Rgb, backgrounds: readonly Rgb[], glare = 0): number {
   let best = BOARD_CLEAR_MAX;
   for (const background of backgrounds) {
     let clear = best;
     while (clear > 0) {
       const board = mix(surface, background, clear);
-      if (contrast(board, text) >= PRIMARY_TARGET && contrast(board, vibrancy) >= SECONDARY_TARGET) break;
+      const lit = mix(board, [255, 255, 255], glare);
+      if (contrast(board, text) >= PRIMARY_TARGET && contrast(lit, text) >= LIT_TARGET) break;
       clear = Math.round((clear - 0.01) * 100) / 100;
     }
     best = Math.max(0, clear);
@@ -68,14 +75,17 @@ function hex([r, g, b]: Rgb): string {
   return `#${[r, g, b].map((value) => Math.round(value).toString(16).padStart(2, "0")).join("")}`;
 }
 
-/** Dark and bright ends (15th / 85th luminance percentile) of RGBA pixels, ignoring small outliers. */
+/** Darkest and brightest colour of RGBA pixels. The 48×32 downscale already averages away
+ * single-pixel noise, so nothing more is discarded: a thin bright stripe still counts. */
 export function extremesFromPixels(data: ArrayLike<number>): [string, string] {
-  const colors: Rgb[] = [];
-  for (let index = 0; index + 3 < data.length; index += 4) colors.push([data[index] ?? 0, data[index + 1] ?? 0, data[index + 2] ?? 0]);
-  if (colors.length === 0) return ["#000000", "#ffffff"];
-  colors.sort((a, b) => luminance(a) - luminance(b));
-  const at = (share: number): Rgb => colors[Math.min(colors.length - 1, Math.floor(colors.length * share))] ?? [0, 0, 0];
-  return [hex(at(0.15)), hex(at(0.85))];
+  let darkest: Rgb | null = null;
+  let brightest: Rgb | null = null;
+  for (let index = 0; index + 3 < data.length; index += 4) {
+    const color: Rgb = [data[index] ?? 0, data[index + 1] ?? 0, data[index + 2] ?? 0];
+    if (!darkest || luminance(color) < luminance(darkest)) darkest = color;
+    if (!brightest || luminance(color) > luminance(brightest)) brightest = color;
+  }
+  return darkest && brightest ? [hex(darkest), hex(brightest)] : ["#000000", "#ffffff"];
 }
 
 /** Samples an uploaded wallpaper (its bounded thumbnail when present) for the contrast cap. */

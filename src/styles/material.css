@@ -61,8 +61,6 @@
   /* Extra tint for the no-blur tiers (Smooth glass, Lightweight), where the wallpaper behind text
      stays sharp. The light theme needs less: its base tint is already the brighter backdrop. */
   --board-no-blur-tint: .2;
-  /* Pointer highlight strength (white light on the board material). */
-  --glare-strength: .16;
 
   --scrim: rgb(6 6 10 / .24);
   --scrim-filter: none;
@@ -83,7 +81,6 @@ html[data-theme="light"] {
      --board-clear-max (from themeRuntime) keeps text AA over known backgrounds. */
   --board-clear: min(var(--board-clear-max, .6), calc(var(--board-t) * (1.6 - var(--board-t))));
   --board-no-blur-tint: .12;
-  --glare-strength: .55;
   --mat-alpha-menu: .74;
   --mat-alpha-sheet: .86;
   --mat-alpha-tile: .62;
