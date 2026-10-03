@@ -405,7 +405,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
       keywords: [t("settings.glassStyle"), t("settings.transparency"), t("settings.blur"), t("settings.glassRegular"), t("settings.glassClear")],
       body: <>
         <Segmented label={t("settings.glassStyle")} value={themeDraft.glassVariant} items={[{ value: "regular", label: t("settings.glassRegular") }, { value: "clear", label: t("settings.glassClear") }]} onChange={(value) => patchTheme({ glassVariant: value as ThemeConfig["glassVariant"] })} />
-        <Range label={t("settings.transparency")} min={0} max={60} value={Math.round((1 - themeDraft.surfaceOpacity) * 100)} suffix="%" onChange={(value) => patchTheme({ surfaceOpacity: 1 - value / 100 })} />
+        <Range label={t("settings.transparency")} min={0} max={60} value={Math.min(60, Math.round((1 - themeDraft.surfaceOpacity) * 100))} suffix="%" onChange={(value) => patchTheme({ surfaceOpacity: 1 - value / 100 })} />
         <Range disabled={liveBlurDisabled} title={blurHint} label={t("settings.blur")} min={0} max={32} value={themeDraft.blur} suffix="px" onChange={(value) => patchTheme({ blur: value })} />
         {systemReducedTransparency ? <p className="settings-note">{t("settings.glassUnavailable")}</p> : null}
         {blurHint ? <p className="settings-note">{blurHint}</p> : null}

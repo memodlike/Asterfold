@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import type { ThemeConfig } from "../../domain/models";
 import type { ResolvedPerformanceMode } from "../performance/performanceProfile";
 import { automaticAccent, onAccentColor, readableAccent } from "./accent";
-import { BOARD_CLEAR_MAX, boardClearMax, cssShare, parseRgb } from "./boardContrast";
+import { BOARD_CLEAR_MAX, boardClearMax, cssShare, dimmed, parseRgb } from "./boardContrast";
 import { compileGradientCss } from "./gradientEngine";
 import { semanticPalette } from "./semanticPalette";
 
@@ -18,6 +18,8 @@ export function themeStyle(
   compatibilityWallpaperOrDark: string | null | boolean,
   darkValue?: boolean,
   performanceMode: ResolvedPerformanceMode = "quality",
+  /** Dark and bright ends of an uploaded wallpaper; null/undefined while it is being sampled. */
+  wallpaperSample?: readonly string[] | null,
 ): CSSProperties {
   const legacyCall = typeof compatibilityWallpaperOrDark === "boolean";
   const compatibilityWallpaperUrl = legacyCall ? wallpaperUrl : compatibilityWallpaperOrDark;
@@ -49,9 +51,14 @@ export function themeStyle(
     ? `blur(${performanceMode === "balanced" ? Math.min(6, theme.wallpaperBlur) : theme.wallpaperBlur}px) saturate(${theme.wallpaperSaturation})`
     : "none";
   const accent = readableAccent(theme.accentMode === "custom" ? theme.accent : automaticAccent(theme) ?? theme.accent, dark);
-  // Known background colours (solid, gradient points, theme canvas) cap how much of them a board
-  // may show, so text stays AA; wallpapers use the measured global cap.
-  const knownBackgrounds = theme.backgroundMode === "wallpaper" ? [] : [canvas, ...(isGradient ? (theme.gradient?.points ?? []).filter((point) => point.enabled).map((point) => point.color) : [])];
+  // Known background colours cap how much of them a board may show, so text stays AA: the canvas,
+  // gradient points and an uploaded wallpaper's sampled ends (black and white until sampled), all
+  // under the wallpaper dim layer. Built-in wallpapers use the measured global cap.
+  const dim = wallpaperImage === "none" ? 0 : theme.wallpaperDim;
+  const uploaded = theme.backgroundMode === "wallpaper" && !builtin && wallpaperImage !== "none";
+  const knownBackgrounds = theme.backgroundMode === "wallpaper"
+    ? (uploaded ? (wallpaperSample ?? ["#000000", "#ffffff"]).map((color) => dimmed(color, dim) ?? color) : [])
+    : [canvas, ...(isGradient ? (theme.gradient?.points ?? []).filter((point) => point.enabled).map((point) => dimmed(point.color, dim) ?? point.color) : [])];
   const surfaceRgb = parseRgb(palette.surface);
   const textRgb = parseRgb(palette.text);
   const secondaryRgb = parseRgb(palette.secondary);
@@ -65,7 +72,7 @@ export function themeStyle(
     "--color-success": palette.success, "--shadow-panel": palette.shadow, "--glass-blur": `${Math.min(32, theme.blur)}px`,
     "--overlay-blur": theme.blur <= 0 ? "0px" : `${Math.round(Math.min(40, Math.max(10, theme.blur * 1.3 + 6)))}px`,
     "--glass-highlight": dark ? "rgb(255 255 255 / .14)" : "rgb(255 255 255 / .70)", "--glass-sheen": theme.glassVariant === "clear" ? ".09" : ".18",
-    "--glass-gain": theme.glassVariant === "clear" ? "1.25" : "1", "--board-clear-max": cssShare(clearMax),
+    "--glass-clear-boost": theme.glassVariant === "clear" ? "1" : "0", "--board-clear-max": cssShare(clearMax),
     "--radius-card": `${theme.radius}px`, "--font-scale": theme.fontScale, "--board-width": `${theme.boardWidth}px`, "--favicon-size": `${theme.faviconSize}px`,
     "--bookmark-row-height": theme.density === "compact" ? "18px" : theme.density === "spacious" ? "22px" : "20px",
     "--wallpaper-image": wallpaperImage, "--wallpaper-compat-image": compatibilityImage, "--wallpaper-software-image": softwareImage, "--wallpaper-dim": wallpaperImage === "none" ? 0 : theme.wallpaperDim,

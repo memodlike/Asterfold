@@ -197,6 +197,34 @@ test("main-screen boards follow the glass settings in every rendering tier", asy
       expect.soft(ratio(lin(await boardLuminance(page, decoder)), text), `${mode} ${performanceMode} text over ${canvas}`).toBeGreaterThanOrEqual(4.5);
     }
 
+    // Clear keeps responding right up to the slider's 60% top (no inert band below it).
+    for (const mode of ["light", "dark"] as const) {
+      const near = await transmission(page, decoder, { mode, performanceMode: "quality", surfaceOpacity: 0.48, glassVariant: "clear", blur: 16 });
+      const top = await transmission(page, decoder, { mode, performanceMode: "quality", surfaceOpacity: 0.4, glassVariant: "clear", blur: 16 });
+      expect.soft(top, `${mode} clear between 52% and 60%`).toBeGreaterThan(near + 0.01);
+    }
+
+    // An uploaded bright wallpaper is sampled, so dark-theme text keeps AA at the slider's top.
+    await seedTheme(page, { mode: "dark", performanceMode: "quality", surfaceOpacity: 0.4, blur: 16, wallpaperDim: 0, backgroundMode: "wallpaper", wallpaperId: "builtin-aurora" });
+    const white = await decoder.evaluate(async () => {
+      const canvas = new OffscreenCanvas(1920, 1080);
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("2D canvas unavailable");
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, 1920, 1080);
+      const blob = await canvas.convertToBlob({ type: "image/png" });
+      return btoa(String.fromCharCode(...new Uint8Array(await blob.arrayBuffer())));
+    });
+    await page.locator(".launcher-trigger").click();
+    await page.getByRole("menuitem", { name: /settings/iu }).first().click();
+    const dialog = page.getByRole("dialog");
+    await dialog.locator('input[type="file"][accept*=".webp"]').setInputFiles({ name: "white.png", mimeType: "image/png", buffer: Buffer.from(white, "base64") });
+    await expect(dialog.getByText(/1920 × 1080/u)).toBeVisible({ timeout: 15_000 });
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await page.waitForTimeout(600);
+    expect.soft(ratio(lin(await boardLuminance(page, decoder)), 0.913), "dark quality text over an uploaded white wallpaper").toBeGreaterThanOrEqual(4.5);
+
     // Boards frost the wallpaper only through the live-blur tiers.
     for (const [performanceMode, pattern] of [["quality", /blur\(16px\)/u], ["balanced", /blur\(8px\)/u], ["compatibility", /^none$/u], ["software", /^none$/u]] as const) {
       await seedTheme(page, { mode: "light", performanceMode, blur: 16, backgroundMode: "wallpaper", wallpaperId: "builtin-aurora" });

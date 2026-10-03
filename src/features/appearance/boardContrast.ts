@@ -3,8 +3,8 @@
  * colours are known (solid, gradient, theme canvas), the share is lowered further until board
  * text keeps WCAG AA over each of them: CSS composites the board tint over the background in
  * sRGB, so the check uses the same mix. Primary text gets a margin for the sheen/highlight
- * layers; secondary (vibrancy) text gets the plain 4.5:1. Wallpapers are not sampled here —
- * the cap is measured on the built-in ones in e2e/glass.spec.ts.
+ * layers; secondary (vibrancy) text gets the plain 4.5:1. Uploaded wallpapers contribute their
+ * dark and bright ends from a 48×32 decode; the built-in ones are measured in e2e/glass.spec.ts.
  */
 
 export const BOARD_CLEAR_MAX = 0.6;
@@ -62,4 +62,39 @@ export function boardClearMax(surface: Rgb, text: Rgb, secondary: Rgb, backgroun
 /** CSS number without a leading zero, matching the token style (".6", ".34"). */
 export function cssShare(value: number): string {
   return String(Math.round(value * 100) / 100).replace(/^0\./u, ".");
+}
+
+function hex([r, g, b]: Rgb): string {
+  return `#${[r, g, b].map((value) => Math.round(value).toString(16).padStart(2, "0")).join("")}`;
+}
+
+/** Dark and bright ends (15th / 85th luminance percentile) of RGBA pixels, ignoring small outliers. */
+export function extremesFromPixels(data: ArrayLike<number>): [string, string] {
+  const colors: Rgb[] = [];
+  for (let index = 0; index + 3 < data.length; index += 4) colors.push([data[index] ?? 0, data[index + 1] ?? 0, data[index + 2] ?? 0]);
+  if (colors.length === 0) return ["#000000", "#ffffff"];
+  colors.sort((a, b) => luminance(a) - luminance(b));
+  const at = (share: number): Rgb => colors[Math.min(colors.length - 1, Math.floor(colors.length * share))] ?? [0, 0, 0];
+  return [hex(at(0.15)), hex(at(0.85))];
+}
+
+/** Samples an uploaded wallpaper (its bounded thumbnail when present) for the contrast cap. */
+export async function sampleWallpaperExtremes(blob: Blob): Promise<[string, string] | null> {
+  try {
+    const bitmap = await createImageBitmap(blob, { resizeWidth: 48, resizeHeight: 32, resizeQuality: "low" });
+    const canvas = new OffscreenCanvas(48, 32);
+    const context = canvas.getContext("2d");
+    if (!context) return null;
+    context.drawImage(bitmap, 0, 0, 48, 32);
+    bitmap.close();
+    return extremesFromPixels(context.getImageData(0, 0, 48, 32).data);
+  } catch {
+    return null;
+  }
+}
+
+/** The wallpaper dim layer is black at `dim` opacity over the image. */
+export function dimmed(color: string, dim: number): string | null {
+  const rgb = parseRgb(color);
+  return rgb ? hex([rgb[0] * (1 - dim), rgb[1] * (1 - dim), rgb[2] * (1 - dim)]) : null;
 }

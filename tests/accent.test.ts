@@ -128,9 +128,9 @@ describe("accent runtime wiring", () => {
   it("makes Clear a lighter board tint and ships a visibly translucent default", () => {
     const regular = themeStyle(theme({ glassVariant: "regular" }), null, null, false) as Record<string, string>;
     const clear = themeStyle(theme({ glassVariant: "clear" }), null, null, false) as Record<string, string>;
-    // Clear lets more background through but never touches the solid 0% endpoint (gain × (1 − opacity)).
-    expect(regular["--glass-gain"]).toBe("1");
-    expect(clear["--glass-gain"]).toBe("1.25");
+    // Clear lets more background through but never touches the solid 0% or the 60% endpoints.
+    expect(regular["--glass-clear-boost"]).toBe("0");
+    expect(clear["--glass-clear-boost"]).toBe("1");
     expect(regular["--color-text-secondary-base"]).toBe(regular["--color-text-secondary"]);
     expect(getThemePreset("frost-light").surfaceOpacity).toBeLessThanOrEqual(0.7);
   });

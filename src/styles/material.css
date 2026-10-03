@@ -51,7 +51,10 @@
   --board-filter: blur(var(--glass-blur, 14px)) saturate(165%);
   /* Board tint = the Glass transparency setting (--surface-opacity), lightened for Clear.
      --board-clear is the share of the background that shows through; 0% transparency stays solid. */
-  --board-t: calc((1 - var(--surface-opacity, .66)) * var(--glass-gain, 1));
+  /* x = the setting, clamped to the slider's 60% top (3.6.4 allowed 80%). Clear adds
+     x·(0.6 − x): 0 at 0% and at 60%, so both endpoints hold and the whole slider acts. */
+  --board-x: min(.6, calc(1 - var(--surface-opacity, .66)));
+  --board-t: calc(var(--board-x) + var(--glass-clear-boost, 0) * var(--board-x) * (.6 - var(--board-x)));
   --board-clear: min(var(--board-clear-max, .6), var(--board-t));
   --board-alpha-base: calc(1 - var(--board-clear));
   --board-alpha: var(--board-alpha-base);

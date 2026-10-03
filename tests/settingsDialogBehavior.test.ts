@@ -485,6 +485,12 @@ describe("SettingsDialog behavior", () => {
     expect(screen.getByRole("button", { name: "Lightweight" })).toHaveAccessibleDescription("Light translucency without blur for PCs without a GPU");
   });
 
+  it("shows a transparency saved above the new 60% top as 60%, which is what the boards render", () => {
+    renderSettings({ workspace: workspace({ theme: { ...settings().theme, performanceMode: "quality", lowPowerMode: false, surfaceOpacity: 0.2 } }) });
+    expect(screen.getByLabelText("Glass transparency")).toHaveValue("60");
+    expect(screen.getByLabelText("Glass transparency")).toHaveAttribute("aria-valuetext", "60%");
+  });
+
   it("says when the system asks for reduced transparency instead of silently showing solid surfaces", () => {
     const original = Object.getOwnPropertyDescriptor(window, "matchMedia");
     const listeners: ((event: { matches: boolean }) => void)[] = [];
