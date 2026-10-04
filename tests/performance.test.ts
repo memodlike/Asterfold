@@ -13,9 +13,15 @@ describe("balanced renderer", () => {
     const css = readFileSync(`${process.cwd()}/src/styles/global.css`, "utf8");
     const material = readFileSync(`${process.cwd()}/src/styles/material.css`, "utf8");
     const boardRule = /\.board \{[^}]+\}/u.exec(css)?.[0] ?? "";
-    // Boards never hard-code a blur; the rendering tier decides through one token.
-    expect(boardRule).toContain("backdrop-filter: var(--board-filter)");
-    expect(boardRule).not.toMatch(/backdrop-filter:\s*blur/u);
+    const blurLayer = /\.board::before \{[^}]+\}/u.exec(css)?.[0] ?? "";
+    // Boards never hard-code a blur; the rendering tier decides through one token. The blur lives on
+    // its own shadow-free layer, and the shadowed, draggable board has neither blur nor transforms.
+    expect(blurLayer).toContain("backdrop-filter: var(--board-filter)");
+    expect(blurLayer).toContain("inset: -1px");
+    expect(blurLayer).not.toMatch(/backdrop-filter:\s*blur|var\(--shadow-panel\)/u);
+    expect(boardRule).not.toContain("backdrop-filter");
+    expect(boardRule).not.toMatch(/transition:[^;]*transform/u);
+    expect(css).not.toMatch(/\.board(?::hover|\.is-over) \{[^}]*transform/u);
     const root = /:root \{[^}]+\}/u.exec(material)?.[0] ?? "";
     expect(root).toMatch(/--board-filter: blur\(var\(--glass-blur/u);
     const balanced = /html\[data-performance="balanced"\] \{[^}]+\}/u.exec(material)?.[0] ?? "";

@@ -228,10 +228,12 @@ test("main-screen boards follow the glass settings in every rendering tier", asy
     // Boards frost the wallpaper only through the live-blur tiers.
     for (const [performanceMode, pattern] of [["quality", /blur\(16px\)/u], ["balanced", /blur\(8px\)/u], ["compatibility", /^none$/u], ["software", /^none$/u]] as const) {
       await seedTheme(page, { mode: "light", performanceMode, blur: 16, backgroundMode: "wallpaper", wallpaperId: "builtin-aurora" });
-      expect(await page.locator(".board").first().evaluate((element) => getComputedStyle(element).backdropFilter), performanceMode).toMatch(pattern);
+      expect(await page.locator(".board").first().evaluate((element) => getComputedStyle(element, "::before").backdropFilter), performanceMode).toMatch(pattern);
     }
+    // The shadowed board never carries the blur itself (blur-bleed fix); its transform belongs to dnd-kit.
+    expect(await page.locator(".board").first().evaluate((element) => getComputedStyle(element).backdropFilter)).toBe("none");
     await seedTheme(page, { mode: "light", performanceMode: "quality", blur: 0, backgroundMode: "wallpaper", wallpaperId: "builtin-aurora" });
-    expect(await page.locator(".board").first().evaluate((element) => getComputedStyle(element).backdropFilter)).not.toMatch(/blur\([1-9]/u);
+    expect(await page.locator(".board").first().evaluate((element) => getComputedStyle(element, "::before").backdropFilter)).not.toMatch(/blur\([1-9]/u);
     expect(failures).toEqual([]);
   } finally {
     await context.close();

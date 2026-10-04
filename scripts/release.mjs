@@ -79,7 +79,7 @@ await writeFile(join(unpacked, "HOW-TO-INSTALL.txt"), [
 const unpackedFiles = await walk(unpacked);
 await writeDeterministicZip(join(release, "chrome-unpacked.zip"), unpackedFiles.map((path) => ({ path, name: `chrome-unpacked/${relative(unpacked, path).replaceAll("\\", "/")}` })), writeFile);
 
-const excludedRoots = new Set([".git", ".output", ".upgrade", ".wxt", "coverage", "node_modules", "playwright-report", "release", "test-results"]);
+const excludedRoots = new Set([".git", ".output", ".upgrade", ".wxt", "coverage", "node_modules", "playwright-report", "release", "test-results", ".claude"]);
 const sourceFiles = [];
 for (const entry of (await readdir(root, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name, "en"))) {
   if (excludedRoots.has(entry.name) || entry.isSymbolicLink()) continue;

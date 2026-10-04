@@ -9,14 +9,14 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --startup-canvas: #111318;
+    --startup-canvas: #16171a;
     --startup-text: #f5f5f6;
     --startup-text-secondary: #a1a3aa;
   }
 }
 
-html[data-theme="dark"] { --startup-text: #f5f5f6; --startup-text-secondary: #a1a3aa; }
-html[data-theme="light"] { --startup-text: #191a1d; --startup-text-secondary: #6e7077; }
+html[data-theme="dark"] { --startup-canvas: #16171a; --startup-text: #f5f5f6; --startup-text-secondary: #a1a3aa; }
+html[data-theme="light"] { --startup-canvas: #f1f2f4; --startup-text: #191a1d; --startup-text-secondary: #5f6168; }
 
 html,
 body,
@@ -41,7 +41,7 @@ body::before {
   z-index: 0;
   pointer-events: none;
   background-color: var(--startup-canvas);
-  background-image: linear-gradient(rgb(0 0 0 / .16), rgb(0 0 0 / .16)), var(--startup-wallpaper);
+  background-image: linear-gradient(rgb(0 0 0 / var(--startup-wallpaper-dim, .16)), rgb(0 0 0 / var(--startup-wallpaper-dim, .16))), var(--startup-wallpaper);
   background-position: center;
   background-size: cover;
 }

@@ -63,7 +63,7 @@ export function themeStyle(
   const textRgb = parseRgb(palette.text);
   const backgroundRgbs = knownBackgrounds.map(parseRgb).filter((value): value is NonNullable<typeof value> => value !== null);
   // White pointer highlight strength; it lowers dark-theme text contrast, so the cap includes it.
-  const glare = performanceMode === "software" ? 0 : dark ? 0.1 : 0.55;
+  const glare = performanceMode === "software" ? 0 : dark ? 0.08 : 0.32;
   const clearMax = surfaceRgb && textRgb ? boardClearMax(surfaceRgb, textRgb, backgroundRgbs, glare) : BOARD_CLEAR_MAX;
   const wallpaperTransform = !isGradient && performanceMode === "quality" && wallpaperImage !== "none" && theme.wallpaperZoom > 1 ? `scale(${theme.wallpaperZoom})` : "none";
   return {
@@ -75,7 +75,7 @@ export function themeStyle(
     "--glass-highlight": dark ? "rgb(255 255 255 / .14)" : "rgb(255 255 255 / .70)", "--glass-sheen": theme.glassVariant === "clear" ? ".09" : ".18",
     "--glass-clear-boost": theme.glassVariant === "clear" ? "1" : "0", "--board-clear-max": cssShare(clearMax), "--glare-strength": cssShare(glare),
     "--radius-card": `${theme.radius}px`, "--font-scale": theme.fontScale, "--board-width": `${theme.boardWidth}px`, "--favicon-size": `${theme.faviconSize}px`,
-    "--bookmark-row-height": theme.density === "compact" ? "18px" : theme.density === "spacious" ? "22px" : "20px",
+    "--bookmark-row-height": theme.density === "compact" ? "20px" : theme.density === "spacious" ? "26px" : "22px",
     "--wallpaper-image": wallpaperImage, "--wallpaper-compat-image": compatibilityImage, "--wallpaper-software-image": softwareImage, "--wallpaper-dim": wallpaperImage === "none" ? 0 : theme.wallpaperDim,
     "--wallpaper-filter": wallpaperFilter, "--wallpaper-position": theme.wallpaperPosition, "--wallpaper-transform": wallpaperTransform,
     "--density-space": theme.density === "compact" ? "8px" : theme.density === "spacious" ? "16px" : "12px",

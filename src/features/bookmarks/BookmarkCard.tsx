@@ -55,7 +55,7 @@ export const BookmarkCard = memo(function BookmarkCard(props: BookmarkCardProps)
     <article
       ref={sortable.setNodeRef}
       style={style}
-      className={`bookmark-card ${props.selected ? "is-selected" : ""} ${sortable.isDragging ? "is-dragging" : ""}`}
+      className={`bookmark-card ${props.selected ? "is-selected" : ""} ${menuPoint ? "is-menu-open" : ""} ${sortable.isDragging ? "is-dragging" : ""}`}
       data-bookmark-id={props.bookmark.id}
       onContextMenu={openContext}
     >

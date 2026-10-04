@@ -9,3 +9,6 @@ test-results/
 /release/
 *.log
 .upgrade/
+.DS_Store
+.claude/
+CLAUDE.md

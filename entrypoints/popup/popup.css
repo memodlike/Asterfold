@@ -68,15 +68,8 @@ kbd { flex: 0 0 auto; font: 600 10px/1 ui-monospace, SFMono-Regular, Consolas, m
 label { min-width: 0; display: grid; gap: 5px; color: var(--popup-text-secondary); font-size: 11px; font-weight: 650; }
 input, textarea, select { width: 100%; min-width: 0; color: var(--popup-text); background: var(--popup-surface); border: 1px solid var(--popup-border); border-radius: 8px; padding: 8px 9px; font-size: 12px; outline: none; }
 input:focus, textarea:focus, select:focus { border-color: var(--popup-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--popup-accent) 18%, transparent); }
-textarea { resize: vertical; }
 .popup-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
-.text-action { align-self: flex-start; display: flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--popup-accent); font-size: 11px; padding: 0; }
-.new-board { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 5px; }
-.new-board button { border: 0; border-radius: 7px; padding: 0 8px; color: var(--popup-accent); background: color-mix(in srgb, var(--popup-accent) 10%, var(--popup-surface)); font-size: 10px; }
-.duplicate-warning, .popup-error, .popup-success { display: flex; align-items: flex-start; gap: 8px; padding: 9px 10px; border-radius: 9px; font-size: 11px; overflow-wrap: anywhere; }
-.duplicate-warning { background: color-mix(in srgb, #d99614 12%, var(--popup-surface)); color: color-mix(in srgb, #d99614 78%, var(--popup-text)); border: 1px solid color-mix(in srgb, #d99614 34%, var(--popup-border)); }
-.duplicate-warning div { min-width: 0; display: grid; gap: 2px; }
-.duplicate-warning button { border: 0; background: none; color: var(--popup-accent); padding: 2px 0 0; text-align: left; font-size: 10px; }
+.popup-error, .popup-success { display: flex; align-items: flex-start; gap: 8px; padding: 9px 10px; border-radius: 9px; font-size: 11px; overflow-wrap: anywhere; }
 .popup-error { background: color-mix(in srgb, var(--popup-danger) 10%, var(--popup-surface)); color: var(--popup-danger); border: 1px solid color-mix(in srgb, var(--popup-danger) 28%, var(--popup-border)); }
 .popup-success { background: color-mix(in srgb, var(--popup-success) 10%, var(--popup-surface)); color: var(--popup-success); border: 1px solid color-mix(in srgb, var(--popup-success) 28%, var(--popup-border)); }
 .popup__actions { flex: 0 0 auto; display: grid; gap: 8px; padding: 10px 18px 12px; border-top: 1px solid var(--popup-border); background: var(--popup-surface); }

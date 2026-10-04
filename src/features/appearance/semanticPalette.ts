@@ -17,7 +17,7 @@ const LIGHT_PALETTE: SemanticPalette = {
   surfaceSolid: "#fbfbfc",
   surfaceElevated: "#ffffff",
   text: "#191a1d",
-  secondary: "#6e7077",
+  secondary: "#5f6168",
   border: "19 20 23",
   danger: "#c9342f",
   success: "#237c4b",

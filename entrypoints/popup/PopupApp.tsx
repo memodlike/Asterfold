@@ -31,6 +31,12 @@ export function PopupApp() {
   }, [systemDark, workspace?.settings.theme]);
 
   useEffect(() => {
+    const locale = workspace?.settings.locale ?? "auto";
+    const lang = locale === "auto" ? (typeof navigator !== "undefined" ? navigator.language.split("-")[0] ?? "en" : "en") : locale;
+    document.documentElement.lang = lang;
+  }, [workspace?.settings.locale]);
+
+  useEffect(() => {
     if (workspace && performance.getEntriesByName("asterfold-popup-interactive").length === 0) {
       performance.mark("asterfold-popup-interactive");
     }

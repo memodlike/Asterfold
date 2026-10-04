@@ -14,6 +14,7 @@ export interface PackedBoards {
 
 function preferredSpan(board: Board, bookmarkCount: number, free: boolean): number {
   if (free) return Math.max(2, Math.min(6, board.gridSpan));
+  if (board.gridSpan && board.gridSpan !== 3) return Math.max(2, Math.min(6, board.gridSpan));
   if (bookmarkCount >= 20) return 6;
   if (bookmarkCount >= 15) return 4;
   if (bookmarkCount >= 7) return 3;
