@@ -80,7 +80,7 @@ html[data-theme="light"] {
      the 60% cap exactly at the slider's 60% top, so the whole slider range still does something.
      --board-clear-max (from themeRuntime) keeps text AA over known backgrounds. */
   --board-clear: min(var(--board-clear-max, .6), calc(var(--board-t) * (1.6 - var(--board-t))));
-  --board-no-blur-tint: .12;
+  --board-no-blur-tint: .07;
   --mat-alpha-menu: .74;
   --mat-alpha-sheet: .86;
   --mat-alpha-tile: .62;

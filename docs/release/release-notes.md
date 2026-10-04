@@ -1,3 +1,12 @@
+# Asterfold 3.7.2
+
+## GPU Compositing & Glare Highlight Invariants
+
+- **Smooth glare clipping along rounded borders**: eliminated rectangular highlight truncation at board corners by enforcing `overflow: hidden` and `border-radius: inherit` without `contain: paint` rectangular border-box clipping.
+- **Backdrop-filter tile artifact elimination**: eliminated tile seam lines and damage-rect square flicker over frosted glass cards by removing `will-change: transform` hardware layer promotion from the pointer glare layer.
+- **Seam-free dynamic board grids**: eliminated synthetic horizontal partition lines across stretched grid rows by removing rigid `content-visibility: auto` and `contain-intrinsic-size` from dynamic workspace boards.
+- **Ironclad AI agent invariants & automated QA**: added automated invariant regression tests and established permanent rules in workspace agent instructions and design system skills to prevent GPU compositing and highlight clipping regressions in all future development.
+
 # Asterfold 3.7.1
 
 ## Design System, Accessibility & Ergonomics Hardening

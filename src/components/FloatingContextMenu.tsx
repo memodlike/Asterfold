@@ -25,15 +25,15 @@ export function FloatingContextMenu({ label, point, children, onClose }: Floatin
   const clampPlacement = useCallback(() => {
     const menu = menuRef.current;
     if (!menu) return;
-    const bounds = menu.getBoundingClientRect();
+    const width = menu.offsetWidth || menu.getBoundingClientRect().width;
+    const height = menu.offsetHeight || menu.getBoundingClientRect().height;
     const next = {
-      x: Math.max(EDGE_GAP, Math.min(pointX, window.innerWidth - bounds.width - EDGE_GAP)),
-      y: Math.max(EDGE_GAP, Math.min(pointY, window.innerHeight - bounds.height - EDGE_GAP)),
+      x: Math.max(EDGE_GAP, Math.min(pointX, window.innerWidth - width - EDGE_GAP)),
+      y: Math.max(EDGE_GAP, Math.min(pointY, window.innerHeight - height - EDGE_GAP)),
     };
     setPlacement((current) => current.x === next.x && current.y === next.y ? current : next);
   }, [pointX, pointY]);
 
-  useEffect(() => { setPlacement({ x: pointX, y: pointY }); }, [pointX, pointY]);
   useLayoutEffect(() => { clampPlacement(); });
   useLayoutEffect(() => {
     const menu = menuRef.current;

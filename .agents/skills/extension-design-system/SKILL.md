@@ -34,6 +34,14 @@ metadata:
   - `--accent-primary`, `--accent-hover`, `--accent-subtle`
 - Ensure WCAG AA compliance (4.5:1 text contrast for body copy, 3:1 for large headings) in all modes.
 
+## GPU Compositing & Pointer Highlight Artifact Prevention (Ironclad Rule)
+- **Never use `contain: paint` on elements with rounded corners or moving highlights**:
+  `contain: paint` clips child layers to a hard rectangular bounding box (`border-box`) without respecting `border-radius`. When cursor highlights (`.board__glare`) reach the edges/corners, `contain: paint` chops them off into sharp 90-degree square edges and rectangular artifacts. Always use `overflow: hidden; border-radius: inherit;` (with `contain: layout style;` excluding `paint`) so highlights smoothly clip to the actual rounded boundary.
+- **Never promote cursor-following glare elements with `will-change: transform` over `backdrop-filter` surfaces**:
+  Promoting moving glare/highlight layers to independent hardware layers (`will-change: transform`) over elements using `backdrop-filter: blur(...)` forces Chromium's Skia rasterizer to invalidate and re-composite rectangular backdrop tiles (damage rects) every frame. This creates visible square/tile flashing and horizontal seam lines. Simple 2D pointer highlights must composite in the local layer without `will-change: transform`.
+- **Never apply `content-visibility: auto` with synthetic `contain-intrinsic-size` to dynamic CSS Grid workspace boards**:
+  Boards in CSS Grid have dynamically stretched row heights. Applying `content-visibility: auto` with fixed `contain-intrinsic-size` creates synthetic height boundary lines and rendering steps across rows of cards. New Tab workspace boards are above-the-fold and must render naturally without artificial containment steps.
+
 ## Motion & Keyboard Accessibility
 - **Reduced Motion Support**:
   - Respect `@media (prefers-reduced-motion: reduce)`.
@@ -41,3 +49,4 @@ metadata:
 - **Keyboard Navigation & ARIA**:
   - Custom select dropdowns, modals, and context menus must manage focus traps, `aria-activedescendant`, `tabIndex={-1}`, and keyboard arrows/Enter/Escape listeners.
   - Interactive elements must maintain a visible, high-contrast focus outline.
+

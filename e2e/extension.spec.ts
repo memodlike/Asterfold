@@ -229,7 +229,7 @@ async function seedScaleFixture(page: Page): Promise<void> {
       query.onsuccess = () => resolvePromise(query.result as T);
       query.onerror = () => reject(query.error ?? new Error(`Unable to read ${store}`));
     });
-    const settings = await get<{ activePageId: string; workspaceRows: 1 | 2; workspaceLayoutMode: "auto" | "free"; workspaceAlignment: "left" | "center" | "right" }>("settings", "app");
+    const settings = await get<{ activePageId: string; workspaceRows: 1 | 2; workspaceLayoutMode: "auto" | "free"; workspaceAlignment: "left" | "center" | "right"; theme: Record<string, unknown> }>("settings", "app");
     const timestamp = new Date().toISOString();
     transaction.objectStore("boards").clear();
     transaction.objectStore("bookmarks").clear();
@@ -241,7 +241,7 @@ async function seedScaleFixture(page: Page): Promise<void> {
         transaction.objectStore("bookmarks").put({ id: `scale-bookmark-${boardIndex}-${index}`, userId: null, boardId, title: `Bookmark ${boardIndex + 1}.${index + 1}`, url, normalizedUrl: url, hostname: "example.com", description: null, faviconUrl: null, customIcon: null, position: `a${String(index).padStart(2, "0")}`, openMode: "new-tab", pinned: false, createdAt: timestamp, updatedAt: timestamp, deletedAt: null, deletedBatchId: null, version: 1 });
       }
     }
-    transaction.objectStore("settings").put({ ...settings, workspaceRows: 2, workspaceLayoutMode: "auto", workspaceAlignment: "center" });
+    transaction.objectStore("settings").put({ ...settings, workspaceRows: 2, workspaceLayoutMode: "auto", workspaceAlignment: "center", theme: { ...settings.theme, density: "compact" } });
     await new Promise<void>((resolvePromise, reject) => {
       transaction.oncomplete = () => resolvePromise();
       transaction.onerror = () => reject(transaction.error ?? new Error("Unable to write scale fixture"));
@@ -405,7 +405,7 @@ test.describe.serial("Asterfold MV3 release", () => {
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
     await expect(popup.locator(".workspace-button")).toBeVisible();
     await expect(popup.locator(".save-button")).toBeVisible();
-    await expect(popup.getByText("Asterfold 3.7.1")).toBeVisible();
+    await expect(popup.getByText("Asterfold 3.7.2")).toBeVisible();
     await popup.close();
     await workspacePage.close();
   });
