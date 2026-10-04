@@ -19,8 +19,15 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .board-track--center { margin-inline: auto; }
 .board-track--right { margin-left: auto; }
 .board { position: relative; min-width: 0; min-height: 0; height: auto; padding: 11px 11px 10px; border: 1px solid var(--color-border); border-radius: calc(var(--radius-card) + 3px); color: var(--color-text); background: linear-gradient(145deg, rgb(255 255 255 / var(--glass-sheen)), transparent 34%), rgb(var(--surface-rgb) / var(--board-alpha, .66)); box-shadow: inset 0 1px 0 var(--glass-highlight), var(--shadow-panel); -webkit-backdrop-filter: var(--board-filter); backdrop-filter: var(--board-filter); contain: layout style paint; content-visibility: auto; contain-intrinsic-size: auto 240px; transition: transform 160ms cubic-bezier(.2,.8,.2,1), border-color 130ms ease; }
-/* Vibrancy: over translucent glass the flat secondary gray drops below 4.5:1, so secondary text on
-   main-screen glass is pulled 40% toward the primary text colour (≈5:1 in both themes). */
+/* Pointer highlight: a soft light layer under the board content, moved only by transform from
+   boardGlare.ts. It sits at z-index -1 inside the board's own stacking context (contain: paint),
+   so it lights the material, never the text, and is clipped by the board's rounded corners. */
+.board__glare { position: absolute; z-index: -1; top: 0; left: 0; width: 200px; height: 200px; margin: -100px 0 0 -100px; border-radius: 50%; pointer-events: none; background: radial-gradient(closest-side, rgb(255 255 255 / var(--glare-strength, .1)), rgb(255 255 255 / calc(var(--glare-strength, .1) * .35)) 45%, rgb(255 255 255 / 0)); opacity: 0; transition: opacity 220ms ease-out; }
+.board.is-lit .board__glare { opacity: 1; will-change: transform; }
+html[data-performance="software"] .board__glare, .motion-disabled .board__glare { display: none; }
+@media (hover: none), (prefers-reduced-motion: reduce), (prefers-reduced-transparency: reduce), (prefers-contrast: more), (forced-colors: active) { .board__glare { display: none; } }
+/* Vibrancy: secondary marks on main-screen glass (fallback icons) are pulled 40% toward the primary
+   colour. Board text itself uses the primary colour, which the contrast cap in boardContrast.ts protects. */
 .board, .empty-state { --color-text-secondary: color-mix(in srgb, var(--color-text) 40%, var(--color-text-secondary-base, #6e7077)); }
 .board:hover { border-color: rgb(var(--border-rgb) / .22); transform: translateY(-1px); }
 .board.is-over { transform: scale(1.006); border-color: color-mix(in srgb, var(--color-accent) 44%, transparent); }
@@ -34,7 +41,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .board__items { display: grid; align-content: start; gap: 0; min-width: 0; }
 .board__items--columns-1 { grid-template-columns: minmax(0, 1fr); }
 .board__items--columns-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 5px; }
-.board__empty { padding: 26px 12px; border-radius: 11px; color: var(--color-text-secondary); background: transparent; font-size: 12px; }
+.board__empty { padding: 26px 12px; border-radius: 11px; color: var(--color-text); background: transparent; font-size: 12px; }
 
 .bookmark-card { position: relative; min-width: 0; height: 20px; border-radius: 7px; contain: layout style; }
 .bookmark-card__open { display: block; width: 100%; height: 100%; min-width: 0; padding: 0; border-radius: inherit; text-align: left; background: transparent; }
@@ -69,7 +76,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .empty-state { width: min(420px, calc(100vw - 40px)); padding: 32px; text-align: center; border-radius: 24px; }
 .empty-state__icon { display: grid; width: 50px; height: 50px; place-items: center; margin: 0 auto 14px; border-radius: 17px; background: rgb(var(--border-rgb) / .07); }
 .empty-state h2 { margin: 0 0 7px; font-size: 20px; }
-.empty-state p { margin: 0 0 18px; color: var(--color-text-secondary); font-size: 13px; line-height: 1.5; }
+.empty-state p { margin: 0 0 18px; color: var(--color-text); font-size: 13px; line-height: 1.5; }
 .empty-state .button + .button { margin-left: 6px; }
 .bulk-toolbar { position: fixed; z-index: 55; left: 50%; bottom: 18px; display: flex; align-items: center; gap: 7px; padding: 7px; border-radius: var(--mat-radius-bar); transform: translateX(-50%); }
 .bulk-toolbar > strong { padding-inline: 8px; font-size: 12px; }
@@ -161,8 +168,10 @@ html[data-performance="software"] .wallpaper {
     rgb(var(--surface-rgb) / var(--board-alpha, .72));
   box-shadow: inset 0 1px 0 var(--glass-highlight), 0 10px 28px rgb(0 0 0 / .15);
 }
+/* Lightweight: one translucent fill, no sheen layers. Only background-image is overridden here, so
+   the solid accessibility fallbacks below still decide background-color. */
 html[data-performance="software"] .board {
-  background: var(--color-surface-solid);
+  background-image: none;
   box-shadow: inset 0 1px 0 var(--glass-highlight), 0 6px 18px rgb(0 0 0 / .16);
 }
 .motion-disabled *, .motion-disabled *::before, .motion-disabled *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }

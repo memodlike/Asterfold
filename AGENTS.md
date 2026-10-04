@@ -25,7 +25,7 @@ You are operating inside **Asterfold**, a high-performance, local-first visual b
 - **Zero-Flash New Tab Startup**:
   - Critical dark/light theme CSS and startup theme snapshot must apply synchronously before React hydrates, preventing white-screen flashes upon opening new tabs.
 - **GPU & Low-Spec PC Compatibility**:
-  - Support tiered rendering profiles: `Quality` (backdrop-filter blur), `Balanced` (short blur), `Compatibility` / "Smooth glass" (light translucency that follows the Glass transparency setting, without live blur or SVG refraction), and `Software` / "No transparency" (fully opaque surfaces). Reduced transparency, increased contrast and forced colors always resolve to readable opaque surfaces.
+  - Support tiered rendering profiles: `Quality` (backdrop-filter blur), `Balanced` (short blur), `Compatibility` / "Smooth glass" (light translucency that follows the Glass transparency setting, without live blur or SVG refraction), and `Software` / "Lightweight" (plain alpha translucency on main-screen boards with no blur, refraction or moving highlight; overlays stay solid). Glass transparency at 0% gives solid boards in every tier. Reduced transparency, increased contrast and forced colors always resolve to readable opaque surfaces.
   - Use compositor-only CSS properties (`transform`, `opacity`) for animations. Never animate heavy box-shadows, layout dimensions, or large full-screen blurs.
 - **Accessibility & Contrast**:
   - Maintain WCAG AA contrast (minimum 4.5:1 for body text, 3:1 for large display elements) in both Light and Dark modes.

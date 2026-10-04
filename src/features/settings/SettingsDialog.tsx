@@ -89,9 +89,10 @@ export function SettingsDialog(props: SettingsDialogProps) {
   const performanceSignals = useMemo(() => browserPerformanceSignals(), []);
   const resolvedPerformanceMode = useMemo(() => classifyPerformanceMode(themeDraft.performanceMode, themeDraft.lowPowerMode, performanceSignals), [performanceSignals, themeDraft.lowPowerMode, themeDraft.performanceMode]);
   const recommendation = useMemo(() => recommendPerformanceProfile(performanceSignals), [performanceSignals]);
-  // Smooth glass drops only live blur and wallpaper filters; No transparency makes every surface solid.
+  // Smooth glass and Lightweight drop only live blur and wallpaper filters; transparency still applies
+  // (0% gives solid boards). The OS "reduce transparency" request makes surfaces solid in every tier.
   const liveBlurDisabled = resolvedPerformanceMode === "compatibility" || resolvedPerformanceMode === "software";
-  const transparencyDisabled = resolvedPerformanceMode === "software";
+  const systemReducedTransparency = useReducedTransparency();
   const resolvedPerformanceLabel = t(resolvedPerformanceMode === "quality"
     ? "settings.performanceQuality"
     : resolvedPerformanceMode === "balanced"
@@ -350,8 +351,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
   };
 
 
-  const glassHint = transparencyDisabled ? t("settings.glassUnavailable") : undefined;
-  const blurHint = glassHint ?? (liveBlurDisabled ? t("settings.blurUnavailable") : undefined);
+  const blurHint = liveBlurDisabled ? t("settings.blurUnavailable") : undefined;
   const followsBackground = themeDraft.accentMode !== "custom";
   const performanceOptions = [
     { value: "auto", label: t("settings.performanceAuto"), hint: t("settings.tierAutoHint") },
@@ -404,9 +404,10 @@ export function SettingsDialog(props: SettingsDialogProps) {
       id: "glass", title: t("settings.glass"), icon: <Wind size={16} />, span: "narrow",
       keywords: [t("settings.glassStyle"), t("settings.transparency"), t("settings.blur"), t("settings.glassRegular"), t("settings.glassClear")],
       body: <>
-        <Segmented label={t("settings.glassStyle")} disabled={transparencyDisabled} title={glassHint} value={themeDraft.glassVariant} items={[{ value: "regular", label: t("settings.glassRegular") }, { value: "clear", label: t("settings.glassClear") }]} onChange={(value) => patchTheme({ glassVariant: value as ThemeConfig["glassVariant"] })} />
-        <Range disabled={transparencyDisabled} title={glassHint} label={t("settings.transparency")} min={4} max={80} value={Math.round((1 - themeDraft.surfaceOpacity) * 100)} suffix="%" onChange={(value) => patchTheme({ surfaceOpacity: 1 - value / 100 })} />
+        <Segmented label={t("settings.glassStyle")} value={themeDraft.glassVariant} items={[{ value: "regular", label: t("settings.glassRegular") }, { value: "clear", label: t("settings.glassClear") }]} onChange={(value) => patchTheme({ glassVariant: value as ThemeConfig["glassVariant"] })} />
+        <Range label={t("settings.transparency")} min={0} max={60} value={Math.min(60, Math.round((1 - themeDraft.surfaceOpacity) * 100))} suffix="%" onChange={(value) => patchTheme({ surfaceOpacity: 1 - value / 100 })} />
         <Range disabled={liveBlurDisabled} title={blurHint} label={t("settings.blur")} min={0} max={32} value={themeDraft.blur} suffix="px" onChange={(value) => patchTheme({ blur: value })} />
+        {systemReducedTransparency ? <p className="settings-note">{t("settings.glassUnavailable")}</p> : null}
         {blurHint ? <p className="settings-note">{blurHint}</p> : null}
       </>,
     },
@@ -554,6 +555,25 @@ function Range({ label, min, max, value, suffix, onChange, disabled = false, tit
   const progress = max === min ? 0 : Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
   const style = { "--range-progress": `${progress}%` } as CSSProperties;
   return <label className={`range-control ${disabled ? "is-disabled" : ""}`} title={disabled ? title : undefined}><span><strong>{label}</strong><span className="range-control__value" aria-hidden="true">{Math.round(value)}{suffix}</span></span><input type="range" aria-label={label} min={min} max={max} value={value} aria-valuetext={`${Math.round(value)}${suffix}`} disabled={disabled} style={style} onInput={(event) => onChange(Number(event.currentTarget.value))} /></label>;
+}
+
+/** Follows the OS "reduce transparency" setting while Settings is open. */
+function useReducedTransparency(): boolean {
+  const [query] = useState(() => {
+    try {
+      return typeof matchMedia === "function" ? matchMedia("(prefers-reduced-transparency: reduce)") : null;
+    } catch {
+      return null;
+    }
+  });
+  const [reduced, setReduced] = useState(() => query?.matches ?? false);
+  useEffect(() => {
+    if (!query) return;
+    const update = (event: { matches: boolean }): void => setReduced(event.matches);
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, [query]);
+  return reduced;
 }
 
 function Switch({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {

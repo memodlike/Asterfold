@@ -5,12 +5,15 @@ import { browserPerformanceSignals, classifyPerformanceMode, type ResolvedPerfor
 import { extractCssImageUrl, storeStartupThemeSnapshot } from "./startupSnapshot";
 import { THEME_PREVIEW_EVENT, themePreviewFromEvent } from "./themePreview";
 import { themeStyle } from "./themeRuntime";
+import { sampleWallpaperExtremes } from "./boardContrast";
 
 interface WallpaperUrls {
   normal: string | null;
   compatibility: string | null;
   resolved: boolean;
   sourceId: string | null;
+  /** Dark and bright ends of the uploaded wallpaper, for the board contrast cap. */
+  sample?: readonly string[] | null;
 }
 
 function isUploadedWallpaper(id: string | null | undefined): id is string {
@@ -75,13 +78,16 @@ export function useThemeRuntime(theme: ThemeConfig | undefined): ResolvedPerform
       return;
     }
     setWallpaperUrls({ normal: null, compatibility: null, resolved: false, sourceId: wallpaperId });
-    void db.wallpapers.get(wallpaperId).then((record) => {
+    void db.wallpapers.get(wallpaperId).then(async (record) => {
+      // Sampled before the wallpaper is revealed, so the board tint does not change after it appears.
+      const sourceBlob = record?.thumbnail ?? record?.blob;
+      const sample = sourceBlob ? await sampleWallpaperExtremes(sourceBlob) : null;
       if (!active) return;
       const normal = record?.blob ? URL.createObjectURL(record.blob) : null;
       const compatibility = record?.thumbnail ? URL.createObjectURL(record.thumbnail) : normal;
       if (normal) objectUrls.push(normal);
       if (compatibility && compatibility !== normal) objectUrls.push(compatibility);
-      setWallpaperUrls({ normal, compatibility, resolved: true, sourceId: wallpaperId });
+      setWallpaperUrls({ normal, compatibility, resolved: true, sourceId: wallpaperId, sample });
     }).catch(() => {
       if (active) setWallpaperUrls({ normal: null, compatibility: null, resolved: true, sourceId: wallpaperId });
     });
@@ -93,8 +99,8 @@ export function useThemeRuntime(theme: ThemeConfig | undefined): ResolvedPerform
 
   const style = useMemo(() => activeTheme ? themeStyle(
     activeTheme, wallpaperUrls.normal, wallpaperUrls.compatibility,
-    dark, performanceMode,
-  ) : undefined, [activeTheme, dark, performanceMode, wallpaperUrls.compatibility, wallpaperUrls.normal]);
+    dark, performanceMode, wallpaperUrls.sample,
+  ) : undefined, [activeTheme, dark, performanceMode, wallpaperUrls.compatibility, wallpaperUrls.normal, wallpaperUrls.sample]);
 
   useLayoutEffect(() => {
     if (!activeTheme || !style) return;

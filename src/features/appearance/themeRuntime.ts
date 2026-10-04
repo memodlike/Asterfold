@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import type { ThemeConfig } from "../../domain/models";
 import type { ResolvedPerformanceMode } from "../performance/performanceProfile";
 import { automaticAccent, onAccentColor, readableAccent } from "./accent";
+import { BOARD_CLEAR_MAX, BUILTIN_WALLPAPER_EXTREMES, boardClearMax, cssShare, dimmed, parseRgb } from "./boardContrast";
 import { compileGradientCss } from "./gradientEngine";
 import { semanticPalette } from "./semanticPalette";
 
@@ -17,6 +18,8 @@ export function themeStyle(
   compatibilityWallpaperOrDark: string | null | boolean,
   darkValue?: boolean,
   performanceMode: ResolvedPerformanceMode = "quality",
+  /** Dark and bright ends of an uploaded wallpaper; null/undefined while it is being sampled. */
+  wallpaperSample?: readonly string[] | null,
 ): CSSProperties {
   const legacyCall = typeof compatibilityWallpaperOrDark === "boolean";
   const compatibilityWallpaperUrl = legacyCall ? wallpaperUrl : compatibilityWallpaperOrDark;
@@ -48,6 +51,20 @@ export function themeStyle(
     ? `blur(${performanceMode === "balanced" ? Math.min(6, theme.wallpaperBlur) : theme.wallpaperBlur}px) saturate(${theme.wallpaperSaturation})`
     : "none";
   const accent = readableAccent(theme.accentMode === "custom" ? theme.accent : automaticAccent(theme) ?? theme.accent, dark);
+  // Known background colours cap how much of them a board may show, so text stays AA: the canvas,
+  // gradient points and an uploaded wallpaper's sampled ends (black and white until sampled), all
+  // under the wallpaper dim layer. Built-in wallpapers use their measured ends.
+  const dim = wallpaperImage === "none" ? 0 : theme.wallpaperDim;
+  const uploaded = theme.backgroundMode === "wallpaper" && !builtin && wallpaperImage !== "none";
+  const knownBackgrounds = theme.backgroundMode === "wallpaper"
+    ? (uploaded ? (wallpaperSample ?? ["#000000", "#ffffff"]) : builtin ? BUILTIN_WALLPAPER_EXTREMES[builtin.id] ?? [] : []).map((color) => dimmed(color, dim) ?? color)
+    : [canvas, ...(isGradient ? (theme.gradient?.points ?? []).filter((point) => point.enabled).map((point) => dimmed(point.color, dim) ?? point.color) : [])];
+  const surfaceRgb = parseRgb(palette.surface);
+  const textRgb = parseRgb(palette.text);
+  const backgroundRgbs = knownBackgrounds.map(parseRgb).filter((value): value is NonNullable<typeof value> => value !== null);
+  // White pointer highlight strength; it lowers dark-theme text contrast, so the cap includes it.
+  const glare = performanceMode === "software" ? 0 : dark ? 0.1 : 0.55;
+  const clearMax = surfaceRgb && textRgb ? boardClearMax(surfaceRgb, textRgb, backgroundRgbs, glare) : BOARD_CLEAR_MAX;
   const wallpaperTransform = !isGradient && performanceMode === "quality" && wallpaperImage !== "none" && theme.wallpaperZoom > 1 ? `scale(${theme.wallpaperZoom})` : "none";
   return {
     "--color-canvas": canvas, "--surface-rgb": palette.surface, "--color-surface": `rgb(${palette.surface} / ${theme.surfaceOpacity})`, "--surface-opacity": theme.surfaceOpacity,
@@ -56,7 +73,7 @@ export function themeStyle(
     "--color-success": palette.success, "--shadow-panel": palette.shadow, "--glass-blur": `${Math.min(32, theme.blur)}px`,
     "--overlay-blur": theme.blur <= 0 ? "0px" : `${Math.round(Math.min(40, Math.max(10, theme.blur * 1.3 + 6)))}px`,
     "--glass-highlight": dark ? "rgb(255 255 255 / .14)" : "rgb(255 255 255 / .70)", "--glass-sheen": theme.glassVariant === "clear" ? ".09" : ".18",
-    "--glass-tint": theme.glassVariant === "clear" ? ".8" : "1",
+    "--glass-clear-boost": theme.glassVariant === "clear" ? "1" : "0", "--board-clear-max": cssShare(clearMax), "--glare-strength": cssShare(glare),
     "--radius-card": `${theme.radius}px`, "--font-scale": theme.fontScale, "--board-width": `${theme.boardWidth}px`, "--favicon-size": `${theme.faviconSize}px`,
     "--bookmark-row-height": theme.density === "compact" ? "18px" : theme.density === "spacious" ? "22px" : "20px",
     "--wallpaper-image": wallpaperImage, "--wallpaper-compat-image": compatibilityImage, "--wallpaper-software-image": softwareImage, "--wallpaper-dim": wallpaperImage === "none" ? 0 : theme.wallpaperDim,

@@ -113,7 +113,7 @@ Asterfold is designed around local storage and least-privilege extension access.
 |---|---|
 | `bookmarks` | Imports or refreshes Chrome bookmarks after direct user action (revoked immediately) |
 
-Asterfold 3.6.4 does not request `activeTab`, `alarms`, or `contextMenus`. It performs zero active-tab queries, zero background polling alarms, zero context menus, zero host permissions, and makes no third-party favicon or network requests. Site favicons are served exclusively by Chrome's local icon cache via the standard MV3 `favicon` permission. Privacy Mode intentionally replaces site icons with a neutral icon.
+Asterfold 3.7.0 does not request `activeTab`, `alarms`, or `contextMenus`. It performs zero active-tab queries, zero background polling alarms, zero context menus, zero host permissions, and makes no third-party favicon or network requests. Site favicons are served exclusively by Chrome's local icon cache via the standard MV3 `favicon` permission. Privacy Mode intentionally replaces site icons with a neutral icon.
 
 Detailed review material:
 
@@ -176,7 +176,7 @@ Contribution guidance is available in [docs/development/CONTRIBUTING.md](docs/de
 
 ## Release artifacts
 
-Asterfold 3.6.4 produces a reproducible, cryptographically verifiable release containing:
+Asterfold 3.7.0 produces a reproducible, cryptographically verifiable release containing:
 
 - `Asterfold-Chrome.zip` (runtime Chrome Web Store bundle)
 - `chrome-unpacked.zip` (unpacked developer distribution)
@@ -189,7 +189,9 @@ The release pipeline verifies Manifest V3 structure, permission policy, CSP, for
 
 ## Release highlights
 
-**Asterfold 3.6.4** makes the boards on the main screen real, adjustable glass again: Glass transparency now reaches the boards in Maximum quality, Balanced and Smooth glass, Clear is a lighter tint that keeps your transparency, and No transparency is fully solid.
+**Asterfold 3.7.0** keeps the main screen glass on PCs without a usable GPU: the Lightweight mode (formerly No transparency) shows translucent boards with plain alpha blending, the light theme reads as glass as clearly as the dark one, and a soft highlight follows the pointer on glass boards.
+
+Asterfold 3.6.4 made the boards on the main screen real, adjustable glass again: Glass transparency now reaches the boards in Maximum quality, Balanced and Smooth glass, Clear is a lighter tint that keeps your transparency, and No transparency is fully solid.
 
 Asterfold 3.6.3 gave every glass surface one Liquid Glass finish: a specular sheen, a lit rim and concentric corner radii, plus a subtle edge lens on the launcher menu and search field in Maximum quality only.
 
@@ -205,7 +207,8 @@ The repository does not claim Chrome Web Store publication, approval, user count
 
 ## Version history
 
-1. **v3.6.4 — Main-screen glass follows your settings.** Boards take their tint from Glass transparency in every translucent tier (Smooth glass keeps slightly more tint and no live blur, never more transparency than Maximum quality), No transparency is fully opaque, Clear is a lighter tint instead of silently overwriting the transparency slider, new profiles start at 34% transparency, Smooth glass keeps transparency controls enabled, and secondary text on glass keeps AA contrast.
+1. **v3.7.0 — Glass without a GPU.** Lightweight mode (formerly No transparency) keeps boards translucent with plain alpha blending and no blur, the light theme lets more background through for the same setting so both themes read alike, a pointer highlight lights the hovered board, Glass transparency 0% gives solid boards in every mode, and Settings explains when the system's reduce-transparency setting makes surfaces solid.
+2. **v3.6.4 — Main-screen glass follows your settings.** Boards take their tint from Glass transparency in every translucent tier (Smooth glass keeps slightly more tint and no live blur, never more transparency than Maximum quality), No transparency is fully opaque, Clear is a lighter tint instead of silently overwriting the transparency slider, new profiles start at 34% transparency, Smooth glass keeps transparency controls enabled, and secondary text on glass keeps AA contrast.
 2. **v3.6.3 — Liquid Glass finish.** Unifies the rim highlight, specular sheen and concentric radii across menus, search, dialogs, Settings, first run, toasts and toolbars; adds a bounded, Quality-only edge lens on the launcher menu and search field that lower tiers and accessibility settings switch off; extends increased-contrast and forced-colors handling to every glass surface.
 2. **v3.6.2 — One-screen first run.** Replaces the three-step setup wizard with three glass tiles (language, bookmarks, appearance), one-click Chrome/HTML/backup import with an inline result, a live wallpaper preview, and fixes for the clipped Skip button, focus handling and light-theme shadow clipping.
 2. **v3.6.1 — Real frosted glass on boards.** Boards blur the wallpaper through a tiered `--board-filter` token (full blur in Quality, ≤8px in Balanced, none in Smooth glass and No transparency), driven by the Glass blur setting; the drag preview and empty state use the shared glass.

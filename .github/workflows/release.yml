@@ -151,8 +151,9 @@ jobs:
         run: |
           set -euo pipefail
           store_sha="$(sha256sum release/Asterfold-Chrome.zip | cut -d' ' -f1)"
-          cp docs/release/release-notes.md release-notes.md
-          printf '\n### Verification\n\n`Asterfold-Chrome.zip` SHA-256: `%s`\n\nBuild provenance, SBOM and checksums are attached. GitHub-generated source archives are not the Chrome Web Store upload package.\n' "$store_sha" >> release-notes.md
+          # Only this version's notes: the release page must not repeat the whole history.
+          node scripts/release-notes-section.mjs "${RELEASE_TAG#v}" > release-notes.md
+          printf '\n`Asterfold-Chrome.zip` SHA-256: `%s`\n' "$store_sha" >> release-notes.md
           gh release create "$RELEASE_TAG" \
             release/Asterfold-Chrome.zip \
             release/chrome-unpacked.zip \
@@ -163,7 +164,7 @@ jobs:
             release/sbom.spdx.json \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title "Asterfold $(node -p "require('./package.json').version")" \
+            --title "Asterfold ${RELEASE_TAG}" \
             --notes-file release-notes.md \
             --latest
 

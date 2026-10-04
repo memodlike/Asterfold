@@ -1,3 +1,12 @@
+# Asterfold 3.7.0
+
+## Glass on PCs without a GPU
+
+- **Translucent boards without hardware acceleration**: when Chrome renders without a GPU, Auto picks the Lightweight mode (formerly “No transparency”), which now shows translucent boards with plain alpha blending instead of solid white or dark cards. Blur stays off there.
+- **Light and dark themes match**: the light theme lets more of the background through for the same Glass transparency, so it no longer looks like solid white cards while the dark theme looks like glass.
+- **Soft highlight under the pointer** on glass boards; it is off for touch, while dragging, in Lightweight and with reduced motion.
+- **Readable at every setting**: Glass transparency now goes from 0% (solid boards in every mode) to 60%, and boards keep text contrast over solid and gradient backgrounds; Settings says when the system's reduce-transparency setting is what makes surfaces solid.
+
 # Asterfold 3.6.4
 
 ## Main-Screen Glass Follows Your Settings
