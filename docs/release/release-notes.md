@@ -1,3 +1,15 @@
+# Asterfold 3.7.1
+
+## Design System, Accessibility & Ergonomics Hardening
+
+- **WCAG AA contrast compliant**: darkened light-theme secondary text (`#5f6168`) for crisp readability (> 5.4:1 contrast ratio) and fixed search field placeholder opacity.
+- **Zero-flash new tab opening**: synchronized dark canvas pre-paint color (`#16171a`) in bootstrap styles, eliminating pre-hydration background flicker.
+- **Improved touch targets and spacing**: increased bookmark row heights (20px compact / 22px standard / 26px spacious; 36px on touch devices), enlarged context menu actions (32px), and optimized board add buttons.
+- **Typography metrics & glyph safety**: normalized typography to integer sizes (11px, 12px, 13px, 14px; 500/600 weights) and set `line-height: 1.25` to protect Cyrillic and diacritic descenders from boundary clipping.
+- **Stable layout engine**: preserved user-defined board column sizes during bookmark addition to prevent abrupt grid shifts; eliminated vertical track jumping.
+- **Clear interactive states**: added context menu target highlight (`is-menu-open`), designed empty board drop zones with dashed outlines, and unified 2px high-contrast keyboard focus rings.
+- **Accessibility & localization**: dynamically synchronized document language in popup to avoid screen reader mispronunciation; removed dead styles.
+
 # Asterfold 3.7.0
 
 ## Glass on PCs without a GPU
