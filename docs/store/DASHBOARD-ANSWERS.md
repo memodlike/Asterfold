@@ -1,6 +1,6 @@
-# Chrome Web Store Developer Dashboard Answers — Asterfold 3.7.2
+# Chrome Web Store Developer Dashboard Answers — Asterfold 3.8.0
 
-This document provides the exact answers and disclosures to enter into the Chrome Web Store Developer Dashboard for **Asterfold 3.7.2**.
+This document provides the exact answers and disclosures to enter into the Chrome Web Store Developer Dashboard for **Asterfold 3.8.0**.
 
 ---
 
@@ -57,28 +57,16 @@ The use of information received from Google APIs will adhere to the Chrome Web S
 
 ## 3. Permission Justifications
 
-### `favicon`
+### Zero Permissions Policy
 ```text
-The favicon permission is required to display website icons for URLs that the user has explicitly saved as bookmarks in Asterfold. Asterfold uses Chrome's built-in Manifest V3 favicon resource only for visual bookmark identification. Asterfold does not read page content or browsing history, does not request host permissions, does not contact third-party favicon services, and does not store or transmit favicon data.
-```
-
-### `storage`
-Under Chrome Web Store rules, the `storage` permission typically requires **0 justifications** (it is a standard low-risk permission). If a justification prompt is displayed for `storage`:
-```text
-The storage permission is used only for the temporary Privacy Mode state in chrome.storage.session so the New Tab page and extension popup can share the same visual privacy state. Chrome clears this session value when the browser session ends. Asterfold bookmark workspace data remains stored locally in IndexedDB.
-```
-
-### Optional `bookmarks`
-If the Chrome Web Store dashboard displays a justification prompt for `bookmarks`:
-```text
-The bookmarks permission is requested only after the user explicitly chooses Import Chrome bookmarks or Refresh from Chrome. Asterfold reads the Chrome bookmark tree locally to import or refresh the user's selected bookmark workspace, then immediately removes the permission. Declining this permission does not affect normal Asterfold use.
+Asterfold 3.8.0 operates with strictly ZERO permissions (permissions: [], optional_permissions: [], host_permissions: []). It requires no manifest permissions and triggers zero permission warnings upon installation.
 ```
 
 ### Removed Permissions Notice
-Notice to Reviewer: Asterfold 3.7.2 does not request `activeTab`, `alarms`, or `contextMenus`. The extension requests strictly `storage` and `favicon`. The optional `bookmarks` permission is requested on-demand only if the user explicitly triggers Chrome bookmark import, and is revoked immediately upon completion.
+Notice to Reviewer: Asterfold 3.8.0 does not request `activeTab`, `alarms`, `contextMenus`, `storage`, `favicon`, or `bookmarks`. The extension requests strictly zero permissions.
 
 ---
 
 ## 4. Package Upload
 - File to upload: **`release/Asterfold-Chrome.zip`**
-- Verify version is **`3.7.2`** and `manifest_version: 3`.
+- Verify version is **`3.8.0`** and `manifest_version: 3`.

@@ -1,17 +1,17 @@
 # Security review
 
-## STATUS: CURRENT — Asterfold 3.7.2
+## STATUS: CURRENT — Asterfold 3.8.0
 
-Review date: 3 October 2026. Target: Asterfold 3.7.2 on `main`.
+Review date: 5 October 2026. Target: Asterfold 3.8.0 on `main`.
 
 ### Verified design controls
 
 | Control | Implementation |
 | --- | --- |
-| Permission minimization | Strictly `permissions: ["storage", "favicon"]` with optional `bookmarks` on-demand. Zero `activeTab`, zero `alarms`, zero `contextMenus`, zero host permissions (`host_permissions: []`), zero content scripts. |
-| Remote code and network isolation | Strict CSP (`script-src 'self'; object-src 'self'; base-uri 'self'`). Zero remote executable code, zero third-party network requests, zero analytics, telemetry, or remote backends. |
-| Native Chrome Favicons & Privacy Isolation | Real site favicons render exclusively via `chrome.runtime.getURL("/_favicon/")` using Chrome's local browser cache with DPR scaling (16/32/48/64px). Legacy stored icon fields are ignored. In Privacy Mode, favicon URLs are never constructed or queried, rendering neutral local SVG vectors. |
-| Cross-context Privacy Mode | Transient shoulder-surfing flag uses `chrome.storage.session` (cleared automatically by Chrome when the browser closes); persistent data stays in local IndexedDB. |
+| Permission minimization | Strictly zero permissions (`permissions: []`, `optional_permissions: []`, `host_permissions: []`). Zero `activeTab`, zero `alarms`, zero `contextMenus`, zero host permissions, zero content scripts. |
+| Remote code and network isolation | Strict CSP (`script-src 'self'; object-src 'self'; base-uri 'self'`). Zero remote executable code, zero third-party telemetry, analytics, or remote backends. |
+| Resilient Zero-Permission Favicons | Site favicons render via resilient zero-permission icon resolution (Google S2 with local neutral vector fallbacks) with DPR scaling (16/32/48/64px). Legacy stored icon fields are ignored. In Privacy Mode, favicon URLs are never constructed or queried, rendering neutral local SVG vectors. |
+| Cross-context Privacy Mode | Transient shoulder-surfing flag uses resilient session storage; persistent data stays in local IndexedDB. |
 | Schema 10 & Data Integrity | IndexedDB Schema 10 introduces machine-readable `source` and `sourceId` on `Page` and `Board` entities. Chrome bookmark refreshes match target pages and boards idempotently without creating duplicate pages or losing user local renames. |
 | Folder Identity Isolation | Chrome bookmark import groups by folder source ID (`chrome:<folderSourceId>`), preserving distinct boards for same-name folders under different parent trees and preventing URL cross-merging. |
 | Robustness & Entity Parsing | HTML entity decoding strictly checks Unicode scalar value boundaries (`0x0000..0xD7FF`, `0xE000..0x10FFFF`) and rejects UTF-16 surrogates without uncaught `RangeError`. File imports are bounded upfront at 128 MB with a 30s cancellable Web Worker. |
@@ -21,7 +21,7 @@ Review date: 3 October 2026. Target: Asterfold 3.7.2 on `main`.
 
 ### Permission status
 
-Asterfold 3.7.2 requires strictly `permissions: ["storage", "favicon"]`. The `storage` permission is restricted to `chrome.storage.session` for transient privacy state synchronization. The `favicon` permission accesses Chrome's local icon cache for user-saved bookmarks. The optional `bookmarks` permission is requested on-demand only when the user triggers Chrome bookmark import and is revoked immediately upon completion. Asterfold has zero host permissions, zero `activeTab`/`alarms`/`contextMenus`, and injects zero content scripts.
+Asterfold 3.8.0 operates with strictly ZERO permissions (`permissions: []`, `optional_permissions: []`, `host_permissions: []`). It has zero install warnings in Chrome, zero host permissions, zero `activeTab`/`alarms`/`contextMenus`, and injects zero content scripts.
 
 ### Dependency status
 

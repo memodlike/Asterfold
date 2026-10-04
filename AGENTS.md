@@ -6,8 +6,7 @@ You are operating inside **Asterfold**, a high-performance, local-first visual b
 - **No Remote Executable Code**: Never load external scripts, `eval()`, `new Function()`, or dynamic imports from remote URLs (`https://...`). All code must be bundled locally.
 - **Service Worker Ephemeral Lifecycle**: Background Service Workers in MV3 terminate when idle. Never rely on global in-memory variables for persistent state; persist critical state to `chrome.storage.local` or IndexedDB. Use `chrome.alarms` instead of long-running `setInterval`.
 - **Minimum Permissions Principle**:
-  - Only use explicitly declared permissions: `["storage", "favicon"]`.
-  - Single optional permission: `["bookmarks"]` (requested on-demand via `chrome.permissions.request`).
+  - Zero-permission policy: strictly empty `permissions: []`, `optional_permissions: []`.
   - Keep `host_permissions: []` empty. Never introduce broad URL match patterns (`<all_urls>`, `*://*/*`).
 - **Strict Content Security Policy**:
   - CSP must strictly enforce: `extension_pages: "script-src 'self'; object-src 'self'; base-uri 'self'"`.

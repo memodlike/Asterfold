@@ -335,8 +335,8 @@ test.describe.serial("Asterfold MV3 release", () => {
     const probe = await worker.evaluate(() => ({ manifest: chrome.runtime.getManifest() }));
     expect(probe.manifest.manifest_version).toBe(3);
     expect(probe.manifest.chrome_url_overrides?.newtab).toBe("newtab.html");
-    expect(new Set(probe.manifest.permissions)).toEqual(new Set(["storage", "favicon"]));
-    expect(new Set(probe.manifest.optional_permissions ?? [])).toEqual(new Set(["bookmarks"]));
+    expect(new Set(probe.manifest.permissions ?? [])).toEqual(new Set([]));
+    expect(new Set(probe.manifest.optional_permissions ?? [])).toEqual(new Set([]));
     expect(probe.manifest.permissions).not.toEqual(expect.arrayContaining(["activeTab", "alarms", "contextMenus", "tabs", "history", "scripting", "webRequest"]));
     expect(probe.manifest.host_permissions ?? []).toEqual([]);
   });

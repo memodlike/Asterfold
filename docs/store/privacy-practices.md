@@ -1,6 +1,6 @@
-# Chrome Web Store Privacy Practices — Asterfold 3.7.2
+# Chrome Web Store Privacy Practices — Asterfold 3.8.0
 
-Prepared for the Asterfold 3.7.2 release. These are recommended dashboard answers for the reviewed default release. Recheck every answer against the final uploaded ZIP before submission.
+Prepared for the Asterfold 3.8.0 release. These are recommended dashboard answers for the reviewed default release. Recheck every answer against the final uploaded ZIP before submission.
 
 ## Single purpose
 
@@ -30,7 +30,7 @@ Category breakdown for the Dashboard:
 
 ## Data handling certifications
 
-The owner can certify the following for the reviewed 3.7.2 default build:
+The owner can certify the following for the reviewed 3.8.0 default build:
 
 - data is used only to provide the extension's single bookmark-workspace purpose;
 - workspace data is stored locally in the user's Chrome profile;
@@ -60,13 +60,7 @@ Do not submit the intended Pages URL until it opens publicly without authenticat
 
 ## Permission justifications
 
-| Permission | Dashboard justification |
-| --- | --- |
-| `storage` | Stores only the temporary Privacy Mode flag in `chrome.storage.session`, allowing popup and New Tab to share the same visual-protection state without writing to disk. Chrome clears session storage when the browser session ends; bookmark workspace data remains in IndexedDB. |
-| `favicon` | Displays website icons for saved bookmarks on New Tab bookmark cards, the editor preview, and the search palette using `chrome.runtime.getURL("/_favicon/")`. Icons are retrieved from the local browser cache without network calls to external servers. |
-| optional `bookmarks` | Requested only on-demand when the user selects Import Chrome bookmarks or Refresh from Chrome. The Chrome bookmark tree is read locally to create or update bookmarks and the permission is immediately revoked via `browser.permissions.remove`; declining does not affect normal use. |
-
-Asterfold 3.7.2 does NOT request `activeTab`, `alarms`, or `contextMenus`. The final 3.7.2 manifest must list only `permissions: ["storage", "favicon"]` and optional `bookmarks`; it must not list host permissions, content scripts, `tabs`, `history`, `identity`, `scripting`, `webRequest`, cookies or clipboard-read. If the final ZIP differs, stop submission and reconcile the manifest and disclosures.
+Asterfold 3.8.0 operates with strictly ZERO manifest permissions (`permissions: []`, `optional_permissions: []`, `host_permissions: []`). It does not request `activeTab`, `alarms`, `contextMenus`, `storage`, `favicon`, or `bookmarks`. The final 3.8.0 manifest must list empty `permissions: []` and empty `optional_permissions: []`; it must not list host permissions, content scripts, `tabs`, `history`, `identity`, `scripting`, `webRequest`, cookies or clipboard-read. If the final ZIP differs, stop submission and reconcile the manifest and disclosures.
 
 ## Privacy policy URL
 

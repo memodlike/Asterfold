@@ -19,6 +19,17 @@ describe("BrowserFavicon component", () => {
     expect(container.querySelector("svg")).toBeNull();
   });
 
+  it("renders an img tag for a zero-permission Google S2 favicon URL", () => {
+    const { container } = render(createElement(BrowserFavicon, {
+      source: "https://www.google.com/s2/favicons?domain=example.com&sz=32",
+    }));
+    const img = container.querySelector("img");
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute("src")).toBe("https://www.google.com/s2/favicons?domain=example.com&sz=32");
+    expect(img?.getAttribute("alt")).toBe("");
+    expect(container.querySelector("svg")).toBeNull();
+  });
+
   it("falls back to local neutral Globe SVG when image fires onError", () => {
     const { container } = render(createElement(BrowserFavicon, {
       source: "chrome-extension://test-id/_favicon/?pageUrl=https%3A%2F%2Fmissing.example&size=32",

@@ -20,7 +20,9 @@ export function BrowserFavicon({ source, className, privacy, fallback }: Browser
   const isSafeSource = Boolean(
     source &&
     !privacy &&
-    (source.startsWith("chrome-extension://") || source.startsWith("chrome://"))
+    (source.startsWith("https://www.google.com/s2/favicons") ||
+      source.startsWith("chrome-extension://") ||
+      source.startsWith("chrome://"))
   );
   const showImage = isSafeSource && !failed;
 

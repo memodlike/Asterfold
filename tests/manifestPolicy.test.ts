@@ -26,8 +26,8 @@ describe("Chrome Web Store manifest policy", () => {
     expect(lock.version).toBe(packageVersion);
     expect(lock.packages?.[""]?.version).toBe(packageVersion);
     expect(config).toContain("version: packageVersion");
-    expect(config).toMatch(/permissions:\s*\[[^\]]*["']storage["'][^\]]*["']favicon["']/su);
-    expect(releaseValidator).toContain("storage");
+    expect(config).toMatch(/permissions:\s*\[\s*\]/su);
+    expect(releaseValidator).toContain("expectedPermissions = []");
     expect(releaseValidator).toContain("new\\s+(?:Shared)?Worker");
     expect(releaseValidator).toContain("WebAssembly");
     expect(releaseValidator).toContain("<iframe");
@@ -51,9 +51,9 @@ describe("Chrome Web Store manifest policy", () => {
 
     expect(manifest.manifest_version).toBe(3);
     expect(manifest.version).toBe(packageVersion);
-    expect(new Set(manifest.permissions)).toEqual(new Set(["storage", "favicon"]));
+    expect(new Set(manifest.permissions ?? [])).toEqual(new Set([]));
     expect(manifest.permissions).not.toEqual(expect.arrayContaining(["activeTab", "alarms", "contextMenus", "identity", "tabs", "history", "scripting", "webRequest", "cookies"]));
-    expect(manifest.optional_permissions).toEqual(["bookmarks"]);
+    expect(manifest.optional_permissions ?? []).toEqual([]);
     expect(manifest.host_permissions).toEqual([]);
     expect(manifest.content_security_policy?.extension_pages).toBe("script-src 'self'; object-src 'self'; base-uri 'self'");
     expect(manifest.content_scripts).toBeUndefined();

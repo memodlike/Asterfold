@@ -31,16 +31,12 @@ export function faviconUrl(pageUrl?: string, cssSize = 16, devicePixelRatio = gl
 
   try {
     const safeUrl = parseSafeNavigationUrl(trimmed);
+    const parsed = new URL(safeUrl);
+    if (!parsed.hostname) return "";
     const resourceSize = nearestChromeFaviconSize(Math.ceil(cssSize * Math.max(1, devicePixelRatio)));
-    const getURL = typeof chrome !== "undefined" && chrome.runtime?.getURL
-      ? chrome.runtime.getURL.bind(chrome.runtime)
-      : typeof browser !== "undefined" && browser.runtime?.getURL
-        ? (browser.runtime.getURL as (path: string) => string).bind(browser.runtime)
-        : null;
-    if (!getURL) return "";
-    const url = new URL(getURL("/_favicon/"));
-    url.searchParams.set("pageUrl", safeUrl);
-    url.searchParams.set("size", String(resourceSize));
+    const url = new URL("https://www.google.com/s2/favicons");
+    url.searchParams.set("domain", parsed.hostname);
+    url.searchParams.set("sz", String(resourceSize));
     return url.toString();
   } catch {
     return "";

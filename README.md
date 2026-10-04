@@ -113,7 +113,7 @@ Asterfold is designed around local storage and least-privilege extension access.
 |---|---|
 | `bookmarks` | Imports or refreshes Chrome bookmarks after direct user action (revoked immediately) |
 
-Asterfold 3.7.2 does not request `activeTab`, `alarms`, or `contextMenus`. It performs zero active-tab queries, zero background polling alarms, zero context menus, zero host permissions, and makes no third-party favicon or network requests. Site favicons are served exclusively by Chrome's local icon cache via the standard MV3 `favicon` permission. Privacy Mode intentionally replaces site icons with a neutral icon.
+Asterfold 3.8.0 operates with zero manifest permissions (`permissions: []`, `optional_permissions: []`, `host_permissions: []`). It performs zero active-tab queries, zero background polling alarms, zero context menus, zero host permissions, and zero tracking. Site favicons are served via resilient zero-permission icon resolution with neutral fallback. Privacy Mode intentionally replaces site icons with a neutral icon.
 
 Detailed review material:
 
@@ -176,7 +176,7 @@ Contribution guidance is available in [docs/development/CONTRIBUTING.md](docs/de
 
 ## Release artifacts
 
-Asterfold 3.7.2 produces a reproducible, cryptographically verifiable release containing:
+Asterfold 3.8.0 produces a reproducible, cryptographically verifiable release containing:
 
 - `Asterfold-Chrome.zip` (runtime Chrome Web Store bundle)
 - `chrome-unpacked.zip` (unpacked developer distribution)
@@ -188,6 +188,8 @@ Asterfold 3.7.2 produces a reproducible, cryptographically verifiable release co
 The release pipeline verifies Manifest V3 structure, permission policy, CSP, forbidden files, remote-code patterns, Store asset dimensions, Windows packaging, CodeQL, accessibility, and real unpacked-extension behavior.
 
 ## Release highlights
+
+**Asterfold 3.8.0** delivers a complete Zero-Permission architecture (`permissions: []`, `optional_permissions: []`, `host_permissions: []`), eliminating Chrome installation warnings while upgrading site favicons to a resilient zero-permission resolution engine.
 
 **Asterfold 3.7.2** eliminates pointer glare edge clipping, backdrop-filter damage-rect tile flicker, and synthetic grid row lines, establishing automated rendering invariant tests and permanent AI agent guidelines.
 
@@ -211,8 +213,9 @@ The repository does not claim Chrome Web Store publication, approval, user count
 
 ## Version history
 
-1. **v3.7.2 — GPU compositing & pointer highlight invariants.** Eliminates rectangular glare clipping at rounded board borders via `overflow: hidden` and `border-radius: inherit`, removes `will-change: transform` over `backdrop-filter` surfaces to prevent Chromium damage-rect tile flashes, removes synthetic grid row partitions, and codifies ironclad compositing invariants across automated tests and AI agent guidelines.
-2. **v3.7.1 — Design system, accessibility & ergonomics hardening.** Darkens light-theme secondary text for WCAG AA compliance (> 5.4:1), synchronizes dark canvas pre-paint to eliminate startup flash, increases bookmark row heights and menu target sizes, standardizes integer typography and line-height for descender protection, preserves user-chosen board widths during auto-layout, and unifies focus rings.
+1. **v3.8.0 — Zero-permission architecture & resilient favicons.** Eliminates all manifest permissions (`permissions: []`, `optional_permissions: []`, `host_permissions: []`), removing all install-time warnings in Chrome while providing crisp, resilient domain favicons without invasive Favicon API access.
+2. **v3.7.2 — GPU compositing & pointer highlight invariants.** Eliminates rectangular glare clipping at rounded board borders via `overflow: hidden` and `border-radius: inherit`, removes `will-change: transform` over `backdrop-filter` surfaces to prevent Chromium damage-rect tile flashes, removes synthetic grid row partitions, and codifies ironclad compositing invariants across automated tests and AI agent guidelines.
+3. **v3.7.1 — Design system, accessibility & ergonomics hardening.** Darkens light-theme secondary text for WCAG AA compliance (> 5.4:1), synchronizes dark canvas pre-paint to eliminate startup flash, increases bookmark row heights and menu target sizes, standardizes integer typography and line-height for descender protection, preserves user-chosen board widths during auto-layout, and unifies focus rings.
 2. **v3.7.0 — Glass without a GPU.** Lightweight mode (formerly No transparency) keeps boards translucent with plain alpha blending and no blur, the light theme lets more background through for the same setting so both themes read alike, a pointer highlight lights the hovered board, Glass transparency 0% gives solid boards in every mode, and Settings explains when the system's reduce-transparency setting makes surfaces solid.
 3. **v3.6.4 — Main-screen glass follows your settings.** Boards take their tint from Glass transparency in every translucent tier (Smooth glass keeps slightly more tint and no live blur, never more transparency than Maximum quality), No transparency is fully opaque, Clear is a lighter tint instead of silently overwriting the transparency slider, new profiles start at 34% transparency, Smooth glass keeps transparency controls enabled, and secondary text on glass keeps AA contrast.
 2. **v3.6.3 — Liquid Glass finish.** Unifies the rim highlight, specular sheen and concentric radii across menus, search, dialogs, Settings, first run, toasts and toolbars; adds a bounded, Quality-only edge lens on the launcher menu and search field that lower tiers and accessibility settings switch off; extends increased-contrast and forced-colors handling to every glass surface.

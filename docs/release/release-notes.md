@@ -1,3 +1,15 @@
+# Asterfold 3.8.0
+
+## Zero-Permission Architecture & Resilient Favicons
+
+- **Zero-Permission Manifest**: completely eliminated all runtime and installation permissions (`permissions: []`, `optional_permissions: []`, `host_permissions: []`). Chrome now displays zero security or data access warnings at installation.
+- **Resilient Zero-Permission Favicon Engine**: upgraded site favicon resolution to high-definition Google S2 service with robust fallback, delivering crisp, real website icons without requiring Chrome's invasive Favicon API access.
+- **Zero-Storage Privacy Session Resiliency**: enhanced transient Privacy Mode flag to operate locally within session contexts with zero extension storage API permissions.
+- **Smooth glare clipping along rounded borders**: eliminated rectangular highlight truncation at board corners by enforcing `overflow: hidden` and `border-radius: inherit` without `contain: paint` rectangular border-box clipping.
+- **Backdrop-filter tile artifact elimination**: eliminated tile seam lines and damage-rect square flicker over frosted glass cards by removing `will-change: transform` hardware layer promotion from the pointer glare layer.
+- **Seam-free dynamic board grids**: eliminated synthetic horizontal partition lines across stretched grid rows by removing rigid `content-visibility: auto` and `contain-intrinsic-size` from dynamic workspace boards.
+- **Ironclad AI agent invariants & automated QA**: added automated invariant regression tests and established permanent rules in workspace agent instructions and design system skills to prevent GPU compositing and highlight clipping regressions in all future development.
+
 # Asterfold 3.7.2
 
 ## GPU Compositing & Glare Highlight Invariants

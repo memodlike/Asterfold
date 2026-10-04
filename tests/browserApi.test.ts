@@ -43,38 +43,31 @@ describe("background navigation client", () => {
     });
   });
 
-  it("builds Chrome-owned favicon URLs with normalized DPR-aware resource sizes", () => {
-    const getURL = vi.fn((path: string) => `chrome-extension://test-extension${path}`);
-    vi.stubGlobal("chrome", { runtime: { getURL } });
-
+  it("builds zero-permission favicon URLs with normalized DPR-aware resource sizes", () => {
     const icon = new URL(faviconUrl("HTTPS://GitHub.com:443/path?q=one two", 16, 2));
-    expect(icon.protocol).toBe("chrome-extension:");
-    expect(icon.hostname).toBe("test-extension");
-    expect(icon.pathname).toBe("/_favicon/");
-    expect(icon.searchParams.get("pageUrl")).toBe("https://github.com/path?q=one%20two");
-    expect(icon.searchParams.get("size")).toBe("32");
-    expect(faviconUrl("https://figma.com", 48, 2)).toContain("size=64");
-    expect(getURL).toHaveBeenCalledWith("/_favicon/");
+    expect(icon.protocol).toBe("https:");
+    expect(icon.hostname).toBe("www.google.com");
+    expect(icon.pathname).toBe("/s2/favicons");
+    expect(icon.searchParams.get("domain")).toBe("github.com");
+    expect(icon.searchParams.get("sz")).toBe("32");
+    expect(faviconUrl("https://figma.com", 48, 2)).toContain("sz=64");
   });
 
   it("handles DPR scaling and boundary clamping accurately", () => {
-    const getURL = vi.fn((path: string) => `chrome-extension://test-extension${path}`);
-    vi.stubGlobal("chrome", { runtime: { getURL } });
-
     // 16px @ 1x DPR -> 16
-    expect(new URL(faviconUrl("https://example.com", 16, 1)).searchParams.get("size")).toBe("16");
+    expect(new URL(faviconUrl("https://example.com", 16, 1)).searchParams.get("sz")).toBe("16");
     // 16px @ 2x DPR -> 32
-    expect(new URL(faviconUrl("https://example.com", 16, 2)).searchParams.get("size")).toBe("32");
+    expect(new URL(faviconUrl("https://example.com", 16, 2)).searchParams.get("sz")).toBe("32");
     // 18px @ 2x DPR = 36 -> nearest is 32 or 48
-    expect(new URL(faviconUrl("https://example.com", 18, 2)).searchParams.get("size")).toBe("32");
+    expect(new URL(faviconUrl("https://example.com", 18, 2)).searchParams.get("sz")).toBe("32");
     // 24px @ 2x DPR = 48 -> 48
-    expect(new URL(faviconUrl("https://example.com", 24, 2)).searchParams.get("size")).toBe("48");
+    expect(new URL(faviconUrl("https://example.com", 24, 2)).searchParams.get("sz")).toBe("48");
     // 32px @ 2x DPR = 64 -> 64
-    expect(new URL(faviconUrl("https://example.com", 32, 2)).searchParams.get("size")).toBe("64");
+    expect(new URL(faviconUrl("https://example.com", 32, 2)).searchParams.get("sz")).toBe("64");
     // Clamping large sizes (>64) to 64
-    expect(new URL(faviconUrl("https://example.com", 128, 2)).searchParams.get("size")).toBe("64");
+    expect(new URL(faviconUrl("https://example.com", 128, 2)).searchParams.get("sz")).toBe("64");
     // Clamping small sizes (<16) to 16
-    expect(new URL(faviconUrl("https://example.com", 8, 1)).searchParams.get("size")).toBe("16");
+    expect(new URL(faviconUrl("https://example.com", 8, 1)).searchParams.get("sz")).toBe("16");
   });
 
   it.each([
@@ -86,9 +79,6 @@ describe("background navigation client", () => {
   });
 
   it("rejects non-finite, zero, or negative dimensions and DPR", () => {
-    const getURL = vi.fn((path: string) => `chrome-extension://test-extension${path}`);
-    vi.stubGlobal("chrome", { runtime: { getURL } });
-
     expect(faviconUrl("https://example.com", Number.NaN, 1)).toBe("");
     expect(faviconUrl("https://example.com", Number.POSITIVE_INFINITY, 1)).toBe("");
     expect(faviconUrl("https://example.com", 16, Number.NaN)).toBe("");
@@ -99,23 +89,16 @@ describe("background navigation client", () => {
     expect(faviconUrl("https://example.com", 16, -1)).toBe("");
   });
 
-  it("returns empty string when browser runtime is unavailable", () => {
-    vi.stubGlobal("chrome", undefined);
-    expect(faviconUrl("https://example.com", 16, 1)).toBe("");
-  });
-
   it.each([
     "https://github.com", "https://youtube.com", "https://google.com", "https://figma.com",
     "https://linkedin.com", "https://pinterest.com", "https://intranet.example", "http://localhost:3000",
-  ])("uses Chrome-owned favicon resource for supported bookmark URL: %s", (url) => {
-    const getURL = vi.fn((path: string) => `chrome-extension://test-extension${path}`);
-    vi.stubGlobal("chrome", { runtime: { getURL } });
-
+  ])("uses zero-permission favicon resource for supported bookmark URL: %s", (url) => {
     const icon = new URL(faviconUrl(url, 16, 1));
-    expect(icon.protocol).toBe("chrome-extension:");
-    expect(icon.pathname).toBe("/_favicon/");
-    expect(icon.searchParams.get("pageUrl")).toBe(new URL(url).toString());
-    expect(icon.searchParams.get("size")).toBe("16");
+    expect(icon.protocol).toBe("https:");
+    expect(icon.hostname).toBe("www.google.com");
+    expect(icon.pathname).toBe("/s2/favicons");
+    expect(icon.searchParams.get("domain")).toBe(new URL(url).hostname);
+    expect(icon.searchParams.get("sz")).toBe("16");
   });
 });
 

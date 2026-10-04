@@ -79,12 +79,11 @@ describe("BookmarkCard real production favicon integration", () => {
     const img = container.querySelector("img");
     expect(img).not.toBeNull();
     const src = img?.getAttribute("src") ?? "";
-    expect(src).toContain("chrome-extension://asterfold-live/_favicon/");
-    expect(src).toContain("pageUrl=https%3A%2F%2Fgithub.com%2Fmemodlike%2FAsterfold");
-    expect(src).toContain("size=");
+    expect(src).toContain("https://www.google.com/s2/favicons");
+    expect(src).toContain("domain=github.com");
+    expect(src).toContain("sz=");
     // Proves legacy poisoned URLs are never rendered
     expect(src).not.toContain("malicious.tracker");
-    expect(getURL).toHaveBeenCalledWith("/_favicon/");
   });
 
   it("handles image load failure gracefully by falling back to neutral Globe SVG", () => {

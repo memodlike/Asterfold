@@ -1,6 +1,6 @@
-# Chrome Web Store submission values — Asterfold 3.7.2
+# Chrome Web Store submission values — Asterfold 3.8.0
 
-Current version: 3.7.2
+Current version: 3.8.0
 Copy these values into the owner Dashboard only after checking them against the final release ZIP.
 
 ## Core values

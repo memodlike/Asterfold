@@ -1,6 +1,6 @@
 # Профессиональный дизайн-аудит и реестр проблем UI/UX: Asterfold
 
-**Версия проекта:** Asterfold 3.7.2 (Google Chrome Extension MV3)  
+**Версия проекта:** Asterfold 3.8.0 (Google Chrome Extension MV3)  
 **Дата проведения аудита:** 4 октября 2026 г.  
 **Статус:** Утверждён к реализации (Actionable Audit)  
 **Область аудита:** Все пользовательские интерфейсы (New Tab Workspace, App Launcher, Spotlight Search, Settings Dialog, Onboarding Wizard, Toolbar Popup, Context Menus, Toast Notifications, Tiered Liquid Glass Engine).  
