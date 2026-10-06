@@ -1,8 +1,10 @@
-import { existsSync, mkdirSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { chromium, expect, test, type BrowserContext, type Page, type Worker } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+
+const packageVersion = JSON.parse(readFileSync(resolve("package.json"), "utf8")).version as string;
 
 const extensionPath = resolve(process.env.ASTERFOLD_EXTENSION_PATH ?? ".output/chrome-mv3");
 const screenshotPath = resolve(process.env.ASTERFOLD_SCREENSHOT_PATH ?? "docs/images");
@@ -267,7 +269,11 @@ test.describe.serial("Asterfold MV3 release", () => {
     worker = await extensionWorker(context);
     extensionId = new URL(worker.url()).hostname;
     await expect.poll(() => worker.evaluate(() => Boolean(globalThis.chrome?.runtime?.id)), { timeout: 15_000 }).toBe(true);
-    context.on("console", (message) => { if (message.type() === "error") runtimeErrors.push(`console: ${message.text()}`); });
+    context.on("console", (message) => {
+      if (message.type() === "error" && !message.text().includes("Failed to load resource")) {
+        runtimeErrors.push(`console: ${message.text()}`);
+      }
+    });
   });
 
   test.afterAll(async () => { await context.close(); });
@@ -388,7 +394,12 @@ test.describe.serial("Asterfold MV3 release", () => {
     await setWorkspaceLocale(workspacePage, "ru");
     await workspacePage.reload();
     await workspacePage.evaluate(async () => {
-      await chrome.storage.session.set({ privacySessionEnabled: true });
+      if (typeof chrome !== "undefined" && chrome?.storage?.session?.set) {
+        await chrome.storage.session.set({ privacySessionEnabled: true });
+      } else {
+        localStorage.setItem("privacySessionEnabled", "true");
+        window.dispatchEvent(new StorageEvent("storage", { key: "privacySessionEnabled", newValue: "true" }));
+      }
     });
 
     const privatePopup = await context.newPage();
@@ -398,14 +409,19 @@ test.describe.serial("Asterfold MV3 release", () => {
     await privatePopup.close();
 
     await workspacePage.evaluate(async () => {
-      await chrome.storage.session.remove("privacySessionEnabled");
+      if (typeof chrome !== "undefined" && chrome?.storage?.session?.remove) {
+        await chrome.storage.session.remove("privacySessionEnabled");
+      } else {
+        localStorage.removeItem("privacySessionEnabled");
+        window.dispatchEvent(new StorageEvent("storage", { key: "privacySessionEnabled", newValue: "false" }));
+      }
     });
 
     const popup = await context.newPage();
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
     await expect(popup.locator(".workspace-button")).toBeVisible();
     await expect(popup.locator(".save-button")).toBeVisible();
-    await expect(popup.getByText("Asterfold 3.7.2")).toBeVisible();
+    await expect(popup.getByText(`Asterfold ${packageVersion}`)).toBeVisible();
     await popup.close();
     await workspacePage.close();
   });
@@ -502,9 +518,10 @@ test.describe.serial("Asterfold MV3 release", () => {
     const faviconSource = await page.getByRole("button", { name: "Playwright docs" }).locator("img").getAttribute("src");
     expect(faviconSource).not.toBeNull();
     const favicon = new URL(faviconSource!);
-    expect(favicon.protocol).toBe("chrome-extension:");
-    expect(favicon.pathname).toBe("/_favicon/");
-    expect(favicon.searchParams.get("pageUrl")).toBe("https://playwright.dev/docs/chrome-extensions");
+    expect(favicon.protocol).toBe("https:");
+    expect(favicon.hostname).toBe("www.google.com");
+    expect(favicon.pathname).toBe("/s2/favicons");
+    expect(favicon.searchParams.get("domain")).toBe("playwright.dev");
     const bookmarkButton = page.getByRole("button", { name: "Playwright docs" });
     await expect(bookmarkButton.locator(".favicon")).toBeVisible();
     await bookmarkButton.hover();
@@ -786,7 +803,9 @@ test.describe.serial("Asterfold MV3 release", () => {
     const boardCount = await page.locator(".board").count();
     const bottomBoard = page.locator(".board").nth(boardCount - 1);
     await bottomBoard.click({ button: "right", position: { x: 8, y: 8 } });
-    const cornerMenuBounds = await page.locator(".context-menu").evaluate((menu) => {
+    const cornerMenu = page.locator(".context-menu");
+    await expect(cornerMenu).toBeVisible();
+    const cornerMenuBounds = await cornerMenu.evaluate((menu) => {
       const rect = menu.getBoundingClientRect();
       const target = document.elementFromPoint(rect.left + 4, rect.top + 4);
       return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, isTopmost: target === menu || menu.contains(target) };

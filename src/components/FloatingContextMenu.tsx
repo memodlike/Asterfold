@@ -14,24 +14,29 @@ interface FloatingContextMenuProps {
 }
 
 const EDGE_GAP = 8;
+const ESTIMATED_MENU_WIDTH = 224;
+const ESTIMATED_MENU_HEIGHT = 400;
 
 export function FloatingContextMenu({ label, point, children, onClose }: FloatingContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(document.activeElement instanceof HTMLElement ? document.activeElement : null);
   const pointX = point.x;
   const pointY = point.y;
-  const [placement, setPlacement] = useState(point);
+  const [placement, setPlacement] = useState(() => ({
+    x: typeof window !== "undefined" ? Math.max(EDGE_GAP, Math.min(point.x, window.innerWidth - ESTIMATED_MENU_WIDTH - EDGE_GAP)) : point.x,
+    y: typeof window !== "undefined" ? Math.max(EDGE_GAP, Math.min(point.y, window.innerHeight - ESTIMATED_MENU_HEIGHT - EDGE_GAP)) : point.y,
+  }));
 
   const clampPlacement = useCallback(() => {
     const menu = menuRef.current;
     if (!menu) return;
     const width = menu.offsetWidth || menu.getBoundingClientRect().width;
     const height = menu.offsetHeight || menu.getBoundingClientRect().height;
-    const next = {
-      x: Math.max(EDGE_GAP, Math.min(pointX, window.innerWidth - width - EDGE_GAP)),
-      y: Math.max(EDGE_GAP, Math.min(pointY, window.innerHeight - height - EDGE_GAP)),
-    };
-    setPlacement((current) => current.x === next.x && current.y === next.y ? current : next);
+    const nextX = Math.max(EDGE_GAP, Math.min(pointX, window.innerWidth - width - EDGE_GAP));
+    const nextY = Math.max(EDGE_GAP, Math.min(pointY, window.innerHeight - height - EDGE_GAP));
+    menu.style.left = `${nextX}px`;
+    menu.style.top = `${nextY}px`;
+    setPlacement((current) => current.x === nextX && current.y === nextY ? current : { x: nextX, y: nextY });
   }, [pointX, pointY]);
 
   useLayoutEffect(() => { clampPlacement(); });

@@ -176,7 +176,7 @@ Contribution guidance is available in [docs/development/CONTRIBUTING.md](docs/de
 
 ## Release artifacts
 
-Asterfold 3.8.0 produces a reproducible, cryptographically verifiable release containing:
+Asterfold 3.8.1 produces a reproducible, cryptographically verifiable release containing:
 
 - `Asterfold-Chrome.zip` (runtime Chrome Web Store bundle)
 - `chrome-unpacked.zip` (unpacked developer distribution)
@@ -188,6 +188,8 @@ Asterfold 3.8.0 produces a reproducible, cryptographically verifiable release co
 The release pipeline verifies Manifest V3 structure, permission policy, CSP, forbidden files, remote-code patterns, Store asset dimensions, Windows packaging, CodeQL, accessibility, and real unpacked-extension behavior.
 
 ## Release highlights
+
+**Asterfold 3.8.1** delivers core tooling and dependency architecture modernization (Vite 8 Rolldown engine, WXT 0.21.4, Vitest 5, TypeScript 6.0.3, Lucide 1.52 with custom SVG Chrome adapter, React 19.3, Dexie 4.4.6, Zod 4.6.5) with 4x faster builds and zero vulnerabilities.
 
 **Asterfold 3.8.0** delivers a complete Zero-Permission architecture (`permissions: []`, `optional_permissions: []`, `host_permissions: []`), eliminating Chrome installation warnings while upgrading site favicons to a resilient zero-permission resolution engine.
 
@@ -213,7 +215,8 @@ The repository does not claim Chrome Web Store publication, approval, user count
 
 ## Version history
 
-1. **v3.8.0 — Zero-permission architecture & resilient favicons.** Eliminates all manifest permissions (`permissions: []`, `optional_permissions: []`, `host_permissions: []`), removing all install-time warnings in Chrome while providing crisp, resilient domain favicons without invasive Favicon API access.
+1. **v3.8.1 — Core tooling & dependency architecture modernization.** Upgrades frontend bundler to Vite 8 (Rolldown engine), WXT 0.21.4, Vitest 5, TypeScript 6.0.3, Lucide 1.52 with custom zero-telemetry brand icon adapter, React 19.3, Dexie 4.4.6, and Zod 4.6.5 with zero vulnerabilities.
+2. **v3.8.0 — Zero-permission architecture & resilient favicons.** Eliminates all manifest permissions (`permissions: []`, `optional_permissions: []`, `host_permissions: []`), removing all install-time warnings in Chrome while providing crisp, resilient domain favicons without invasive Favicon API access.
 2. **v3.7.2 — GPU compositing & pointer highlight invariants.** Eliminates rectangular glare clipping at rounded board borders via `overflow: hidden` and `border-radius: inherit`, removes `will-change: transform` over `backdrop-filter` surfaces to prevent Chromium damage-rect tile flashes, removes synthetic grid row partitions, and codifies ironclad compositing invariants across automated tests and AI agent guidelines.
 3. **v3.7.1 — Design system, accessibility & ergonomics hardening.** Darkens light-theme secondary text for WCAG AA compliance (> 5.4:1), synchronizes dark canvas pre-paint to eliminate startup flash, increases bookmark row heights and menu target sizes, standardizes integer typography and line-height for descender protection, preserves user-chosen board widths during auto-layout, and unifies focus rings.
 2. **v3.7.0 — Glass without a GPU.** Lightweight mode (formerly No transparency) keeps boards translucent with plain alpha blending and no blur, the light theme lets more background through for the same setting so both themes read alike, a pointer highlight lights the hovered board, Glass transparency 0% gives solid boards in every mode, and Settings explains when the system's reduce-transparency setting makes surfaces solid.

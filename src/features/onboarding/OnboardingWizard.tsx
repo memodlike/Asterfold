@@ -9,7 +9,6 @@ import {
 } from "react";
 import {
   Check,
-  Chrome,
   FileJson,
   FileText,
   FolderOpen,
@@ -25,6 +24,7 @@ import type { Density, LocalePreference, ThemeMode, WorkspaceData } from "../../
 import { IMPORT_LIMITS } from "../../domain/importLimits";
 import { validateTheme } from "../../domain/themes";
 import { Button } from "../../components/Button";
+import { ChromeIcon } from "../../components/ChromeIcon";
 import { LocaleFlag } from "../../components/LocaleFlag";
 import { Modal } from "../../components/Modal";
 import { SelectField, type SelectOption } from "../../components/SelectField";
@@ -256,7 +256,7 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
 
   const sources: Record<OnboardingSource, { title: string; body: string; icon: typeof Sparkles }> = {
     default: { title: t("import.default.title"), body: t("import.default.body"), icon: Sparkles },
-    chrome: { title: t("import.chrome.title"), body: t("import.chrome.body"), icon: Chrome },
+    chrome: { title: t("import.chrome.title"), body: t("import.chrome.body"), icon: ChromeIcon },
     html: { title: t("import.html.title"), body: t("import.html.body"), icon: FileText },
     backup: { title: t("import.backup.title"), body: t("import.backup.body"), icon: FileJson },
   };

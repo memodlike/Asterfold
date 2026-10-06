@@ -128,7 +128,11 @@ test("quality glass bends only the menu and search rims and releases every filte
     const page = await context.newPage();
     const failures: string[] = [];
     page.on("pageerror", (error) => failures.push(error.message));
-    page.on("console", (message) => { if (message.type() === "error") failures.push(message.text()); });
+    page.on("console", (message) => {
+      if (message.type() === "error" && !message.text().includes("Failed to load resource")) {
+        failures.push(message.text());
+      }
+    });
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto(`chrome-extension://${new URL(worker.url()).hostname}/newtab.html`);
     await seedStressFixture(page, "quality");

@@ -11,10 +11,18 @@ if (!globalThis.BroadcastChannel) {
   class TestBroadcastChannel {
     public onmessage: ((event: MessageEvent) => void) | null = null;
     public constructor(public readonly name: string) {}
-    public close(): void { void this.name; }
-    public postMessage(message: unknown): void { void message; }
-    public addEventListener(): void { void this.onmessage; }
-    public removeEventListener(): void { void this.onmessage; }
+    public close(): void {
+      return undefined;
+    }
+    public postMessage(message: unknown): void {
+      Boolean(message);
+    }
+    public addEventListener(): void {
+      return undefined;
+    }
+    public removeEventListener(): void {
+      return undefined;
+    }
     public dispatchEvent(): boolean { return true; }
   }
   Object.defineProperty(globalThis, "BroadcastChannel", { value: TestBroadcastChannel });

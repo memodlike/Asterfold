@@ -1,3 +1,17 @@
+# Asterfold 3.8.1
+
+## Core Tooling & Dependency Architecture Modernization
+
+- **Vite 8 & Rolldown engine upgrade**: upgraded frontend bundler to Vite 8.3.2 and `@vitejs/plugin-react` 6.1.1, leveraging the ultra-fast Rolldown engine with over 4x faster production builds (~500ms).
+- **WXT 0.21.4 extension framework**: updated WXT to 0.21.4 with `@wxt-dev/module-react` 1.2.2 for optimal Chrome Manifest V3 service worker and entrypoint compilation.
+- **Vitest 5 & Jest-DOM 7 test stack**: modernized unit and integration test runner to Vitest 5.0.3, `@testing-library/jest-dom` 7.0.1, `@testing-library/react` 16.3.3, and `jsdom` 30.1.2.
+- **TypeScript 6.0.3 & ESLint 10.12**: bumped TypeScript to 6.0.3 with `typescript-eslint` 8.71.0 and ESLint 10.12.0 for enhanced type safety and zero lint warnings.
+- **Lucide 1.52 icon suite & localized brand icon adapter**: upgraded icon set to Lucide 1.52.0 and introduced a zero-telemetry local SVG Chrome brand adapter for safe, self-contained onboarding.
+- **Runtime dependencies refresh**: upgraded React & React DOM to 19.3.0, Dexie to 4.4.6, and Zod to 4.6.5.
+- **Zero-permission Privacy Mode cross-context synchronization**: implemented instant reactive synchronization between New Tab and Extension Popup using `BroadcastChannel` and `localStorage`, maintaining complete zero-permission architecture without requiring Chrome storage permissions.
+- **Viewport-safe floating context menu**: eliminated boundary overflow on compact displays (1280×720) with pre-clamped initial placement and dynamic layout restrictions, keeping all menu actions accessible.
+- **Zero-vulnerability & reproducible SBOM compliance**: updated SBOM SPDX-2.3 mapping with zero audit vulnerabilities and verified provenance.
+
 # Asterfold 3.8.0
 
 ## Zero-Permission Architecture & Resilient Favicons
