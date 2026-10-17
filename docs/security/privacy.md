@@ -1,8 +1,8 @@
 # Asterfold privacy policy
 
 Effective date: 17 October 2026<br>
-Policy version: 3.8.4<br>
-Applies to: Asterfold 3.8.4 for Chrome
+Policy version: 3.8.5<br>
+Applies to: Asterfold 3.8.5 for Chrome
 
 Asterfold replaces the Chrome new tab with a local-first visual workspace for organizing and opening bookmarks. It processes the information needed for those features strictly on the user's device. It does not collect, record, track, or monitor general browsing history.
 
@@ -17,15 +17,15 @@ Asterfold may process and store:
 - local backup and restore data;
 - text the user pastes into the workspace or the Paste links dialog, read only from that user-initiated paste event to find links; Asterfold never reads the clipboard on its own and needs no clipboard permission;
 - a wallpaper image selected by the user, preserved locally in its original raster format and dimensions, plus a separate Full HD software-rendering copy and technical metadata such as dimensions and stored size;
-- legacy custom raster icon values when present in an imported Asterfold backup; version 3.8.4 does not provide a UI for adding or rendering them.
+- legacy custom raster icon values when present in an imported Asterfold backup; version 3.8.5 does not provide a UI for adding or rendering them.
 
 This information may include personal or sensitive content if the user puts such content in bookmark names, URLs, imported files or images. Asterfold uses it only to provide the requested bookmark-workspace features.
 
 ## Where information is stored
 
-Workspace records and uploaded assets are stored locally in the user's Chrome profile, primarily in IndexedDB. Search indexes and import previews are created locally. Older installations may retain legacy diagnostic snapshot records created by an earlier version; version 3.8.4 does not create new snapshots. The temporary Privacy Mode state is stored in session storage so popup and New Tab stay consistent; Chrome clears that value when the browser session ends. To paint the correct theme and rendering mode before the page loads, the New Tab page keeps a small startup record (light or dark theme, canvas colour, built-in wallpaper name, motion preference and rendering tier) and the graphics renderer name reported by Chrome (refreshed at most weekly) in the extension's own `localStorage`. An accent colour may be computed locally from a wallpaper the user selects. None of these values leave the device.
+Workspace records and uploaded assets are stored locally in the user's Chrome profile, primarily in IndexedDB. Search indexes and import previews are created locally. Older installations may retain legacy diagnostic snapshot records created by an earlier version; version 3.8.5 does not create new snapshots. The temporary Privacy Mode state is stored in session storage so popup and New Tab stay consistent; Chrome clears that value when the browser session ends. To paint the correct theme and rendering mode before the page loads, the New Tab page keeps a small startup record (light or dark theme, canvas colour, built-in wallpaper name, motion preference and rendering tier) and the graphics renderer name reported by Chrome (refreshed at most weekly) in the extension's own `localStorage`. An accent colour may be computed locally from a wallpaper the user selects. None of these values leave the device.
 
-Asterfold 3.8.4 has no application backend, account system or cloud synchronization. The default build has zero permissions, no host permissions, no active-tab queries, and makes no application network requests. Data is not sent to the developer.
+Asterfold 3.8.5 has no application backend, account system or cloud synchronization. The default build has zero permissions, no host permissions, no active-tab queries, and makes no application network requests. Data is not sent to the developer.
 
 For saved bookmarks, website icons are generated locally and no network request is made. Asterfold renders a deterministic local monogram for each bookmark derived from its site identity. Privacy Mode renders a neutral icon with no letter.
 
@@ -57,9 +57,9 @@ The local Chrome profile, operating system, browser sync settings outside Asterf
 
 ## Permissions
 
-Asterfold 3.8.4 operates with ZERO permissions (`permissions: []`, `optional_permissions: []`, `host_permissions: []`). It does not request access to tabs, browsing history, web pages, or storage permissions.
+Asterfold 3.8.5 operates with ZERO permissions (`permissions: []`, `optional_permissions: []`, `host_permissions: []`). It does not request access to tabs, browsing history, web pages, or storage permissions.
 
-Asterfold 3.8.4 does NOT request `activeTab`, `contextMenus`, `alarms`, `storage`, `favicon`, or `bookmarks`. Asterfold never inspects active tabs, background browsing activity, or context menus, and makes zero host requests or telemetry calls. Site icons are generated locally and no network request is made.
+Asterfold 3.8.5 does NOT request `activeTab`, `contextMenus`, `alarms`, `storage`, `favicon`, or `bookmarks`. Asterfold never inspects active tabs, background browsing activity, or context menus, and makes zero host requests or telemetry calls. Site icons are generated locally and no network request is made.
 
 ## Import, backup and deletion
 
@@ -71,7 +71,7 @@ Users can delete individual items, restore them from Trash, permanently empty Tr
 
 ## Wallpapers and legacy icon values
 
-Uploaded wallpapers are signature-validated, decoded for safety and stored locally without resizing or recompressing the original file. A separate bounded WebP copy is generated only for software rendering. Remote wallpaper URLs are not accepted. Legacy custom raster icon values may remain inside imported backups for data compatibility, but version 3.8.4 does not render them or provide a UI for adding them. Removing or replacing a wallpaper may remove unreferenced local copies during cleanup.
+Uploaded wallpapers are signature-validated, decoded for safety and stored locally without resizing or recompressing the original file. A separate bounded WebP copy is generated only for software rendering. Remote wallpaper URLs are not accepted. Legacy custom raster icon values may remain inside imported backups for data compatibility, but version 3.8.5 does not render them or provide a UI for adding them. Removing or replacing a wallpaper may remove unreferenced local copies during cleanup.
 
 ## Privacy Mode
 
@@ -81,7 +81,7 @@ Privacy Mode is shoulder-surfing protection, not encryption. The underlying loca
 
 ## Children
 
-Asterfold is a general-purpose productivity tool and is not directed specifically to children. It does not knowingly collect information through a developer-operated service because no such service exists in version 3.8.4.
+Asterfold is a general-purpose productivity tool and is not directed specifically to children. It does not knowingly collect information through a developer-operated service because no such service exists in version 3.8.5.
 
 ## Limited Use
 
