@@ -7,6 +7,7 @@ import { useI18n } from "../i18n";
 
 interface MoveDialogProps {
   open: boolean;
+  privacy?: boolean;
   type: "bookmark" | "board" | "bulk-bookmarks";
   pages: Page[];
   boards: Board[];
@@ -18,10 +19,10 @@ interface MoveDialogProps {
 export function MoveDialog(props: MoveDialogProps) {
   const { t } = useI18n();
   const options = useMemo<ReadonlyArray<SelectOption>>(() => props.type === "board"
-    ? props.pages.filter((page) => page.id !== props.currentId).map((page) => ({ value: page.id, label: page.title }))
+    ? props.pages.filter((page) => page.id !== props.currentId).map((page) => ({ value: page.id, label: props.privacy ? t("generic.page") : page.title }))
     : props.pages.flatMap((page) => props.boards
       .filter((board) => board.pageId === page.id && board.id !== props.currentId)
-      .map((board) => ({ value: board.id, label: board.title, group: page.title }))), [props.boards, props.currentId, props.pages, props.type]);
+      .map((board) => ({ value: board.id, label: board.title, group: props.privacy ? t("generic.page") : page.title }))), [props.boards, props.currentId, props.pages, props.privacy, props.type, t]);
   const firstDestinationId = options[0]?.value ?? "";
   const [destination, setDestination] = useState(firstDestinationId);
   const [busy, setBusy] = useState(false);
