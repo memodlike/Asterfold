@@ -29,7 +29,6 @@ import { publishThemePreview } from "../appearance/themePreview";
 import { ACCENT_SWATCHES, accentFromImageBlob } from "../appearance/accent";
 import { BUILTIN_WALLPAPERS, isDarkTheme } from "../appearance/themeRuntime";
 import { browserPerformanceSignals, classifyPerformanceMode, recommendPerformanceProfile } from "../performance/performanceProfile";
-import { readChromeBookmarks } from "../onboarding/chromeBookmarkImport";
 import { GradientEditor } from "./GradientEditor";
 import "./settings.css";
 
@@ -260,24 +259,10 @@ export function SettingsDialog(props: SettingsDialogProps) {
     setImportParsing(false);
   };
 
-  const requestChromeImport = async (): Promise<void> => {
-    try {
-      const result = await readChromeBookmarks(true);
-      if (result.status !== "granted") return;
-      setImportRecordsPreview(result.records);
-      setBackupPreview(null);
-      setImportSource(t("settings.chromeBookmarks"));
-    } catch {
-      props.onError(t("error.chromeBookmarksUnavailable"));
-    }
-  };
   const commitRecordImport = async (): Promise<void> => {
     setImportBusy(true);
     try {
-      const isChrome = importSource === t("settings.chromeBookmarks") || (importRecordsPreview.length > 0 && importRecordsPreview.every((r) => r.source === "chrome"));
-      const destination = isChrome
-        ? { pageTitle: importPageTitle, source: "chrome" as const, sourceId: "chrome" }
-        : { pageTitle: importPageTitle };
+      const destination = { pageTitle: importPageTitle };
       const summary = await importRecords(importRecordsPreview, destination, duplicateStrategy);
       props.onUpdated(t("settings.imported", { count: summary.imported }));
       setImportRecordsPreview([]);
@@ -470,15 +455,15 @@ export function SettingsDialog(props: SettingsDialogProps) {
     },
     {
       id: "data", title: t("settings.dataPrivacy"), icon: <Database size={16} />, span: "wide",
-      keywords: [t("settings.exportJson"), t("settings.exportHtml"), t("settings.exportMarkdown"), t("settings.importFile"), t("settings.importChrome"), t("settings.privacyPersist"), t("settings.retention"), t("settings.openTrash"), t("settings.rerunOnboarding")],
+      keywords: [t("settings.exportJson"), t("settings.exportHtml"), t("settings.exportMarkdown"), t("settings.importFile"), t("settings.privacyPersist"), t("settings.retention"), t("settings.openTrash"), t("settings.rerunOnboarding")],
       body: <>
         <div className="settings-actions">
           <button type="button" onClick={() => void exportAll("json")}><FileJson size={17} /><strong>{t("settings.exportJson")}</strong><span>{t("settings.backupVersion")}</span></button>
           <button type="button" onClick={() => void exportAll("html")}><Download size={17} /><strong>{t("settings.exportHtml")}</strong><span>{t("settings.exportHtmlHint")}</span></button>
           <button type="button" onClick={() => void exportAll("markdown")}><FileText size={17} /><strong>{t("settings.exportMarkdown")}</strong><span>.md</span></button>
           <button type="button" disabled={importParsing} onClick={() => importInputRef.current?.click()}><Upload size={17} /><strong>{t("settings.importFile")}</strong><span>{t("settings.importFileHint")}</span></button>
-          <button type="button" onClick={() => void requestChromeImport()}><Download size={17} /><strong>{t("settings.importChrome")}</strong><span>{t("settings.permissionOnDemand")}</span></button>
         </div>
+        <p className="settings-note">{t("settings.chromeExportHint")}</p>
         <input ref={importInputRef} hidden type="file" accept="application/json,text/html,.json,.html,.htm" onChange={(event) => { const file = event.target.files?.[0]; if (file) void readImportFile(file); event.currentTarget.value = ""; }} />
         {importParsing ? <div className="import-preview" role="status"><p>{t("settings.importParsing")}</p><Button onClick={cancelImportParsing}>{t("generic.cancel")}</Button></div> : null}
         {importRecordsPreview.length > 0 ? <div className="import-preview"><h3>{importSource}</h3><p>{t("settings.importPreview", { count: importRecordsPreview.length })}</p><div className="form-row"><label>{t("settings.defaultPage")}<input value={importPageTitle} maxLength={240} onChange={(event) => setImportPageTitle(event.target.value)} /></label><label>{t("settings.duplicates")}<SelectField value={duplicateStrategy} options={duplicateOptions} label={t("settings.duplicates")} onChange={(value) => setDuplicateStrategy(value as "skip" | "allow")} /></label></div><div className="button-row"><Button onClick={() => setImportRecordsPreview([])}>{t("generic.cancel")}</Button><Button variant="primary" disabled={importBusy} onClick={() => void commitRecordImport()}>{t("generic.create")}</Button></div></div> : null}

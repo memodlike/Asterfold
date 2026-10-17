@@ -13,7 +13,7 @@ Asterfold may process and store:
 - bookmark URLs, titles, custom labels, opening mode and order;
 - Pages, Boards, layout choices and other workspace settings;
 - Trash records and retention settings;
-- bookmark data from a file selected by the user, or the Chrome bookmark tree after the user chooses that import/refresh and grants the optional permission;
+- bookmark data from a file selected by the user;
 - local backup and restore data;
 - text the user pastes into the workspace or the Paste links dialog, read only from that user-initiated paste event to find links; Asterfold never reads the clipboard on its own and needs no clipboard permission;
 - a wallpaper image selected by the user, preserved locally in its original raster format and dimensions, plus a separate Full HD software-rendering copy and technical metadata such as dimensions and stored size;
@@ -27,7 +27,7 @@ Workspace records and uploaded assets are stored locally in the user's Chrome pr
 
 Asterfold 3.8.2 has no application backend, account system or cloud synchronization. The default build has zero permissions, no host permissions, no active-tab queries, and makes no application network requests. Data is not sent to the developer.
 
-For saved bookmarks, Asterfold displays website icons for validated HTTP/HTTPS URLs with resilient local fallbacks. If loading fails or the device is offline, Asterfold renders a local neutral vector icon. Privacy Mode renders a neutral icon and does not construct or display a site favicon.
+For saved bookmarks, website icons are generated locally and no network request is made. Asterfold renders a deterministic local monogram for each bookmark derived from its site identity. Privacy Mode renders a neutral icon with no letter.
 
 ## How information is used
 
@@ -55,11 +55,11 @@ Asterfold does not:
 
 The local Chrome profile, operating system, browser sync settings outside Asterfold and destinations opened by the user remain subject to their own security and privacy behavior.
 
-## Permissions and Chrome Bookmarks
+## Permissions
 
 Asterfold 3.8.2 operates with ZERO permissions (`permissions: []`, `optional_permissions: []`, `host_permissions: []`). It does not request access to tabs, browsing history, web pages, or storage permissions.
 
-Asterfold 3.8.2 does NOT request `activeTab`, `contextMenus`, `alarms`, `storage`, `favicon`, or `bookmarks`. Asterfold never inspects active tabs, background browsing activity, or context menus, and makes zero host requests or telemetry calls. Site icons are resolved via resilient zero-permission icon services with local fallback.
+Asterfold 3.8.2 does NOT request `activeTab`, `contextMenus`, `alarms`, `storage`, `favicon`, or `bookmarks`. Asterfold never inspects active tabs, background browsing activity, or context menus, and makes zero host requests or telemetry calls. Site icons are generated locally and no network request is made.
 
 ## Import, backup and deletion
 

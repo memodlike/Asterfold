@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { cleanup, fireEvent, render } from "@testing-library/react";
+import { cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Bookmark } from "../src/domain/models";
 import { BookmarkCard } from "../src/features/bookmarks/BookmarkCard";
@@ -55,7 +55,7 @@ describe("BookmarkCard real production favicon integration", () => {
     vi.unstubAllGlobals();
   });
 
-  it("reaches real production faviconUrl and renders Chrome _favicon without trusting poisoned fields", () => {
+  it("renders deterministic local monogram and never makes remote requests or trusts poisoned fields", () => {
     const { container } = render(
       createElement(I18nProvider, {
         preference: "en",
@@ -75,47 +75,43 @@ describe("BookmarkCard real production favicon integration", () => {
         }),
       }),
     );
-
-    const img = container.querySelector("img");
-    expect(img).not.toBeNull();
-    const src = img?.getAttribute("src") ?? "";
-    expect(src).toContain("https://www.google.com/s2/favicons");
-    expect(src).toContain("domain=github.com");
-    expect(src).toContain("sz=");
-    // Proves legacy poisoned URLs are never rendered
-    expect(src).not.toContain("malicious.tracker");
-  });
-
-  it("handles image load failure gracefully by falling back to neutral Globe SVG", () => {
-    const { container } = render(
-      createElement(I18nProvider, {
-        preference: "en",
-        children: createElement(BookmarkCard, {
-          bookmark,
-          faviconSize: 32,
-          privacy: false,
-          selected: false,
-          onOpen: vi.fn(),
-          onEdit: vi.fn(),
-          onMove: vi.fn(),
-          onDuplicate: vi.fn(),
-          onDelete: vi.fn(),
-          onCopyUrl: vi.fn(),
-          onCopyMarkdown: vi.fn(),
-          onSelect: vi.fn(),
-        }),
-      }),
-    );
-
-    const img = container.querySelector("img");
-    expect(img).not.toBeNull();
-    fireEvent.error(img!);
 
     expect(container.querySelector("img")).toBeNull();
+    const monogram = container.querySelector(".favicon__monogram");
+    expect(monogram).not.toBeNull();
+    expect(monogram).toHaveTextContent("G");
+    expect(monogram?.getAttribute("style")).toContain("background-color");
+    // Proves legacy poisoned URLs and remote services are never accessed
+    expect(getURL).not.toHaveBeenCalled();
+  });
+
+  it("renders neutral Globe SVG fallback when bookmark URL is empty", () => {
+    const { container } = render(
+      createElement(I18nProvider, {
+        preference: "en",
+        children: createElement(BookmarkCard, {
+          bookmark: { ...bookmark, url: "", normalizedUrl: "" },
+          faviconSize: 32,
+          privacy: false,
+          selected: false,
+          onOpen: vi.fn(),
+          onEdit: vi.fn(),
+          onMove: vi.fn(),
+          onDuplicate: vi.fn(),
+          onDelete: vi.fn(),
+          onCopyUrl: vi.fn(),
+          onCopyMarkdown: vi.fn(),
+          onSelect: vi.fn(),
+        }),
+      }),
+    );
+
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.querySelector(".favicon__monogram")).toBeNull();
     expect(container.querySelector("svg")).not.toBeNull();
   });
 
-  it("never invokes faviconUrl or renders img in privacy mode", () => {
+  it("strictly suppresses monogram and renders neutral globe in privacy mode", () => {
     const { container } = render(
       createElement(I18nProvider, {
         preference: "en",
@@ -137,6 +133,7 @@ describe("BookmarkCard real production favicon integration", () => {
     );
 
     expect(container.querySelector("img")).toBeNull();
+    expect(container.querySelector(".favicon__monogram")).toBeNull();
     expect(container.querySelector("svg")).not.toBeNull();
     expect(getURL).not.toHaveBeenCalled();
   });

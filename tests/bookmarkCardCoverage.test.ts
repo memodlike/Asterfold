@@ -89,7 +89,8 @@ describe("BookmarkCard complete behavior", () => {
     expect(card).toHaveStyle({ transform: "translate3d(2px, 3px, 0)", transition: "transform 100ms" });
     expect(mocks.sortable.setNodeRef).toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Open Example" })).toHaveAttribute("aria-roledescription", "sortable");
-    expect(container.querySelector("img")).toHaveAttribute("src", "chrome-extension://test/_favicon/example");
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.querySelector(".favicon__monogram")).toHaveTextContent("E");
   });
 
   it("opens normally and selects for every modified click", () => {
@@ -102,23 +103,28 @@ describe("BookmarkCard complete behavior", () => {
     expect(handlers.onSelect).toHaveBeenCalledWith(bookmark, expect.any(Object));
   });
 
-  it("falls back to a neutral icon after favicon failure and resets when the source changes", () => {
+  it("renders deterministic local monogram and updates when the bookmark changes", () => {
     const view = renderCard();
-    fireEvent.error(view.container.querySelector("img")!);
     expect(view.container.querySelector("img")).toBeNull();
-    expect(view.container.querySelector(".favicon svg")).toBeVisible();
+    expect(view.container.querySelector(".favicon__monogram")).toHaveTextContent("E");
 
-    const changed = { ...bookmark, id: "changed", url: "https://changed.test/", normalizedUrl: "https://changed.test/", hostname: "changed.test" };
-    mocks.faviconUrl.mockReturnValue("chrome-extension://test/_favicon/changed");
+    const changed = { ...bookmark, id: "changed", title: "Changed Site", url: "https://changed.test/", normalizedUrl: "https://changed.test/", hostname: "changed.test" };
     view.rerender(createElement(I18nProvider, { preference: "en", children: createElement(BookmarkCard, { ...view.props, bookmark: changed }) }));
-    expect(view.container.querySelector("img")).toHaveAttribute("src", "chrome-extension://test/_favicon/changed");
+    expect(view.container.querySelector("img")).toBeNull();
+    expect(view.container.querySelector(".favicon__monogram")).toHaveTextContent("C");
   });
 
-  it("uses a neutral globe instead of a site-identity fallback when no icon is available", () => {
-    mocks.faviconUrl.mockReturnValue("");
-    const view = renderCard();
+  it("uses a neutral globe in privacy mode or when no URL is available", () => {
+    const view = renderCard({ privacy: true });
+    expect(view.container.querySelector("img")).toBeNull();
+    expect(view.container.querySelector(".favicon__monogram")).toBeNull();
     expect(view.container.querySelector(".favicon svg")).toBeVisible();
     expect(view.container.querySelector(".favicon")).toHaveAttribute("aria-hidden", "true");
+
+    const noUrl = renderCard({ bookmark: { ...bookmark, url: "", normalizedUrl: "" } });
+    expect(noUrl.container.querySelector("img")).toBeNull();
+    expect(noUrl.container.querySelector(".favicon__monogram")).toBeNull();
+    expect(noUrl.container.querySelector(".favicon svg")).toBeVisible();
   });
 
   it("routes every context action and closes the menu", () => {

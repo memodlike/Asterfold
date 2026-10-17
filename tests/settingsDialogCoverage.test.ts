@@ -380,33 +380,12 @@ describe("SettingsDialog exports and file imports", () => {
   });
 });
 
-describe("SettingsDialog Chrome import, privacy and diagnostics", () => {
-  it("handles denied, granted and failed Chrome bookmark permission requests", async () => {
-    const { handlers } = renderSettings({ initialSection: "data-privacy" });
-    fireEvent.click(screen.getByRole("button", { name: /Import from Chrome/ }));
-    await waitFor(() => expect(mocks.permissionRequest).toHaveBeenCalledWith({ permissions: ["bookmarks"] }));
-    expect(mocks.bookmarksGetTree).not.toHaveBeenCalled();
-
-    mocks.permissionRequest.mockResolvedValueOnce(true);
-    mocks.bookmarksGetTree.mockResolvedValueOnce([{ id: "root", title: "", children: [{ id: "folder", title: "Folder", children: [{ id: "link", title: "  ", url: "https://chrome.example/" }] }] }]);
-    fireEvent.click(screen.getByRole("button", { name: /Import from Chrome/ }));
-    expect(await screen.findByText("Bookmarks: 1. No changes written yet.")).toBeVisible();
-    expect(screen.getByText("Chrome bookmarks")).toBeVisible();
-
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    mocks.permissionRequest.mockRejectedValueOnce(new Error("permission"));
-    fireEvent.click(screen.getByRole("button", { name: /Import from Chrome/ }));
-    await waitFor(() => expect(handlers.onError).toHaveBeenCalledWith("Unable to read Chrome bookmarks"));
-  });
-
-  it("reports over-deep Chrome trees through the same import error boundary", async () => {
-    let node: Record<string, unknown> = { id: "link", title: "Link", url: "https://example.com/" };
-    for (let index = 0; index < 110; index += 1) node = { id: `folder-${index}`, title: `Folder ${index}`, children: [node] };
-    mocks.permissionRequest.mockResolvedValue(true);
-    mocks.bookmarksGetTree.mockResolvedValue([node]);
-    const { handlers } = renderSettings({ initialSection: "data-privacy" });
-    fireEvent.click(screen.getByRole("button", { name: /Import from Chrome/ }));
-    await waitFor(() => expect(handlers.onError).toHaveBeenCalledWith("Unable to read Chrome bookmarks"));
+describe("SettingsDialog import, privacy and diagnostics", () => {
+  it("does not offer Chrome import and displays export hint in data-privacy section", () => {
+    renderSettings({ initialSection: "data-privacy" });
+    expect(screen.queryByRole("button", { name: /Import from Chrome/ })).toBeNull();
+    expect(screen.getByText(/To import from Chrome: Chrome menu → Bookmarks and lists/)).toBeVisible();
+    expect(screen.getByRole("button", { name: /Import file/i })).toBeVisible();
   });
 
   it("enables and disables persistent privacy with session state", async () => {

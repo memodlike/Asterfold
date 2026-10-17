@@ -45,13 +45,12 @@ async function performCommit(plan: OnboardingPlan, database: AsterfoldDatabase):
         skippedDuplicates: 0,
         invalid: [],
       };
-    } else if (plan.source === "chrome" || plan.source === "html") {
+    } else if (plan.source === "html") {
       if (plan.records.length === 0) throw new ImportError("A validated bookmark preview is required");
       importSummary = await importRecords(
         plan.records,
         {
           pageTitle: plan.importPageTitle,
-          ...(plan.source === "chrome" ? { source: "chrome" as const, sourceId: "chrome" } : {}),
         },
         plan.duplicateStrategy,
         database,

@@ -354,3 +354,60 @@ export function recoverBookmarkTitle(rawTitle: string | null | undefined, url: s
   const safeDerived = derived.length > MAX_TITLE_LENGTH ? derived.slice(0, MAX_TITLE_LENGTH) : derived;
   return normalizeEntityTitle(safeDerived, "Bookmark");
 }
+
+/**
+ * Small fixed palette of distinct colors providing WCAG AA contrast (>= 4.5:1)
+ * against white uppercase monogram letters (#FFFFFF) in both light and dark themes.
+ */
+export const MONOGRAM_PALETTE = [
+  "#1D4ED8", // blue-700
+  "#4338CA", // indigo-700
+  "#6D28D9", // purple-700
+  "#BE185D", // pink-700
+  "#B91C1C", // red-700
+  "#C2410C", // orange-700
+  "#047857", // emerald-700
+  "#0F766E", // teal-700
+] as const;
+
+/**
+ * Extracts the first uppercase letter of the site name derived locally.
+ */
+export function getMonogramLetter(url: string, title?: string): string {
+  const trimmed = url.trim();
+  if (trimmed) {
+    const site = normalizeSiteIdentity(trimmed);
+    if (site && site !== "Bookmark") {
+      const match = /[\p{L}\p{N}]/u.exec(site);
+      if (match) return match[0].toUpperCase();
+    }
+  }
+  if (title && title.trim()) {
+    const match = /[\p{L}\p{N}]/u.exec(title.trim());
+    if (match) return match[0].toUpperCase();
+  }
+  return "B";
+}
+
+/**
+ * Chooses a deterministic background color from MONOGRAM_PALETTE based on the hostname.
+ */
+export function getMonogramColor(hostnameOrUrl: string): string {
+  let hostname = hostnameOrUrl.trim().toLowerCase();
+  try {
+    if (hostname.includes("://") || !hostname.startsWith("/")) {
+      const parsed = new URL(hostname.includes("://") ? hostname : `https://${hostname}`);
+      hostname = parsed.hostname.replace(/^www\./u, "") || hostname;
+    }
+  } catch {
+    // fallback to raw string
+  }
+
+  let hash = 0;
+  for (let i = 0; i < hostname.length; i++) {
+    hash = ((hash << 5) - hash + hostname.charCodeAt(i)) | 0;
+  }
+  const index = Math.abs(hash) % MONOGRAM_PALETTE.length;
+  return MONOGRAM_PALETTE[index]!;
+}
+

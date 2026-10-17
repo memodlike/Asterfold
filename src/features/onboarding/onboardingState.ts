@@ -12,7 +12,7 @@ export const CURRENT_ONBOARDING_VERSION = 1;
 export const ONBOARDING_STEPS = ["welcome", "import", "appearance"] as const;
 
 export type OnboardingStep = typeof ONBOARDING_STEPS[number];
-export type OnboardingSource = "default" | "chrome" | "html" | "backup";
+export type OnboardingSource = "default" | "html" | "backup";
 export type DuplicateImportStrategy = "skip" | "allow";
 
 export interface OnboardingImportPreview {
@@ -85,7 +85,7 @@ export function canContinue(step: OnboardingStep, plan: OnboardingPlan, parsing:
   return true;
 }
 
-export function recordPreview(source: "chrome" | "html", label: string, records: ImportRecord[], estimatedBytes = 0): OnboardingImportPreview {
+export function recordPreview(source: "html", label: string, records: ImportRecord[], estimatedBytes = 0): OnboardingImportPreview {
   const folders = new Set(records.map((record) => record.folderPath.join("/")).filter(Boolean));
   return {
     source,

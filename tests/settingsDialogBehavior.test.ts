@@ -224,7 +224,7 @@ describe("SettingsDialog behavior", () => {
     expect(callbacks.onUpdated).toHaveBeenCalled();
   });
 
-  it("exports all formats, imports Chrome bookmarks, persists privacy, and repeats diagnostics", async () => {
+  it("exports all formats, shows export hint, persists privacy, and repeats diagnostics", async () => {
     mocks.auditInvariants.mockResolvedValueOnce(["orphan"]).mockResolvedValueOnce([]);
     mocks.permissionsRequest.mockResolvedValue(true);
     mocks.bookmarksGetTree.mockResolvedValue([
@@ -241,20 +241,8 @@ describe("SettingsDialog behavior", () => {
     expect(mocks.downloadText).toHaveBeenNthCalledWith(2, "asterfold-bookmarks.html", "<DL></DL>", "text/html");
     expect(mocks.downloadText).toHaveBeenNthCalledWith(3, "asterfold-bookmarks.md", "# Bookmarks", "text/markdown");
 
-    fireEvent.click(screen.getByRole("button", { name: /Import from Chrome/ }));
-    await waitFor(() => expect(mocks.bookmarksGetTree).toHaveBeenCalledOnce());
-    await waitFor(() => expect(mocks.permissionsRemove).toHaveBeenCalledWith({ permissions: ["bookmarks"] }));
-    expect(await screen.findByText("Bookmarks: 1. No changes written yet.")).toBeVisible();
-    const textInput = container.querySelector<HTMLInputElement>('.import-preview input[maxlength="240"]')!;
-    fireEvent.change(textInput, { target: { value: "Chrome import" } });
-    fireEvent.change(container.querySelector<HTMLSelectElement>(".import-preview select")!, { target: { value: "allow" } });
-    fireEvent.click(screen.getByRole("button", { name: "Create" }));
-    await waitFor(() => expect(mocks.importRecords).toHaveBeenCalledWith(
-      expect.any(Array),
-      { pageTitle: "Chrome import", source: "chrome", sourceId: "chrome" },
-      "allow",
-    ));
-    expect(callbacks.onClose).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("button", { name: /Import from Chrome/ })).toBeNull();
+    expect(screen.getByText(/To import from Chrome: Chrome menu → Bookmarks and lists/)).toBeVisible();
 
     fireEvent.click(screen.getByRole("switch", { name: "Remember privacy mode" }));
     await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ privacyPersist: true, privacyEnabled: true }));
@@ -310,10 +298,6 @@ describe("SettingsDialog behavior", () => {
     mocks.createBackup.mockRejectedValueOnce(new Error("export"));
     fireEvent.click(screen.getByRole("button", { name: /JSON backup/ }));
     await waitFor(() => expect(callbacks.onError).toHaveBeenCalledWith("Export failed"));
-
-    mocks.permissionsRequest.mockRejectedValueOnce(new Error("permission"));
-    fireEvent.click(screen.getByRole("button", { name: /Import from Chrome/ }));
-    await waitFor(() => expect(callbacks.onError).toHaveBeenCalledWith("Unable to read Chrome bookmarks"));
 
     mocks.parseHtmlOffThread.mockRejectedValueOnce(new Error("parse"));
     fireEvent.change(importInput(container), { target: { files: [fileWithText("bad.html", "bad", "text/html")] } });

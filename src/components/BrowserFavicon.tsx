@@ -1,14 +1,17 @@
 import { Globe } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { getMonogramColor, getMonogramLetter } from "../domain/bookmarkNaming";
 
-interface BrowserFaviconProps {
-  source: string;
+export interface BrowserFaviconProps {
+  url?: string | undefined;
+  title?: string | undefined;
+  source?: string | undefined;
   className?: string | undefined;
   privacy?: boolean | undefined;
   fallback?: ReactNode | undefined;
 }
 
-export function BrowserFavicon({ source, className, privacy, fallback }: BrowserFaviconProps) {
+export function BrowserFavicon({ url, title, source, className, privacy, fallback }: BrowserFaviconProps) {
   const [failed, setFailed] = useState(false);
   const [prevSource, setPrevSource] = useState(source);
 
@@ -17,18 +20,20 @@ export function BrowserFavicon({ source, className, privacy, fallback }: Browser
     setFailed(false);
   }
 
-  const isSafeSource = Boolean(
+  const isSafeLocalSource = Boolean(
     source &&
     !privacy &&
-    (source.startsWith("https://www.google.com/s2/favicons") ||
-      source.startsWith("chrome-extension://") ||
-      source.startsWith("chrome://"))
+    (source.startsWith("chrome-extension://") || source.startsWith("chrome://"))
   );
-  const showImage = isSafeSource && !failed;
+  const showImage = isSafeLocalSource && !failed;
+
+  const effectiveUrl = (url || "").trim();
 
   return (
     <span className={`favicon ${className ?? ""}`.trim()} aria-hidden="true">
-      {showImage ? (
+      {privacy ? (
+        fallback ?? <Globe strokeWidth={1.8} />
+      ) : showImage ? (
         <img
           src={source}
           alt=""
@@ -38,9 +43,17 @@ export function BrowserFavicon({ source, className, privacy, fallback }: Browser
           decoding="async"
           onError={() => setFailed(true)}
         />
+      ) : effectiveUrl ? (
+        <span
+          className="favicon__monogram"
+          style={{ backgroundColor: getMonogramColor(effectiveUrl) }}
+        >
+          {getMonogramLetter(effectiveUrl, title)}
+        </span>
       ) : (
         fallback ?? <Globe strokeWidth={1.8} />
       )}
     </span>
   );
 }
+
