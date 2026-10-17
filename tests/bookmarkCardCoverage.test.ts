@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
     transition: "transform 100ms",
     isDragging: false,
     attributes: { "aria-roledescription": "sortable" },
-    listeners: { onPointerDown: vi.fn() },
+    listeners: { onPointerDown: vi.fn(), onKeyDown: vi.fn() },
   },
   faviconUrl: vi.fn(() => "chrome-extension://test/_favicon/example"),
 }));
@@ -139,12 +139,31 @@ describe("BookmarkCard complete behavior", () => {
   });
 
   it("opens the context menu with Shift+F10 and closes it without an action", () => {
-    renderCard();
+    const parentBoardHandler = vi.fn();
+    render(createElement("div", { onKeyDown: parentBoardHandler }, createElement(I18nProvider, { preference: "en", children: createElement(BookmarkCard, {
+      bookmark,
+      faviconSize: 32,
+      privacy: false,
+      selected: false,
+      onOpen: vi.fn(),
+      onEdit: vi.fn(),
+      onMove: vi.fn(),
+      onDuplicate: vi.fn(),
+      onDelete: vi.fn(),
+      onCopyUrl: vi.fn(),
+      onCopyMarkdown: vi.fn(),
+      onSelect: vi.fn(),
+    }) })));
     const open = screen.getByRole("button", { name: "Open Example" });
     fireEvent.keyDown(open, { key: "F10", shiftKey: true });
     expect(screen.getByRole("menu", { name: "Actions for Example" })).toHaveStyle({ left: "110px", top: "60px" });
+    expect(mocks.sortable.listeners.onKeyDown).not.toHaveBeenCalled();
+    expect(parentBoardHandler).not.toHaveBeenCalled();
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByRole("menu")).toBeNull();
+
+    fireEvent.keyDown(open, { key: "ArrowDown" });
+    expect(mocks.sortable.listeners.onKeyDown).toHaveBeenCalledWith(expect.objectContaining({ key: "ArrowDown" }));
   });
 
   it("protects the accessible tree and clipboard commands in privacy mode", () => {

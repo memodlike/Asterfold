@@ -65,7 +65,10 @@ export function FloatingContextMenu({ label, point, children, onClose }: Floatin
       const items = enabledItems();
       const current = items.indexOf(document.activeElement as HTMLElement);
       if (event.key === "Escape" || event.key === "Tab") {
-        if (event.key === "Escape") event.preventDefault();
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+        }
         closeAndRestore();
         return;
       }

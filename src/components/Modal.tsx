@@ -65,6 +65,7 @@ export function Modal({
     // A child that focused itself on mount (for example an autoFocus field) keeps focus.
     if (!panel?.contains(document.activeElement)) (first ?? panel)?.focus();
     const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.defaultPrevented) return;
       if (event.key === "Escape" && closeOnEscapeRef.current) {
         event.preventDefault();
         onCloseRef.current();
