@@ -71,6 +71,7 @@ describe("Windows 11 adaptive rendering stress gates", () => {
   it("binds empty-state to --board-alpha in both compatibility and software tiers (DEFECT-07)", () => {
     const material = readFileSync(`${process.cwd()}/src/styles/material.css`, "utf8");
     expect(material).toMatch(/:is\(html\[data-performance="compatibility"\], html\[data-performance="software"\]\) \.empty-state\s*\{\s*--mat-alpha:\s*var\(--board-alpha\);\s*\}/u);
+    expect(material).toMatch(/@media \(prefers-reduced-transparency: no-preference\)\s*\{\s*:is\(html\[data-performance="compatibility"\], html\[data-performance="software"\]\) \.empty-state\s*\{\s*--mat-alpha:\s*var\(--board-alpha\);\s*\}\s*\}/u);
   });
 
   it("includes all popovers, tiles, drag previews, headers, and triggers in opaque accessibility fallbacks (DEFECT-06, A9)", () => {

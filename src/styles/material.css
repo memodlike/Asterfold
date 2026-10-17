@@ -184,7 +184,9 @@ html[data-performance="software"][data-theme="light"] { --mat-shadow: 0 0 0 1px 
 .modal { --mat-alpha: var(--mat-alpha-sheet); }
 .empty-state { --mat-alpha: var(--mat-alpha-tile); }
 /* On the main screen the empty state is board material, so it follows the board tint per tier. */
-:is(html[data-performance="compatibility"], html[data-performance="software"]) .empty-state { --mat-alpha: var(--board-alpha); }
+@media (prefers-reduced-transparency: no-preference) {
+  :is(html[data-performance="compatibility"], html[data-performance="software"]) .empty-state { --mat-alpha: var(--board-alpha); }
+}
 /* The empty state sits on the wallpaper like a board, so it uses the board frost. */
 .empty-state { -webkit-backdrop-filter: var(--board-filter); backdrop-filter: var(--board-filter); }
 
