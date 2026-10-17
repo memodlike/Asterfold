@@ -1,3 +1,14 @@
+# Asterfold 3.8.4
+
+## Follow-up audit fixes
+
+- **Selection safety**: creating or switching a Page clears the bookmark selection, and bulk delete/move/export only act on bookmarks visible on the current Page.
+- **Privacy Mode**: Page names are hidden in the launcher Pages list and in move pickers, like the active Page name.
+- **Keyboard**: Escape in a Page's context menu inside the launcher closes only that menu.
+- **Backups**: merging a backup keeps the saved order of Pages, Boards and bookmarks.
+- **Language**: messages with a count use natural count-neutral wording in all 12 languages (no more "Add 1 bookmarks"); the open-board confirmation text is announced by screen readers.
+- **Glass**: the empty state follows Glass transparency in every tier (solid at 0%); forced colors no longer draw large solid blocks around Settings, search and onboarding; increased contrast removes the blurred scrim; Settings and onboarding previews use the real board tint.
+
 # Asterfold 3.8.3
 
 ## Reliability, privacy & glass fixes
