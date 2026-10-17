@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState, type MouseEvent } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
 import { Download, Sparkles, X } from "lucide-react";
 import type { Board, Bookmark, Page, WorkspaceData } from "../domain/models";
 import {
@@ -6,6 +6,7 @@ import {
   bulkMoveBookmarks,
   bulkRestoreBookmarks,
   createBoard,
+  createBookmarksBulk,
   createPage,
   duplicateBoard,
   duplicateBookmark,
@@ -25,9 +26,11 @@ import {
   updateBoard,
   updateSettings,
 } from "../db/repository";
-import { copyText, ExtensionRequestError, openUrl } from "../browser/api";
+import { copyText, ExtensionRequestError, openUrl, openUrls } from "../browser/api";
+import { isSafeOpenUrl } from "../domain/urls";
 import { Button } from "../components/Button";
 import { IconButton } from "../components/IconButton";
+import { Modal } from "../components/Modal";
 import { MoveDialog } from "../components/MoveDialog";
 import { NameDialog } from "../components/NameDialog";
 import { useToasts } from "../components/ToastRegion";
@@ -37,6 +40,9 @@ import { I18nProvider, translate, useI18n } from "../i18n";
 import { AppLauncher } from "./AppLauncher";
 import { useWorkspace } from "./useWorkspace";
 import { usePrivacyMode } from "./usePrivacyMode";
+import { analyzePastedLinks } from "../domain/pasteLinks";
+import { PasteLinksDialog } from "../features/bookmarks/PasteLinksDialog";
+import { packBoards } from "../features/boards/layout";
 
 const loadBookmarkEditor = async () => import("../features/bookmarks/BookmarkEditor").then((module) => ({ default: module.BookmarkEditor }));
 const loadSearchPalette = async () => import("../features/search/SearchPalette").then((module) => ({ default: module.SearchPalette }));
@@ -55,6 +61,7 @@ type NameIntent =
   | { kind: "rename-board"; board: Board };
 type MoveIntent = { kind: "bookmark"; bookmark: Bookmark } | { kind: "board"; board: Board } | { kind: "bulk" };
 interface EditorIntent { bookmark: Bookmark | null; boardId: string }
+interface OpenBoardIntent { urls: string[]; mode: "new-tabs" | "new-window"; count: number; truncated: boolean }
 
 export function WorkspaceApp() {
   const { workspace, failed, retry } = useWorkspace();
@@ -66,6 +73,7 @@ export function WorkspaceApp() {
 function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   const { t } = useI18n();
   const toasts = useToasts();
+  const { push: pushToast } = toasts;
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState<SettingsSection>("appearance");
@@ -73,13 +81,18 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   const [nameIntent, setNameIntent] = useState<NameIntent | null>(null);
   const [moveIntent, setMoveIntent] = useState<MoveIntent | null>(null);
   const [editor, setEditor] = useState<EditorIntent | null>(null);
+  const [openBoardIntent, setOpenBoardIntent] = useState<OpenBoardIntent | null>(null);
+  const [pasteIntent, setPasteIntent] = useState<{ boardId: string; text: string } | null>(null);
+  const pointer = useRef<{ x: number; y: number; boardId: string | null } | null>(null);
   const [pendingReveal, setPendingReveal] = useState<{ bookmarkId: string; pageId: string } | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
   const initialSettingsSeen = useRef(false);
   const performanceMode = useThemeRuntime(workspace.settings.theme);
   const { privacy, setPrivacy } = usePrivacyMode(workspace.settings);
-  const blockingOverlayOpen = searchOpen || settingsOpen || trashOpen || nameIntent !== null || moveIntent !== null || editor !== null;
+  const privacyRef = useRef(privacy);
+  useEffect(() => { privacyRef.current = privacy; }, [privacy]);
+  const blockingOverlayOpen = pasteIntent !== null || searchOpen || settingsOpen || trashOpen || nameIntent !== null || moveIntent !== null || editor !== null || openBoardIntent !== null;
 
   useEffect(() => {
     const preload = (): void => { void Promise.allSettled([loadSearchPalette(), loadSettingsDialog(), loadTrashDialog(), loadBookmarkEditor()]); };
@@ -115,6 +128,83 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   const notifySuccess = (message: string): void => toasts.push({ message, tone: "success" });
   const activePage = workspace.pages.find((page) => page.id === workspace.settings.activePageId) ?? workspace.pages[0];
   const activePageId = activePage?.id;
+  const pasteCreated = useCallback((created: Bookmark[], board: Board, single = false): void => {
+    if (created.length === 0) {
+      pushToast({ message: t("paste.already") });
+      return;
+    }
+    const hidden = privacyRef.current;
+    pushToast({
+      message: single
+        ? t("paste.addedOne", { title: hidden ? t("privacy.hiddenBookmark") : created[0]!.title, board: hidden ? t("generic.board") : board.title })
+        : t("paste.addedMany", { count: created.length, board: hidden ? t("generic.board") : board.title }),
+      tone: "success",
+      actionLabel: t("generic.undo"),
+      onAction: () => bulkDeleteBookmarks(created.map((bookmark) => bookmark.id)),
+    });
+  }, [t, pushToast]);
+
+  useEffect(() => {
+    const trackPointer = (event: PointerEvent): void => {
+      const board = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-board-id]") : null;
+      pointer.current = { x: event.clientX, y: event.clientY, boardId: board?.dataset.boardId ?? null };
+    };
+    const clearPointer = (): void => { pointer.current = null; };
+    window.addEventListener("pointermove", trackPointer, { passive: true });
+    window.addEventListener("pointerover", trackPointer, { passive: true });
+    document.addEventListener("pointerleave", clearPointer);
+    window.addEventListener("blur", clearPointer);
+    return () => {
+      window.removeEventListener("pointermove", trackPointer);
+      window.removeEventListener("pointerover", trackPointer);
+      document.removeEventListener("pointerleave", clearPointer);
+      window.removeEventListener("blur", clearPointer);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handlePaste = (event: ClipboardEvent): void => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (event.defaultPrevented || blockingOverlayOpen
+        || target?.closest("input, textarea, select, [contenteditable]:not([contenteditable='false'])")
+        || document.querySelector("[role='dialog'], [role='menu'], [role='listbox'], .overlay-loading")) return;
+      if (!event.clipboardData?.types.includes("text/plain")) return;
+      const text = event.clipboardData.getData("text/plain");
+      const analysis = analyzePastedLinks(text);
+      if (analysis.urls.length === 0) return;
+      const pageBoards = workspace.boards.filter((board) => board.pageId === activePageId);
+      const focusedId = document.activeElement?.closest<HTMLElement>("[data-board-id]")?.dataset.boardId;
+      const location = pointer.current;
+      const hoveredId = location && typeof document.elementFromPoint === "function"
+        ? document.elementFromPoint(location.x, location.y)?.closest<HTMLElement>("[data-board-id]")?.dataset.boardId
+        : location?.boardId;
+      const counts = new Map<string, number>();
+      for (const bookmark of workspace.bookmarks) counts.set(bookmark.boardId, (counts.get(bookmark.boardId) ?? 0) + 1);
+      const { placements } = packBoards(pageBoards, counts, workspace.settings.workspaceRows, workspace.settings.workspaceLayoutMode === "free");
+      const visualBoards = [...pageBoards].sort((left, right) => {
+        const a = placements.get(left.id)!;
+        const b = placements.get(right.id)!;
+        return a.row - b.row || a.column - b.column;
+      });
+      const board = pageBoards.find((item) => item.id === focusedId)
+        ?? pageBoards.find((item) => item.id === hoveredId) ?? visualBoards[0];
+      event.preventDefault();
+      if (!board) {
+        pushToast({ message: t("paste.noBoard"), tone: "neutral" });
+        return;
+      }
+      if (analysis.urls.length > 1) {
+        setPasteIntent({ boardId: board.id, text });
+        return;
+      }
+      void createBookmarksBulk(board.id, analysis.items)
+        .then((created) => pasteCreated(created, board, true))
+        .catch(() => pushToast({ message: t("paste.failed"), tone: "error" }));
+    };
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [activePageId, blockingOverlayOpen, pasteCreated, t, pushToast, workspace]);
+
   useEffect(() => {
     if (!pendingReveal || !activePageId || activePageId !== pendingReveal.pageId) return;
     const target = document.querySelector<HTMLElement>(`[data-bookmark-id="${CSS.escape(pendingReveal.bookmarkId)}"]`);
@@ -229,6 +319,28 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
     setSettingsOpen(true);
   };
 
+  const executeOpenBoard = async (urls: string[], mode: "new-tabs" | "new-window", truncated: boolean): Promise<void> => {
+    const success = truncated ? t("board.openAllTruncated", { count: urls.length }) : t("board.openAllDone", { count: urls.length });
+    await run(async () => {
+      await openUrls(urls, mode);
+    }, success);
+  };
+  const openBoard = (targetBoard: Board, mode: "new-tabs" | "new-window"): void => {
+    const boardBookmarks = bookmarks.filter((item) => item.boardId === targetBoard.id);
+    const openableUrls = boardBookmarks.filter((item) => isSafeOpenUrl(item.url)).map((item) => item.url);
+    if (openableUrls.length === 0) {
+      notifyError(t("board.openAllNone"));
+      return;
+    }
+    const truncated = openableUrls.length > 50;
+    const urlsToOpen = openableUrls.slice(0, 50);
+    if (urlsToOpen.length > 12) {
+      setOpenBoardIntent({ urls: urlsToOpen, mode, count: urlsToOpen.length, truncated });
+      return;
+    }
+    void executeOpenBoard(urlsToOpen, mode, truncated);
+  };
+
   return (
     <div className={`app-shell performance-${performanceMode} ${performanceMode === "compatibility" || performanceMode === "software" ? "low-power-mode" : ""} ${privacy ? "privacy-mode" : ""} ${workspace.settings.theme.motion ? "" : "motion-disabled"} ${workspace.settings.theme.bookmarkHoverMotion ? "" : "motion-hover-disabled"} ${workspace.settings.theme.menuMotion ? "" : "motion-menu-disabled"} ${workspace.settings.theme.dragMotion ? "" : "motion-drag-disabled"}`}>
       <div className="wallpaper" aria-hidden="true" />
@@ -239,10 +351,12 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
         selectedIds={selectedIds}
         settings={workspace.settings}
         onCreateBoard={() => setNameIntent({ kind: "new-board" })}
+        onPasteLinks={(board) => setPasteIntent({ boardId: board.id, text: "" })}
         onAddBookmark={(board) => setEditor({ bookmark: null, boardId: board.id })}
         onEditBoard={(board) => setNameIntent({ kind: "rename-board", board })}
         onPatchBoard={(board, patch) => void run(() => updateBoard(board.id, patch))}
         onMoveBoard={(board) => setMoveIntent({ kind: "board", board })}
+        onOpenBoard={openBoard}
         onDuplicateBoard={(board) => void run(() => duplicateBoard(board.id))}
         onDeleteBoard={deleteBoard}
         onMoveBoardIndex={(id, index, targetId) => void run(() => workspace.settings.workspaceLayoutMode === "free"
@@ -285,6 +399,18 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
         {searchOpen ? <SearchPalette open privacy={privacy} pages={workspace.pages} boards={workspace.boards} bookmarks={workspace.bookmarks} activePageId={activePage.id} onClose={() => setSearchOpen(false)} onOpen={openBookmark} onReveal={revealBookmark} onEdit={(bookmark) => { setSearchOpen(false); setEditor({ bookmark, boardId: bookmark.boardId }); }} onMove={(bookmark) => { setSearchOpen(false); setMoveIntent({ kind: "bookmark", bookmark }); }} onCopy={copyUrl} onDelete={deleteBookmark} /> : null}
         {editor !== null ? <BookmarkEditor open bookmark={editor.bookmark} privacy={privacy} initialBoardId={editor.boardId || boards[0]?.id || ""} pages={workspace.pages} boards={workspace.boards} onClose={() => setEditor(null)} onSaved={() => notifySuccess(t("bookmark.saved"))} onError={notifyError} /> : null}
       </Suspense>
+      {pasteIntent ? <PasteLinksDialog
+        workspace={workspace}
+        boardId={pasteIntent.boardId}
+        initialText={pasteIntent.text}
+        privacy={privacy}
+        onCreated={pasteCreated}
+        onClose={() => {
+          const boardId = pasteIntent.boardId;
+          setPasteIntent(null);
+          queueMicrotask(() => document.querySelector<HTMLElement>(`[data-board-id="${CSS.escape(boardId)}"] .board__title`)?.focus());
+        }}
+      /> : null}
       <NameDialog open={nameIntent !== null} title={t(nameIntent?.kind === "new-page" ? "name.newPage" : nameIntent?.kind === "rename-page" ? "name.renamePage" : nameIntent?.kind === "new-board" ? "name.newBoard" : "name.renameBoard")} label={t("generic.title")} initialValue={nameIntent && "page" in nameIntent ? nameIntent.page.title : nameIntent && "board" in nameIntent ? nameIntent.board.title : ""} submitLabel={t(nameIntent?.kind.startsWith("new-") ? "generic.create" : "generic.save")} onClose={() => setNameIntent(null)} onSubmit={handleNameSubmit} />
       <MoveDialog
         open={moveIntent !== null}
@@ -299,6 +425,32 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
           if (moveIntent?.kind === "bulk") { await bulkMoveBookmarks([...selectedIds], destinationId); setSelectedIds(new Set()); }
             }}
       />
+      {openBoardIntent ? (
+        <Modal
+          open
+          size="small"
+          title={t("board.openAllConfirmTitle")}
+          description={t("board.openAllConfirmBody", { count: openBoardIntent.count })}
+          onClose={() => setOpenBoardIntent(null)}
+          footer={(
+            <>
+              <Button onClick={() => setOpenBoardIntent(null)}>{t("generic.cancel")}</Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  const intent = openBoardIntent;
+                  setOpenBoardIntent(null);
+                  void executeOpenBoard(intent.urls, intent.mode, intent.truncated);
+                }}
+              >
+                {t("generic.open")}
+              </Button>
+            </>
+          )}
+        >
+          <div />
+        </Modal>
+      ) : null}
       <Suspense fallback={<div className="overlay-loading" role="status" aria-label={t("loading.opening")} />}>
         {settingsOpen ? <SettingsDialog open initialSection={settingsSection} workspace={workspace} onClose={() => setSettingsOpen(false)} onUpdated={notifySuccess} onError={notifyError} onOpenTrash={() => { setSettingsOpen(false); setTrashOpen(true); }} /> : null}
         {trashOpen ? <TrashDialog open privacy={privacy} onClose={() => setTrashOpen(false)} onChanged={notifySuccess} onError={notifyError} /> : null}

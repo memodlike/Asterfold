@@ -160,4 +160,51 @@ describe("wallpaper pipeline", () => {
     await expect(processWallpaper(new Blob([pngHeader]))).rejects.toThrow(/compatibility copy/iu);
     expect(close).toHaveBeenCalledTimes(2);
   });
+
+  it("reads the header through FileReader when Blob.arrayBuffer is unavailable", async () => {
+    vi.stubGlobal("createImageBitmap", vi.fn(() => Promise.resolve(decodedBitmap(800, 600))));
+    const header = new Blob([pngHeader]);
+    Object.defineProperty(header, "arrayBuffer", { value: undefined });
+    const source = { size: pngHeader.length, slice: () => header } as unknown as Blob;
+    await expect(inspectWallpaperSource(source)).resolves.toMatchObject({ mimeType: "image/png", width: 800, height: 600 });
+  });
+
+  it("reports an unreadable header from the FileReader fallback", async () => {
+    class FailingReader extends EventTarget {
+      public readAsArrayBuffer(): void { queueMicrotask(() => this.dispatchEvent(new Event("error"))); }
+    }
+    vi.stubGlobal("FileReader", FailingReader);
+    const header = new Blob([pngHeader]);
+    Object.defineProperty(header, "arrayBuffer", { value: undefined });
+    const source = { size: pngHeader.length, slice: () => header } as unknown as Blob;
+    await expect(inspectWallpaperSource(source)).rejects.toThrow("Wallpaper header could not be read");
+  });
+
+  it("reports a decode failure on the processing pass", async () => {
+    vi.stubGlobal("createImageBitmap", vi.fn()
+      .mockResolvedValueOnce(decodedBitmap(800, 600))
+      .mockRejectedValueOnce(new Error("decode failed")));
+    await expect(processWallpaper(new Blob([pngHeader]))).rejects.toThrow("Wallpaper image could not be decoded by Chrome");
+  });
+
+  it("rejects a wallpaper whose stored copies exceed the aggregate safety limit and closes the bitmap", async () => {
+    const close = vi.fn();
+    vi.stubGlobal("createImageBitmap", vi.fn(() => Promise.resolve(decodedBitmap(800, 600, close))));
+    class CanvasMock {
+      public constructor(public width: number, public height: number) {}
+      public getContext() { return { imageSmoothingEnabled: false, imageSmoothingQuality: "low", drawImage: vi.fn() }; }
+      public convertToBlob() { return Promise.resolve(new Blob([webpHeader, new Uint8Array(24)], { type: "image/webp" })); }
+    }
+    vi.stubGlobal("OffscreenCanvas", CanvasMock);
+    const header = new Blob([pngHeader]);
+    const source = {
+      size: WALLPAPER_LIMITS.sourceBytes,
+      slice: (start: number, end: number) => (end === WALLPAPER_LIMITS.sourceBytes
+        ? { size: WALLPAPER_LIMITS.aggregateBytes, type: "image/png" }
+        : header.slice(start, end)),
+    } as unknown as Blob;
+    await expect(processWallpaper(source)).rejects.toThrow("Wallpaper exceeds the local storage safety limit");
+    expect(close).toHaveBeenCalledTimes(2);
+  });
 });
+

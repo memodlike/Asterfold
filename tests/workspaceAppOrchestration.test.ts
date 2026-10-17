@@ -54,6 +54,7 @@ const mocks = vi.hoisted(() => ({
   bulkMoveBookmarks: vi.fn().mockResolvedValue(undefined),
   bulkRestoreBookmarks: vi.fn().mockResolvedValue(undefined),
   openUrl: vi.fn().mockResolvedValue(undefined),
+  openUrls: vi.fn().mockResolvedValue(undefined),
   copyText: vi.fn().mockResolvedValue(undefined),
   requestErrorClass: null as (new (code: string) => Error & { code: string }) | null,
 }));
@@ -99,7 +100,7 @@ vi.mock("../src/browser/api", () => {
     }
   }
   mocks.requestErrorClass = RequestError;
-  return { copyText: mocks.copyText, openUrl: mocks.openUrl, ExtensionRequestError: RequestError };
+  return { copyText: mocks.copyText, openUrl: mocks.openUrl, openUrls: mocks.openUrls, ExtensionRequestError: RequestError };
 });
 vi.mock("../src/features/boards/BoardCanvas", () => ({ BoardCanvas: (props: BoardCanvasProps) => { mocks.canvas = props; return null; } }));
 vi.mock("../src/app/AppLauncher", () => ({ AppLauncher: (props: LauncherProps) => { mocks.launcher = props; return null; } }));
@@ -324,5 +325,121 @@ describe("WorkspaceApp orchestration", () => {
     expect(mocks.moveBoardWithGridSwap).toHaveBeenCalledWith(board.id, boardTwo.id, page.id, 1);
     expect(mocks.copyText).not.toHaveBeenCalled();
     expect(mocks.toastPush).toHaveBeenCalled();
+  });
+
+  it("opens board bookmarks directly when count is 12 or fewer", async () => {
+    render(createElement(WorkspaceApp));
+    await waitFor(() => expect(mocks.canvas).not.toBeNull());
+
+    act(() => {
+      mocks.canvas?.onOpenBoard(board, "new-tabs");
+    });
+    await settle();
+
+    expect(mocks.openUrls).toHaveBeenCalledWith([bookmark.url, bookmarkTwo.url], "new-tabs");
+    expect(mocks.toastPush).toHaveBeenCalledWith({
+      message: "Opened 2 links",
+      tone: "success",
+    });
+    expect(screen.queryByRole("dialog", { name: "Open all bookmarks" })).toBeNull();
+  });
+
+  it("prompts for confirmation when board has more than 12 openable bookmarks", async () => {
+    const manyBookmarks = Array.from({ length: 15 }, (_, i) => ({
+      ...bookmark,
+      id: `bm-${i}`,
+      url: `https://example.com/${i}`,
+    }));
+    mocks.workspaceState.workspace = {
+      ...workspace(),
+      bookmarks: manyBookmarks,
+    };
+    render(createElement(WorkspaceApp));
+    await waitFor(() => expect(mocks.canvas).not.toBeNull());
+
+    act(() => {
+      mocks.canvas?.onOpenBoard(board, "new-tabs");
+    });
+    await settle();
+
+    expect(screen.getByRole("dialog", { name: "Open all bookmarks" })).toBeVisible();
+    expect(screen.getByText("Open 15 tabs at once?")).toBeVisible();
+    expect(mocks.openUrls).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await settle();
+    expect(screen.queryByRole("dialog", { name: "Open all bookmarks" })).toBeNull();
+    expect(mocks.openUrls).not.toHaveBeenCalled();
+
+    act(() => {
+      mocks.canvas?.onOpenBoard(board, "new-tabs");
+    });
+    await settle();
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+    await settle();
+
+    expect(mocks.openUrls).toHaveBeenCalledWith(
+      manyBookmarks.map((b) => b.url),
+      "new-tabs",
+    );
+    expect(mocks.toastPush).toHaveBeenCalledWith({
+      message: "Opened 15 links",
+      tone: "success",
+    });
+  });
+
+  it("caps URLs at 50 when board has more than 50 bookmarks", async () => {
+    const fiftyFiveBookmarks = Array.from({ length: 55 }, (_, i) => ({
+      ...bookmark,
+      id: `bm-55-${i}`,
+      url: `https://example.com/item-${i}`,
+    }));
+    mocks.workspaceState.workspace = {
+      ...workspace(),
+      bookmarks: fiftyFiveBookmarks,
+    };
+    render(createElement(WorkspaceApp));
+    await waitFor(() => expect(mocks.canvas).not.toBeNull());
+
+    act(() => {
+      mocks.canvas?.onOpenBoard(board, "new-window");
+    });
+    await settle();
+
+    expect(screen.getByText("Open 50 tabs at once?")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+    await settle();
+
+    expect(mocks.openUrls).toHaveBeenCalledWith(
+      fiftyFiveBookmarks.slice(0, 50).map((b) => b.url),
+      "new-window",
+    );
+    expect(mocks.toastPush).toHaveBeenCalledWith({
+      message: "Opened first 50 links (maximum 50)",
+      tone: "success",
+    });
+  });
+
+  it("shows an error toast when board has no openable links", async () => {
+    const unopenable = [
+      { ...bookmark, id: "bm-mail", url: "mailto:support@example.com" },
+    ];
+    mocks.workspaceState.workspace = {
+      ...workspace(),
+      bookmarks: unopenable,
+    };
+    render(createElement(WorkspaceApp));
+    await waitFor(() => expect(mocks.canvas).not.toBeNull());
+
+    act(() => {
+      mocks.canvas?.onOpenBoard(board, "new-tabs");
+    });
+    await settle();
+
+    expect(mocks.openUrls).not.toHaveBeenCalled();
+    expect(mocks.toastPush).toHaveBeenCalledWith({
+      message: "No openable links found",
+      tone: "error",
+    });
   });
 });

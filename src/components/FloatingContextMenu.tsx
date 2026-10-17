@@ -15,7 +15,7 @@ interface FloatingContextMenuProps {
 
 const EDGE_GAP = 8;
 const ESTIMATED_MENU_WIDTH = 224;
-const ESTIMATED_MENU_HEIGHT = 400;
+const ESTIMATED_MENU_HEIGHT = 520;
 
 export function FloatingContextMenu({ label, point, children, onClose }: FloatingContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);

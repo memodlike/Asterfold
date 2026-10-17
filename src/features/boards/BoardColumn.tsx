@@ -1,9 +1,10 @@
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Check, Copy, MoveRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { AppWindow, Check, ClipboardPaste, Copy, ExternalLink, MoveRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { memo, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
 import type { Board, Bookmark } from "../../domain/models";
+import { isSafeOpenUrl } from "../../domain/urls";
 import { FloatingContextMenu, type ContextMenuPoint } from "../../components/FloatingContextMenu";
 import { useI18n } from "../../i18n";
 import { BookmarkCard } from "../bookmarks/BookmarkCard";
@@ -17,9 +18,11 @@ interface BoardColumnProps {
   privacy: boolean;
   selectedIds: Set<string>;
   onAddBookmark: (board: Board) => void;
+  onPasteLinks: (board: Board) => void;
   onEditBoard: (board: Board) => void;
   onPatchBoard: (board: Board, patch: Partial<Pick<Board, "bookmarkColumns" | "gridSpan">>) => void;
   onMoveBoard: (board: Board) => void;
+  onOpenBoard: (board: Board, mode: "new-tabs" | "new-window") => void;
   onDuplicateBoard: (board: Board) => void;
   onDeleteBoard: (board: Board) => void;
   onKeyboardMoveBoard: (board: Board, delta: -1 | 1) => void;
@@ -36,6 +39,7 @@ interface BoardColumnProps {
 export const BoardColumn = memo(function BoardColumn(props: BoardColumnProps) {
   const { t } = useI18n();
   const [menuPoint, setMenuPoint] = useState<ContextMenuPoint | null>(null);
+  const openableCount = props.bookmarks.filter((b) => isSafeOpenUrl(b.url)).length;
   const sortable = useSortable({ id: `board:${props.board.id}`, data: { type: "board", boardId: props.board.id } });
   const drop = useDroppable({ id: `board-drop:${props.board.id}`, data: { type: "board-drop", boardId: props.board.id } });
   const columnsClass = props.board.bookmarkColumns === "auto" ? "auto" : String(props.board.bookmarkColumns);
@@ -117,7 +121,20 @@ export const BoardColumn = memo(function BoardColumn(props: BoardColumnProps) {
         <div className="context-menu__group"><span>{t("board.columns")}</span>{(["auto", 1, 2] as const).map((value) => <button key={value} onClick={() => action(() => props.onPatchBoard(props.board, { bookmarkColumns: value }))}>{props.board.bookmarkColumns === value ? <Check size={14} /> : <i />}{t(value === "auto" ? "board.columnsAuto" : value === 1 ? "board.columnsOne" : "board.columnsTwo")}</button>)}</div>
         <div className="context-menu__group"><span>{t("board.size")}</span>{([2, 4, 6] as const).map((value) => <button key={value} onClick={() => action(() => props.onPatchBoard(props.board, { gridSpan: value }))}>{props.board.gridSpan === value ? <Check size={14} /> : <i />}{t(value === 2 ? "board.sizeSmall" : value === 4 ? "board.sizeMedium" : "board.sizeLarge")}</button>)}</div>
         <button onClick={() => action(() => props.onMoveBoard(props.board))}><MoveRight size={15} />{t("board.movePage")}</button>
+        {openableCount > 0 ? (
+          <>
+            <button onClick={() => action(() => props.onOpenBoard(props.board, "new-tabs"))}>
+              <ExternalLink size={15} />
+              {t("board.openAllTabs", { count: openableCount })}
+            </button>
+            <button onClick={() => action(() => props.onOpenBoard(props.board, "new-window"))}>
+              <AppWindow size={15} />
+              {t("board.openAllWindow")}
+            </button>
+          </>
+        ) : null}
         <button onClick={() => action(() => props.onDuplicateBoard(props.board))}><Copy size={15} />{t("generic.duplicate")}</button>
+        <button onClick={() => action(() => props.onPasteLinks(props.board))}><ClipboardPaste size={15} />{t("paste.menu")}</button>
         <button className="danger" onClick={() => action(() => props.onDeleteBoard(props.board))}><Trash2 size={15} />{t("bookmark.moveTrash")}</button>
       </FloatingContextMenu> : null}
     </section>

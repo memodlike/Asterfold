@@ -35,7 +35,7 @@ const bookmark: Bookmark = { id: "bookmark", userId: null, boardId: board.id, ti
 
 function handlers() {
   return {
-    onAddBookmark: vi.fn(), onEditBoard: vi.fn(), onPatchBoard: vi.fn(), onMoveBoard: vi.fn(), onDuplicateBoard: vi.fn(), onDeleteBoard: vi.fn(), onKeyboardMoveBoard: vi.fn(),
+    onAddBookmark: vi.fn(), onPasteLinks: vi.fn(), onEditBoard: vi.fn(), onPatchBoard: vi.fn(), onMoveBoard: vi.fn(), onOpenBoard: vi.fn(), onDuplicateBoard: vi.fn(), onDeleteBoard: vi.fn(), onKeyboardMoveBoard: vi.fn(),
     onOpenBookmark: vi.fn(), onEditBookmark: vi.fn(), onMoveBookmark: vi.fn(), onDuplicateBookmark: vi.fn(), onDeleteBookmark: vi.fn(), onCopyUrl: vi.fn(), onCopyMarkdown: vi.fn(), onSelectBookmark: vi.fn(),
   };
 }
@@ -109,6 +109,41 @@ describe("BoardColumn behavior", () => {
     openMenu(container);
     fireEvent.click(screen.getByRole("menuitem", { name: "Move to trash" }));
     expect(callbacks.onDeleteBoard).toHaveBeenCalledWith(board);
+  });
+
+  it("shows Open all menu items with count for boards with openable bookmarks and routes clicks", () => {
+    const validBookmarks: Bookmark[] = [
+      { ...bookmark, id: "b1", url: "https://example.com/1" },
+      { ...bookmark, id: "b2", url: "mailto:support@example.com" },
+      { ...bookmark, id: "b3", url: "https://example.com/3" },
+    ];
+    const { container, callbacks } = renderColumn({ bookmarks: validBookmarks });
+
+    openMenu(container);
+    const openTabsItem = screen.getByRole("menuitem", { name: "Open all (2)" });
+    expect(openTabsItem).toBeInTheDocument();
+    const openWindowItem = screen.getByRole("menuitem", { name: "Open all in new window" });
+    expect(openWindowItem).toBeInTheDocument();
+
+    fireEvent.click(openTabsItem);
+    expect(callbacks.onOpenBoard).toHaveBeenCalledWith(board, "new-tabs");
+
+    openMenu(container);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Open all in new window" }));
+    expect(callbacks.onOpenBoard).toHaveBeenCalledWith(board, "new-window");
+  });
+
+  it("hides Open all menu items when board has no openable bookmarks", () => {
+    const emptyColumn = renderColumn({ bookmarks: [] });
+    openMenu(emptyColumn.container);
+    expect(screen.queryByRole("menuitem", { name: /Open all/ })).toBeNull();
+    emptyColumn.unmount();
+
+    const mailtoOnly = renderColumn({
+      bookmarks: [{ ...bookmark, id: "b-mail", url: "mailto:hello@example.com" }],
+    });
+    openMenu(mailtoOnly.container);
+    expect(screen.queryByRole("menuitem", { name: /Open all/ })).toBeNull();
   });
 
   it("opens the context menu through Shift+F10", () => {

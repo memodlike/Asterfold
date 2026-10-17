@@ -13,7 +13,7 @@ async function openWorkspace(pageId?: string): Promise<void> {
   await browser.tabs.create({ url: chrome.runtime.getURL(`/newtab.html${query}`) });
 }
 
-async function handleRuntimeMessage(raw: unknown, sender: chrome.runtime.MessageSender): Promise<ExtensionResponse> {
+export async function handleRuntimeMessage(raw: unknown, sender: chrome.runtime.MessageSender): Promise<ExtensionResponse> {
   const message = parseExtensionMessage(raw);
   if (!message) return { ok: false, code: "INVALID_MESSAGE" };
   switch (message.type) {
@@ -38,6 +38,24 @@ async function handleRuntimeMessage(raw: unknown, sender: chrome.runtime.Message
         }
       } else if (sender.tab?.id !== undefined) await browser.tabs.update(sender.tab.id, { url: safeUrl });
       else await browser.tabs.update({ url: safeUrl });
+      return { ok: true };
+    }
+    case "OPEN_URLS": {
+      const safeUrls: string[] = [];
+      for (const url of message.urls) {
+        try {
+          safeUrls.push(parseSafeNavigationUrl(url));
+        } catch {
+          return { ok: false, code: "UNSAFE_URL" };
+        }
+      }
+      if (message.mode === "new-window") {
+        await browser.windows.create({ url: safeUrls, focused: true });
+      } else {
+        for (const url of safeUrls) {
+          await browser.tabs.create({ url, active: false });
+        }
+      }
       return { ok: true };
     }
     case "DATA_CHANGED":
