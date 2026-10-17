@@ -419,8 +419,10 @@ test.describe.serial("Asterfold MV3 release", () => {
 
     const popup = await context.newPage();
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
-    await expect(popup.locator(".workspace-button")).toBeVisible();
+    await expect(popup.locator(".workspace-button")).toHaveCount(0);
+    await expect(popup.getByText("Chrome")).toHaveCount(0);
     await expect(popup.locator(".save-button")).toBeVisible();
+    await expect(popup.getByRole("button", { name: "Открыть рабочее пространство" })).toBeVisible();
     await expect(popup.getByText(`Asterfold ${packageVersion}`)).toBeVisible();
     await popup.close();
     await workspacePage.close();
