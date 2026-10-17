@@ -2,6 +2,8 @@ import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { chromium, expect, test, type BrowserContext, type Worker } from "@playwright/test";
+import type { StartupThemeSnapshot } from "../src/features/appearance/startupSnapshot";
+import { BUILTIN_WALLPAPERS } from "../src/features/appearance/themeRuntime";
 
 const extensionPath = resolve(process.env.ASTERFOLD_EXTENSION_PATH ?? ".output/chrome-mv3");
 const knownBrowserPaths = [
@@ -50,6 +52,13 @@ function luminance(color: string): number | null {
   return red * 0.2126 + green * 0.7152 + blue * 0.0722;
 }
 
+const duskWallpaper = BUILTIN_WALLPAPERS.find((candidate) => candidate.id === "builtin-dusk");
+
+function duskWallpaperAsset(performance?: string): string {
+  const isCompatOrSoftware = performance === "compatibility" || performance === "software";
+  return (isCompatOrSoftware ? duskWallpaper?.compatibilityValue : duskWallpaper?.value) ?? 'url("/wallpapers/dusk.webp")';
+}
+
 async function useDarkWallpaper(pageUrl: string, context: BrowserContext): Promise<void> {
   const page = await context.newPage();
   await page.goto(pageUrl);
@@ -87,7 +96,16 @@ async function useDarkWallpaper(pageUrl: string, context: BrowserContext): Promi
   });
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-asterfold-ready", "true");
-  await expect.poll(() => page.evaluate(() => localStorage.getItem("asterfold:startup-theme:v1"))).toContain("dusk.webp");
+  await expect.poll(async () => {
+    const raw = await page.evaluate(() => localStorage.getItem("asterfold:startup-theme:v1"));
+    if (!raw) return false;
+    try {
+      const snapshot = JSON.parse(raw) as Partial<StartupThemeSnapshot>;
+      return snapshot.wallpaper === duskWallpaperAsset(snapshot.performance);
+    } catch {
+      return false;
+    }
+  }).toBe(true);
   await page.close();
 }
 
