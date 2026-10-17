@@ -48,7 +48,7 @@ vi.mock("../src/features/appearance/useThemeRuntime", () => ({ useThemeRuntime: 
 vi.mock("../src/db/repository", () => mocks.repository);
 vi.mock("../src/browser/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/browser/api")>();
-  return { ...actual, copyText: mocks.browser.copyText, openUrl: mocks.browser.openUrl, faviconUrl: vi.fn(() => null) };
+  return { ...actual, copyText: mocks.browser.copyText, openUrl: mocks.browser.openUrl };
 });
 vi.mock("../src/services/exportImport", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/services/exportImport")>();

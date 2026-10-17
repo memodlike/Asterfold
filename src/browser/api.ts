@@ -13,12 +13,6 @@ export class ExtensionRequestError extends Error {
   }
 }
 
-export function faviconUrl(_pageUrl?: string, _cssSize?: number, _devicePixelRatio?: number): string;
-export function faviconUrl(): string {
-  // Remote favicon service is removed to guarantee zero data leakage/network exfiltration.
-  // Bookmarks use local deterministic monograms rendered client-side.
-  return "";
-}
 
 export async function openUrl(url: string, mode: BookmarkOpenMode): Promise<void> {
   let safeUrl: string;

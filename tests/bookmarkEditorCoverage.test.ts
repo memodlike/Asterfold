@@ -8,7 +8,6 @@ const mocks = vi.hoisted(() => ({
   createBookmark: vi.fn(),
   findDuplicate: vi.fn(),
   updateBookmark: vi.fn(),
-  faviconUrl: vi.fn(),
 }));
 
 vi.mock("../src/db/repository", () => ({
@@ -16,7 +15,6 @@ vi.mock("../src/db/repository", () => ({
   findDuplicate: mocks.findDuplicate,
   updateBookmark: mocks.updateBookmark,
 }));
-vi.mock("../src/browser/api", () => ({ faviconUrl: mocks.faviconUrl }));
 
 import { BookmarkEditor } from "../src/features/bookmarks/BookmarkEditor";
 import { I18nProvider } from "../src/i18n";
@@ -84,7 +82,6 @@ const performanceMeasureMock = vi.fn();
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.findDuplicate.mockResolvedValue(null);
-  mocks.faviconUrl.mockReturnValue("chrome-extension://test/favicon");
   mocks.createBookmark.mockResolvedValue({ ...existing, id: "created", title: "Created", url: "https://created.example/" });
   mocks.updateBookmark.mockResolvedValue({ ...existing, title: "Updated" });
   performanceMarkMock.mockClear();
@@ -256,7 +253,6 @@ describe("BookmarkEditor complete behavior", () => {
     const privacy = renderEditor({ privacy: true });
     expect(privacy.container.querySelector("img")).toBeNull();
     privacy.unmount();
-    mocks.faviconUrl.mockReturnValue("");
     const mail = renderEditor({ initialUrl: "mailto:test@example.com" });
     expect(mail.container.querySelector("img")).toBeNull();
   });

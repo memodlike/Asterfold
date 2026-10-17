@@ -12,12 +12,10 @@ const mocks = vi.hoisted(() => ({
     attributes: { "aria-roledescription": "sortable" },
     listeners: { onPointerDown: vi.fn(), onKeyDown: vi.fn() },
   },
-  faviconUrl: vi.fn(() => "chrome-extension://test/_favicon/example"),
 }));
 
 vi.mock("@dnd-kit/sortable", () => ({ useSortable: vi.fn(() => mocks.sortable) }));
 vi.mock("@dnd-kit/utilities", () => ({ CSS: { Transform: { toString: vi.fn(() => "translate3d(2px, 3px, 0)") } } }));
-vi.mock("../src/browser/api", () => ({ faviconUrl: mocks.faviconUrl }));
 
 import { BookmarkCard } from "../src/features/bookmarks/BookmarkCard";
 import { I18nProvider } from "../src/i18n";
@@ -72,7 +70,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.sortable.isDragging = false;
   mocks.sortable.transform = { x: 2, y: 3, scaleX: 1, scaleY: 1 };
-  mocks.faviconUrl.mockReturnValue("chrome-extension://test/_favicon/example");
   Object.defineProperty(HTMLElement.prototype, "offsetParent", { configurable: true, get: () => document.body });
   Object.defineProperty(HTMLElement.prototype, "getBoundingClientRect", { configurable: true, value: vi.fn(() => ({ x: 10, y: 20, left: 10, top: 20, right: 110, bottom: 60, width: 100, height: 40, toJSON: () => ({}) })) });
 });
@@ -173,12 +170,10 @@ describe("BookmarkCard complete behavior", () => {
   });
 
   it("protects the accessible tree and clipboard commands in privacy mode", () => {
-    mocks.faviconUrl.mockReturnValue("");
     renderCard({ privacy: true });
     expect(screen.getByRole("button", { name: "Open hidden bookmark" })).toBeVisible();
     expect(screen.getByText("••••••••")).toHaveClass("private-content", "private-placeholder");
     expect(document.querySelector(".favicon svg")).toBeVisible();
-    expect(mocks.faviconUrl).not.toHaveBeenCalled();
     fireEvent.contextMenu(document.querySelector("article")!);
     expect(screen.getByRole("menu", { name: "Hidden bookmark actions" })).toBeVisible();
     expect(screen.getByRole("menuitem", { name: "Copy URL" })).toBeDisabled();
