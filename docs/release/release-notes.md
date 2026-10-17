@@ -1,3 +1,13 @@
+# Asterfold 3.8.2
+
+## Open Board & Paste links
+
+- **Open Board**: the board menu now has "Open all" (new tabs) and "Open all in new window". Boards with more than 12 links ask for confirmation; at most 50 links open per action. Every URL is validated in the page and again in the service worker; one unsafe URL cancels the whole action. `tabs.create` and `windows.create` need no manifest permission.
+- **Quick paste**: press ⌘/Ctrl+V on the workspace to add a copied link to the focused or hovered board (or the first board of the Page). Titles are derived locally, duplicates on the board are skipped, and the toast offers Undo.
+- **Paste links dialog**: paste a whole list (or any text containing links) from the board menu or by pasting several links at once. Live counts of new, duplicate and invalid lines, destination picker, one transactional save, Undo for the whole batch. Bounded to 100,000 characters and 200 links.
+- **Privacy**: toasts in Privacy Mode never reveal titles, URLs or board names. The clipboard is read only from a user-initiated paste event; no clipboard permission is requested.
+- **Localization**: new strings translated into all 12 interface languages.
+
 # Asterfold 3.8.1
 
 ## Core Tooling & Dependency Architecture Modernization
