@@ -68,10 +68,33 @@ describe("Windows 11 adaptive rendering stress gates", () => {
     expect(launcherCss).toMatch(/@media \(forced-colors: active\)\s*\{\s*\.launcher-trigger\s*\{[^}]*background:\s*Canvas;[^}]*backdrop-filter:\s*none;/u);
   });
 
-  it("binds empty-state to --board-alpha in both compatibility and software tiers (DEFECT-07)", () => {
+  it("binds empty-state to --board-alpha across all tiers under no-preference (DEFECT-01)", () => {
     const material = readFileSync(`${process.cwd()}/src/styles/material.css`, "utf8");
-    expect(material).toMatch(/:is\(html\[data-performance="compatibility"\], html\[data-performance="software"\]\) \.empty-state\s*\{\s*--mat-alpha:\s*var\(--board-alpha\);\s*\}/u);
-    expect(material).toMatch(/@media \(prefers-reduced-transparency: no-preference\)\s*\{\s*:is\(html\[data-performance="compatibility"\], html\[data-performance="software"\]\) \.empty-state\s*\{\s*--mat-alpha:\s*var\(--board-alpha\);\s*\}\s*\}/u);
+    expect(material).toMatch(/\.empty-state\s*\{\s*--mat-alpha:\s*var\(--mat-alpha-tile\);\s*\}/u);
+    expect(material).toMatch(/@media \(prefers-reduced-transparency: no-preference\)\s*\{\s*\.empty-state\s*\{\s*--mat-alpha:\s*var\(--board-alpha\);\s*\}\s*\}/u);
+    expect(material).not.toMatch(/:is\(html\[data-performance="compatibility"\], html\[data-performance="software"\]\) \.empty-state/u);
+  });
+
+  it("excludes layout shells from forced-colors solid modal boxes (DEFECT-02)", () => {
+    const controls = readFileSync(`${process.cwd()}/src/styles/controls.css`, "utf8");
+    const material = readFileSync(`${process.cwd()}/src/styles/material.css`, "utf8");
+    expect(controls).toMatch(/@media \(forced-colors: active\)\s*\{\s*\.modal:not\(\.settings-modal, \.spotlight, \.onboarding-modal\),/u);
+    expect(material).toMatch(/@media \(forced-colors: active\)\s*\{[^}]*\.modal:not\(\.settings-modal, \.spotlight, \.onboarding-modal\)/u);
+  });
+
+  it("eliminates settings and onboarding modal scrim blur under prefers-contrast: more (DEFECT-03)", () => {
+    const material = readFileSync(`${process.cwd()}/src/styles/material.css`, "utf8");
+    const contrastBlock = /@media \(prefers-contrast: more\) \{([\s\S]*?)\n\}\n\n@media \(forced-colors:/u.exec(material)?.[1] ?? "";
+    expect(contrastBlock).toContain("--settings-scrim-filter: none;");
+    expect(contrastBlock).toMatch(/--settings-scrim:\s*rgb\(6 6 10 \/ \.52\);/u);
+    expect(contrastBlock).toMatch(/html\[data-theme="light"\]\s*\{\s*--settings-scrim:\s*rgb\(20 22 30 \/ \.34\);/u);
+  });
+
+  it("binds settings and onboarding mini-preview boards to --board-alpha (DEFECT-05)", () => {
+    const settings = readFileSync(`${process.cwd()}/src/features/settings/settings.css`, "utf8");
+    const onboarding = readFileSync(`${process.cwd()}/src/features/onboarding/onboarding.css`, "utf8");
+    expect(settings).toMatch(/\.settings-preview__board\s*\{[^}]*rgb\(var\(--surface-rgb\) \/ var\(--board-alpha, var\(--surface-opacity, \.62\)\)\)/u);
+    expect(onboarding).toMatch(/\.onboarding-preview__board\s*\{[^}]*rgb\(var\(--surface-rgb\) \/ var\(--board-alpha, var\(--surface-opacity, \.62\)\)\)/u);
   });
 
   it("includes all popovers, tiles, drag previews, headers, and triggers in opaque accessibility fallbacks (DEFECT-06, A9)", () => {
