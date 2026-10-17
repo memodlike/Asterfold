@@ -338,7 +338,7 @@ describe("WorkspaceApp orchestration", () => {
 
     expect(mocks.openUrls).toHaveBeenCalledWith([bookmark.url, bookmarkTwo.url], "new-tabs");
     expect(mocks.toastPush).toHaveBeenCalledWith({
-      message: "Opened 2 links",
+      message: "Links opened: 2",
       tone: "success",
     });
     expect(screen.queryByRole("dialog", { name: "Open all bookmarks" })).toBeNull();
@@ -362,8 +362,12 @@ describe("WorkspaceApp orchestration", () => {
     });
     await settle();
 
-    expect(screen.getByRole("dialog", { name: "Open all bookmarks" })).toBeVisible();
-    expect(screen.getByText("Open 15 tabs at once?")).toBeVisible();
+    const confirmDialog = screen.getByRole("dialog", { name: "Open all bookmarks" });
+    expect(confirmDialog).toBeVisible();
+    const describedById = confirmDialog.getAttribute("aria-describedby");
+    expect(describedById).toBeTruthy();
+    expect(document.getElementById(describedById!)).toHaveTextContent("15");
+    expect(screen.getByText("This opens 15 tabs. Continue?")).toBeVisible();
     expect(mocks.openUrls).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
@@ -383,7 +387,7 @@ describe("WorkspaceApp orchestration", () => {
       "new-tabs",
     );
     expect(mocks.toastPush).toHaveBeenCalledWith({
-      message: "Opened 15 links",
+      message: "Links opened: 15",
       tone: "success",
     });
   });
@@ -406,7 +410,7 @@ describe("WorkspaceApp orchestration", () => {
     });
     await settle();
 
-    expect(screen.getByText("Open 50 tabs at once?")).toBeVisible();
+    expect(screen.getByText("This opens 50 tabs. Continue?")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Open" }));
     await settle();
 
@@ -415,7 +419,7 @@ describe("WorkspaceApp orchestration", () => {
       "new-window",
     );
     expect(mocks.toastPush).toHaveBeenCalledWith({
-      message: "Opened first 50 links (maximum 50)",
+      message: "Links opened: 50 (limit 50)",
       tone: "success",
     });
   });

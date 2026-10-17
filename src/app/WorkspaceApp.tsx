@@ -1,5 +1,5 @@
 import { WorkspaceLimitError } from "../domain/errors";
-import { lazy, Suspense, useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
+import { lazy, Suspense, useCallback, useEffect, useId, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Download, Sparkles, X } from "lucide-react";
 import type { Board, Bookmark, Page, WorkspaceData } from "../domain/models";
 import {
@@ -84,6 +84,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   const [moveIntent, setMoveIntent] = useState<MoveIntent | null>(null);
   const [editor, setEditor] = useState<EditorIntent | null>(null);
   const [openBoardIntent, setOpenBoardIntent] = useState<OpenBoardIntent | null>(null);
+  const openBoardConfirmId = useId();
   const [pasteIntent, setPasteIntent] = useState<{ boardId: string; text: string } | null>(null);
   const pointer = useRef<{ x: number; y: number; boardId: string | null } | null>(null);
   const [pendingReveal, setPendingReveal] = useState<{ bookmarkId: string; pageId: string } | null>(null);
@@ -129,6 +130,12 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   const notifySuccess = (message: string): void => toasts.push({ message, tone: "success" });
   const activePage = workspace.pages.find((page) => page.id === workspace.settings.activePageId) ?? workspace.pages[0];
   const activePageId = activePage?.id;
+  const [prevActivePageId, setPrevActivePageId] = useState(activePageId);
+  if (prevActivePageId !== activePageId) {
+    setPrevActivePageId(activePageId);
+    setSelectedIds(new Set());
+    setLastSelectedId(null);
+  }
   const pasteCreated = useCallback((created: Bookmark[], board: Board, single = false): void => {
     if (created.length === 0) {
       pushToast({ message: t("paste.already") });
@@ -216,10 +223,27 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
     target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center", inline: "center" });
     setPendingReveal(null);
   }, [activePageId, pendingReveal, workspace.bookmarks, workspace.settings.theme.motion]);
+
+  const boards = useMemo(() => (activePage ? workspace.boards.filter((board) => board.pageId === activePage.id) : []), [activePage, workspace.boards]);
+  const boardIds = useMemo(() => new Set(boards.map((board) => board.id)), [boards]);
+  const bookmarks = useMemo(() => (activePage ? workspace.bookmarks.filter((bookmark) => boardIds.has(bookmark.boardId)) : []), [activePage, boardIds, workspace.bookmarks]);
+
+  useEffect(() => {
+    setSelectedIds((current) => {
+      if (current.size === 0) return current;
+      const validIds = new Set(bookmarks.map((item) => item.id));
+      let changed = false;
+      const next = new Set<string>();
+      for (const id of current) {
+        if (validIds.has(id)) next.add(id);
+        else changed = true;
+      }
+      return changed ? next : current;
+    });
+    setLastSelectedId((current) => (current && bookmarks.some((item) => item.id === current) ? current : null));
+  }, [bookmarks]);
+
   if (!activePage) return <div className="app-loading">{t("loading.repairing")}</div>;
-  const boards = workspace.boards.filter((board) => board.pageId === activePage.id);
-  const boardIds = new Set(boards.map((board) => board.id));
-  const bookmarks = workspace.bookmarks.filter((bookmark) => boardIds.has(bookmark.boardId));
 
   const run = async (action: () => Promise<unknown>, success?: string): Promise<void> => {
     try {
@@ -240,12 +264,17 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   };
   const selectPage = (id: string): void => {
     setSelectedIds(new Set());
+    setLastSelectedId(null);
     void run(() => updateSettings({ activePageId: id }));
   };
   const handleNameSubmit = async (value: string): Promise<void> => {
     const intent = nameIntent;
     if (!intent) return;
-    if (intent.kind === "new-page") await createPage(value);
+    if (intent.kind === "new-page") {
+      setSelectedIds(new Set());
+      setLastSelectedId(null);
+      await createPage(value);
+    }
     if (intent.kind === "rename-page") await renamePage(intent.page.id, value);
     if (intent.kind === "new-board") await createBoard(activePage.id, value);
     if (intent.kind === "rename-board") await updateBoard(intent.board.id, { title: value });
@@ -316,8 +345,12 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
     void run(() => setPrivacy(next), t(next ? "privacy.on" : "privacy.off"));
   };
   const bulkDelete = (): void => {
-    const ids = [...selectedIds];
-    if (!ids.length) return;
+    const validIds = new Set(bookmarks.map((b) => b.id));
+    const ids = [...selectedIds].filter((id) => validIds.has(id));
+    if (!ids.length) {
+      setSelectedIds(new Set());
+      return;
+    }
     void run(async () => {
       await bulkDeleteBookmarks(ids);
       setSelectedIds(new Set());
@@ -325,10 +358,15 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
     });
   };
   const exportSelected = (): void => {
-    const ids = new Set(selectedIds);
+    const validIds = new Set(bookmarks.map((b) => b.id));
+    const ids = [...selectedIds].filter((id) => validIds.has(id));
+    if (!ids.length) {
+      setSelectedIds(new Set());
+      return;
+    }
     void run(async () => {
       const { createSelectionBackup, downloadText, serializeBackup } = await import("../services/exportImport");
-      const backup = await createSelectionBackup([...ids]);
+      const backup = await createSelectionBackup(ids);
       downloadText("asterfold-selection.json", serializeBackup(backup), "application/json");
     });
   };
@@ -432,6 +470,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
       <NameDialog open={nameIntent !== null} title={t(nameIntent?.kind === "new-page" ? "name.newPage" : nameIntent?.kind === "rename-page" ? "name.renamePage" : nameIntent?.kind === "new-board" ? "name.newBoard" : "name.renameBoard")} label={t("generic.title")} initialValue={nameIntent && "page" in nameIntent ? nameIntent.page.title : nameIntent && "board" in nameIntent ? nameIntent.board.title : ""} submitLabel={t(nameIntent?.kind.startsWith("new-") ? "generic.create" : "generic.save")} onClose={() => setNameIntent(null)} onSubmit={handleNameSubmit} />
       <MoveDialog
         open={moveIntent !== null}
+        privacy={privacy}
         type={moveIntent?.kind === "board" ? "board" : moveIntent?.kind === "bulk" ? "bulk-bookmarks" : "bookmark"}
         pages={workspace.pages}
         boards={workspace.boards}
@@ -440,15 +479,20 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
         onMove={async (destinationId) => {
           if (moveIntent?.kind === "board") await moveBoardToIndex(moveIntent.board.id, destinationId, Number.MAX_SAFE_INTEGER);
           if (moveIntent?.kind === "bookmark") await moveBookmarkToIndex(moveIntent.bookmark.id, destinationId, Number.MAX_SAFE_INTEGER);
-          if (moveIntent?.kind === "bulk") { await bulkMoveBookmarks([...selectedIds], destinationId); setSelectedIds(new Set()); }
-            }}
+          if (moveIntent?.kind === "bulk") {
+            const validIds = new Set(bookmarks.map((b) => b.id));
+            const ids = [...selectedIds].filter((id) => validIds.has(id));
+            if (ids.length) await bulkMoveBookmarks(ids, destinationId);
+            setSelectedIds(new Set());
+          }
+        }}
       />
       {openBoardIntent ? (
         <Modal
           open
           size="small"
           title={t("board.openAllConfirmTitle")}
-          description={t("board.openAllConfirmBody", { count: openBoardIntent.count })}
+          describedById={openBoardConfirmId}
           onClose={() => setOpenBoardIntent(null)}
           footer={(
             <>
@@ -466,7 +510,9 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
             </>
           )}
         >
-          <div />
+          <div className="form-stack">
+            <p id={openBoardConfirmId} className="modal__confirm-text">{t("board.openAllConfirmBody", { count: openBoardIntent.count })}</p>
+          </div>
         </Modal>
       ) : null}
       <Suspense fallback={<div className="overlay-loading" role="status" aria-label={t("loading.opening")} />}>

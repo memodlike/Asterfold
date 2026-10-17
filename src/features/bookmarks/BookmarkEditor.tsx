@@ -64,7 +64,7 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
 
   const destinationOptions = useMemo<ReadonlyArray<SelectOption>>(() => props.pages.flatMap((page) => props.boards
     .filter((board) => board.pageId === page.id)
-    .map((board) => ({ value: board.id, label: board.title, group: page.title }))), [props.boards, props.pages]);
+    .map((board) => ({ value: board.id, label: board.title, group: props.privacy ? t("generic.page") : page.title }))), [props.boards, props.pages, props.privacy, t]);
   const openModeOptions = useMemo<ReadonlyArray<SelectOption>>(() => [
     { value: "current", label: t("bookmark.currentTab") },
     { value: "new-tab", label: t("bookmark.newTab") },

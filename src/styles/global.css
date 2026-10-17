@@ -137,6 +137,7 @@ kbd { padding: 5px 8px; border: 1px solid var(--color-border); border-radius: 7p
 .form-row label, .form-stack label { display: grid; flex: 1; gap: 6px; color: var(--color-text-secondary); font-size: 12px; }
 .form-row input, .form-row select, .form-stack input, .form-stack select, .form-stack textarea { width: 100%; }
 .form-stack { display: grid; gap: 13px; padding: 18px; }
+.modal__confirm-text { margin: 0; font-size: 13px; line-height: 1.5; color: var(--color-text-secondary); }
 .button-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .is-healthy { color: var(--color-success); }
 .is-warning { color: var(--color-danger); }

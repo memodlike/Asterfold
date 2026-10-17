@@ -53,6 +53,26 @@ describe("accessible overlays", () => {
     expect(secondClose).toHaveBeenCalledOnce();
   });
 
+  it("links aria-describedby to an external or body element via describedById", () => {
+    render(
+      createElement(
+        Modal,
+        {
+          open: true,
+          title: "Confirmation",
+          describedById: "confirm-warning",
+          onClose: vi.fn(),
+          children: createElement("p", { id: "confirm-warning" }, "This will open 25 tabs."),
+        },
+      ),
+    );
+    const dialog = screen.getByRole("dialog", { name: "Confirmation" });
+    expect(dialog).toHaveAttribute("aria-describedby", "confirm-warning");
+    const warning = document.getElementById("confirm-warning");
+    expect(warning).not.toBeNull();
+    expect(warning).toHaveTextContent("This will open 25 tabs.");
+  });
+
   it("keeps failed toast actions visible and announces a localized error", async () => {
     render(createElement(I18nProvider, { preference: "en", children: createElement(RejectingToastHarness) }));
     fireEvent.click(screen.getByRole("button", { name: "Show" }));
