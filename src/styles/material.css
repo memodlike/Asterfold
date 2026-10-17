@@ -108,6 +108,7 @@ html[data-performance="balanced"][data-theme="light"] { --mat-alpha-tile: .86; -
 
 html[data-performance="compatibility"] {
   --mat-filter: none;
+  --mat-filter-lens: none;
   --board-filter: none;
   /* Without live blur the wallpaper stays sharp behind text, so the same setting keeps a
      little more tint. It still follows the slider and never exceeds Quality's transparency. */
@@ -127,6 +128,7 @@ html[data-performance="software"] {
      with the same extra tint as Smooth glass; it simply drops the sheen layers and highlight. */
   --board-alpha: calc(var(--board-alpha-base) + (1 - var(--board-alpha-base)) * var(--board-no-blur-tint));
   --mat-filter: none;
+  --mat-filter-lens: none;
   --board-filter: none;
   --mat-alpha-menu: 1;
   --mat-alpha-sheet: 1;
@@ -150,13 +152,18 @@ html[data-performance="software"][data-theme="light"] { --mat-shadow: 0 0 0 1px 
 @media (prefers-reduced-transparency: reduce) {
   html:not([data-performance="software"]) {
     --mat-filter: none;
+    --mat-filter-lens: none;
     --board-filter: none;
-    --mat-alpha-menu: .96;
-    --mat-alpha-sheet: .98;
-    --mat-alpha-tile: .95;
-    --mat-alpha-pill: .97;
+    --mat-alpha-menu: 1;
+    --mat-alpha-sheet: 1;
+    --mat-alpha-tile: 1;
+    --mat-alpha-pill: 1;
+    --mat-sheen: none;
     --settings-scrim-filter: none;
     --settings-scrim: rgb(6 6 10 / .52);
+  }
+  html[data-theme="light"]:not([data-performance="software"]) {
+    --settings-scrim: rgb(20 22 30 / .34);
   }
 }
 
@@ -177,7 +184,7 @@ html[data-performance="software"][data-theme="light"] { --mat-shadow: 0 0 0 1px 
 .modal { --mat-alpha: var(--mat-alpha-sheet); }
 .empty-state { --mat-alpha: var(--mat-alpha-tile); }
 /* On the main screen the empty state is board material, so it follows the board tint per tier. */
-html[data-performance="software"] .empty-state { --mat-alpha: var(--board-alpha); }
+:is(html[data-performance="compatibility"], html[data-performance="software"]) .empty-state { --mat-alpha: var(--board-alpha); }
 /* The empty state sits on the wallpaper like a board, so it uses the board frost. */
 .empty-state { -webkit-backdrop-filter: var(--board-filter); backdrop-filter: var(--board-filter); }
 
@@ -229,6 +236,7 @@ html[data-performance="software"] :is(.modal, .launcher-menu, .context-menu, .se
 /* Increased contrast: every glass surface becomes a solid sheet with a defined edge. */
 @media (prefers-contrast: more) {
   :is(.launcher-menu, .launcher-discovery, .context-menu, .toast, .bulk-toolbar, .select-popover, .drag-overlay, .modal:not(.settings-modal, .spotlight, .onboarding-modal), .spotlight__field, .spotlight__panel, .empty-state, .settings-tile, .onboarding-tile, .settings-modal .modal__header),
+  .launcher-trigger,
   .app-launcher:hover .launcher-trigger::before, .launcher-trigger:focus-visible::before, .app-launcher.is-open .launcher-trigger::before {
     border-color: color-mix(in srgb, var(--color-text) 55%, transparent);
     background: var(--color-surface-solid);
@@ -239,7 +247,9 @@ html[data-performance="software"] :is(.modal, .launcher-menu, .context-menu, .se
 }
 
 @media (forced-colors: active) {
-  :is(.launcher-menu, .launcher-discovery, .context-menu, .toast, .bulk-toolbar, .select-popover, .drag-overlay, .modal, .spotlight__field, .spotlight__panel, .empty-state, .settings-tile, .onboarding-tile, .settings-modal .modal__header) {
+  :is(.launcher-menu, .launcher-discovery, .context-menu, .toast, .bulk-toolbar, .select-popover, .drag-overlay, .modal, .spotlight__field, .spotlight__panel, .empty-state, .settings-tile, .onboarding-tile, .settings-modal .modal__header),
+  .launcher-trigger,
+  .launcher-trigger::before {
     border: 1px solid CanvasText;
     background: Canvas;
     -webkit-backdrop-filter: none;

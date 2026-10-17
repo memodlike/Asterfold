@@ -38,6 +38,7 @@ describe("Windows 11 adaptive rendering stress gates", () => {
     for (const tier of ["compatibility", "software"]) {
       const block = new RegExp(`html\\[data-performance="${tier}"\\] \\{[^}]+\\}`, "u").exec(material)?.[0] ?? "";
       expect(block, tier).toContain("--mat-filter: none");
+      expect(block, tier).toContain("--mat-filter-lens: none");
       expect(block, tier).toContain("--settings-scrim-filter: none");
     }
     const software = /html\[data-performance="software"\] \{[^}]+\}/u.exec(material)?.[0] ?? "";
@@ -45,6 +46,39 @@ describe("Windows 11 adaptive rendering stress gates", () => {
     const balanced = /html\[data-performance="balanced"\] \{[^}]+\}/u.exec(material)?.[0] ?? "";
     expect(balanced).toContain("--settings-scrim-filter: none");
     expect(css).not.toContain(".private-content { filter:");
+  });
+
+  it("disables live lens filter and sets opaque density tokens under reduced transparency (DEFECT-01, DEFECT-06, DEFECT-09)", () => {
+    const material = readFileSync(`${process.cwd()}/src/styles/material.css`, "utf8");
+    const reducedBlock = /@media \(prefers-reduced-transparency: reduce\) \{([\s\S]*?)\n\}\n\n\/\* -------- Glass surfaces/u.exec(material)?.[1] ?? "";
+    expect(reducedBlock).toContain("--mat-filter-lens: none");
+    expect(reducedBlock).toContain("--mat-alpha-menu: 1");
+    expect(reducedBlock).toContain("--mat-alpha-sheet: 1");
+    expect(reducedBlock).toContain("--mat-alpha-tile: 1");
+    expect(reducedBlock).toContain("--mat-alpha-pill: 1");
+    expect(reducedBlock).toContain("--mat-sheen: none");
+    expect(reducedBlock).toMatch(/html\[data-theme="light"\]:not\(\[data-performance="software"\]\)\s*\{\s*--settings-scrim:\s*rgb\(20 22 30 \/ \.34\);/u);
+  });
+
+  it("ensures resting launcher trigger is solid and free of live blur under software tier and accessibility overrides (DEFECT-02)", () => {
+    const launcherCss = readFileSync(`${process.cwd()}/src/app/launcher.css`, "utf8");
+    expect(launcherCss).toMatch(/html\[data-performance="software"\] \.launcher-trigger\s*\{[^}]*background:\s*var\(--color-surface-solid\);[^}]*backdrop-filter:\s*none;/u);
+    expect(launcherCss).toMatch(/@media \(prefers-reduced-transparency: reduce\)\s*\{\s*\.launcher-trigger\s*\{[^}]*background:\s*var\(--color-surface-solid\);[^}]*backdrop-filter:\s*none;/u);
+    expect(launcherCss).toMatch(/@media \(prefers-contrast: more\)\s*\{\s*\.launcher-trigger\s*\{[^}]*background:\s*var\(--color-surface-solid\);[^}]*backdrop-filter:\s*none;/u);
+    expect(launcherCss).toMatch(/@media \(forced-colors: active\)\s*\{\s*\.launcher-trigger\s*\{[^}]*background:\s*Canvas;[^}]*backdrop-filter:\s*none;/u);
+  });
+
+  it("binds empty-state to --board-alpha in both compatibility and software tiers (DEFECT-07)", () => {
+    const material = readFileSync(`${process.cwd()}/src/styles/material.css`, "utf8");
+    expect(material).toMatch(/:is\(html\[data-performance="compatibility"\], html\[data-performance="software"\]\) \.empty-state\s*\{\s*--mat-alpha:\s*var\(--board-alpha\);\s*\}/u);
+  });
+
+  it("includes all popovers, tiles, drag previews, headers, and triggers in opaque accessibility fallbacks (DEFECT-06, A9)", () => {
+    const css = readFileSync(`${process.cwd()}/src/styles/global.css`, "utf8");
+    const reducedRule = /@media \(prefers-reduced-transparency: reduce\) \{([^\n]+)\}/u.exec(css)?.[1] ?? "";
+    for (const selector of [".select-popover", ".onboarding-tile", ".drag-overlay", ".settings-modal .modal__header", ".launcher-trigger"]) {
+      expect(reducedRule).toContain(selector);
+    }
   });
 
   it("animates only compositor properties across every stylesheet", () => {
