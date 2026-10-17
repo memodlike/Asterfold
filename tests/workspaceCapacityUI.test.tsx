@@ -52,7 +52,7 @@ describe("localized workspace capacity feedback", () => {
   it("explains bulk paste capacity failures inline", async () => {
     const workspace = await getWorkspaceData();
     render(<I18nProvider preference="en"><PasteLinksDialog workspace={workspace} boardId={workspace.boards[0]!.id} initialText="https://new.example/" privacy={false} onClose={vi.fn()} onCreated={vi.fn()} /></I18nProvider>);
-    fireEvent.click(screen.getByRole("button", { name: "Add 1 bookmarks" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add (1)" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(message);
   });
 

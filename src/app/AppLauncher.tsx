@@ -40,6 +40,10 @@ export function AppLauncher(props: AppLauncherProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const openRef = useRef(open);
+  openRef.current = open;
+  const pageMenuRef = useRef(pageMenu);
+  pageMenuRef.current = pageMenu;
   useLiquidGlass(menuRef, open, MENU_REFRACTION);
   const searchShortcut = primaryShortcut("K");
   const activePage = props.pages.find((page) => page.id === props.activePageId);
@@ -69,6 +73,8 @@ export function AppLauncher(props: AppLauncherProps) {
     };
     const closeEscape = (event: KeyboardEvent): void => {
       if (event.key === "Escape") {
+        if (pageMenuRef.current !== null) return;
+        if (!openRef.current) return;
         setOpen(false);
         setPagesOpen(false);
         triggerRef.current?.focus();
@@ -134,7 +140,34 @@ export function AppLauncher(props: AppLauncherProps) {
           </button>
           {pagesOpen ? (
             <div className="launcher-pages" role="group" aria-label={t("launcher.pages")}>
-              {props.pages.map((page) => <button role="menuitem" key={page.id} aria-current={page.id === props.activePageId ? "page" : undefined} className={page.id === props.activePageId ? "is-active" : ""} onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); setPageMenu({ page, point: { x: event.clientX, y: event.clientY } }); }} onKeyDown={(event) => { if (event.shiftKey && event.key === "F10") { event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect(); setPageMenu({ page, point: { x: rect.right, y: rect.bottom } }); } }} onClick={() => act(() => props.onSelectPage(page.id))}>{page.title}</button>)}
+              {props.pages.map((page) => {
+                const pageLabel = props.privacy ? t("generic.page") : page.title;
+                return (
+                  <button
+                    role="menuitem"
+                    key={page.id}
+                    aria-current={page.id === props.activePageId ? "page" : undefined}
+                    aria-label={pageLabel}
+                    className={page.id === props.activePageId ? "is-active" : ""}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      event.currentTarget.focus();
+                      setPageMenu({ page, point: { x: event.clientX, y: event.clientY } });
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.shiftKey && event.key === "F10") {
+                        event.preventDefault();
+                        const rect = event.currentTarget.getBoundingClientRect();
+                        setPageMenu({ page, point: { x: rect.right, y: rect.bottom } });
+                      }
+                    }}
+                    onClick={() => act(() => props.onSelectPage(page.id))}
+                  >
+                    {pageLabel}
+                  </button>
+                );
+              })}
               <button role="menuitem" className="launcher-pages__create" aria-label={t("name.newPage")} title={t("name.newPage")} onClick={() => act(props.onCreatePage)}><Plus size={14} /></button>
             </div>
           ) : null}

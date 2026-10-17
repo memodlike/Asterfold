@@ -34,7 +34,7 @@ describe("Paste Links dialog", () => {
     const { container } = mount("https://secret.example/private-note\nhttps://github.com", true);
     expect(screen.queryByRole("textbox", { name: "Links" })).not.toBeInTheDocument();
     expect(screen.queryByText(/secret\.example/u)).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Add \d+ bookmarks/u })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Add \(\d+\)/u })).not.toBeInTheDocument();
     expect(screen.getByText("Search content is protected")).toBeInTheDocument();
     const stateContainer = container.querySelector(".search-state.search-private");
     expect(stateContainer).not.toBeNull();
@@ -53,7 +53,7 @@ describe("Paste Links dialog", () => {
   });
   it("disables Add at zero new links, focuses and bounds the labelled textarea", () => {
     mount("https://example.com\nnot a link");
-    expect(screen.getByRole("button", { name: "Add 0 bookmarks" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Add (0)" })).toBeDisabled();
     const text = screen.getByRole("textbox", { name: "Links" });
     expect(text).toHaveFocus();
     expect(text).toHaveAttribute("maxlength", "100000");
@@ -65,7 +65,7 @@ describe("Paste Links dialog", () => {
     const onCreated = vi.fn();
     mount("https://github.com\nhttps://example.com", false, onCreated);
     fireEvent.change(screen.getByRole("combobox", { name: "Destination" }), { target: { value: otherBoardId } });
-    fireEvent.click(screen.getByRole("button", { name: "Add 2 bookmarks" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add (2)" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(bulk).toHaveBeenCalledExactlyOnceWith(otherBoardId, [{ url: "https://github.com/", title: "GitHub" }, { url: "https://example.com/", title: "Example" }]);
     const added = (await repository.getWorkspaceData()).bookmarks.filter((item) => item.boardId === otherBoardId);
@@ -84,10 +84,10 @@ describe("Paste Links dialog", () => {
   it("shows a localized error on failure and allows retry", async () => {
     vi.spyOn(repository, "createBookmarksBulk").mockRejectedValueOnce(new Error("Private storage error"));
     mount("https://github.com");
-    fireEvent.click(screen.getByRole("button", { name: "Add 1 bookmarks" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add (1)" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Could not add links");
-    expect(screen.getByRole("button", { name: "Add 1 bookmarks" })).toBeEnabled();
-    fireEvent.click(screen.getByRole("button", { name: "Add 1 bookmarks" }));
+    expect(screen.getByRole("button", { name: "Add (1)" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Add (1)" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect((await repository.getWorkspaceData()).bookmarks.map((item) => item.title)).toEqual(["Existing", "GitHub"]);
   });
@@ -99,7 +99,7 @@ describe("Paste Links dialog", () => {
   it("disables save when the destination disappears", () => {
     workspace = { ...workspace, boards: [] };
     mount("https://github.com");
-    expect(screen.getByRole("button", { name: "Add 1 bookmarks" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Add (1)" })).toBeDisabled();
   });
   it("does not close a replacement dialog when a dismissed save completes", async () => {
     let finish: (() => void) | undefined;
@@ -112,7 +112,7 @@ describe("Paste Links dialog", () => {
       </I18nProvider>;
     }
     render(<Host />);
-    fireEvent.click(screen.getByRole("button", { name: "Add 1 bookmarks" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add (1)" }));
     fireEvent.keyDown(document, { key: "Escape" });
     fireEvent.click(screen.getByRole("button", { name: "Reopen paste" }));
     await act(async () => { finish?.(); await Promise.resolve(); });
@@ -122,8 +122,8 @@ describe("Paste Links dialog", () => {
     let finish: (() => void) | undefined;
     vi.spyOn(repository, "createBookmarksBulk").mockImplementationOnce(() => new Promise((resolve) => { finish = () => resolve([]); }));
     mount("https://github.com");
-    fireEvent.click(screen.getByRole("button", { name: "Add 1 bookmarks" }));
-    expect(screen.getByRole("button", { name: "Add 1 bookmarks" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Add (1)" }));
+    expect(screen.getByRole("button", { name: "Add (1)" })).toBeDisabled();
     await act(async () => { finish?.(); await Promise.resolve(); });
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
