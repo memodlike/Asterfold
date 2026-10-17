@@ -1,5 +1,5 @@
 import { WorkspaceLimitError } from "../domain/errors";
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { lazy, Suspense, useCallback, useEffect, useId, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Download, Sparkles, X } from "lucide-react";
 import type { Board, Bookmark, Page, WorkspaceData } from "../domain/models";
 import {
@@ -84,6 +84,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   const [moveIntent, setMoveIntent] = useState<MoveIntent | null>(null);
   const [editor, setEditor] = useState<EditorIntent | null>(null);
   const [openBoardIntent, setOpenBoardIntent] = useState<OpenBoardIntent | null>(null);
+  const openBoardConfirmId = useId();
   const [pasteIntent, setPasteIntent] = useState<{ boardId: string; text: string } | null>(null);
   const pointer = useRef<{ x: number; y: number; boardId: string | null } | null>(null);
   const [pendingReveal, setPendingReveal] = useState<{ bookmarkId: string; pageId: string } | null>(null);
@@ -491,7 +492,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
           open
           size="small"
           title={t("board.openAllConfirmTitle")}
-          description=""
+          describedById={openBoardConfirmId}
           onClose={() => setOpenBoardIntent(null)}
           footer={(
             <>
@@ -510,7 +511,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
           )}
         >
           <div className="form-stack">
-            <p className="modal__confirm-text">{t("board.openAllConfirmBody", { count: openBoardIntent.count })}</p>
+            <p id={openBoardConfirmId} className="modal__confirm-text">{t("board.openAllConfirmBody", { count: openBoardIntent.count })}</p>
           </div>
         </Modal>
       ) : null}

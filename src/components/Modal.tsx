@@ -7,6 +7,8 @@ interface ModalProps {
   open: boolean;
   title: string;
   description?: string;
+  /** Custom element ID for aria-describedby when the description is rendered elsewhere (for example in the dialog body). */
+  describedById?: string;
   size?: "small" | "medium" | "large" | "fullscreen";
   side?: boolean;
   onClose: () => void;
@@ -29,6 +31,7 @@ export function Modal({
   open,
   title,
   description,
+  describedById,
   size = "medium",
   side = false,
   onClose,
@@ -112,7 +115,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        aria-describedby={description ? descriptionId : undefined}
+        aria-describedby={describedById ?? (description ? descriptionId : undefined)}
       >
         <header className={`modal__header ${header === "hidden" ? "sr-only" : ""}`}>
           <div className="modal__heading">

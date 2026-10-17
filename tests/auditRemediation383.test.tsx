@@ -1,6 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import "fake-indexeddb/auto";
 import { db } from "../src/db/database";
 import * as repository from "../src/db/repository";
 import type { Board, Page, WorkspaceData } from "../src/domain/models";
@@ -317,7 +316,7 @@ describe("Audit 3.8.3 Bug Fixes & Regressions", () => {
   });
 
   describe("GLASS-04 / DEFECT-04: Open-Board Confirmation Modal structural layout", () => {
-    it("renders modal body with form-stack and modal__confirm-text, leaving description empty", async () => {
+    it("renders modal body with form-stack and modal__confirm-text, and sets aria-describedby referencing the tab count", async () => {
       const initial = await repository.getWorkspaceData();
       const board1 = initial.boards[0]!;
       for (let i = 0; i < 15; i++) {
@@ -349,6 +348,14 @@ describe("Audit 3.8.3 Bug Fixes & Regressions", () => {
       const confirmText = confirmContainer!.querySelector(".modal__confirm-text");
       expect(confirmText).not.toBeNull();
       expect(confirmText).toHaveTextContent("This opens 15 tabs. Continue?");
+
+      // Dialog aria-describedby references the element containing the count
+      const describedById = dialog.getAttribute("aria-describedby");
+      expect(describedById).toBeTruthy();
+      expect(confirmText).toHaveAttribute("id", describedById!);
+      const describedElement = document.getElementById(describedById!);
+      expect(describedElement).toBe(confirmText);
+      expect(describedElement).toHaveTextContent("15");
     });
   });
 });

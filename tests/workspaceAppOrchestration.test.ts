@@ -362,7 +362,11 @@ describe("WorkspaceApp orchestration", () => {
     });
     await settle();
 
-    expect(screen.getByRole("dialog", { name: "Open all bookmarks" })).toBeVisible();
+    const confirmDialog = screen.getByRole("dialog", { name: "Open all bookmarks" });
+    expect(confirmDialog).toBeVisible();
+    const describedById = confirmDialog.getAttribute("aria-describedby");
+    expect(describedById).toBeTruthy();
+    expect(document.getElementById(describedById!)).toHaveTextContent("15");
     expect(screen.getByText("This opens 15 tabs. Continue?")).toBeVisible();
     expect(mocks.openUrls).not.toHaveBeenCalled();
 
