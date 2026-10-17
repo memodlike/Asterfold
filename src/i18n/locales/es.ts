@@ -259,6 +259,7 @@ export const es: Record<MessageKey, string> = {
   "error.emptyTrashFailed": "No se pudo vaciar la papelera",
   "error.deletePermanentFailed": "No se pudo eliminar el elemento de forma permanente",
   "error.saveBookmarkFailed": "No se pudo guardar el marcador",
+  "error.workspaceLimit": "Se ha alcanzado el límite del espacio de trabajo. Vacía la papelera o elimina elementos permanentemente antes de añadir más páginas, tableros o marcadores.",
   "error.actionFailed": "No se pudo completar la acción",
   "error.navigationUnsafe": "Se bloqueó un enlace no seguro",
   "error.navigationFailed": "No se pudo abrir el enlace",

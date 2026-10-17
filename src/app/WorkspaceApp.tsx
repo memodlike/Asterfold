@@ -1,3 +1,4 @@
+import { WorkspaceLimitError } from "../domain/errors";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
 import { Download, Sparkles, X } from "lucide-react";
 import type { Board, Bookmark, Page, WorkspaceData } from "../domain/models";
@@ -199,7 +200,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
       }
       void createBookmarksBulk(board.id, analysis.items)
         .then((created) => pasteCreated(created, board, true))
-        .catch(() => pushToast({ message: t("paste.failed"), tone: "error" }));
+        .catch((error: unknown) => pushToast({ message: t(error instanceof WorkspaceLimitError ? "error.workspaceLimit" : "paste.failed"), tone: "error" }));
     };
     window.addEventListener("paste", handlePaste);
     return () => window.removeEventListener("paste", handlePaste);
@@ -231,7 +232,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
             : "error.navigationFailed";
         notifyError(t(key));
       } else {
-        notifyError(t("error.actionFailed"));
+        notifyError(t(error instanceof WorkspaceLimitError ? "error.workspaceLimit" : "error.actionFailed"));
       }
     }
   };

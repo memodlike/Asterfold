@@ -259,6 +259,7 @@ export const nl: Record<MessageKey, string> = {
   "error.emptyTrashFailed": "Kan prullenbak niet legen",
   "error.deletePermanentFailed": "Kan item niet permanent verwijderen",
   "error.saveBookmarkFailed": "Kan bladwijzer niet opslaan",
+  "error.workspaceLimit": "De limiet van de werkruimte is bereikt. Leeg de prullenbak of verwijder items definitief voordat je meer pagina’s, borden of bladwijzers toevoegt.",
   "error.actionFailed": "Kan de actie niet voltooien",
   "error.navigationUnsafe": "Onveilige link geblokkeerd",
   "error.navigationFailed": "Kan link niet openen",

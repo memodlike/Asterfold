@@ -245,6 +245,7 @@ export const en: Record<MessageKey, string> = {
   "error.emptyTrashFailed": "Unable to empty Trash",
   "error.deletePermanentFailed": "Unable to permanently delete the item",
   "error.saveBookmarkFailed": "Unable to save bookmark",
+  "error.workspaceLimit": "Workspace limit reached. Empty Trash or permanently delete items before adding more pages, boards, or bookmarks.",
   "error.actionFailed": "Unable to complete the action",
   "error.navigationUnsafe": "An unsafe link was blocked",
   "error.navigationFailed": "Unable to open the link",

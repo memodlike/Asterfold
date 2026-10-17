@@ -259,6 +259,7 @@ export const pl: Record<MessageKey, string> = {
   "error.emptyTrashFailed": "Nie udało się opróżnić kosza",
   "error.deletePermanentFailed": "Nie udało się trwale usunąć elementu",
   "error.saveBookmarkFailed": "Nie udało się zapisać zakładki",
+  "error.workspaceLimit": "Osiągnięto limit obszaru roboczego. Opróżnij kosz lub trwale usuń elementy, zanim dodasz kolejne strony, tablice lub zakładki.",
   "error.actionFailed": "Nie udało się ukończyć działania",
   "error.navigationUnsafe": "Zablokowano niebezpieczny link",
   "error.navigationFailed": "Nie udało się otworzyć linku",

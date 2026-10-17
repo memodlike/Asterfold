@@ -259,6 +259,7 @@ export const fr: Record<MessageKey, string> = {
   "error.emptyTrashFailed": "Impossible de vider la corbeille",
   "error.deletePermanentFailed": "Impossible de supprimer définitivement l'élément",
   "error.saveBookmarkFailed": "Impossible d'enregistrer le signet",
+  "error.workspaceLimit": "La limite de l’espace de travail est atteinte. Videz la corbeille ou supprimez définitivement des éléments avant d’ajouter des pages, des tableaux ou des favoris.",
   "error.actionFailed": "Impossible de terminer l'action",
   "error.navigationUnsafe": "Un lien non sécurisé a été bloqué",
   "error.navigationFailed": "Impossible d'ouvrir le lien",

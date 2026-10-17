@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Bookmark as BookmarkIcon, ExternalLink } from "lucide-react";
 import type { Board, Bookmark, BookmarkOpenMode, Page } from "../../domain/models";
 import { createBookmark, findDuplicate, updateBookmark } from "../../db/repository";
-import { DuplicateError } from "../../domain/errors";
+import { DuplicateError, WorkspaceLimitError } from "../../domain/errors";
 import { Button } from "../../components/Button";
 import { BrowserFavicon } from "../../components/BrowserFavicon";
 import { Modal } from "../../components/Modal";
@@ -92,7 +92,7 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
       if (error instanceof DuplicateError) {
         setDuplicate(await findDuplicate(boardId, url));
       } else {
-        props.onError(t("error.saveBookmarkFailed"));
+        props.onError(t(error instanceof WorkspaceLimitError ? "error.workspaceLimit" : "error.saveBookmarkFailed"));
       }
     } finally {
       savingRef.current = false;

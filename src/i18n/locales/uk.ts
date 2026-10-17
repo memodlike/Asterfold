@@ -259,6 +259,7 @@ export const uk: Record<MessageKey, string> = {
   "error.emptyTrashFailed": "Не вдалося очистити кошик",
   "error.deletePermanentFailed": "Не вдалося остаточно видалити елемент",
   "error.saveBookmarkFailed": "Не вдалося зберегти закладку",
+  "error.workspaceLimit": "Досягнуто ліміту робочого простору. Очистьте кошик або видаліть елементи назавжди, перш ніж додавати нові сторінки, дошки чи закладки.",
   "error.actionFailed": "Не вдалося виконати дію",
   "error.navigationUnsafe": "Небезпечне посилання заблоковано",
   "error.navigationFailed": "Не вдалося відкрити посилання",

@@ -7,7 +7,8 @@ import { createBookmarksBulk } from "../../db/repository";
 import { Button } from "../../components/Button";
 import { Modal } from "../../components/Modal";
 import { SelectField, type SelectOption } from "../../components/SelectField";
-import { useI18n } from "../../i18n";
+import { WorkspaceLimitError } from "../../domain/errors";
+import { useI18n, type MessageKey } from "../../i18n";
 
 interface PasteLinksDialogProps {
   workspace: WorkspaceData;
@@ -23,7 +24,7 @@ export function PasteLinksDialog({ workspace, boardId: initialBoardId, initialTe
   const [text, setText] = useState(initialText);
   const [boardId, setBoardId] = useState(initialBoardId);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<MessageKey | null>(null);
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
@@ -46,13 +47,13 @@ export function PasteLinksDialog({ workspace, boardId: initialBoardId, initialTe
   const save = async (): Promise<void> => {
     if (privacy || !board || analysis.items.length === 0 || saving) return;
     setSaving(true);
-    setError(false);
+    setError(null);
     try {
       const created = await createBookmarksBulk(board.id, analysis.items);
       onCreated(created, board);
       if (mounted.current) onClose();
-    } catch {
-      if (mounted.current) setError(true);
+    } catch (error) {
+      if (mounted.current) setError(error instanceof WorkspaceLimitError ? "error.workspaceLimit" : "paste.failed");
     } finally {
       if (mounted.current) setSaving(false);
     }
@@ -78,7 +79,7 @@ export function PasteLinksDialog({ workspace, boardId: initialBoardId, initialTe
         <label>{t("paste.text")}<textarea autoFocus maxLength={MAX_PASTE_TEXT_LENGTH} rows={9} value={text} disabled={saving} onChange={(event) => setText(event.target.value)} /></label>
         <p aria-live="polite">{t("paste.counts", { new: analysis.items.length, duplicate: analysis.duplicate, invalid: analysis.invalid })}</p>
         <label>{t("paste.destination")}<SelectField value={boardId} options={options} label={t("paste.destination")} onChange={setBoardId} disabled={saving} /></label>
-        {error ? <p className="inline-error" role="alert">{t("paste.failed")}</p> : null}
+        {error ? <p className="inline-error" role="alert">{t(error)}</p> : null}
       </div>}
     </Modal>
   );

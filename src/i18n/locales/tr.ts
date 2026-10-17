@@ -259,6 +259,7 @@ export const tr: Record<MessageKey, string> = {
   "error.emptyTrashFailed": "Çöp Kutusu boşaltılamadı",
   "error.deletePermanentFailed": "Öğe kalıcı olarak silinemedi",
   "error.saveBookmarkFailed": "Yer işareti kaydedilemedi",
+  "error.workspaceLimit": "Çalışma alanı sınırına ulaşıldı. Daha fazla sayfa, pano veya yer imi eklemeden önce çöp kutusunu boşaltın ya da öğeleri kalıcı olarak silin.",
   "error.actionFailed": "İşlem tamamlanamadı",
   "error.navigationUnsafe": "Güvenli olmayan bir bağlantı engellendi",
   "error.navigationFailed": "Bağlantı açılamadı",
