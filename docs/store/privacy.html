@@ -31,7 +31,7 @@
 
     <h2>Storage and network behavior</h2>
     <p>Workspace records and uploaded assets are stored locally in the user's Chrome profile, primarily in IndexedDB. Search, import preview and backup processing run locally. The temporary Privacy Mode flag is stored in session storage so popup and New Tab stay consistent; Chrome clears it when the browser session ends. To paint the correct theme and rendering mode before the page loads, the New Tab page keeps a small startup record (theme, canvas colour, built-in wallpaper name, motion preference and rendering tier) and the graphics renderer name reported by Chrome, refreshed at most weekly, in the extension's own local storage. An accent colour may be computed locally from a wallpaper the user selects. None of these values leave the device. Asterfold 3.8.2 has no application backend, account or cloud synchronization. The default build has zero permissions, no host permissions, no active-tab queries, and makes no application network requests. Data is not sent to the developer.</p>
-    <p>For saved bookmarks, Asterfold displays website icons for validated HTTP/HTTPS URLs with resilient local fallbacks. If loading fails or the device is offline, Asterfold renders a local neutral vector icon. Privacy Mode uses a neutral icon and does not construct or display a site favicon.</p>
+    <p>For saved bookmarks, website icons are generated locally and no network request is made. Asterfold renders a deterministic local monogram for each bookmark derived from its site identity. Privacy Mode renders a neutral icon with no letter.</p>
 
     <h2>Use of information</h2>
     <p>Local information is used only to display, organize, search, open, import, export, restore and maintain the user's bookmark workspace, including Trash and optional local appearance assets.</p>
@@ -39,7 +39,7 @@
     <h2>No sale, advertising or analytics</h2>
     <p>Asterfold does not transmit user data to the developer, sell or share user data, run advertising or affiliate tracking, build user profiles, use analytics or telemetry, or allow developer personnel to read the local workspace. It uses no remote scripts or executable code.</p>
 
-    <h2>Permissions and Chrome bookmarks</h2>
+    <h2>Permissions</h2>
     <p>Asterfold 3.8.2 operates with zero manifest permissions (<code>permissions: []</code>, <code>optional_permissions: []</code>, <code>host_permissions: []</code>). It does not request <code>storage</code>, <code>favicon</code>, <code>bookmarks</code>, <code>activeTab</code>, <code>alarms</code>, or <code>contextMenus</code>.</p>
 
     <h2>Imports, backups and deletion</h2>

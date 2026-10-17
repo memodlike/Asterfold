@@ -109,7 +109,8 @@ describe("BookmarkEditor complete behavior", () => {
     expect(screen.getByLabelText("Destination")).toHaveValue("board-one");
     expect(screen.getByLabelText("Open in")).toHaveValue("current");
     expect(container.querySelectorAll("optgroup")).toHaveLength(2);
-    expect(container.querySelector("img")).toHaveAttribute("src", "chrome-extension://test/favicon");
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.querySelector(".favicon__monogram")).toHaveTextContent("E");
   });
 
   it("resets all fields when editing an existing bookmark or reopening", () => {

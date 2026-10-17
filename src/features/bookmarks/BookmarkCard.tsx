@@ -5,7 +5,6 @@ import { memo, useState, type CSSProperties, type KeyboardEvent, type MouseEvent
 import type { Bookmark } from "../../domain/models";
 import { FloatingContextMenu, type ContextMenuPoint } from "../../components/FloatingContextMenu";
 import { BrowserFavicon } from "../../components/BrowserFavicon";
-import { faviconUrl } from "../../browser/api";
 import { useI18n } from "../../i18n";
 
 interface BookmarkCardProps {
@@ -27,9 +26,6 @@ export const BookmarkCard = memo(function BookmarkCard(props: BookmarkCardProps)
   const { t } = useI18n();
   const sortable = useSortable({ id: `bookmark:${props.bookmark.id}`, data: { type: "bookmark", bookmarkId: props.bookmark.id, boardId: props.bookmark.boardId } });
   const [menuPoint, setMenuPoint] = useState<ContextMenuPoint | null>(null);
-  // Legacy customIcon values remain in backups for lossless compatibility, but
-  // are not rendered until they have a bounded decode-and-resize pipeline.
-  const source = props.privacy ? "" : faviconUrl(props.bookmark.url, Math.min(18, Math.max(12, props.faviconSize / 2)));
   const displayTitle = props.privacy ? "••••••••" : props.bookmark.title;
   const openLabel = props.privacy ? t("privacy.openHiddenBookmark") : t("bookmark.open", { name: props.bookmark.title });
   const menuLabel = props.privacy ? t("privacy.hiddenBookmarkActions") : t("bookmark.actions", { name: props.bookmark.title });
@@ -78,7 +74,7 @@ export const BookmarkCard = memo(function BookmarkCard(props: BookmarkCardProps)
         }}
       >
         <span className="bookmark-card__surface">
-          <BrowserFavicon key={source} source={source} privacy={props.privacy} />
+          <BrowserFavicon url={props.bookmark.url} title={props.bookmark.title} privacy={props.privacy} />
           <strong className={props.privacy ? "private-content private-placeholder" : ""}>{displayTitle}</strong>
         </span>
       </button>

@@ -2,7 +2,6 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CURRENT_DB_SCHEMA_VERSION, V9_STORES, V10_STORES } from "../src/db/migrations";
-import { flattenChromeBookmarks } from "../src/features/onboarding/chromeBookmarkImport";
 import { AsterfoldDatabase } from "../src/db/database";
 import { importRecords } from "../src/services/exportImport";
 import "fake-indexeddb/auto";
@@ -35,53 +34,6 @@ describe("Asterfold privacy hardening invariants", () => {
     expect(V9_STORES.bookmarks).toContain("sourceId");
     expect(V9_STORES.boards).toContain("sourceId");
     expect(V10_STORES.pages).toContain("sourceId");
-  });
-
-  it("extracts and preserves sourceId and folderSourceId in flattenChromeBookmarks", () => {
-    const mockNodes = [
-      {
-        id: "1",
-        title: "Bookmarks bar",
-        children: [
-          {
-            id: "101",
-            parentId: "1",
-            title: "GitHub",
-            url: "https://github.com",
-          },
-          {
-            id: "102",
-            parentId: "1",
-            title: "Folder",
-            children: [
-              {
-                id: "103",
-                parentId: "102",
-                title: "Docs",
-                url: "https://docs.github.com",
-              },
-            ],
-          },
-        ],
-      },
-    ];
-
-    const records = flattenChromeBookmarks(mockNodes as unknown as chrome.bookmarks.BookmarkTreeNode[]);
-    expect(records).toHaveLength(2);
-    expect(records[0]).toMatchObject({
-      title: "GitHub",
-      url: "https://github.com",
-      source: "chrome",
-      sourceId: "101",
-      folderSourceId: "1",
-    });
-    expect(records[1]).toMatchObject({
-      title: "Docs",
-      url: "https://docs.github.com",
-      source: "chrome",
-      sourceId: "103",
-      folderSourceId: "102",
-    });
   });
 
   it("executes non-destructive idempotent overlay import with sourceId mapping", async () => {

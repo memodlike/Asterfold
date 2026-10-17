@@ -19,15 +19,32 @@ describe("BrowserFavicon component", () => {
     expect(container.querySelector("svg")).toBeNull();
   });
 
-  it("renders an img tag for a zero-permission Google S2 favicon URL", () => {
+  it("rejects remote Google S2 favicon URLs without rendering img", () => {
     const { container } = render(createElement(BrowserFavicon, {
       source: "https://www.google.com/s2/favicons?domain=example.com&sz=32",
     }));
-    const img = container.querySelector("img");
-    expect(img).not.toBeNull();
-    expect(img?.getAttribute("src")).toBe("https://www.google.com/s2/favicons?domain=example.com&sz=32");
-    expect(img?.getAttribute("alt")).toBe("");
-    expect(container.querySelector("svg")).toBeNull();
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.querySelector("svg")).not.toBeNull();
+  });
+
+  it("renders a deterministic local monogram with uppercase letter and palette color", () => {
+    const { container } = render(createElement(BrowserFavicon, {
+      url: "https://github.com/facebook/react",
+    }));
+    expect(container.querySelector("img")).toBeNull();
+    const monogram = container.querySelector(".favicon__monogram");
+    expect(monogram).not.toBeNull();
+    expect(monogram?.textContent).toBe("G");
+    expect(monogram?.getAttribute("style")).toMatch(/background-color:\s*rgb/u);
+  });
+
+  it("suppresses monogram letter in privacy mode and renders neutral icon", () => {
+    const { container } = render(createElement(BrowserFavicon, {
+      url: "https://intranet.example/confidential",
+      privacy: true,
+    }));
+    expect(container.querySelector(".favicon__monogram")).toBeNull();
+    expect(container.querySelector("svg")).not.toBeNull();
   });
 
   it("falls back to local neutral Globe SVG when image fires onError", () => {
@@ -114,5 +131,19 @@ describe("BrowserFavicon component", () => {
     const { container } = render(createElement(BrowserFavicon, { source: "" }));
     const span = container.querySelector(".favicon");
     expect(span?.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("enforces WCAG AA contrast (>= 4.5:1) for all monogram palette colors against white letter", async () => {
+    const { MONOGRAM_PALETTE } = await import("../src/domain/bookmarkNaming");
+    const toLinear = (c: number): number => c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    for (const color of MONOGRAM_PALETTE) {
+      const num = parseInt(color.replace("#", ""), 16);
+      const r = ((num >> 16) & 255) / 255;
+      const g = ((num >> 8) & 255) / 255;
+      const b = (num & 255) / 255;
+      const lum = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+      const contrastRatio = (1.0 + 0.05) / (lum + 0.05);
+      expect(contrastRatio, `Color ${color} contrast ratio ${contrastRatio}`).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });

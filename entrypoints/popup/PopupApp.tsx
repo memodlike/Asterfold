@@ -1,26 +1,21 @@
-import { WorkspaceLimitError } from "../../src/domain/errors";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
-import { AlertTriangle, Check, ExternalLink, RefreshCw, Settings, ShieldCheck, Sparkles } from "lucide-react";
+import { AlertTriangle, ExternalLink, Settings, ShieldCheck, Sparkles } from "lucide-react";
 import { openWorkspace } from "../../src/browser/api";
 import { Logo } from "../../src/components/Logo";
 import { useWorkspace } from "../../src/app/useWorkspace";
 import { translate, type MessageKey } from "../../src/i18n";
 import { usePrivacyMode } from "../../src/app/usePrivacyMode";
 import { applyPopupTheme } from "../../src/features/appearance/popupTheme";
-import { readChromeBookmarks } from "../../src/features/onboarding/chromeBookmarkImport";
-import { importRecords } from "../../src/services/exportImport";
 import { version as packageVersion } from "../../package.json";
 
 export function PopupApp() {
   const { workspace, failed, retry } = useWorkspace();
-  const [systemDark, setSystemDark] = useState(() => matchMedia("(prefers-color-scheme: dark)").matches);
+  const [systemDark, setSystemDark] = useState(() => (typeof matchMedia === "function" ? matchMedia("(prefers-color-scheme: dark)").matches : false));
   const t = useCallback((key: MessageKey, values?: Record<string, string | number>): string => translate(workspace?.settings.locale ?? "auto", key, values), [workspace?.settings.locale]);
-  const [status, setStatus] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
   const { privacy } = usePrivacyMode(workspace?.settings ?? { privacyPersist: false, privacyEnabled: false });
 
   useEffect(() => {
+    if (typeof matchMedia !== "function") return;
     const query = matchMedia("(prefers-color-scheme: dark)");
     const update = (): void => setSystemDark(query.matches);
     query.addEventListener("change", update);
@@ -52,26 +47,6 @@ export function PopupApp() {
     };
   }, [workspace]);
 
-  const syncChromeBookmarks = async (): Promise<void> => {
-    if (syncing) return;
-    setSyncing(true);
-    setStatus(null);
-    setError(null);
-    try {
-      const result = await readChromeBookmarks(true);
-      if (result.status !== "granted") {
-        setError(t("error.chromeBookmarksUnavailable"));
-        return;
-      }
-      const summary = await importRecords(result.records, { pageTitle: t("settings.chromeBookmarks"), source: "chrome", sourceId: "chrome" }, "skip");
-      setStatus(t("settings.imported", { count: summary.imported }));
-    } catch (error) {
-      setError(t(error instanceof WorkspaceLimitError ? "error.workspaceLimit" : "error.chromeBookmarksUnavailable"));
-    } finally {
-      setSyncing(false);
-    }
-  };
-
   if (failed) {
     return (
       <div className="popup-loading">
@@ -92,7 +67,15 @@ export function PopupApp() {
   }
 
   return (
-    <main className="popup" onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void openWorkspace(); } }}>
+    <main
+      className="popup"
+      onKeyDown={(event) => {
+        if (event.key === "Enter" && !(event.target as HTMLElement | null)?.closest("button, a, input, select, textarea")) {
+          event.preventDefault();
+          void openWorkspace();
+        }
+      }}
+    >
       <header className="popup__header">
         <Logo />
         <button title={t("generic.settings")} aria-label={t("generic.settings")} onClick={() => void openWorkspace()}>
@@ -129,30 +112,6 @@ export function PopupApp() {
             </div>
           </div>
         </div>
-
-        <button
-          className="workspace-button"
-          disabled={syncing}
-          onClick={() => void syncChromeBookmarks()}
-          style={{ minHeight: "38px" }}
-        >
-          <RefreshCw size={15} className={syncing ? "spin" : ""} />
-          {syncing ? t("popup.saving") : t("settings.importChrome")}
-        </button>
-
-        {error ? (
-          <div className="popup-error" role="alert">
-            <AlertTriangle size={17} />
-            {error}
-          </div>
-        ) : null}
-
-        {status ? (
-          <div className="popup-success" role="status">
-            <Check size={17} />
-            {status}
-          </div>
-        ) : null}
       </section>
 
       <div className="popup__actions">

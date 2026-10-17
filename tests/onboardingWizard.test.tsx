@@ -7,7 +7,6 @@ import { I18nProvider } from "../src/i18n";
 
 const mocks = vi.hoisted(() => ({
   commit: vi.fn(),
-  readChrome: vi.fn(),
   parseHtml: vi.fn(),
   parseBackup: vi.fn(),
   publishThemePreview: vi.fn(),
@@ -16,10 +15,6 @@ const mocks = vi.hoisted(() => ({
 vi.mock("../src/features/onboarding/onboardingCommit", () => ({
   commitOnboardingPlan: mocks.commit,
 }));
-vi.mock("../src/features/onboarding/chromeBookmarkImport", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../src/features/onboarding/chromeBookmarkImport")>();
-  return { ...original, readChromeBookmarks: mocks.readChrome };
-});
 vi.mock("../src/services/importWorker", () => ({
   parseHtmlOffThread: mocks.parseHtml,
   parseBackupOffThread: mocks.parseBackup,
@@ -50,12 +45,10 @@ function renderWizard(onCompleted = vi.fn()) {
 
 beforeEach(() => {
   mocks.commit.mockReset();
-  mocks.readChrome.mockReset();
   mocks.parseHtml.mockReset();
   mocks.parseBackup.mockReset();
   mocks.publishThemePreview.mockReset();
   mocks.commit.mockResolvedValue({ status: "completed", imported: 0, skippedDuplicates: 0 });
-  mocks.readChrome.mockResolvedValue({ status: "granted", records: [], permissionRemoved: true });
 });
 
 describe("one-screen onboarding", () => {
@@ -108,26 +101,26 @@ describe("one-screen onboarding", () => {
     expect(onCompleted).toHaveBeenCalledTimes(1);
   });
 
-  it("requests Chrome access in the same click, recovers from denial and blocks finishing until a source is ready", async () => {
-    mocks.readChrome.mockResolvedValueOnce({ status: "denied", records: [], permissionRemoved: false });
+  it("recomputes auto language label dynamically when locale changes (A10)", () => {
+    const { container } = renderWizard();
+    const select = screen.getByRole("combobox", { name: "Interface language" }) as HTMLSelectElement;
+    const autoOption = container.querySelector<HTMLOptionElement>('option[value="auto"]')!;
+
+    expect(autoOption.textContent).toContain("Auto (Chrome language)");
+
+    fireEvent.change(select, { target: { value: "ru" } });
+    expect(autoOption.textContent).toContain("Авто (язык Chrome)");
+
+    fireEvent.change(select, { target: { value: "kk" } });
+    expect(autoOption.textContent).toContain("Авто (Chrome тілі)");
+  });
+
+  it("does not offer Chrome bookmark import and displays export hint (K2)", () => {
     renderWizard();
-    fireEvent.click(screen.getByRole("radio", { name: /Import from Chrome/u }));
-    expect(mocks.readChrome).toHaveBeenCalledWith(true);
-    await screen.findByText(/Bookmark access was not granted/u);
-    expect(screen.getByRole("button", { name: "Open my workspace" })).toBeDisabled();
-
-    mocks.readChrome.mockResolvedValueOnce({ status: "granted", records: [
-      { title: "A", url: "https://a.example", description: null, folderPath: ["Work"], source: "chrome", sourceId: "1", folderSourceId: "f" },
-    ], permissionRemoved: true });
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
-    expect(await screen.findByText("Bookmarks: 1 · boards: 1")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Open my workspace" })).toBeEnabled();
-
-    const duplicates = screen.getByRole("switch", { name: "Skip duplicates" });
-    expect(duplicates).toBeChecked();
-    fireEvent.click(duplicates);
-    fireEvent.click(screen.getByRole("button", { name: "Open my workspace" }));
-    await waitFor(() => expect(mocks.commit).toHaveBeenCalledWith(expect.objectContaining({ source: "chrome", duplicateStrategy: "allow" })));
+    expect(screen.queryByRole("radio", { name: /Import from Chrome/u })).toBeNull();
+    expect(screen.getByRole("radio", { name: /Start with Asterfold/u })).toBeVisible();
+    expect(screen.getByRole("radio", { name: /Import bookmark HTML/u })).toBeVisible();
+    expect(screen.getByText(/To import from Chrome: Chrome menu → Bookmarks and lists/u)).toBeVisible();
   });
 
   it("opens the file picker from the source itself, parses off-thread and clears stale previews", async () => {

@@ -10,7 +10,7 @@ const locales = ["en", "ru", "kk", "es", "de", "fr", "it", "pt", "pl", "uk", "tr
 const keys = [
   "greeting.morning", "greeting.afternoon", "greeting.evening", "welcome.title", "welcome.body", "welcome.privacy", "welcome.language",
   "step.welcome", "step.import", "step.appearance", "step.review", "import.title", "import.body", "import.default.title", "import.default.body",
-  "import.chrome.title", "import.chrome.body", "import.chrome.permission", "import.chrome.denied", "import.html.title", "import.html.body", "import.backup.title", "import.backup.body",
+  "import.html.title", "import.html.body", "import.backup.title", "import.backup.body",
   "import.preview", "import.empty", "import.parsing", "appearance.title", "appearance.body", "appearance.preset", "appearance.density", "appearance.compact",
   "appearance.comfortable", "appearance.spacious", "appearance.rows", "review.title", "review.body", "review.source", "review.language", "review.theme", "review.layout",
   "review.duplicates", "action.continue", "action.back", "action.finish", "action.finishing", "action.skip", "action.retry", "skip.title", "skip.body", "skip.continue",
