@@ -1,7 +1,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Check, Copy, MoveRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { Check, ClipboardPaste, Copy, MoveRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { memo, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
 import type { Board, Bookmark } from "../../domain/models";
 import { FloatingContextMenu, type ContextMenuPoint } from "../../components/FloatingContextMenu";
@@ -17,6 +17,7 @@ interface BoardColumnProps {
   privacy: boolean;
   selectedIds: Set<string>;
   onAddBookmark: (board: Board) => void;
+  onPasteLinks: (board: Board) => void;
   onEditBoard: (board: Board) => void;
   onPatchBoard: (board: Board, patch: Partial<Pick<Board, "bookmarkColumns" | "gridSpan">>) => void;
   onMoveBoard: (board: Board) => void;
@@ -118,6 +119,7 @@ export const BoardColumn = memo(function BoardColumn(props: BoardColumnProps) {
         <div className="context-menu__group"><span>{t("board.size")}</span>{([2, 4, 6] as const).map((value) => <button key={value} onClick={() => action(() => props.onPatchBoard(props.board, { gridSpan: value }))}>{props.board.gridSpan === value ? <Check size={14} /> : <i />}{t(value === 2 ? "board.sizeSmall" : value === 4 ? "board.sizeMedium" : "board.sizeLarge")}</button>)}</div>
         <button onClick={() => action(() => props.onMoveBoard(props.board))}><MoveRight size={15} />{t("board.movePage")}</button>
         <button onClick={() => action(() => props.onDuplicateBoard(props.board))}><Copy size={15} />{t("generic.duplicate")}</button>
+        <button onClick={() => action(() => props.onPasteLinks(props.board))}><ClipboardPaste size={15} />{t("paste.menu")}</button>
         <button className="danger" onClick={() => action(() => props.onDeleteBoard(props.board))}><Trash2 size={15} />{t("bookmark.moveTrash")}</button>
       </FloatingContextMenu> : null}
     </section>

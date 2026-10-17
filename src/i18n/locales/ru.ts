@@ -304,6 +304,18 @@ export const ru = {
   "settings.tierBalancedHint": "Лёгкое размытие для встроенной графики",
   "settings.tierSmoothHint": "Прозрачность без живого размытия",
   "settings.tierSoftwareHint": "Лёгкая прозрачность без размытия для ПК без видеокарты",
+  "paste.menu": "Вставить ссылки…",
+  "paste.title": "Вставить ссылки",
+  "paste.hint": "По одной ссылке в строке или текст с любыми ссылками",
+  "paste.text": "Ссылки",
+  "paste.destination": "Назначение",
+  "paste.counts": "Новых: {new} · Дубликатов: {duplicate} · Недействительных: {invalid}",
+  "paste.add": "Добавить закладки: {count}",
+  "paste.already": "Уже есть в этом блоке",
+  "paste.noBoard": "Сначала создайте блок",
+  "paste.addedOne": "Добавлено: {title} в {board}",
+  "paste.addedMany": "Добавлено закладок: {count} в {board}",
+  "paste.failed": "Не удалось добавить ссылки",
 } as const;
 
 export type MessageKey = keyof typeof ru;

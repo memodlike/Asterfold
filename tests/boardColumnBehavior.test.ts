@@ -35,7 +35,7 @@ const bookmark: Bookmark = { id: "bookmark", userId: null, boardId: board.id, ti
 
 function handlers() {
   return {
-    onAddBookmark: vi.fn(), onEditBoard: vi.fn(), onPatchBoard: vi.fn(), onMoveBoard: vi.fn(), onDuplicateBoard: vi.fn(), onDeleteBoard: vi.fn(), onKeyboardMoveBoard: vi.fn(),
+    onAddBookmark: vi.fn(), onPasteLinks: vi.fn(), onEditBoard: vi.fn(), onPatchBoard: vi.fn(), onMoveBoard: vi.fn(), onDuplicateBoard: vi.fn(), onDeleteBoard: vi.fn(), onKeyboardMoveBoard: vi.fn(),
     onOpenBookmark: vi.fn(), onEditBookmark: vi.fn(), onMoveBookmark: vi.fn(), onDuplicateBookmark: vi.fn(), onDeleteBookmark: vi.fn(), onCopyUrl: vi.fn(), onCopyMarkdown: vi.fn(), onSelectBookmark: vi.fn(),
   };
 }
