@@ -19,6 +19,8 @@ interface UpgradeSeedData {
   trashRecord: UpgradeRecord;
 }
 
+const TRANSPARENT_PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=", "base64");
+
 async function extensionWorker(context: BrowserContext): Promise<Worker> {
   return context.serviceWorkers().find((worker) => worker.url().startsWith("chrome-extension://"))
     ?? context.waitForEvent("serviceworker", { predicate: (worker) => worker.url().startsWith("chrome-extension://"), timeout: 15_000 });
@@ -31,6 +33,8 @@ async function launch(extensionPath: string): Promise<{ context: BrowserContext;
     headless: false,
     args: ["--headless=new", "--no-sandbox", "--disable-crash-reporter", "--disable-features=DisableLoadExtensionCommandLineSwitch", `--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
   });
+  // Keep the run hermetic: the remote favicon service answers 404 for fixture hosts such as example.com.
+  await context.route("https://www.google.com/s2/favicons**", (route) => route.fulfill({ status: 200, contentType: "image/png", body: TRANSPARENT_PNG }));
   context.on("console", (message) => {
     if (message.type() === "error") {
       if (message.text().includes("background task failed: initialize")) return;
