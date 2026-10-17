@@ -319,6 +319,9 @@ export async function restoreBackup(
     let incomingBoards = validated.entities.boards as Board[];
     let incomingBookmarks = validated.entities.bookmarks as Bookmark[];
     if (strategy === "merge") {
+      incomingPages = [...incomingPages].sort((a, b) => compareRanks(a.position, b.position));
+      incomingBoards = [...incomingBoards].sort((a, b) => compareRanks(a.position, b.position));
+      incomingBookmarks = [...incomingBookmarks].sort((a, b) => compareRanks(a.position, b.position));
       const pageIds = new Map(incomingPages.map((page) => [page.id, createId()]));
       const boardIds = new Map(incomingBoards.map((board) => [board.id, createId()]));
       const deletedBatchIds = new Map(

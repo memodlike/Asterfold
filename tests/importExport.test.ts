@@ -4,7 +4,7 @@ import { version as packageVersion } from "../package.json";
 import { AsterfoldDatabase } from "../src/db/database";
 import { CURRENT_DB_SCHEMA_VERSION } from "../src/db/migrations";
 import { createBoard, createBookmark, ensureStarterWorkspace, getWorkspaceData, updateSettings } from "../src/db/repository";
-import { evenlySpacedRanks, isValidRank, validateScope } from "../src/domain/ordering";
+import { compareRanks, evenlySpacedRanks, isValidRank, validateScope } from "../src/domain/ordering";
 import {
   createBackup,
   createSelectionBackup,
@@ -550,6 +550,81 @@ describe("safe import and lossless export", () => {
 
       const pageRanks = (await database.pages.toArray()).map((page) => page.position);
       expect(new Set(pageRanks).size).toBe(pageRanks.length);
+    } finally {
+      await source.delete();
+    }
+  });
+
+  it("preserves page, board, and bookmark order when merging a backup whose ID order differs from display order (AF383-03)", async () => {
+    const destination = await ensureStarterWorkspace(database);
+    const destinationPageId = destination.pages[0]!.id;
+
+    const source = new AsterfoldDatabase(`asterfold-merge-order-${crypto.randomUUID()}`);
+    await source.open();
+    try {
+      const sourceWorkspace = await ensureStarterWorkspace(source);
+      const now = new Date().toISOString();
+
+      // Clear starter entities in source to build a clean sequence with mismatched ID vs position order
+      await source.bookmarks.clear();
+      await source.boards.clear();
+      await source.pages.clear();
+
+      // Page 1: "Workspace" (id: "z-page-1", position: "100000000000")
+      // Page 2: "Second" (id: "b-page-2", position: "200000000000")
+      // Page 3: "Third" (id: "a-page-3", position: "300000000000")
+      // ID order: ["a-page-3", "b-page-2", "z-page-1"] -> ["Third", "Second", "Workspace"]
+      // Position order: ["100000000000", "200000000000", "300000000000"] -> ["Workspace", "Second", "Third"]
+      await source.pages.bulkPut([
+        { id: "z-page-1", userId: null, title: "Workspace", icon: null, accent: null, position: "100000000000", isDefault: true, createdAt: now, updatedAt: now, deletedAt: null, deletedBatchId: null, version: 1 },
+        { id: "b-page-2", userId: null, title: "Second", icon: null, accent: null, position: "200000000000", isDefault: false, createdAt: now, updatedAt: now, deletedAt: null, deletedBatchId: null, version: 1 },
+        { id: "a-page-3", userId: null, title: "Third", icon: null, accent: null, position: "300000000000", isDefault: false, createdAt: now, updatedAt: now, deletedAt: null, deletedBatchId: null, version: 1 },
+      ]);
+
+      // Add boards on page 1 with mismatched ID vs position order
+      await source.boards.bulkPut([
+        { id: "z-board-1", userId: null, pageId: "z-page-1", title: "Board 1", icon: null, accent: null, position: "100000000000", collapsed: false, layout: "grid", bookmarkColumns: 1, gridColumn: 1, gridRow: 0, gridSpan: 6, createdAt: now, updatedAt: now, deletedAt: null, deletedBatchId: null, version: 1 },
+        { id: "b-board-2", userId: null, pageId: "z-page-1", title: "Board 2", icon: null, accent: null, position: "200000000000", collapsed: false, layout: "grid", bookmarkColumns: 1, gridColumn: 7, gridRow: 0, gridSpan: 6, createdAt: now, updatedAt: now, deletedAt: null, deletedBatchId: null, version: 1 },
+        { id: "a-board-3", userId: null, pageId: "z-page-1", title: "Board 3", icon: null, accent: null, position: "300000000000", collapsed: false, layout: "grid", bookmarkColumns: 1, gridColumn: 1, gridRow: 1, gridSpan: 6, createdAt: now, updatedAt: now, deletedAt: null, deletedBatchId: null, version: 1 },
+      ]);
+
+      // Add bookmarks on board 1 with mismatched ID vs position order
+      await source.bookmarks.bulkPut([
+        { id: "z-bm-1", userId: null, boardId: "z-board-1", title: "Bookmark 1", url: "https://bm1.example", normalizedUrl: "https://bm1.example", hostname: "bm1.example", description: null, faviconUrl: null, customIcon: null, position: "100000000000", openMode: "new-tab", pinned: false, createdAt: now, updatedAt: now, deletedAt: null, deletedBatchId: null, version: 1 },
+        { id: "b-bm-2", userId: null, boardId: "z-board-1", title: "Bookmark 2", url: "https://bm2.example", normalizedUrl: "https://bm2.example", hostname: "bm2.example", description: null, faviconUrl: null, customIcon: null, position: "200000000000", openMode: "new-tab", pinned: false, createdAt: now, updatedAt: now, deletedAt: null, deletedBatchId: null, version: 1 },
+        { id: "a-bm-3", userId: null, boardId: "z-board-1", title: "Bookmark 3", url: "https://bm3.example", normalizedUrl: "https://bm3.example", hostname: "bm3.example", description: null, faviconUrl: null, customIcon: null, position: "300000000000", openMode: "new-tab", pinned: false, createdAt: now, updatedAt: now, deletedAt: null, deletedBatchId: null, version: 1 },
+      ]);
+
+      await source.settings.put({ ...sourceWorkspace.settings, activePageId: "z-page-1" });
+
+      const sourceBackup = await createBackup({}, source);
+      // In primary-key order (what toArray returns), pages are in ID order:
+      expect(sourceBackup.entities.pages.map((page) => page.title)).toEqual(["Third", "Second", "Workspace"]);
+      expect(sourceBackup.entities.boards.map((board) => board.title)).toEqual(["Board 3", "Board 2", "Board 1"]);
+      expect(sourceBackup.entities.bookmarks.map((bm) => bm.title)).toEqual(["Bookmark 3", "Bookmark 2", "Bookmark 1"]);
+
+      await restoreBackup(sourceBackup, "merge", database);
+
+      // Verify merged pages in destination are strictly ordered by position:
+      const mergedPages = (await database.pages.toArray())
+        .filter((page) => page.id !== destinationPageId)
+        .sort((a, b) => compareRanks(a.position, b.position));
+
+      expect(mergedPages.map((page) => page.title)).toEqual(["Workspace", "Second", "Third"]);
+
+      // Verify merged boards on the first merged page are ordered by position:
+      const firstMergedPage = mergedPages[0]!;
+      const mergedBoards = (await database.boards.where("pageId").equals(firstMergedPage.id).toArray())
+        .sort((a, b) => compareRanks(a.position, b.position));
+
+      expect(mergedBoards.map((board) => board.title)).toEqual(["Board 1", "Board 2", "Board 3"]);
+
+      // Verify merged bookmarks on the first merged board are ordered by position:
+      const firstMergedBoard = mergedBoards[0]!;
+      const mergedBookmarks = (await database.bookmarks.where("boardId").equals(firstMergedBoard.id).toArray())
+        .sort((a, b) => compareRanks(a.position, b.position));
+
+      expect(mergedBookmarks.map((bm) => bm.title)).toEqual(["Bookmark 1", "Bookmark 2", "Bookmark 3"]);
     } finally {
       await source.delete();
     }

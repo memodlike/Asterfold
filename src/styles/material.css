@@ -185,7 +185,7 @@ html[data-performance="software"][data-theme="light"] { --mat-shadow: 0 0 0 1px 
 .empty-state { --mat-alpha: var(--mat-alpha-tile); }
 /* On the main screen the empty state is board material, so it follows the board tint per tier. */
 @media (prefers-reduced-transparency: no-preference) {
-  :is(html[data-performance="compatibility"], html[data-performance="software"]) .empty-state { --mat-alpha: var(--board-alpha); }
+  .empty-state { --mat-alpha: var(--board-alpha); }
 }
 /* The empty state sits on the wallpaper like a board, so it uses the board frost. */
 .empty-state { -webkit-backdrop-filter: var(--board-filter); backdrop-filter: var(--board-filter); }
@@ -237,6 +237,20 @@ html[data-performance="software"] :is(.modal, .launcher-menu, .context-menu, .se
 
 /* Increased contrast: every glass surface becomes a solid sheet with a defined edge. */
 @media (prefers-contrast: more) {
+  :root, html {
+    --settings-scrim-filter: none;
+    --settings-scrim: rgb(6 6 10 / .52);
+  }
+  html[data-theme="light"] {
+    --settings-scrim: rgb(20 22 30 / .34);
+  }
+  html:not([data-performance="software"]) {
+    --settings-scrim-filter: none;
+    --settings-scrim: rgb(6 6 10 / .52);
+  }
+  html[data-theme="light"]:not([data-performance="software"]) {
+    --settings-scrim: rgb(20 22 30 / .34);
+  }
   :is(.launcher-menu, .launcher-discovery, .context-menu, .toast, .bulk-toolbar, .select-popover, .drag-overlay, .modal:not(.settings-modal, .spotlight, .onboarding-modal), .spotlight__field, .spotlight__panel, .empty-state, .settings-tile, .onboarding-tile, .settings-modal .modal__header),
   .launcher-trigger,
   .app-launcher:hover .launcher-trigger::before, .launcher-trigger:focus-visible::before, .app-launcher.is-open .launcher-trigger::before {
@@ -249,7 +263,7 @@ html[data-performance="software"] :is(.modal, .launcher-menu, .context-menu, .se
 }
 
 @media (forced-colors: active) {
-  :is(.launcher-menu, .launcher-discovery, .context-menu, .toast, .bulk-toolbar, .select-popover, .drag-overlay, .modal, .spotlight__field, .spotlight__panel, .empty-state, .settings-tile, .onboarding-tile, .settings-modal .modal__header),
+  :is(.launcher-menu, .launcher-discovery, .context-menu, .toast, .bulk-toolbar, .select-popover, .drag-overlay, .modal:not(.settings-modal, .spotlight, .onboarding-modal), .spotlight__field, .spotlight__panel, .empty-state, .settings-tile, .onboarding-tile, .settings-modal .modal__header),
   .launcher-trigger,
   .launcher-trigger::before {
     border: 1px solid CanvasText;
