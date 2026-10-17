@@ -34,4 +34,15 @@ describe("pasted link extraction", () => {
       items: [{ url: "https://example.com/?utm_source=a", title: "Example" }], duplicate: 2, invalid: 0,
     });
   });
+  it("keeps a standalone URL intact, including trailing punctuation that belongs to it", () => {
+    expect(analyzePastedLinks("https://example.com/search?q=hello!").urls).toEqual(["https://example.com/search?q=hello!"]);
+    expect(analyzePastedLinks("  https://example.com/a.  ").urls).toEqual(["https://example.com/a."]);
+    expect(analyzePastedLinks("Wow https://example.com/search?q=hello!").urls).toEqual(["https://example.com/search?q=hello"]);
+  });
+  it("splits Markdown links so a URL label does not swallow its target", () => {
+    expect(analyzePastedLinks("[https://example.com](https://example.com)")).toMatchObject({ urls: ["https://example.com/"], duplicate: 0, invalid: 0 });
+    expect(analyzePastedLinks("- [Docs](https://example.com/docs) and [https://a.example](https://b.example)").urls).toEqual([
+      "https://example.com/docs", "https://a.example/", "https://b.example/",
+    ]);
+  });
 });

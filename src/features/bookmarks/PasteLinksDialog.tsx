@@ -1,3 +1,4 @@
+import { Bookmark as BookmarkIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Board, Bookmark, WorkspaceData } from "../../domain/models";
 import { analyzePastedLinks, MAX_PASTE_TEXT_LENGTH } from "../../domain/pasteLinks";
@@ -43,7 +44,7 @@ export function PasteLinksDialog({ workspace, boardId: initialBoardId, initialTe
       }))), [privacy, t, workspace.boards, workspace.pages]);
 
   const save = async (): Promise<void> => {
-    if (!board || analysis.items.length === 0 || saving) return;
+    if (privacy || !board || analysis.items.length === 0 || saving) return;
     setSaving(true);
     setError(false);
     try {
@@ -64,19 +65,21 @@ export function PasteLinksDialog({ workspace, boardId: initialBoardId, initialTe
       description={t("paste.hint")}
       size="small"
       onClose={onClose}
-      footer={<>
+      footer={privacy ? <Button onClick={onClose}>{t("generic.close")}</Button> : <>
         <Button onClick={onClose}>{t("generic.cancel")}</Button>
         <Button variant="primary" disabled={!board || saving || analysis.items.length === 0} onClick={() => void save()}>
           {t("paste.add", { count: analysis.items.length })}
         </Button>
       </>}
     >
-      <div className="form-stack">
+      {privacy ? (
+        <div className="search-state search-private"><span className="search-state__icon"><BookmarkIcon size={22} /></span><div><strong>{t("search.privateTitle")}</strong><span>{t("search.privateBody")}</span></div></div>
+      ) : <div className="form-stack">
         <label>{t("paste.text")}<textarea autoFocus maxLength={MAX_PASTE_TEXT_LENGTH} rows={9} value={text} disabled={saving} onChange={(event) => setText(event.target.value)} /></label>
         <p aria-live="polite">{t("paste.counts", { new: analysis.items.length, duplicate: analysis.duplicate, invalid: analysis.invalid })}</p>
         <label>{t("paste.destination")}<SelectField value={boardId} options={options} label={t("paste.destination")} onChange={setBoardId} disabled={saving} /></label>
         {error ? <p className="inline-error" role="alert">{t("paste.failed")}</p> : null}
-      </div>
+      </div>}
     </Modal>
   );
 }

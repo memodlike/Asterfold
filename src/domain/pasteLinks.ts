@@ -26,20 +26,35 @@ function trimProsePunctuation(candidate: string): string {
   return candidate.slice(0, end);
 }
 
+function parseStandaloneUrl(candidate: string): string {
+  try {
+    return parseSafeNavigationUrl(candidate);
+  } catch {
+    return parseSafeNavigationUrl(trimProsePunctuation(candidate));
+  }
+}
+
 export function analyzePastedLinks(text: string, existingUrls: readonly string[] = []): PastedLinks {
   const result: PastedLinks = { urls: [], items: [], duplicate: 0, invalid: 0 };
   if (text.length > MAX_PASTE_TEXT_LENGTH) return result;
   const seen = new Set(existingUrls);
   for (const line of text.split(/\r\n?|\n/u)) {
-    if (!line.trim()) continue;
+    const trimmedLine = line.trim();
+    if (!trimmedLine) continue;
     let validLine = false;
+    const lineUrls = new Set<string>();
     // Require a text boundary, so an HTTP substring inside an unsafe scheme is not extracted.
-    for (const match of line.matchAll(/(?:^|[\s<>([{'"`])https?:\/\/[^\s<>"'`]+/giu)) {
+    // A Markdown label such as [https://a](https://b) must not swallow its target.
+    const scanLine = line.replaceAll("](", "] (");
+    for (const match of scanLine.matchAll(/(?<=^|[\s<>([{'"`])https?:\/\/[^\s<>"'`]+/giu)) {
       try {
-        const candidate = trimProsePunctuation(match[0].trim().replace(/^[<>([{'"`]/u, ""));
-        const url = parseSafeNavigationUrl(candidate);
+        const raw = match[0];
+        // A line that is exactly one URL is kept intact when valid: trailing "!" or ")" may be part of it.
+        const url = raw === trimmedLine ? parseStandaloneUrl(raw) : parseSafeNavigationUrl(trimProsePunctuation(raw));
         const normalized = normalizeUrl(url).normalizedUrl;
         validLine = true;
+        if (lineUrls.has(normalized)) continue;
+        lineUrls.add(normalized);
         result.urls.push(url);
         if (seen.has(normalized)) result.duplicate += 1;
         else {

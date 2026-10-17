@@ -29,6 +29,16 @@ function mount(initialText = "", privacy = false, onCreated = vi.fn()) {
 }
 
 describe("Paste Links dialog", () => {
+  it("hides pasted clipboard text and blocks saving while Privacy Mode is on", () => {
+    const bulk = vi.spyOn(repository, "createBookmarksBulk");
+    mount("https://secret.example/private-note\nhttps://github.com", true);
+    expect(screen.queryByRole("textbox", { name: "Links" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/secret\.example/u)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Add \d+ bookmarks/u })).not.toBeInTheDocument();
+    expect(screen.getByText("Search content is protected")).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "Close" }).at(-1)!);
+    expect(bulk).not.toHaveBeenCalled();
+  });
   it("updates new, duplicate and invalid counters while editing and changing destination", () => {
     mount("https://github.com\nhttps://github.com/#hash\nhttps://example.com\ninvalid\nfile:///secret");
     expect(screen.getByText("1 new · 2 duplicate · 2 invalid")).toBeInTheDocument();
@@ -80,7 +90,7 @@ describe("Paste Links dialog", () => {
   });
   it("hides destination names in Privacy Mode", () => {
     mount("https://github.com", true);
-    expect(screen.getByRole("combobox", { name: "Destination" })).toHaveTextContent("Page › Board");
+    expect(screen.queryByRole("combobox", { name: "Destination" })).not.toBeInTheDocument();
     expect(screen.getByRole("dialog")).not.toHaveTextContent(/Workspace|Inbox|Reading/u);
   });
   it("disables save when the destination disappears", () => {
