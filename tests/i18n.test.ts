@@ -45,8 +45,8 @@ describe("runtime dictionaries", () => {
     }
   });
 
-  it("enforces exact 312 key coverage with no English leakage in European locales", () => {
-    expect(messageKeys.length).toBe(312);
+  it("enforces exact 324 key coverage with no English leakage in European locales", () => {
+    expect(messageKeys.length).toBe(324);
     const sampleKeys = [
       "settings.appearance",
       "settings.performance",
@@ -57,6 +57,10 @@ describe("runtime dictionaries", () => {
       "generic.save",
       "trash.empty",
       "popup.saved",
+      "paste.menu",
+      "paste.hint",
+      "paste.add",
+      "paste.addedMany",
     ] as const;
 
     for (const locale of localeOptions.filter((item) => item.value !== "auto" && item.value !== "en")) {

@@ -61,7 +61,7 @@ const bookmarkTwo: Bookmark = { ...bookmark, id: "bookmark-two", boardId: boardT
 
 function callbacks() {
   return {
-    onCreateBoard: vi.fn(), onAddBookmark: vi.fn(), onEditBoard: vi.fn(), onPatchBoard: vi.fn(), onMoveBoard: vi.fn(), onOpenBoard: vi.fn(), onDuplicateBoard: vi.fn(), onDeleteBoard: vi.fn(), onMoveBoardIndex: vi.fn(),
+    onCreateBoard: vi.fn(), onAddBookmark: vi.fn(), onPasteLinks: vi.fn(), onEditBoard: vi.fn(), onPatchBoard: vi.fn(), onMoveBoard: vi.fn(), onOpenBoard: vi.fn(), onDuplicateBoard: vi.fn(), onDeleteBoard: vi.fn(), onMoveBoardIndex: vi.fn(),
     onOpenBookmark: vi.fn(), onEditBookmark: vi.fn(), onMoveBookmark: vi.fn(), onDuplicateBookmark: vi.fn(), onDeleteBookmark: vi.fn(), onCopyUrl: vi.fn(), onCopyMarkdown: vi.fn(), onSelectBookmark: vi.fn(), onMoveBookmarkIndex: vi.fn(), onImport: vi.fn(),
   };
 }

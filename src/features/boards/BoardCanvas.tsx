@@ -31,6 +31,7 @@ interface BoardCanvasProps {
   settings: Pick<AppSettings, "workspaceLayoutMode" | "workspaceRows" | "workspaceAlignment" | "theme">;
   onCreateBoard: () => void;
   onAddBookmark: (board: Board) => void;
+  onPasteLinks: (board: Board) => void;
   onEditBoard: (board: Board) => void;
   onPatchBoard: (board: Board, patch: Partial<Pick<Board, "bookmarkColumns" | "gridSpan">>) => void;
   onMoveBoard: (board: Board) => void;
@@ -167,6 +168,7 @@ export function BoardCanvas(props: BoardCanvasProps) {
                 privacy={props.privacy}
                 selectedIds={props.selectedIds}
                 onAddBookmark={props.onAddBookmark}
+                onPasteLinks={props.onPasteLinks}
                 onEditBoard={props.onEditBoard}
                 onPatchBoard={props.onPatchBoard}
                 onMoveBoard={props.onMoveBoard}

@@ -11,7 +11,9 @@ import type {
 } from "../domain/models";
 import { DuplicateError, PersistenceError, ValidationError } from "../domain/errors";
 import { allocateAtEnd, allocateManyAtEnd, compareRanks, evenlySpacedRanks, moveMany, validateScope } from "../domain/ordering";
-import { normalizeUrl } from "../domain/urls";
+import { normalizeUrl, parseSafeNavigationUrl, type NormalizedUrl } from "../domain/urls";
+import { IMPORT_LIMITS } from "../domain/importLimits";
+import { MAX_PASTE_URLS } from "../domain/pasteLinks";
 import { validateTheme } from "../domain/themes";
 import { appSettingsSchema, snapshotSchema, wallpaperMetadataSchema } from "../domain/schemas";
 import { WALLPAPER_LIMITS } from "../domain/mediaLimits";
@@ -674,6 +676,29 @@ export async function findDuplicate(
   return match ?? null;
 }
 
+function bookmarkRecord(input: NewBookmarkInput, normalized: NormalizedUrl, position: string, timestamp: string): Bookmark {
+  return {
+    id: createId(),
+    userId: null,
+    boardId: input.boardId,
+    title: recoverBookmarkTitle(input.title, normalized.url),
+    url: normalized.url,
+    normalizedUrl: normalized.normalizedUrl,
+    hostname: normalized.hostname,
+    description: normalizeDescription(input.description),
+    faviconUrl: null,
+    customIcon: null,
+    position,
+    openMode: input.openMode ?? "current",
+    pinned: input.pinned ?? false,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    deletedAt: null,
+    deletedBatchId: null,
+    version: 1,
+  };
+}
+
 export async function createBookmark(
   input: NewBookmarkInput,
   options: { allowDuplicate?: boolean } = {},
@@ -699,28 +724,44 @@ export async function createBookmark(
       .map((bookmark) => ({ ...bookmark, updatedAt: timestamp, version: bookmark.version + 1 }));
     if (rebalanced.length > 0) await database.bookmarks.bulkPut(rebalanced);
     const position = allocation.position;
-    const bookmark: Bookmark = {
-      id: createId(),
-      userId: null,
-      boardId: input.boardId,
-      title: recoverBookmarkTitle(input.title, normalized.url),
-      url: normalized.url,
-      normalizedUrl: normalized.normalizedUrl,
-      hostname: normalized.hostname,
-      description: normalizeDescription(input.description),
-      faviconUrl: null,
-      customIcon: null,
-      position,
-      openMode: input.openMode ?? "current",
-      pinned: input.pinned ?? false,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      deletedAt: null,
-      deletedBatchId: null,
-      version: 1,
-    };
+    const bookmark = bookmarkRecord(input, normalized, position, timestamp);
     await database.bookmarks.add(bookmark);
     return bookmark;
+  });
+}
+
+export async function createBookmarksBulk(
+  boardId: string,
+  items: readonly { url: string; title?: string }[],
+  database: AsterfoldDatabase = db,
+): Promise<Bookmark[]> {
+  if (items.length > MAX_PASTE_URLS) throw new ValidationError("Too many pasted links");
+  return database.transaction("rw", database.boards, database.bookmarks, async () => {
+    const board = await database.boards.get(boardId);
+    if (!board || board.deletedAt !== null) throw new ValidationError("Board not found");
+    const siblings = await activeBookmarks(database, boardId);
+    const seen = new Set(siblings.map((bookmark) => bookmark.normalizedUrl));
+    const unique: { input: NewBookmarkInput; normalized: NormalizedUrl }[] = [];
+    for (const item of items) {
+      const normalized = normalizeUrl(parseSafeNavigationUrl(item.url));
+      if (seen.has(normalized.normalizedUrl)) continue;
+      seen.add(normalized.normalizedUrl);
+      unique.push({ input: { boardId, url: normalized.url, title: item.title ?? "" }, normalized });
+    }
+    if (unique.length === 0) return [];
+    if (await database.bookmarks.count() + unique.length > IMPORT_LIMITS.bookmarks) {
+      throw new ValidationError("Workspace contains too many bookmarks");
+    }
+    const timestamp = nowIso();
+    const allocation = allocateManyAtEnd(siblings, unique.length);
+    const previousPositions = new Map(siblings.map((bookmark) => [bookmark.id, bookmark.position]));
+    const rebalanced = allocation.scope
+      .filter((bookmark) => bookmark.position !== previousPositions.get(bookmark.id))
+      .map((bookmark) => ({ ...bookmark, updatedAt: timestamp, version: bookmark.version + 1 }));
+    const bookmarks = unique.map(({ input, normalized }, index) => bookmarkRecord(input, normalized, allocation.positions[index]!, timestamp));
+    if (rebalanced.length > 0) await database.bookmarks.bulkPut(rebalanced);
+    await database.bookmarks.bulkAdd(bookmarks);
+    return bookmarks;
   });
 }
 
