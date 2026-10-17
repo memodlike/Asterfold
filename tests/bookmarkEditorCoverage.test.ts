@@ -8,7 +8,6 @@ const mocks = vi.hoisted(() => ({
   createBookmark: vi.fn(),
   findDuplicate: vi.fn(),
   updateBookmark: vi.fn(),
-  faviconUrl: vi.fn(),
 }));
 
 vi.mock("../src/db/repository", () => ({
@@ -16,7 +15,6 @@ vi.mock("../src/db/repository", () => ({
   findDuplicate: mocks.findDuplicate,
   updateBookmark: mocks.updateBookmark,
 }));
-vi.mock("../src/browser/api", () => ({ faviconUrl: mocks.faviconUrl }));
 
 import { BookmarkEditor } from "../src/features/bookmarks/BookmarkEditor";
 import { I18nProvider } from "../src/i18n";
@@ -84,7 +82,6 @@ const performanceMeasureMock = vi.fn();
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.findDuplicate.mockResolvedValue(null);
-  mocks.faviconUrl.mockReturnValue("chrome-extension://test/favicon");
   mocks.createBookmark.mockResolvedValue({ ...existing, id: "created", title: "Created", url: "https://created.example/" });
   mocks.updateBookmark.mockResolvedValue({ ...existing, title: "Updated" });
   performanceMarkMock.mockClear();
@@ -109,7 +106,8 @@ describe("BookmarkEditor complete behavior", () => {
     expect(screen.getByLabelText("Destination")).toHaveValue("board-one");
     expect(screen.getByLabelText("Open in")).toHaveValue("current");
     expect(container.querySelectorAll("optgroup")).toHaveLength(2);
-    expect(container.querySelector("img")).toHaveAttribute("src", "chrome-extension://test/favicon");
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.querySelector(".favicon__monogram")).toHaveTextContent("E");
   });
 
   it("resets all fields when editing an existing bookmark or reopening", () => {
@@ -240,8 +238,11 @@ describe("BookmarkEditor complete behavior", () => {
   });
 
   it("protects content and only renders a Close action in privacy mode", () => {
-    const { handlers } = renderEditor({ privacy: true });
+    const { handlers, container } = renderEditor({ privacy: true });
     expect(screen.getByText("Search content is protected")).toBeVisible();
+    const stateContainer = container.querySelector(".search-state.search-private");
+    expect(stateContainer).not.toBeNull();
+    expect(stateContainer?.querySelector(".search-state__icon")).not.toBeNull();
     expect(screen.queryByRole("textbox", { name: "Title" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
     fireEvent.click(screen.getAllByRole("button", { name: "Close" }).at(-1)!);
@@ -252,7 +253,6 @@ describe("BookmarkEditor complete behavior", () => {
     const privacy = renderEditor({ privacy: true });
     expect(privacy.container.querySelector("img")).toBeNull();
     privacy.unmount();
-    mocks.faviconUrl.mockReturnValue("");
     const mail = renderEditor({ initialUrl: "mailto:test@example.com" });
     expect(mail.container.querySelector("img")).toBeNull();
   });

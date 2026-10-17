@@ -16,10 +16,6 @@ export type OnboardingMessageKey =
   | "import.body"
   | "import.default.title"
   | "import.default.body"
-  | "import.chrome.title"
-  | "import.chrome.body"
-  | "import.chrome.permission"
-  | "import.chrome.denied"
   | "import.html.title"
   | "import.html.body"
   | "import.backup.title"
@@ -78,10 +74,6 @@ const en: Dictionary = {
   "import.body": "Nothing is written until you finish setup.",
   "import.default.title": "Start with Asterfold",
   "import.default.body": "Keep the starter workspace. You can import later in Settings.",
-  "import.chrome.title": "Import from Chrome",
-  "import.chrome.body": "Copy the Chrome bookmark tree into Asterfold without changing the originals.",
-  "import.chrome.permission": "Chrome will ask for temporary bookmark access only after you press the import button. Processing is local.",
-  "import.chrome.denied": "Bookmark access was not granted. Choose another source or retry.",
   "import.html.title": "Import bookmark HTML",
   "import.html.body": "Choose a Netscape-format bookmark file exported by a browser.",
   "import.backup.title": "Restore Asterfold backup",
@@ -138,10 +130,6 @@ const ru: Dictionary = {
   "import.body": "До завершения настройки данные не изменяются.",
   "import.default.title": "Начать с Asterfold",
   "import.default.body": "Оставить стартовое пространство. Импорт будет доступен позже в Настройках.",
-  "import.chrome.title": "Импортировать из Chrome",
-  "import.chrome.body": "Скопировать дерево закладок Chrome в Asterfold, не изменяя оригиналы.",
-  "import.chrome.permission": "Chrome запросит временный доступ только после нажатия кнопки импорта. Обработка выполняется локально.",
-  "import.chrome.denied": "Доступ к закладкам не предоставлен. Выберите другой источник или повторите попытку.",
   "import.html.title": "Импортировать HTML закладок",
   "import.html.body": "Выберите файл закладок формата Netscape, экспортированный из браузера.",
   "import.backup.title": "Восстановить копию Asterfold",
@@ -198,10 +186,6 @@ const kk: Dictionary = {
   "import.body": "Баптау аяқталғанша ешбір дерек жазылмайды.",
   "import.default.title": "Asterfold-пен бастау",
   "import.default.body": "Бастапқы кеңістікті қалдырыңыз. Кейін Баптаулардан импорттай аласыз.",
-  "import.chrome.title": "Chrome-нан импорттау",
-  "import.chrome.body": "Chrome бетбелгілерін түпнұсқаларын өзгертпей Asterfold-қа көшіру.",
-  "import.chrome.permission": "Chrome уақытша рұқсатты импорт түймесін басқаннан кейін ғана сұрайды. Өңдеу жергілікті орындалады.",
-  "import.chrome.denied": "Бетбелгілерге рұқсат берілмеді. Басқа дереккөзді таңдаңыз немесе қайталаңыз.",
   "import.html.title": "HTML бетбелгілерін импорттау",
   "import.html.body": "Браузерден экспортталған Netscape пішіміндегі файлды таңдаңыз.",
   "import.backup.title": "Asterfold сақтық көшірмесін қалпына келтіру",
@@ -247,7 +231,6 @@ const es: Dictionary = {
   "welcome.title": "Te damos la bienvenida a Asterfold", "welcome.body": "Configura en pocos pasos un espacio visual de marcadores privado y local.", "welcome.privacy": "Tus datos permanecen en este perfil del navegador. Sin cuenta ni analíticas.", "welcome.language": "Idioma de la interfaz",
   "step.welcome": "Bienvenida", "step.import": "Marcadores", "step.appearance": "Apariencia", "step.review": "Revisión",
   "import.title": "Importa marcadores o empieza de cero", "import.body": "No se escribirá nada hasta que finalices la configuración.", "import.default.title": "Empezar con Asterfold", "import.default.body": "Conserva el espacio inicial. Podrás importar más tarde desde Ajustes.",
-  "import.chrome.title": "Importar desde Chrome", "import.chrome.body": "Copia el árbol de marcadores sin modificar los originales.", "import.chrome.permission": "Chrome solicitará acceso temporal solo después de pulsar importar. El procesamiento es local.", "import.chrome.denied": "No se concedió acceso. Elige otra fuente o vuelve a intentarlo.",
   "import.html.title": "Importar HTML de marcadores", "import.html.body": "Selecciona un archivo Netscape exportado por un navegador.", "import.backup.title": "Restaurar copia de Asterfold", "import.backup.body": "Valida y revisa la copia JSON antes de aplicarla.",
   "import.preview": "{bookmarks} marcadores · {folders} carpetas · {pages} páginas · {boards} paneles",
   "import.empty": "No se encontraron marcadores en este origen.",
@@ -268,7 +251,6 @@ const de: Dictionary = {
   "welcome.title": "Willkommen bei Asterfold", "welcome.body": "Richte in wenigen Schritten einen privaten, lokalen Lesezeichen-Arbeitsbereich ein.", "welcome.privacy": "Deine Daten bleiben in diesem Browserprofil. Kein Konto und keine Analysen.", "welcome.language": "Oberflächensprache",
   "step.welcome": "Willkommen", "step.import": "Lesezeichen", "step.appearance": "Darstellung", "step.review": "Prüfen",
   "import.title": "Lesezeichen übernehmen oder neu starten", "import.body": "Bis zum Abschluss werden keine Daten geschrieben.", "import.default.title": "Mit Asterfold starten", "import.default.body": "Den Startbereich behalten. Import ist später in den Einstellungen möglich.",
-  "import.chrome.title": "Aus Chrome importieren", "import.chrome.body": "Den Chrome-Lesezeichenbaum kopieren, ohne Originale zu verändern.", "import.chrome.permission": "Chrome fragt erst nach Klick auf Import nach temporärem Zugriff. Die Verarbeitung erfolgt lokal.", "import.chrome.denied": "Zugriff wurde nicht erteilt. Andere Quelle wählen oder erneut versuchen.",
   "import.html.title": "Lesezeichen-HTML importieren", "import.html.body": "Eine vom Browser exportierte Netscape-Datei auswählen.", "import.backup.title": "Asterfold-Sicherung wiederherstellen", "import.backup.body": "JSON-Sicherung vor dem Anwenden prüfen und ansehen.",
   "import.preview": "{bookmarks} Lesezeichen · {folders} Ordner · {pages} Seiten · {boards} Boards",
   "import.empty": "In dieser Quelle wurden keine Lesezeichen gefunden.",
@@ -289,7 +271,6 @@ const fr: Dictionary = {
   "welcome.title": "Bienvenue dans Asterfold", "welcome.body": "Configurez en quelques étapes un espace visuel de favoris privé et local.", "welcome.privacy": "Vos données restent dans ce profil de navigateur. Aucun compte ni analyse.", "welcome.language": "Langue de l’interface",
   "step.welcome": "Bienvenue", "step.import": "Favoris", "step.appearance": "Apparence", "step.review": "Vérification",
   "import.title": "Importez vos favoris ou repartez de zéro", "import.body": "Aucune donnée n’est écrite avant la fin.", "import.default.title": "Commencer avec Asterfold", "import.default.body": "Conserver l’espace initial. L’import restera disponible dans les Réglages.",
-  "import.chrome.title": "Importer depuis Chrome", "import.chrome.body": "Copier l’arborescence sans modifier les favoris d’origine.", "import.chrome.permission": "Chrome demandera un accès temporaire uniquement après votre clic. Le traitement reste local.", "import.chrome.denied": "L’accès n’a pas été accordé. Choisissez une autre source ou réessayez.",
   "import.html.title": "Importer un fichier HTML", "import.html.body": "Choisissez un fichier Netscape exporté par un navigateur.", "import.backup.title": "Restaurer une sauvegarde Asterfold", "import.backup.body": "Validez et prévisualisez la sauvegarde JSON avant application.",
   "import.preview": "{bookmarks} favoris · {folders} dossiers · {pages} pages · {boards} tableaux",
   "import.empty": "Aucun favori trouvé dans cette source.",
@@ -310,7 +291,6 @@ const it: Dictionary = {
   "welcome.title": "Benvenuto in Asterfold", "welcome.body": "Configura in pochi passaggi uno spazio visivo per preferiti privato e locale.", "welcome.privacy": "I dati restano in questo profilo del browser. Nessun account e nessuna analisi.", "welcome.language": "Lingua dell’interfaccia",
   "step.welcome": "Benvenuto", "step.import": "Preferiti", "step.appearance": "Aspetto", "step.review": "Riepilogo",
   "import.title": "Importa i preferiti o inizia da zero", "import.body": "Nessun dato viene scritto prima della conferma finale.", "import.default.title": "Inizia con Asterfold", "import.default.body": "Mantieni lo spazio iniziale. Potrai importare in seguito dalle Impostazioni.",
-  "import.chrome.title": "Importa da Chrome", "import.chrome.body": "Copia l’albero dei preferiti senza modificare gli originali.", "import.chrome.permission": "Chrome chiederà accesso temporaneo solo dopo il clic. L’elaborazione è locale.", "import.chrome.denied": "Accesso non concesso. Scegli un’altra fonte o riprova.",
   "import.html.title": "Importa HTML dei preferiti", "import.html.body": "Scegli un file Netscape esportato da un browser.", "import.backup.title": "Ripristina backup Asterfold", "import.backup.body": "Convalida e visualizza il backup JSON prima di applicarlo.",
   "import.preview": "{bookmarks} segnalibri · {folders} cartelle · {pages} pagine · {boards} bacheche",
   "import.empty": "Nessun preferito trovato in questa sorgente.",
@@ -331,7 +311,6 @@ const pt: Dictionary = {
   "welcome.title": "Bem-vindo ao Asterfold", "welcome.body": "Configure em poucos passos um espaço visual de favoritos privado e local.", "welcome.privacy": "Os seus dados permanecem neste perfil do navegador. Sem conta e sem análises.", "welcome.language": "Idioma da interface",
   "step.welcome": "Boas-vindas", "step.import": "Favoritos", "step.appearance": "Aparência", "step.review": "Revisão",
   "import.title": "Importe favoritos ou comece do zero", "import.body": "Nada é gravado antes de concluir a configuração.", "import.default.title": "Começar com Asterfold", "import.default.body": "Mantenha o espaço inicial. Poderá importar depois nas Definições.",
-  "import.chrome.title": "Importar do Chrome", "import.chrome.body": "Copie a árvore de favoritos sem alterar os originais.", "import.chrome.permission": "O Chrome pedirá acesso temporário apenas após clicar. O processamento é local.", "import.chrome.denied": "O acesso não foi concedido. Escolha outra fonte ou tente novamente.",
   "import.html.title": "Importar HTML de favoritos", "import.html.body": "Escolha um ficheiro Netscape exportado por um navegador.", "import.backup.title": "Restaurar cópia do Asterfold", "import.backup.body": "Valide e pré-visualize a cópia JSON antes de aplicar.",
   "import.preview": "{bookmarks} marcadores · {folders} pastas · {pages} páginas · {boards} quadros",
   "import.empty": "Nenhum favorito encontrado nesta fonte.",
@@ -352,7 +331,6 @@ const pl: Dictionary = {
   "welcome.title": "Witamy w Asterfold", "welcome.body": "Skonfiguruj w kilku krokach prywatny, lokalny obszar zakładek.", "welcome.privacy": "Dane pozostają w tym profilu przeglądarki. Bez konta i analityki.", "welcome.language": "Język interfejsu",
   "step.welcome": "Witamy", "step.import": "Zakładki", "step.appearance": "Wygląd", "step.review": "Podsumowanie",
   "import.title": "Przenieś zakładki lub zacznij od nowa", "import.body": "Do zakończenia konfiguracji nic nie zostanie zapisane.", "import.default.title": "Zacznij z Asterfold", "import.default.body": "Zachowaj obszar startowy. Import będzie dostępny później w Ustawieniach.",
-  "import.chrome.title": "Importuj z Chrome", "import.chrome.body": "Skopiuj drzewo zakładek bez zmieniania oryginałów.", "import.chrome.permission": "Chrome poprosi o tymczasowy dostęp dopiero po kliknięciu. Przetwarzanie jest lokalne.", "import.chrome.denied": "Nie przyznano dostępu. Wybierz inne źródło lub spróbuj ponownie.",
   "import.html.title": "Importuj HTML zakładek", "import.html.body": "Wybierz plik Netscape wyeksportowany z przeglądarki.", "import.backup.title": "Przywróć kopię Asterfold", "import.backup.body": "Zweryfikuj i obejrzyj kopię JSON przed zastosowaniem.",
   "import.preview": "{bookmarks} zakładek · {folders} folderów · {pages} stron · {boards} tablic",
   "import.empty": "Nie znaleziono zakładek w tym źródle.",
@@ -373,7 +351,6 @@ const uk: Dictionary = {
   "welcome.title": "Ласкаво просимо до Asterfold", "welcome.body": "Налаштуйте приватний локальний простір закладок за кілька кроків.", "welcome.privacy": "Дані залишаються в цьому профілі браузера. Без облікового запису й аналітики.", "welcome.language": "Мова інтерфейсу",
   "step.welcome": "Вітання", "step.import": "Закладки", "step.appearance": "Оформлення", "step.review": "Перевірка",
   "import.title": "Перенесіть закладки або почніть заново", "import.body": "До завершення налаштування дані не записуються.", "import.default.title": "Почати з Asterfold", "import.default.body": "Залишити початковий простір. Імпорт буде доступний пізніше в Налаштуваннях.",
-  "import.chrome.title": "Імпортувати з Chrome", "import.chrome.body": "Скопіювати дерево закладок, не змінюючи оригінали.", "import.chrome.permission": "Chrome попросить тимчасовий доступ лише після натискання. Обробка локальна.", "import.chrome.denied": "Доступ не надано. Виберіть інше джерело або повторіть.",
   "import.html.title": "Імпортувати HTML закладок", "import.html.body": "Виберіть файл Netscape, експортований із браузера.", "import.backup.title": "Відновити копію Asterfold", "import.backup.body": "Перевірте й перегляньте JSON-копію перед застосуванням.",
   "import.preview": "{bookmarks} закладок · {folders} папок · {pages} сторінок · {boards} дощок",
   "import.empty": "У цьому джерелі закладок не знайдено.",
@@ -394,7 +371,6 @@ const tr: Dictionary = {
   "welcome.title": "Asterfold’a hoş geldiniz", "welcome.body": "Özel ve yerel görsel yer imi alanını birkaç adımda kurun.", "welcome.privacy": "Veriler bu tarayıcı profilinde kalır. Hesap ve analiz yoktur.", "welcome.language": "Arayüz dili",
   "step.welcome": "Hoş geldiniz", "step.import": "Yer imleri", "step.appearance": "Görünüm", "step.review": "İnceleme",
   "import.title": "Yer imlerini aktarın veya sıfırdan başlayın", "import.body": "Kurulum bitene kadar hiçbir veri yazılmaz.", "import.default.title": "Asterfold ile başla", "import.default.body": "Başlangıç alanını koruyun. Daha sonra Ayarlar’dan içe aktarabilirsiniz.",
-  "import.chrome.title": "Chrome’dan içe aktar", "import.chrome.body": "Orijinalleri değiştirmeden yer imi ağacını kopyalayın.", "import.chrome.permission": "Chrome yalnızca düğmeye bastıktan sonra geçici erişim ister. İşleme yereldir.", "import.chrome.denied": "Erişim verilmedi. Başka bir kaynak seçin veya tekrar deneyin.",
   "import.html.title": "Yer imi HTML’sini içe aktar", "import.html.body": "Tarayıcıdan dışa aktarılmış Netscape dosyasını seçin.", "import.backup.title": "Asterfold yedeğini geri yükle", "import.backup.body": "JSON yedeğini uygulamadan önce doğrulayın ve önizleyin.",
   "import.preview": "{bookmarks} yer işareti · {folders} klasör · {pages} sayfa · {boards} pano",
   "import.empty": "Bu kaynakta yer işareti bulunamadı.",
@@ -415,7 +391,6 @@ const nl: Dictionary = {
   "welcome.title": "Welkom bij Asterfold", "welcome.body": "Stel in enkele stappen een privé, lokale visuele bladwijzerwerkruimte in.", "welcome.privacy": "Je gegevens blijven in dit browserprofiel. Geen account en geen analytics.", "welcome.language": "Interfacetaal",
   "step.welcome": "Welkom", "step.import": "Bladwijzers", "step.appearance": "Weergave", "step.review": "Controleren",
   "import.title": "Neem bladwijzers mee of begin opnieuw", "import.body": "Er wordt niets geschreven voordat de installatie is voltooid.", "import.default.title": "Start met Asterfold", "import.default.body": "Behoud de startwerkruimte. Importeren kan later via Instellingen.",
-  "import.chrome.title": "Importeren uit Chrome", "import.chrome.body": "Kopieer de bladwijzerstructuur zonder de originelen te wijzigen.", "import.chrome.permission": "Chrome vraagt pas na je klik om tijdelijke toegang. Verwerking gebeurt lokaal.", "import.chrome.denied": "Toegang is niet verleend. Kies een andere bron of probeer opnieuw.",
   "import.html.title": "Bladwijzer-HTML importeren", "import.html.body": "Kies een Netscape-bestand dat door een browser is geëxporteerd.", "import.backup.title": "Asterfold-back-up herstellen", "import.backup.body": "Valideer en bekijk de JSON-back-up voordat je deze toepast.",
   "import.preview": "{bookmarks} bladwijzers · {folders} mappen · {pages} pagina's · {boards} borden",
   "import.empty": "Geen bladwijzers gevonden in deze bron.",

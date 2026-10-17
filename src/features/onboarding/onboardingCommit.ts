@@ -1,7 +1,7 @@
 import type { AsterfoldDatabase } from "../../db/database";
 import { db } from "../../db/database";
 import { auditInvariants, getWorkspaceData, updateSettings } from "../../db/repository";
-import { ImportError } from "../../domain/errors";
+import { ImportError, WorkspaceLimitError } from "../../domain/errors";
 import {
   createBackup,
   importRecords,
@@ -45,13 +45,12 @@ async function performCommit(plan: OnboardingPlan, database: AsterfoldDatabase):
         skippedDuplicates: 0,
         invalid: [],
       };
-    } else if (plan.source === "chrome" || plan.source === "html") {
+    } else if (plan.source === "html") {
       if (plan.records.length === 0) throw new ImportError("A validated bookmark preview is required");
       importSummary = await importRecords(
         plan.records,
         {
           pageTitle: plan.importPageTitle,
-          ...(plan.source === "chrome" ? { source: "chrome" as const, sourceId: "chrome" } : {}),
         },
         plan.duplicateStrategy,
         database,
@@ -87,6 +86,7 @@ async function performCommit(plan: OnboardingPlan, database: AsterfoldDatabase):
     } catch {
       rollbackFailed = true;
     }
+    if (!rollbackFailed && error instanceof WorkspaceLimitError) throw error;
     const message = error instanceof Error ? error.message : "Onboarding commit failed";
     throw new OnboardingCommitError(message, rollbackFailed);
   }

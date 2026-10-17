@@ -129,8 +129,13 @@ export function useThemeRuntime(theme: ThemeConfig | undefined): ResolvedPerform
     storeStartupThemeSnapshot(dark, style as Record<string, unknown>, localStorage, activeTheme.motion, performanceMode);
     if (root.dataset.asterfoldReady === "true") return;
 
+    const activeWallpaperImage = performanceMode === "compatibility"
+      ? (style["--wallpaper-compat-image" as keyof typeof style] ?? style["--wallpaper-image" as keyof typeof style])
+      : performanceMode === "software"
+        ? (style["--wallpaper-software-image" as keyof typeof style] ?? style["--wallpaper-image" as keyof typeof style])
+        : style["--wallpaper-image" as keyof typeof style];
     void Promise.all([
-      waitForWallpaperAsset(style["--wallpaper-image" as keyof typeof style]),
+      waitForWallpaperAsset(activeWallpaperImage),
       document.fonts?.ready?.catch(() => undefined) ?? Promise.resolve(),
     ]).then(() => {
       if (!active) return;

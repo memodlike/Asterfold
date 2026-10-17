@@ -12,6 +12,7 @@ export interface StartupThemeSnapshot {
   motion: boolean;
   /** Rendering tier of the previous session, applied before first paint (v3+). */
   performance?: ResolvedPerformanceMode;
+  wallpaperDim?: number;
 }
 
 const SAFE_CANVAS = /^#[0-9a-f]{6}$/i;
@@ -33,6 +34,9 @@ export function parseStartupThemeSnapshot(raw: string | null): StartupThemeSnaps
     const motion = value.version >= 2 ? value.motion !== false : true;
     const snapshot: StartupThemeSnapshot = { version: value.version, theme: value.theme, canvas: value.canvas, wallpaper, motion };
     if (value.version === 3 && value.performance && PERFORMANCE_TIERS.includes(value.performance)) snapshot.performance = value.performance;
+    if (typeof value.wallpaperDim === "number" && Number.isFinite(value.wallpaperDim)) {
+      snapshot.wallpaperDim = Math.max(0, Math.min(1, value.wallpaperDim));
+    }
     return snapshot;
   } catch {
     return null;
@@ -54,6 +58,7 @@ export function applyStartupThemeSnapshot(root: HTMLElement, snapshot: StartupTh
   root.style.colorScheme = snapshot.theme;
   root.style.setProperty("--startup-canvas", snapshot.canvas);
   root.style.setProperty("--startup-wallpaper", snapshot.wallpaper);
+  root.style.setProperty("--startup-wallpaper-dim", String(snapshot.wallpaperDim ?? 0.16));
 }
 
 export function storeStartupThemeSnapshot(
@@ -65,9 +70,24 @@ export function storeStartupThemeSnapshot(
 ): void {
   const rawCanvas = stringStyleValue(style["--color-canvas"], "");
   const canvas = SAFE_CANVAS.test(rawCanvas) ? rawCanvas : dark ? "#16171a" : "#f1f2f4";
-  const rawWallpaper = stringStyleValue(style["--wallpaper-image"], "none");
+  const wallpaperKey = performance === "compatibility"
+    ? "--wallpaper-compat-image"
+    : performance === "software"
+      ? "--wallpaper-software-image"
+      : "--wallpaper-image";
+  const rawWallpaper = stringStyleValue(style[wallpaperKey] ?? style["--wallpaper-image"], "none");
   const wallpaper = SAFE_WALLPAPER.test(rawWallpaper) ? rawWallpaper : "none";
-  const snapshot: StartupThemeSnapshot = { version: 3, theme: dark ? "dark" : "light", canvas, wallpaper, motion, performance };
+  const rawDim = Number(style["--wallpaper-dim"]);
+  const wallpaperDim = Number.isFinite(rawDim) ? Math.max(0, Math.min(1, rawDim)) : undefined;
+  const snapshot: StartupThemeSnapshot = {
+    version: 3,
+    theme: dark ? "dark" : "light",
+    canvas,
+    wallpaper,
+    motion,
+    performance,
+    ...(wallpaperDim !== undefined ? { wallpaperDim } : {}),
+  };
   try {
     storage.setItem(STARTUP_SNAPSHOT_KEY, JSON.stringify(snapshot));
   } catch {

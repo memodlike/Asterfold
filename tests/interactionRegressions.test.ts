@@ -1,8 +1,10 @@
-import { createElement, type FormEvent } from "react";
+import { createElement, useState, type FormEvent } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Button } from "../src/components/Button";
 import { Modal } from "../src/components/Modal";
+import { SelectField } from "../src/components/SelectField";
+import { FloatingContextMenu } from "../src/components/FloatingContextMenu";
 import { useToasts } from "../src/components/ToastRegion";
 import { SearchPalette } from "../src/features/search/SearchPalette";
 import { I18nProvider } from "../src/i18n";
@@ -82,5 +84,98 @@ describe("interaction regressions", () => {
     exact.focus();
     fireEvent.keyDown(exact, { key: "Enter" });
     expect(onOpen).not.toHaveBeenCalled();
+  });
+
+  it("sanitizes sensitive toast text when privacy mode is enabled after push", () => {
+    function PrivacyToastHarness({ privacy }: { privacy: boolean }) {
+      const toasts = useToasts(privacy);
+      return createElement("div", null,
+        createElement("button", {
+          onClick: () => toasts.push({
+            message: "Secret Project → Trash",
+            privacyMessage: "Hidden bookmark → Trash",
+            actionLabel: "Undo",
+            onAction: vi.fn(),
+          }),
+        }, "Show"),
+        toasts.region,
+      );
+    }
+
+    const { rerender } = render(createElement(I18nProvider, { preference: "en", children: createElement(PrivacyToastHarness, { privacy: false }) }));
+    fireEvent.click(screen.getByRole("button", { name: "Show" }));
+    expect(screen.getByText("Secret Project → Trash")).toBeVisible();
+
+    // Enable privacy mode after the toast was already pushed
+    rerender(createElement(I18nProvider, { preference: "en", children: createElement(PrivacyToastHarness, { privacy: true }) }));
+    expect(screen.queryByText("Secret Project → Trash")).toBeNull();
+    expect(screen.getByText("Hidden bookmark → Trash")).toBeVisible();
+
+    // Disable privacy mode again
+    rerender(createElement(I18nProvider, { preference: "en", children: createElement(PrivacyToastHarness, { privacy: false }) }));
+    expect(screen.getByText("Secret Project → Trash")).toBeVisible();
+    expect(screen.queryByText("Hidden bookmark → Trash")).toBeNull();
+  });
+
+  it("dismisses an open SelectField on Escape without closing the containing Modal", async () => {
+    const onModalClose = vi.fn();
+    const options = [
+      { value: "opt-1", label: "Option 1" },
+      { value: "opt-2", label: "Option 2" },
+    ];
+    function ModalWithSelect() {
+      const [val, setVal] = useState("opt-1");
+      return createElement(Modal, {
+        open: true,
+        title: "Edit Item",
+        onClose: onModalClose,
+        children: createElement(SelectField, { value: val, options, onChange: setVal, label: "Choose option" }),
+      });
+    }
+    render(createElement(I18nProvider, { preference: "en", children: createElement(ModalWithSelect) }));
+
+    const trigger = screen.getByRole("combobox", { name: "Choose option" });
+    fireEvent.click(trigger);
+    expect(await screen.findByRole("listbox")).toBeInTheDocument();
+
+    // Pressing Escape while select is open must close only the select listbox
+    fireEvent.keyDown(trigger, { key: "Escape" });
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(onModalClose).not.toHaveBeenCalled();
+
+    // Pressing Escape again while select is closed closes the modal
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onModalClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("dismisses an open FloatingContextMenu on Escape without closing the containing Modal", () => {
+    const onModalClose = vi.fn();
+    const onMenuClose = vi.fn();
+    function ModalWithContextMenu({ menuOpen }: { menuOpen: boolean }) {
+      return createElement(Modal, {
+        open: true,
+        title: "Modal Title",
+        onClose: onModalClose,
+        children: createElement("div", null,
+          createElement("p", null, "Content"),
+          menuOpen ? createElement(FloatingContextMenu, {
+            label: "Item Actions",
+            point: { x: 50, y: 50 },
+            onClose: onMenuClose,
+            children: createElement("button", null, "Action 1"),
+          }) : null,
+        ),
+      });
+    }
+    const { rerender } = render(createElement(I18nProvider, { preference: "en", children: createElement(ModalWithContextMenu, { menuOpen: true }) }));
+    expect(screen.getByRole("menu", { name: "Item Actions" })).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onMenuClose).toHaveBeenCalled();
+    expect(onModalClose).not.toHaveBeenCalled();
+
+    rerender(createElement(I18nProvider, { preference: "en", children: createElement(ModalWithContextMenu, { menuOpen: false }) }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onModalClose).toHaveBeenCalledTimes(1);
   });
 });

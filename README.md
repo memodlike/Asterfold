@@ -176,7 +176,7 @@ Contribution guidance is available in [docs/development/CONTRIBUTING.md](docs/de
 
 ## Release artifacts
 
-Asterfold 3.8.2 produces a reproducible, cryptographically verifiable release containing:
+Asterfold 3.8.3 produces a reproducible, cryptographically verifiable release containing:
 
 - `Asterfold-Chrome.zip` (runtime Chrome Web Store bundle)
 - `chrome-unpacked.zip` (unpacked developer distribution)
@@ -188,6 +188,8 @@ Asterfold 3.8.2 produces a reproducible, cryptographically verifiable release co
 The release pipeline verifies Manifest V3 structure, permission policy, CSP, forbidden files, remote-code patterns, Store asset dimensions, Windows packaging, CodeQL, accessibility, and real unpacked-extension behavior.
 
 ## Release highlights
+
+**Asterfold 3.8.3** is a reliability and privacy release: website icons are now generated locally (no request to Google), the broken Chrome-bookmark import is replaced by HTML import with export instructions, backups stay exportable in every state, concurrent edits no longer overwrite each other, and glass follows every rendering tier and accessibility setting.
 
 **Asterfold 3.8.2** adds two workspace shortcuts: open every bookmark of a board at once (new tabs or a new window, with confirmation for large boards), and paste links straight onto a board — one link with ⌘/Ctrl+V or a whole list through a review dialog with duplicate detection. Still zero permissions and no network requests.
 
@@ -217,6 +219,7 @@ The repository does not claim Chrome Web Store publication, approval, user count
 
 ## Version history
 
+1. **v3.8.3 — Reliability, privacy & glass fixes.** Local monogram icons instead of Google S2, removal of the permission-less Chrome bookmark import, transactional board/page updates, workspace limits on every insertion path, order-preserving restore, privacy-safe toasts, nested Escape and bookmark Shift+F10 fixes, and glass corrections for Smooth glass, Lightweight, reduced transparency, increased contrast, forced colors and startup pre-paint.
 1. **v3.8.2 — Open Board & Paste links.** Board menu opens all links in new tabs or a new window through a strictly validated, 50-link-bounded runtime message re-checked in the service worker; quick paste adds a link to the focused or hovered board and multi-link paste opens a review dialog with new/duplicate/invalid counts, one transactional save and Undo. No new permissions.
 1. **v3.8.1 — Core tooling & dependency architecture modernization.** Upgrades frontend bundler to Vite 8 (Rolldown engine), WXT 0.21.4, Vitest 5, TypeScript 6.0.3, Lucide 1.52 with custom zero-telemetry brand icon adapter, React 19.3, Dexie 4.4.6, and Zod 4.6.5 with zero vulnerabilities.
 2. **v3.8.0 — Zero-permission architecture & resilient favicons.** Eliminates all manifest permissions (`permissions: []`, `optional_permissions: []`, `host_permissions: []`), removing all install-time warnings in Chrome while providing crisp, resilient domain favicons without invasive Favicon API access.

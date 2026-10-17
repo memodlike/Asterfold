@@ -21,6 +21,33 @@
 .app-launcher:hover .launcher-trigger::before, .launcher-trigger:focus-visible::before, .app-launcher.is-open .launcher-trigger::before { opacity: 1; transform: scaleX(1); }
 .app-launcher:hover .launcher-trigger span, .launcher-trigger:focus-visible span, .app-launcher.is-open .launcher-trigger span { opacity: 1; transform: none; }
 
+html[data-performance="software"] .launcher-trigger {
+  background: var(--color-surface-solid);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .launcher-trigger {
+    background: var(--color-surface-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-contrast: more) {
+  .launcher-trigger {
+    background: var(--color-surface-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (forced-colors: active) {
+  .launcher-trigger {
+    background: Canvas;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 /* Menu */
 .launcher-menu { --mat-alpha: var(--mat-alpha-menu); --enter-y: 10px; --enter-scale: .94; display: grid; width: 264px; padding: 6px; border-radius: var(--mat-radius-menu); color: var(--color-text); transform-origin: 18px calc(100% + 24px); animation: af-pop var(--dur-base) var(--ease-spring) both; }
 .launcher-menu__header { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 34px; margin-bottom: 4px; padding: 4px 8px 8px; border-bottom: 1px solid var(--mat-divider); }

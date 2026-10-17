@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Button } from "./Button";
 import { Modal } from "./Modal";
-import { useI18n } from "../i18n";
+import { WorkspaceLimitError } from "../domain/errors";
+import { useI18n, type MessageKey } from "../i18n";
 
 interface NameDialogProps {
   open: boolean;
@@ -17,17 +18,17 @@ export function NameDialog({ open, title, label, initialValue = "", submitLabel,
   const { t } = useI18n();
   const [value, setValue] = useState(initialValue);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(false);
-  useEffect(() => { if (open) { setValue(initialValue); setError(false); } }, [initialValue, open]);
+  const [error, setError] = useState<MessageKey | null>(null);
+  useEffect(() => { if (open) { setValue(initialValue); setError(null); } }, [initialValue, open]);
   const submit = async (): Promise<void> => {
     if (!value.trim()) return;
     setBusy(true);
-    setError(false);
+    setError(null);
     try {
       await onSubmit(value.trim());
       onClose();
-    } catch {
-      setError(true);
+    } catch (error) {
+      setError(error instanceof WorkspaceLimitError ? "error.workspaceLimit" : "error.actionFailed");
     } finally {
       setBusy(false);
     }
@@ -36,7 +37,7 @@ export function NameDialog({ open, title, label, initialValue = "", submitLabel,
     <Modal open={open} size="small" title={title} onClose={onClose} footer={<><Button onClick={onClose}>{t("generic.cancel")}</Button><Button variant="primary" disabled={busy || !value.trim()} onClick={() => void submit()}>{submitLabel ?? t("generic.save")}</Button></>}>
       <form className="form-stack" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
         <label>{label}<input autoFocus maxLength={240} value={value} onChange={(event) => setValue(event.target.value)} /></label>
-        {error ? <p className="inline-error" role="alert">{t("error.actionFailed")}</p> : null}
+        {error ? <p className="inline-error" role="alert">{t(error)}</p> : null}
       </form>
     </Modal>
   );

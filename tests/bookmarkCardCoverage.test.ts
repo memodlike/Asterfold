@@ -10,14 +10,12 @@ const mocks = vi.hoisted(() => ({
     transition: "transform 100ms",
     isDragging: false,
     attributes: { "aria-roledescription": "sortable" },
-    listeners: { onPointerDown: vi.fn() },
+    listeners: { onPointerDown: vi.fn(), onKeyDown: vi.fn() },
   },
-  faviconUrl: vi.fn(() => "chrome-extension://test/_favicon/example"),
 }));
 
 vi.mock("@dnd-kit/sortable", () => ({ useSortable: vi.fn(() => mocks.sortable) }));
 vi.mock("@dnd-kit/utilities", () => ({ CSS: { Transform: { toString: vi.fn(() => "translate3d(2px, 3px, 0)") } } }));
-vi.mock("../src/browser/api", () => ({ faviconUrl: mocks.faviconUrl }));
 
 import { BookmarkCard } from "../src/features/bookmarks/BookmarkCard";
 import { I18nProvider } from "../src/i18n";
@@ -72,7 +70,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.sortable.isDragging = false;
   mocks.sortable.transform = { x: 2, y: 3, scaleX: 1, scaleY: 1 };
-  mocks.faviconUrl.mockReturnValue("chrome-extension://test/_favicon/example");
   Object.defineProperty(HTMLElement.prototype, "offsetParent", { configurable: true, get: () => document.body });
   Object.defineProperty(HTMLElement.prototype, "getBoundingClientRect", { configurable: true, value: vi.fn(() => ({ x: 10, y: 20, left: 10, top: 20, right: 110, bottom: 60, width: 100, height: 40, toJSON: () => ({}) })) });
 });
@@ -89,7 +86,8 @@ describe("BookmarkCard complete behavior", () => {
     expect(card).toHaveStyle({ transform: "translate3d(2px, 3px, 0)", transition: "transform 100ms" });
     expect(mocks.sortable.setNodeRef).toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Open Example" })).toHaveAttribute("aria-roledescription", "sortable");
-    expect(container.querySelector("img")).toHaveAttribute("src", "chrome-extension://test/_favicon/example");
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.querySelector(".favicon__monogram")).toHaveTextContent("E");
   });
 
   it("opens normally and selects for every modified click", () => {
@@ -102,23 +100,28 @@ describe("BookmarkCard complete behavior", () => {
     expect(handlers.onSelect).toHaveBeenCalledWith(bookmark, expect.any(Object));
   });
 
-  it("falls back to a neutral icon after favicon failure and resets when the source changes", () => {
+  it("renders deterministic local monogram and updates when the bookmark changes", () => {
     const view = renderCard();
-    fireEvent.error(view.container.querySelector("img")!);
     expect(view.container.querySelector("img")).toBeNull();
-    expect(view.container.querySelector(".favicon svg")).toBeVisible();
+    expect(view.container.querySelector(".favicon__monogram")).toHaveTextContent("E");
 
-    const changed = { ...bookmark, id: "changed", url: "https://changed.test/", normalizedUrl: "https://changed.test/", hostname: "changed.test" };
-    mocks.faviconUrl.mockReturnValue("chrome-extension://test/_favicon/changed");
+    const changed = { ...bookmark, id: "changed", title: "Changed Site", url: "https://changed.test/", normalizedUrl: "https://changed.test/", hostname: "changed.test" };
     view.rerender(createElement(I18nProvider, { preference: "en", children: createElement(BookmarkCard, { ...view.props, bookmark: changed }) }));
-    expect(view.container.querySelector("img")).toHaveAttribute("src", "chrome-extension://test/_favicon/changed");
+    expect(view.container.querySelector("img")).toBeNull();
+    expect(view.container.querySelector(".favicon__monogram")).toHaveTextContent("C");
   });
 
-  it("uses a neutral globe instead of a site-identity fallback when no icon is available", () => {
-    mocks.faviconUrl.mockReturnValue("");
-    const view = renderCard();
+  it("uses a neutral globe in privacy mode or when no URL is available", () => {
+    const view = renderCard({ privacy: true });
+    expect(view.container.querySelector("img")).toBeNull();
+    expect(view.container.querySelector(".favicon__monogram")).toBeNull();
     expect(view.container.querySelector(".favicon svg")).toBeVisible();
     expect(view.container.querySelector(".favicon")).toHaveAttribute("aria-hidden", "true");
+
+    const noUrl = renderCard({ bookmark: { ...bookmark, url: "", normalizedUrl: "" } });
+    expect(noUrl.container.querySelector("img")).toBeNull();
+    expect(noUrl.container.querySelector(".favicon__monogram")).toBeNull();
+    expect(noUrl.container.querySelector(".favicon svg")).toBeVisible();
   });
 
   it("routes every context action and closes the menu", () => {
@@ -139,21 +142,38 @@ describe("BookmarkCard complete behavior", () => {
   });
 
   it("opens the context menu with Shift+F10 and closes it without an action", () => {
-    renderCard();
+    const parentBoardHandler = vi.fn();
+    render(createElement("div", { onKeyDown: parentBoardHandler }, createElement(I18nProvider, { preference: "en", children: createElement(BookmarkCard, {
+      bookmark,
+      faviconSize: 32,
+      privacy: false,
+      selected: false,
+      onOpen: vi.fn(),
+      onEdit: vi.fn(),
+      onMove: vi.fn(),
+      onDuplicate: vi.fn(),
+      onDelete: vi.fn(),
+      onCopyUrl: vi.fn(),
+      onCopyMarkdown: vi.fn(),
+      onSelect: vi.fn(),
+    }) })));
     const open = screen.getByRole("button", { name: "Open Example" });
     fireEvent.keyDown(open, { key: "F10", shiftKey: true });
     expect(screen.getByRole("menu", { name: "Actions for Example" })).toHaveStyle({ left: "110px", top: "60px" });
+    expect(mocks.sortable.listeners.onKeyDown).not.toHaveBeenCalled();
+    expect(parentBoardHandler).not.toHaveBeenCalled();
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByRole("menu")).toBeNull();
+
+    fireEvent.keyDown(open, { key: "ArrowDown" });
+    expect(mocks.sortable.listeners.onKeyDown).toHaveBeenCalledWith(expect.objectContaining({ key: "ArrowDown" }));
   });
 
   it("protects the accessible tree and clipboard commands in privacy mode", () => {
-    mocks.faviconUrl.mockReturnValue("");
     renderCard({ privacy: true });
     expect(screen.getByRole("button", { name: "Open hidden bookmark" })).toBeVisible();
     expect(screen.getByText("••••••••")).toHaveClass("private-content", "private-placeholder");
     expect(document.querySelector(".favicon svg")).toBeVisible();
-    expect(mocks.faviconUrl).not.toHaveBeenCalled();
     fireEvent.contextMenu(document.querySelector("article")!);
     expect(screen.getByRole("menu", { name: "Hidden bookmark actions" })).toBeVisible();
     expect(screen.getByRole("menuitem", { name: "Copy URL" })).toBeDisabled();

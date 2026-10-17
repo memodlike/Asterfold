@@ -18,7 +18,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .board-track--left { margin-right: auto; }
 .board-track--center { margin-inline: auto; }
 .board-track--right { margin-left: auto; }
-.board { position: relative; min-width: 0; min-height: 0; height: auto; padding: 11px 11px 10px; border: 1px solid var(--color-border); border-radius: calc(var(--radius-card) + 3px); color: var(--color-text); background: transparent; box-shadow: var(--shadow-panel); contain: layout style; overflow: hidden; transition: border-color 130ms ease; }
+.board { position: relative; z-index: 0; min-width: 0; min-height: 0; height: auto; padding: 11px 11px 10px; border: 1px solid var(--color-border); border-radius: calc(var(--radius-card) + 3px); color: var(--color-text); background: transparent; box-shadow: var(--shadow-panel); contain: layout style; overflow: hidden; transition: border-color 130ms ease; }
 /* The glass material (blur, tint, sheen, top highlight) is one inner layer, exactly the board's shape
    and without the drop shadow. With backdrop-filter on the shadowed board itself, Chrome can grow the
    blur layer into the shadow area and paint a light band with a hard edge over the board above while
@@ -47,7 +47,7 @@ html[data-performance="software"] .board__glare, .motion-disabled .board__glare 
 .board__items { display: grid; align-content: start; gap: 0; min-width: 0; }
 .board__items--columns-1 { grid-template-columns: minmax(0, 1fr); }
 .board__items--columns-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 5px; }
-.board__empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 96px; padding: 24px 12px; border: 1px dashed rgb(var(--border-rgb) / .22); border-radius: 11px; color: var(--color-text-secondary); background: rgb(var(--border-rgb) / .025); font-size: 12px; transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease; }
+.board__empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 96px; padding: 24px 12px; border: 1px dashed rgb(var(--border-rgb) / .22); border-radius: 11px; color: var(--color-text); background: rgb(var(--border-rgb) / .025); font-size: 12px; transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease; }
 .board__empty:hover, .board__empty:focus-visible { border-color: color-mix(in srgb, var(--color-accent) 60%, transparent); color: var(--color-text); background: rgb(var(--border-rgb) / .055); }
 
 .bookmark-card { position: relative; min-width: 0; height: var(--bookmark-row-height, 22px); border-radius: 7px; contain: layout style; }
@@ -64,8 +64,10 @@ html[data-performance="software"] .board__glare, .motion-disabled .board__glare 
 .favicon { display: grid; width: min(18px, calc(var(--bookmark-row-height) - 4px), calc(var(--favicon-size) / 2)); height: min(18px, calc(var(--bookmark-row-height) - 4px), calc(var(--favicon-size) / 2)); place-items: center; flex: 0 0 min(18px, calc(var(--bookmark-row-height) - 4px), calc(var(--favicon-size) / 2)); overflow: hidden; color: var(--color-text-secondary); }
 .favicon img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .favicon svg { width: 82%; height: 82%; opacity: .72; }
+.favicon__monogram { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: 4px; color: #ffffff; font-size: 11px; font-weight: 700; line-height: 1; text-transform: uppercase; user-select: none; }
 .favicon--large { display: contents; }
 .favicon--large .favicon { width: min(48px, var(--favicon-size)); height: min(48px, var(--favicon-size)); flex-basis: min(48px, var(--favicon-size)); }
+.favicon--large .favicon__monogram { border-radius: 8px; font-size: 20px; }
 .private-content { user-select: none; }
 .private-placeholder { color: transparent; background: linear-gradient(90deg, rgb(var(--border-rgb) / .08), rgb(var(--border-rgb) / .17), rgb(var(--border-rgb) / .08)); background-size: 100% 65%; background-position: center; background-repeat: no-repeat; border-radius: 4px; }
 
@@ -253,6 +255,6 @@ html[data-performance="software"] .board::before { background-image: none; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } .bookmark-card:not(.is-dragging):hover .bookmark-card__surface, .bookmark-card:not(.is-dragging):focus-within .bookmark-card__surface, .bookmark-card.is-selected:not(.is-dragging) .bookmark-card__surface, .bookmark-card .favicon { transform: none !important; } }
 /* Accessibility fallbacks. `.app-shell .board` matches the specificity of the tier rules above
    (`.performance-compatibility .board`), so the solid fallback also wins in Smooth glass. */
-@media (prefers-reduced-transparency: reduce) { .board, .app-shell .board, .app-shell .board::before, .modal, .launcher-menu, .launcher-discovery, .context-menu, .empty-state, .bulk-toolbar, .toast, .spotlight__field, .spotlight__panel, .settings-tile { background: var(--color-surface-solid); backdrop-filter: none; -webkit-backdrop-filter: none; } .wallpaper { filter: none; transform: none; } }
-@media (prefers-contrast: more) { .board, .app-shell .board, .app-shell .board::before, .modal, .launcher-menu, .launcher-discovery, .context-menu, .spotlight__field, .spotlight__panel, .settings-tile { border-width: 2px; background: var(--color-surface-solid); backdrop-filter: none; } .bookmark-card:hover, .bookmark-card:focus-within { outline: 2px solid currentColor; } }
-@media (forced-colors: active) { .board, .app-shell .board, .app-shell .board::before, .modal, .launcher-menu, .launcher-discovery, .context-menu, .toast, .spotlight__field, .spotlight__panel, .settings-tile { border: 1px solid CanvasText; background: Canvas; backdrop-filter: none; } .bookmark-card:hover, button:hover { outline: 1px solid Highlight; } .wallpaper { display: none; } }
+@media (prefers-reduced-transparency: reduce) { .board, .app-shell .board, .app-shell .board::before, .modal, .launcher-menu, .launcher-discovery, .context-menu, .empty-state, .bulk-toolbar, .toast, .spotlight__field, .spotlight__panel, .settings-tile, .select-popover, .onboarding-tile, .drag-overlay, .settings-modal .modal__header, .launcher-trigger { background: var(--color-surface-solid); backdrop-filter: none; -webkit-backdrop-filter: none; } .wallpaper { filter: none; transform: none; } }
+@media (prefers-contrast: more) { .board, .app-shell .board, .app-shell .board::before, .modal, .launcher-menu, .launcher-discovery, .context-menu, .empty-state, .bulk-toolbar, .toast, .spotlight__field, .spotlight__panel, .settings-tile, .select-popover, .onboarding-tile, .drag-overlay, .settings-modal .modal__header, .launcher-trigger { border-width: 2px; background: var(--color-surface-solid); backdrop-filter: none; } .bookmark-card:hover, .bookmark-card:focus-within { outline: 2px solid currentColor; } }
+@media (forced-colors: active) { .board, .app-shell .board, .app-shell .board::before, .modal, .launcher-menu, .launcher-discovery, .context-menu, .empty-state, .bulk-toolbar, .toast, .spotlight__field, .spotlight__panel, .settings-tile, .select-popover, .onboarding-tile, .drag-overlay, .settings-modal .modal__header, .launcher-trigger { border: 1px solid CanvasText; background: Canvas; backdrop-filter: none; } .bookmark-card:hover, button:hover { outline: 1px solid Highlight; } .wallpaper { display: none; } }

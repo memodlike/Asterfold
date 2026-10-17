@@ -39,4 +39,13 @@ describe("Board rendering & pointer highlight invariants", () => {
     expect(glareLitBody).not.toContain("will-change: transform");
     expect(glareLitBody).toContain("opacity: 1");
   });
+
+  it("contains negative z-index glass layers with an integer z-index without creating a backdrop root (DEFECT-04)", () => {
+    const boardRuleMatch = /\.board\s*\{([^}]+)\}/.exec(globalCss);
+    expect(boardRuleMatch).not.toBeNull();
+    const boardBody = boardRuleMatch![1]!;
+
+    expect(boardBody).toContain("z-index: 0");
+    expect(boardBody).not.toContain("isolation: isolate");
+  });
 });

@@ -1,3 +1,15 @@
+# Asterfold 3.8.3
+
+## Reliability, privacy & glass fixes
+
+- **No network for icons**: website icons are generated locally (first letter on a deterministic colour). Bookmark hostnames are no longer sent to `www.google.com/s2/favicons`.
+- **Chrome bookmark import removed**: it needed the `bookmarks` permission, which the zero-permission manifest does not declare, so it always failed. Import an HTML export instead; Settings and first run explain how to export from Chrome.
+- **Backups always exportable**: deleting the only Page no longer breaks JSON/HTML/Markdown export; every insertion path (create, paste, duplicate, import, restore) respects the workspace limits a backup can hold, with a clear message.
+- **Consistent edits and restores**: Board and Page edits made from two New Tabs no longer overwrite each other; restoring a Page or Board keeps its saved order.
+- **Privacy Mode**: toasts that were already on screen switch to privacy-safe text when Privacy Mode turns on.
+- **Keyboard**: Shift+F10 on a bookmark opens the bookmark menu; Escape in a dropdown or menu closes only that popup; Enter on a focused popup button activates it.
+- **Glass**: Smooth glass and Lightweight no longer blur behind the launcher button; reduced transparency, increased contrast and forced colors make every overlay solid; the new tab pre-paint uses the saved wallpaper dim and the tier's lighter wallpaper; the empty-board hint keeps AA contrast in the light theme.
+
 # Asterfold 3.8.2
 
 ## Open Board & Paste links

@@ -40,3 +40,9 @@ export class DuplicateError extends DomainError {
     super(message, "DUPLICATE_ERROR");
   }
 }
+
+export class WorkspaceLimitError extends DomainError {
+  public constructor() {
+    super("Workspace limit reached. Empty Trash or permanently delete items before adding more pages, boards, or bookmarks.", "WORKSPACE_LIMIT");
+  }
+}

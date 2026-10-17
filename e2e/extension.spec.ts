@@ -419,8 +419,10 @@ test.describe.serial("Asterfold MV3 release", () => {
 
     const popup = await context.newPage();
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
-    await expect(popup.locator(".workspace-button")).toBeVisible();
+    await expect(popup.locator(".workspace-button")).toHaveCount(0);
+    await expect(popup.getByText("Chrome")).toHaveCount(0);
     await expect(popup.locator(".save-button")).toBeVisible();
+    await expect(popup.getByRole("button", { name: "Открыть рабочее пространство" })).toBeVisible();
     await expect(popup.getByText(`Asterfold ${packageVersion}`)).toBeVisible();
     await popup.close();
     await workspacePage.close();
@@ -515,15 +517,10 @@ test.describe.serial("Asterfold MV3 release", () => {
     await setWorkspacePerformanceMode(page, "quality");
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("data-performance", "quality");
-    const faviconSource = await page.getByRole("button", { name: "Playwright docs" }).locator("img").getAttribute("src");
-    expect(faviconSource).not.toBeNull();
-    const favicon = new URL(faviconSource!);
-    expect(favicon.protocol).toBe("https:");
-    expect(favicon.hostname).toBe("www.google.com");
-    expect(favicon.pathname).toBe("/s2/favicons");
-    expect(favicon.searchParams.get("domain")).toBe("playwright.dev");
     const bookmarkButton = page.getByRole("button", { name: "Playwright docs" });
+    await expect(bookmarkButton.locator("img")).toHaveCount(0);
     await expect(bookmarkButton.locator(".favicon")).toBeVisible();
+    await expect(bookmarkButton.locator(".favicon__monogram")).toHaveText("P");
     await bookmarkButton.hover();
     await page.waitForTimeout(240);
     const hoverState = await bookmarkButton.evaluate((button) => {

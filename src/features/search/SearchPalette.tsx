@@ -5,7 +5,6 @@ import { BookmarkSearchEngine, createSearchDocuments, type SearchField, type Sea
 import { Modal } from "../../components/Modal";
 import { SelectField } from "../../components/SelectField";
 import { BrowserFavicon } from "../../components/BrowserFavicon";
-import { faviconUrl } from "../../browser/api";
 import { useI18n } from "../../i18n";
 import { primaryShortcut } from "../../browser/platform";
 import { useLiquidGlass } from "../performance/liquidGlass";
@@ -111,12 +110,11 @@ export function SearchPalette(props: SearchPaletteProps) {
           {results.map((result, index) => {
             const bookmark = bookmarkById.get(result.id);
             if (!bookmark) return null;
-            const faviconSource = props.privacy ? "" : faviconUrl(bookmark.url, 32);
             const active = index === activeIndex;
             return (
               <div key={result.id} id={`spotlight-result-${result.id}`} role="listitem" className={`spotlight__result ${active ? "is-active" : ""}`} onMouseEnter={() => setActiveIndex(index)}>
                 <button type="button" aria-current={active ? "true" : undefined} className="spotlight__open" onClick={() => { props.onOpen(bookmark); close(); }}>
-                  <span className="spotlight__favicon"><BrowserFavicon source={faviconSource} privacy={props.privacy} fallback={<span>{result.hostname[0]?.toUpperCase()}</span>} /></span>
+                  <span className="spotlight__favicon"><BrowserFavicon url={bookmark.url} title={bookmark.title} privacy={props.privacy} /></span>
                   <span className="spotlight__text">
                     <strong>{highlightMatch(result.title, query)}</strong>
                     <small>{highlightMatch(result.hostname, query)}</small>

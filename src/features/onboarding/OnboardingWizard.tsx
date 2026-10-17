@@ -15,16 +15,15 @@ import {
   Languages,
   Moon,
   Palette,
-  RotateCcw,
   ShieldCheck,
   Sparkles,
   Sun,
 } from "lucide-react";
 import type { Density, LocalePreference, ThemeMode, WorkspaceData } from "../../domain/models";
+import { WorkspaceLimitError } from "../../domain/errors";
 import { IMPORT_LIMITS } from "../../domain/importLimits";
 import { validateTheme } from "../../domain/themes";
 import { Button } from "../../components/Button";
-import { ChromeIcon } from "../../components/ChromeIcon";
 import { LocaleFlag } from "../../components/LocaleFlag";
 import { Modal } from "../../components/Modal";
 import { SelectField, type SelectOption } from "../../components/SelectField";
@@ -32,7 +31,6 @@ import { localeOptions, translate } from "../../i18n";
 import { parseBackupOffThread, parseHtmlOffThread } from "../../services/importWorker";
 import { publishThemePreview } from "../appearance/themePreview";
 import { BUILTIN_WALLPAPERS } from "../appearance/themeRuntime";
-import { readChromeBookmarks } from "./chromeBookmarkImport";
 import { commitOnboardingPlan } from "./onboardingCommit";
 import { onboardingText, type OnboardingMessageKey } from "./onboardingMessages";
 import {
@@ -48,7 +46,7 @@ interface OnboardingWizardProps {
   onCompleted?: () => void;
 }
 
-const SOURCE_ORDER: readonly OnboardingSource[] = ["default", "chrome", "html", "backup"];
+const SOURCE_ORDER: readonly OnboardingSource[] = ["default", "html", "backup"];
 
 export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardProps) {
   const initialLocale = workspace.settings.locale;
@@ -67,8 +65,6 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
   const [parsing, setParsing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [chromeDenied, setChromeDenied] = useState(false);
-  const [permissionRemoved, setPermissionRemoved] = useState(false);
   const [confirmSkip, setConfirmSkip] = useState(false);
   const htmlInputRef = useRef<HTMLInputElement>(null);
   const backupInputRef = useRef<HTMLInputElement>(null);
@@ -81,10 +77,10 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
   const languageOptions = useMemo<ReadonlyArray<SelectOption>>(
     () => localeOptions.map((option) => ({
       value: option.value,
-      label: option.label,
+      label: option.value === "auto" ? translate(plan.locale, "settings.languageAuto") : option.label,
       icon: <LocaleFlag locale={option.value} />,
     })),
-    [],
+    [plan.locale],
   );
 
   useEffect(() => {
@@ -104,39 +100,12 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
   const selectSource = (source: OnboardingSource): void => {
     parseControllerRef.current?.abort();
     setParsing(false);
-    setChromeDenied(false);
-    setPermissionRemoved(false);
     patchPlan({ source, records: [], backup: null, preview: null });
   };
 
   const setLocale = (value: string): void => {
     const locale = value as LocalePreference;
     patchPlan({ locale, importPageTitle: translate(locale, "settings.importedBookmarks") });
-  };
-
-  const loadChrome = async (): Promise<void> => {
-    setError(null);
-    setChromeDenied(false);
-    setParsing(true);
-    try {
-      const result = await readChromeBookmarks(true);
-      if (result.status === "denied") {
-        setChromeDenied(true);
-        patchPlan({ source: "chrome", records: [], backup: null, preview: null });
-        return;
-      }
-      setPermissionRemoved(result.permissionRemoved);
-      patchPlan({
-        source: "chrome",
-        records: result.records,
-        backup: null,
-        preview: recordPreview("chrome", t("import.chrome.title"), result.records),
-      });
-    } catch {
-      setError(t("status.error"));
-    } finally {
-      setParsing(false);
-    }
   };
 
   const parseFile = async (file: File, kind: "html" | "backup"): Promise<void> => {
@@ -205,11 +174,6 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
   // Choosing a source starts it in the same click: Chrome's permission prompt and the file
   // picker both require the user gesture, so nothing may await before them.
   const chooseSource = (source: OnboardingSource): void => {
-    if (source === "chrome") {
-      selectSource("chrome");
-      void loadChrome();
-      return;
-    }
     selectSource(source);
     if (source === "html") htmlInputRef.current?.click();
     if (source === "backup") backupInputRef.current?.click();
@@ -244,9 +208,9 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
       await commitOnboardingPlan(finalPlan);
       publishThemePreview(null);
       onCompleted?.();
-    } catch {
+    } catch (error) {
       publishThemePreview(null);
-      setError(t("status.error"));
+      setError(error instanceof WorkspaceLimitError ? translate(plan.locale, "error.workspaceLimit") : t("status.error"));
       setConfirmSkip(false);
     } finally {
       finishGuardRef.current = false;
@@ -256,7 +220,6 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
 
   const sources: Record<OnboardingSource, { title: string; body: string; icon: typeof Sparkles }> = {
     default: { title: t("import.default.title"), body: t("import.default.body"), icon: Sparkles },
-    chrome: { title: t("import.chrome.title"), body: t("import.chrome.body"), icon: ChromeIcon },
     html: { title: t("import.html.title"), body: t("import.html.body"), icon: FileText },
     backup: { title: t("import.backup.title"), body: t("import.backup.body"), icon: FileJson },
   };
@@ -265,22 +228,13 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
 
   const renderImportStatus = () => {
     if (parsing) return <p className="onboarding-status" role="status">{t("import.parsing")}</p>;
-    if (plan.source === "chrome" && chromeDenied) {
-      return (
-        <div className="onboarding-status is-warning" role="status">
-          <span>{t("import.chrome.denied")}</span>
-          <button type="button" className="onboarding-link" onClick={() => void loadChrome()}><RotateCcw size={14} aria-hidden="true" />{t("action.retry")}</button>
-        </div>
-      );
-    }
-    if (!plan.preview) return plan.source === "chrome" ? <p className="onboarding-status">{t("import.chrome.permission")}</p> : null;
+    if (!plan.preview) return null;
     return (
       <div className="onboarding-status is-ready" aria-live="polite">
         <span className="onboarding-status__title"><Check size={15} aria-hidden="true" /><strong>{plan.preview.label}</strong></span>
         <span>{t("import.summary", { bookmarks: plan.preview.bookmarks, boards: plan.preview.boards })}</span>
         {plan.preview.bookmarks === 0 ? <em>{t("import.empty")}</em> : null}
-        {permissionRemoved ? <span className="onboarding-status__note">{translate(plan.locale, "settings.permissionOnDemand")}</span> : null}
-        {plan.source === "chrome" || plan.source === "html" ? (
+        {plan.source === "html" ? (
           <label className="onboarding-switch">
             <span>{t("import.skipDuplicates")}</span>
             <input type="checkbox" role="switch" checked={plan.duplicateStrategy === "skip"} onChange={(event) => patchPlan({ duplicateStrategy: event.target.checked ? "skip" : "allow" })} />
@@ -359,6 +313,7 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
               );
             })}
           </div>
+          <p className="onboarding-status__note">{translate(plan.locale, "settings.chromeExportHint")}</p>
           {renderImportStatus()}
           <input ref={htmlInputRef} type="file" accept=".html,.htm,text/html" hidden onChange={handleFile("html")} />
           <input ref={backupInputRef} type="file" accept=".json,application/json" hidden onChange={handleFile("backup")} />

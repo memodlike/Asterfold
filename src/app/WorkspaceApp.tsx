@@ -1,3 +1,4 @@
+import { WorkspaceLimitError } from "../domain/errors";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
 import { Download, Sparkles, X } from "lucide-react";
 import type { Board, Bookmark, Page, WorkspaceData } from "../domain/models";
@@ -72,7 +73,8 @@ export function WorkspaceApp() {
 
 function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   const { t } = useI18n();
-  const toasts = useToasts();
+  const { privacy, setPrivacy } = usePrivacyMode(workspace.settings);
+  const toasts = useToasts(privacy);
   const { push: pushToast } = toasts;
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -89,7 +91,6 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
   const initialSettingsSeen = useRef(false);
   const performanceMode = useThemeRuntime(workspace.settings.theme);
-  const { privacy, setPrivacy } = usePrivacyMode(workspace.settings);
   const privacyRef = useRef(privacy);
   useEffect(() => { privacyRef.current = privacy; }, [privacy]);
   const blockingOverlayOpen = pasteIntent !== null || searchOpen || settingsOpen || trashOpen || nameIntent !== null || moveIntent !== null || editor !== null || openBoardIntent !== null;
@@ -133,11 +134,13 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
       pushToast({ message: t("paste.already") });
       return;
     }
-    const hidden = privacyRef.current;
     pushToast({
       message: single
-        ? t("paste.addedOne", { title: hidden ? t("privacy.hiddenBookmark") : created[0]!.title, board: hidden ? t("generic.board") : board.title })
-        : t("paste.addedMany", { count: created.length, board: hidden ? t("generic.board") : board.title }),
+        ? t("paste.addedOne", { title: created[0]!.title, board: board.title })
+        : t("paste.addedMany", { count: created.length, board: board.title }),
+      privacyMessage: single
+        ? t("paste.addedOne", { title: t("privacy.hiddenBookmark"), board: t("generic.board") })
+        : t("paste.addedMany", { count: created.length, board: t("generic.board") }),
       tone: "success",
       actionLabel: t("generic.undo"),
       onAction: () => bulkDeleteBookmarks(created.map((bookmark) => bookmark.id)),
@@ -199,7 +202,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
       }
       void createBookmarksBulk(board.id, analysis.items)
         .then((created) => pasteCreated(created, board, true))
-        .catch(() => pushToast({ message: t("paste.failed"), tone: "error" }));
+        .catch((error: unknown) => pushToast({ message: t(error instanceof WorkspaceLimitError ? "error.workspaceLimit" : "paste.failed"), tone: "error" }));
     };
     window.addEventListener("paste", handlePaste);
     return () => window.removeEventListener("paste", handlePaste);
@@ -231,7 +234,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
             : "error.navigationFailed";
         notifyError(t(key));
       } else {
-        notifyError(t("error.actionFailed"));
+        notifyError(t(error instanceof WorkspaceLimitError ? "error.workspaceLimit" : "error.actionFailed"));
       }
     }
   };
@@ -250,20 +253,35 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   const deleteBoard = (board: Board): void => {
     void run(async () => {
       await softDeleteBoard(board.id);
-      toasts.push({ message: `${privacy ? t("generic.board") : board.title} → ${t("generic.trash")}`, actionLabel: t("generic.undo"), onAction: async () => { await restoreBoard(board.id); } });
+      toasts.push({
+        message: `${board.title} → ${t("generic.trash")}`,
+        privacyMessage: `${t("generic.board")} → ${t("generic.trash")}`,
+        actionLabel: t("generic.undo"),
+        onAction: async () => { await restoreBoard(board.id); },
+      });
     });
   };
   const deleteBookmark = (bookmark: Bookmark): void => {
     void run(async () => {
       await softDeleteBookmark(bookmark.id);
       setSelectedIds((current) => { const next = new Set(current); next.delete(bookmark.id); return next; });
-      toasts.push({ message: `${privacy ? t("privacy.hiddenBookmark") : bookmark.title} → ${t("generic.trash")}`, actionLabel: t("generic.undo"), onAction: async () => { await restoreBookmark(bookmark.id); } });
+      toasts.push({
+        message: `${bookmark.title} → ${t("generic.trash")}`,
+        privacyMessage: `${t("privacy.hiddenBookmark")} → ${t("generic.trash")}`,
+        actionLabel: t("generic.undo"),
+        onAction: async () => { await restoreBookmark(bookmark.id); },
+      });
     });
   };
   const deletePage = (page: Page): void => {
     void run(async () => {
       await softDeletePage(page.id);
-      toasts.push({ message: `${privacy ? t("generic.page") : page.title} → ${t("generic.trash")}`, actionLabel: t("generic.undo"), onAction: async () => { await restorePage(page.id); } });
+      toasts.push({
+        message: `${page.title} → ${t("generic.trash")}`,
+        privacyMessage: `${t("generic.page")} → ${t("generic.trash")}`,
+        actionLabel: t("generic.undo"),
+        onAction: async () => { await restorePage(page.id); },
+      });
     });
   };
   const openBookmark = (bookmark: Bookmark): void => { void run(() => openUrl(bookmark.url, bookmark.openMode)); };
