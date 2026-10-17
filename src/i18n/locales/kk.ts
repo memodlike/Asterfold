@@ -244,6 +244,7 @@ export const kk: Record<MessageKey, string> = {
   "error.emptyTrashFailed": "Себетті тазалау мүмкін болмады",
   "error.deletePermanentFailed": "Элементті біржола жою мүмкін болмады",
   "error.saveBookmarkFailed": "Бетбелгіні сақтау мүмкін болмады",
+  "error.workspaceLimit": "Жұмыс кеңістігінің шегіне жеттіңіз. Жаңа беттер, блоктар немесе бетбелгілер қоспас бұрын себетті тазалаңыз немесе элементтерді біржола жойыңыз.",
   "error.actionFailed": "Әрекетті орындау мүмкін болмады",
   "error.navigationUnsafe": "Қауіпті сілтеме бұғатталды",
   "error.navigationFailed": "Сілтемені ашу мүмкін болмады",

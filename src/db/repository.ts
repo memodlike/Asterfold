@@ -12,7 +12,6 @@ import type {
 import { DuplicateError, PersistenceError, ValidationError } from "../domain/errors";
 import { allocateAtEnd, allocateManyAtEnd, compareRanks, evenlySpacedRanks, moveMany, validateScope } from "../domain/ordering";
 import { normalizeUrl, parseSafeNavigationUrl, type NormalizedUrl } from "../domain/urls";
-import { IMPORT_LIMITS } from "../domain/importLimits";
 import { MAX_PASTE_URLS } from "../domain/pasteLinks";
 import { validateTheme } from "../domain/themes";
 import { appSettingsSchema, snapshotSchema, wallpaperMetadataSchema } from "../domain/schemas";
@@ -22,6 +21,7 @@ import { recoverBookmarkTitle } from "../domain/bookmarkNaming";
 import { createId, nowIso } from "../utils/ids";
 import { processWallpaper } from "../services/wallpaper";
 import { createDefaultSettings } from "./defaults";
+import { assertCapacity } from "./capacity";
 import { db, type AsterfoldDatabase } from "./database";
 
 function sortByPosition<T extends { position: string }>(items: T[]): T[] {
@@ -94,6 +94,8 @@ export async function ensureStarterWorkspace(database: AsterfoldDatabase = db): 
 
     const pages = await activePages(database);
     if (pages.length === 0) {
+      await assertCapacity(database, "pages", 1);
+      await assertCapacity(database, "boards", 1);
       const timestamp = nowIso();
       const pageId = createId();
       const boardId = createId();
@@ -227,6 +229,7 @@ export async function createPage(
         candidate.version += 1;
       });
     }
+    await assertCapacity(database, "pages", 1);
     await database.pages.add(page);
     await database.settings.update("app", { activePageId: page.id, updatedAt: timestamp });
     return page;
@@ -234,9 +237,11 @@ export async function createPage(
 }
 
 export async function renamePage(id: string, title: string, database: AsterfoldDatabase = db): Promise<void> {
-  const page = await database.pages.get(id);
-  if (!page || page.deletedAt !== null) throw new ValidationError("Page not found");
-  await database.pages.update(id, { title: normalizeEntityTitle(title, page.title), updatedAt: nowIso(), version: page.version + 1 });
+  await database.transaction("rw", database.pages, async () => {
+    const page = await database.pages.get(id);
+    if (!page || page.deletedAt !== null) throw new ValidationError("Page not found");
+    await database.pages.update(id, { title: normalizeEntityTitle(title, page.title), updatedAt: nowIso(), version: page.version + 1 });
+  });
 }
 
 export async function setDefaultPage(id: string, database: AsterfoldDatabase = db): Promise<void> {
@@ -295,13 +300,16 @@ export async function duplicatePage(id: string, database: AsterfoldDatabase = db
       updatedAt: timestamp,
       version: 1,
     };
+    await assertCapacity(database, "pages", 1);
     await database.pages.add(page);
     const boards = await activeBoards(database, id);
     for (const board of boards) {
       const boardId = createId();
+      await assertCapacity(database, "boards", 1);
       await database.boards.add({ ...board, id: boardId, pageId, createdAt: timestamp, updatedAt: timestamp, version: 1 });
       const bookmarks = await activeBookmarks(database, board.id);
       if (bookmarks.length > 0) {
+        await assertCapacity(database, "bookmarks", bookmarks.length);
         await database.bookmarks.bulkAdd(bookmarks.map((bookmark) => ({ ...bookmark, id: createId(), boardId, createdAt: timestamp, updatedAt: timestamp, version: 1 })));
       }
     }
@@ -366,6 +374,8 @@ async function createReplacementPage(database: AsterfoldDatabase): Promise<Page>
     deletedBatchId: null,
     version: 1,
   };
+  await assertCapacity(database, "pages", 1);
+  await assertCapacity(database, "boards", 1);
   await database.pages.add(page);
   await database.boards.add({
     id: boardId,
@@ -405,7 +415,7 @@ export async function restorePage(id: string, database: AsterfoldDatabase = db):
     if (rebalancedPages.length > 0) await database.pages.bulkPut(rebalancedPages);
     await database.pages.update(id, { position: pageAllocation.position, deletedAt: null, deletedBatchId: null, updatedAt: timestamp, version: page.version + 1 });
     if (batchId) {
-      const boardsToRestore = await database.boards.where("pageId").equals(id).filter((board) => board.deletedBatchId === batchId).toArray();
+      const boardsToRestore = sortByPosition(await database.boards.where("pageId").equals(id).filter((board) => board.deletedBatchId === batchId).toArray());
       const activeBoardScope = await activeBoards(database, id);
       const boardAllocation = allocateManyAtEnd(activeBoardScope, boardsToRestore.length);
       const previousBoardPositions = new Map(activeBoardScope.map((item) => [item.id, item.position]));
@@ -423,7 +433,7 @@ export async function restorePage(id: string, database: AsterfoldDatabase = db):
       }));
       if (restoredBoards.length > 0) await database.boards.bulkPut(restoredBoards);
       for (const board of restoredBoards) {
-        const bookmarksToRestore = await database.bookmarks.where("boardId").equals(board.id).filter((bookmark) => bookmark.deletedBatchId === batchId).toArray();
+        const bookmarksToRestore = sortByPosition(await database.bookmarks.where("boardId").equals(board.id).filter((bookmark) => bookmark.deletedBatchId === batchId).toArray());
         const activeBookmarkScope = await activeBookmarks(database, board.id);
         const bookmarkAllocation = allocateManyAtEnd(activeBookmarkScope, bookmarksToRestore.length);
         const previousBookmarkPositions = new Map(activeBookmarkScope.map((item) => [item.id, item.position]));
@@ -484,6 +494,7 @@ export async function createBoard(
       deletedBatchId: null,
       version: 1,
     };
+    await assertCapacity(database, "boards", 1);
     await database.boards.add(board);
     return board;
   });
@@ -494,16 +505,18 @@ export async function updateBoard(
   patch: Partial<Pick<Board, "title" | "collapsed" | "layout" | "bookmarkColumns" | "gridColumn" | "gridRow" | "gridSpan" | "icon" | "accent">>,
   database: AsterfoldDatabase = db,
 ): Promise<void> {
-  const board = await database.boards.get(id);
-  if (!board || board.deletedAt !== null) throw new ValidationError("Board not found");
-  await database.boards.update(id, {
-    ...patch,
-    title: patch.title === undefined ? board.title : normalizeEntityTitle(patch.title, board.title),
-    gridColumn: patch.gridColumn === undefined ? board.gridColumn : Math.min(12, Math.max(1, Math.round(patch.gridColumn))),
-    gridRow: patch.gridRow === undefined ? board.gridRow : patch.gridRow === 1 ? 1 : 0,
-    gridSpan: patch.gridSpan === undefined ? board.gridSpan : Math.min(6, Math.max(2, Math.round(patch.gridSpan))),
-    updatedAt: nowIso(),
-    version: board.version + 1,
+  await database.transaction("rw", database.boards, async () => {
+    const board = await database.boards.get(id);
+    if (!board || board.deletedAt !== null) throw new ValidationError("Board not found");
+    await database.boards.update(id, {
+      ...patch,
+      title: patch.title === undefined ? board.title : normalizeEntityTitle(patch.title, board.title),
+      gridColumn: patch.gridColumn === undefined ? board.gridColumn : Math.min(12, Math.max(1, Math.round(patch.gridColumn))),
+      gridRow: patch.gridRow === undefined ? board.gridRow : patch.gridRow === 1 ? 1 : 0,
+      gridSpan: patch.gridSpan === undefined ? board.gridSpan : Math.min(6, Math.max(2, Math.round(patch.gridSpan))),
+      updatedAt: nowIso(),
+      version: board.version + 1,
+    });
   });
 }
 
@@ -594,9 +607,11 @@ export async function duplicateBoard(id: string, database: AsterfoldDatabase = d
       updatedAt: timestamp,
       version: 1,
     };
+    await assertCapacity(database, "boards", 1);
     await database.boards.add(copy);
     const bookmarks = await activeBookmarks(database, id);
     if (bookmarks.length > 0) {
+      await assertCapacity(database, "bookmarks", bookmarks.length);
       await database.bookmarks.bulkAdd(bookmarks.map((bookmark) => ({ ...bookmark, id: createId(), boardId: copy.id, createdAt: timestamp, updatedAt: timestamp, version: 1 })));
     }
     return copy;
@@ -638,7 +653,7 @@ export async function restoreBoard(id: string, database: AsterfoldDatabase = db)
     if (rebalancedBoards.length > 0) await database.boards.bulkPut(rebalancedBoards);
     await database.boards.update(id, { position: boardAllocation.position, deletedAt: null, deletedBatchId: null, updatedAt: timestamp, version: board.version + 1 });
     if (batchId) {
-      const bookmarksToRestore = await database.bookmarks.where("boardId").equals(id).filter((bookmark) => bookmark.deletedBatchId === batchId).toArray();
+      const bookmarksToRestore = sortByPosition(await database.bookmarks.where("boardId").equals(id).filter((bookmark) => bookmark.deletedBatchId === batchId).toArray());
       const activeBookmarkScope = await activeBookmarks(database, id);
       const bookmarkAllocation = allocateManyAtEnd(activeBookmarkScope, bookmarksToRestore.length);
       const previousBookmarkPositions = new Map(activeBookmarkScope.map((item) => [item.id, item.position]));
@@ -725,6 +740,7 @@ export async function createBookmark(
     if (rebalanced.length > 0) await database.bookmarks.bulkPut(rebalanced);
     const position = allocation.position;
     const bookmark = bookmarkRecord(input, normalized, position, timestamp);
+    await assertCapacity(database, "bookmarks", 1);
     await database.bookmarks.add(bookmark);
     return bookmark;
   });
@@ -749,9 +765,7 @@ export async function createBookmarksBulk(
       unique.push({ input: { boardId, url: normalized.url, title: item.title ?? "" }, normalized });
     }
     if (unique.length === 0) return [];
-    if (await database.bookmarks.count() + unique.length > IMPORT_LIMITS.bookmarks) {
-      throw new ValidationError("Workspace contains too many bookmarks");
-    }
+    await assertCapacity(database, "bookmarks", unique.length);
     const timestamp = nowIso();
     const allocation = allocateManyAtEnd(siblings, unique.length);
     const previousPositions = new Map(siblings.map((bookmark) => [bookmark.id, bookmark.position]));

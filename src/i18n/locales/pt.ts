@@ -259,6 +259,7 @@ export const pt: Record<MessageKey, string> = {
   "error.emptyTrashFailed": "Não foi possível esvaziar o lixo",
   "error.deletePermanentFailed": "Não foi possível eliminar permanentemente o item",
   "error.saveBookmarkFailed": "Não foi possível guardar o marcador",
+  "error.workspaceLimit": "O limite do espaço de trabalho foi atingido. Esvazie o lixo ou elimine itens permanentemente antes de adicionar mais páginas, quadros ou marcadores.",
   "error.actionFailed": "Não foi possível concluir a ação",
   "error.navigationUnsafe": "Foi bloqueada uma ligação não segura",
   "error.navigationFailed": "Não foi possível abrir a ligação",

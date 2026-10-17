@@ -259,6 +259,7 @@ export const it: Record<MessageKey, string> = {
   "error.emptyTrashFailed": "Impossibile svuotare il cestino",
   "error.deletePermanentFailed": "Impossibile eliminare definitivamente l'elemento",
   "error.saveBookmarkFailed": "Impossibile salvare il segnalibro",
+  "error.workspaceLimit": "Hai raggiunto il limite dello spazio di lavoro. Svuota il cestino o elimina definitivamente alcuni elementi prima di aggiungere altre pagine, bacheche o segnalibri.",
   "error.actionFailed": "Impossibile completare l'azione",
   "error.navigationUnsafe": "Un link non sicuro è stato bloccato",
   "error.navigationFailed": "Impossibile aprire il link",

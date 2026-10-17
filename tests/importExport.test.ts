@@ -4,7 +4,7 @@ import { version as packageVersion } from "../package.json";
 import { AsterfoldDatabase } from "../src/db/database";
 import { CURRENT_DB_SCHEMA_VERSION } from "../src/db/migrations";
 import { createBoard, createBookmark, ensureStarterWorkspace, getWorkspaceData, updateSettings } from "../src/db/repository";
-import { isValidRank, validateScope } from "../src/domain/ordering";
+import { evenlySpacedRanks, isValidRank, validateScope } from "../src/domain/ordering";
 import {
   createBackup,
   createSelectionBackup,
@@ -75,6 +75,25 @@ describe("safe import and lossless export", () => {
     await database.delete();
     vi.unstubAllGlobals();
   });
+
+  it("keeps a 50,000-bookmark workspace exportable after rejecting one more import", async () => {
+    const initial = await ensureStarterWorkspace(database);
+    const board = initial.boards[0]!;
+    const template = await createBookmark({ boardId: board.id, title: "Saved", url: "https://example.com/0" }, {}, database);
+    const positions = evenlySpacedRanks(50_000);
+    await database.bookmarks.bulkPut(positions.map((position, index) => ({
+      ...template,
+      id: index === 0 ? template.id : `saved-${index}`,
+      url: `https://example.com/${index}`,
+      normalizedUrl: `https://example.com/${index}`,
+      position,
+    })));
+    await expect(importRecords([
+      { title: "Extra", url: "https://extra.example/", description: null, folderPath: [board.title] },
+    ], { pageId: initial.pages[0]!.id, pageTitle: "Workspace" }, "skip", database)).rejects.toMatchObject({ code: "WORKSPACE_LIMIT" });
+    expect(await database.bookmarks.count()).toBe(50_000);
+    expect((await createBackup({}, database)).entities.bookmarks).toHaveLength(50_000);
+  }, 30_000);
 
   it("round-trips the hierarchy and escapes HTML export", async () => {
     const workspace = await ensureStarterWorkspace(database);

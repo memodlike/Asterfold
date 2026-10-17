@@ -1,7 +1,7 @@
 import type { AsterfoldDatabase } from "../../db/database";
 import { db } from "../../db/database";
 import { auditInvariants, getWorkspaceData, updateSettings } from "../../db/repository";
-import { ImportError } from "../../domain/errors";
+import { ImportError, WorkspaceLimitError } from "../../domain/errors";
 import {
   createBackup,
   importRecords,
@@ -87,6 +87,7 @@ async function performCommit(plan: OnboardingPlan, database: AsterfoldDatabase):
     } catch {
       rollbackFailed = true;
     }
+    if (!rollbackFailed && error instanceof WorkspaceLimitError) throw error;
     const message = error instanceof Error ? error.message : "Onboarding commit failed";
     throw new OnboardingCommitError(message, rollbackFailed);
   }

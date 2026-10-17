@@ -1,3 +1,4 @@
+import { WorkspaceLimitError } from "../../src/domain/errors";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { AlertTriangle, Check, ExternalLink, RefreshCw, Settings, ShieldCheck, Sparkles } from "lucide-react";
 import { openWorkspace } from "../../src/browser/api";
@@ -64,8 +65,8 @@ export function PopupApp() {
       }
       const summary = await importRecords(result.records, { pageTitle: t("settings.chromeBookmarks"), source: "chrome", sourceId: "chrome" }, "skip");
       setStatus(t("settings.imported", { count: summary.imported }));
-    } catch {
-      setError(t("error.chromeBookmarksUnavailable"));
+    } catch (error) {
+      setError(t(error instanceof WorkspaceLimitError ? "error.workspaceLimit" : "error.chromeBookmarksUnavailable"));
     } finally {
       setSyncing(false);
     }

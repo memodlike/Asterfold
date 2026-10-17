@@ -1,13 +1,11 @@
 import { z } from "zod";
+import { IMPORT_LIMITS } from "./importLimits";
 import type { ThemeConfig } from "./models";
 import { isValidRank } from "./ordering";
 import { WALLPAPER_LIMITS } from "./mediaLimits";
 import { WALLPAPER_MIME_TYPES, sniffWallpaperMime } from "./wallpaperFormats";
 
 const MAX_ID = 128;
-const MAX_PAGES = 10_000;
-const MAX_BOARDS = 50_000;
-const MAX_BOOKMARKS = 50_000;
 const id = z.string().min(1).max(MAX_ID);
 const nullableId = id.nullable();
 const isoDate = z.string().datetime({ offset: true });
@@ -233,9 +231,9 @@ const backupCoreSchema = z.object({
   appVersion: z.string().min(1).max(64),
   scope: z.enum(["full", "page", "board", "selection"]),
   entities: z.object({
-    pages: z.array(pageSchema).max(MAX_PAGES),
-    boards: z.array(boardSchema).max(MAX_BOARDS),
-    bookmarks: z.array(bookmarkSchema).max(MAX_BOOKMARKS),
+    pages: z.array(pageSchema).max(IMPORT_LIMITS.pages),
+    boards: z.array(boardSchema).max(IMPORT_LIMITS.boards),
+    bookmarks: z.array(bookmarkSchema).max(IMPORT_LIMITS.bookmarks),
   }).strict(),
   settings: appSettingsSchema.optional(),
   theme: themeSchema.optional(),
@@ -300,12 +298,12 @@ export const backupSchema = backupCoreSchema.superRefine((backup, context) => {
   if (backup.scope === "full" && activePages.filter((page) => page.isDefault).length !== 1) {
     context.addIssue({ code: "custom", message: "Exactly one active default Page is required" });
   }
-  const rankScopes: Array<[string, string[]]> = [["pages", backup.entities.pages.map((page) => page.position)]];
+  const rankScopes: Array<[string, string[]]> = [["pages", activePages.map((page) => page.position)]];
   for (const page of backup.entities.pages) {
-    rankScopes.push([`boards:${page.id}`, backup.entities.boards.filter((board) => board.pageId === page.id).map((board) => board.position)]);
+    rankScopes.push([`boards:${page.id}`, backup.entities.boards.filter((board) => board.pageId === page.id && board.deletedAt === null).map((board) => board.position)]);
   }
   for (const board of backup.entities.boards) {
-    rankScopes.push([`bookmarks:${board.id}`, backup.entities.bookmarks.filter((bookmark) => bookmark.boardId === board.id).map((bookmark) => bookmark.position)]);
+    rankScopes.push([`bookmarks:${board.id}`, backup.entities.bookmarks.filter((bookmark) => bookmark.boardId === board.id && bookmark.deletedAt === null).map((bookmark) => bookmark.position)]);
   }
   for (const [scope, ranks] of rankScopes) {
     const duplicateRank = duplicate(ranks);

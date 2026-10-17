@@ -259,6 +259,7 @@ export const de: Record<MessageKey, string> = {
   "error.emptyTrashFailed": "Papierkorb konnte nicht geleert werden",
   "error.deletePermanentFailed": "Element konnte nicht dauerhaft gelöscht werden",
   "error.saveBookmarkFailed": "Lesezeichen konnte nicht gespeichert werden",
+  "error.workspaceLimit": "Das Limit des Arbeitsbereichs ist erreicht. Leere den Papierkorb oder lösche Einträge endgültig, bevor du weitere Seiten, Boards oder Lesezeichen hinzufügst.",
   "error.actionFailed": "Aktion konnte nicht abgeschlossen werden",
   "error.navigationUnsafe": "Unsicherer Link wurde blockiert",
   "error.navigationFailed": "Link konnte nicht geöffnet werden",

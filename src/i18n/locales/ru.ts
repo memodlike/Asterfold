@@ -243,6 +243,7 @@ export const ru = {
   "error.emptyTrashFailed": "Не удалось очистить корзину",
   "error.deletePermanentFailed": "Не удалось удалить элемент навсегда",
   "error.saveBookmarkFailed": "Не удалось сохранить закладку",
+  "error.workspaceLimit": "Достигнут лимит рабочего пространства. Очистите корзину или удалите элементы навсегда, прежде чем добавлять новые страницы, блоки или закладки.",
   "error.actionFailed": "Не удалось выполнить действие",
   "error.navigationUnsafe": "Небезопасная ссылка заблокирована",
   "error.navigationFailed": "Не удалось открыть ссылку",

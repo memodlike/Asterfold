@@ -21,6 +21,7 @@ import {
   Sun,
 } from "lucide-react";
 import type { Density, LocalePreference, ThemeMode, WorkspaceData } from "../../domain/models";
+import { WorkspaceLimitError } from "../../domain/errors";
 import { IMPORT_LIMITS } from "../../domain/importLimits";
 import { validateTheme } from "../../domain/themes";
 import { Button } from "../../components/Button";
@@ -244,9 +245,9 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
       await commitOnboardingPlan(finalPlan);
       publishThemePreview(null);
       onCompleted?.();
-    } catch {
+    } catch (error) {
       publishThemePreview(null);
-      setError(t("status.error"));
+      setError(error instanceof WorkspaceLimitError ? translate(plan.locale, "error.workspaceLimit") : t("status.error"));
       setConfirmSkip(false);
     } finally {
       finishGuardRef.current = false;

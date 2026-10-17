@@ -1,3 +1,4 @@
+import { assertCapacity } from "../db/capacity";
 import type { AsterfoldDatabase } from "../db/database";
 import { version as packageVersion } from "../../package.json";
 import { db } from "../db/database";
@@ -352,12 +353,15 @@ export async function restoreBackup(
         deletedBatchId: bookmark.deletedBatchId ? deletedBatchIds.get(bookmark.deletedBatchId)! : null,
       }));
     }
+    await assertCapacity(database, "pages", incomingPages.length);
+    await assertCapacity(database, "boards", incomingBoards.length);
+    await assertCapacity(database, "bookmarks", incomingBookmarks.length);
     await database.pages.bulkPut([...currentPages, ...incomingPages]);
     await database.boards.bulkPut([...currentBoards, ...incomingBoards]);
     await database.bookmarks.bulkPut([...currentBookmarks, ...incomingBookmarks]);
     if (validated.settings && strategy === "replace") await database.settings.put(validated.settings);
+    await ensureStarterWorkspace(database);
   });
-  await ensureStarterWorkspace(database);
 }
 
 function escapeHtml(value: string): string {
@@ -577,6 +581,7 @@ export async function importRecords(
         .filter((page) => previousPositions.get(page.id) !== page.position)
         .map((page) => ({ ...page, updatedAt: timestamp, version: page.version + 1 }));
       if (rebalancedPages.length > 0) await database.pages.bulkPut(rebalancedPages);
+      await assertCapacity(database, "pages", 1);
       await database.pages.add({
         id: pageId,
         userId: null,
@@ -691,6 +696,7 @@ export async function importRecords(
       source: group.source,
       sourceId: group.folderSourceId,
     }));
+    await assertCapacity(database, "boards", newBoards.length);
     if (newBoards.length > 0) await database.boards.bulkAdd(newBoards);
 
     for (let i = 0; i < missingGroups.length; i += 1) {
@@ -740,6 +746,7 @@ export async function importRecords(
         .map((bookmark) => ({ ...bookmark, updatedAt: timestamp, version: bookmark.version + 1 }));
       if (rebalancedBookmarks.length > 0) await database.bookmarks.bulkPut(rebalancedBookmarks);
       if (accepted.length > 0) {
+        await assertCapacity(database, "bookmarks", accepted.length);
         await database.bookmarks.bulkAdd(accepted.map((record, index) => ({
           id: createId(), userId: null, boardId: board.id, title: record.title, url: record.url,
           normalizedUrl: record.normalizedUrl, hostname: record.hostname, description: record.description,

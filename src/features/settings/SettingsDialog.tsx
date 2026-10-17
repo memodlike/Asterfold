@@ -1,3 +1,4 @@
+import { WorkspaceLimitError } from "../../domain/errors";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { readSessionPrivacy, writeSessionPrivacy } from "../../browser/privacySession";
 import { IMPORT_LIMITS } from "../../domain/importLimits";
@@ -283,7 +284,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
       setImportRecordsPreview([]);
       setImportSource("");
       closeSettings();
-    } catch { props.onError(t("error.importFailed")); }
+    } catch (error) { props.onError(t(error instanceof WorkspaceLimitError ? "error.workspaceLimit" : "error.importFailed")); }
     finally { setImportBusy(false); }
   };
   const commitBackupRestore = async (strategy: "merge" | "replace"): Promise<void> => {
@@ -296,7 +297,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
       props.onUpdated(t("settings.backupRestored"));
       setBackupPreview(null);
       setImportSource("");
-    } catch { props.onError(t("error.restoreFailed")); }
+    } catch (error) { props.onError(t(error instanceof WorkspaceLimitError ? "error.workspaceLimit" : "error.restoreFailed")); }
     finally { setImportBusy(false); }
   };
   const saveUploadedWallpaper = async (file: File): Promise<void> => {
