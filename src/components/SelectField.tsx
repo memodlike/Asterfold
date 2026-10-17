@@ -275,7 +275,7 @@ export function SelectField({ value, options, onChange, label, className = "", d
       else openMenu();
       return;
     }
-    if (event.key === "Escape" && open) { event.preventDefault(); close(true); return; }
+    if (event.key === "Escape" && open) { event.preventDefault(); event.stopPropagation(); close(true); return; }
     if (event.key === "Tab") { close(false); return; }
     if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.length === 1) {
       const key = event.key.toLocaleLowerCase();

@@ -240,8 +240,11 @@ describe("BookmarkEditor complete behavior", () => {
   });
 
   it("protects content and only renders a Close action in privacy mode", () => {
-    const { handlers } = renderEditor({ privacy: true });
+    const { handlers, container } = renderEditor({ privacy: true });
     expect(screen.getByText("Search content is protected")).toBeVisible();
+    const stateContainer = container.querySelector(".search-state.search-private");
+    expect(stateContainer).not.toBeNull();
+    expect(stateContainer?.querySelector(".search-state__icon")).not.toBeNull();
     expect(screen.queryByRole("textbox", { name: "Title" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
     fireEvent.click(screen.getAllByRole("button", { name: "Close" }).at(-1)!);

@@ -67,9 +67,15 @@ export const BookmarkCard = memo(function BookmarkCard(props: BookmarkCardProps)
           if (event.metaKey || event.ctrlKey || event.shiftKey) props.onSelect(props.bookmark, event);
           else props.onOpen(props.bookmark);
         }}
-        onKeyDown={(event) => { if (event.shiftKey && event.key === "F10") openKeyboardContext(event); }}
         {...sortable.attributes}
         {...sortable.listeners}
+        onKeyDown={(event) => {
+          if (event.shiftKey && event.key === "F10") {
+            openKeyboardContext(event);
+            return;
+          }
+          sortable.listeners?.onKeyDown?.(event);
+        }}
       >
         <span className="bookmark-card__surface">
           <BrowserFavicon key={source} source={source} privacy={props.privacy} />

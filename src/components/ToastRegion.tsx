@@ -4,11 +4,22 @@ import { Button } from "./Button";
 import { IconButton } from "./IconButton";
 import { useI18n } from "../i18n";
 
+export type ToastMessage = string | ((privacy: boolean) => string);
+
 export interface ToastInput {
-  message: string;
+  message: ToastMessage;
+  privacyMessage?: string;
   actionLabel?: string;
   onAction?: () => void | Promise<void>;
   tone?: "success" | "error" | "neutral";
+}
+
+export function resolveToastMessage(input: { message: ToastMessage; privacyMessage?: string }, privacy: boolean): string {
+  if (privacy) {
+    if (input.privacyMessage !== undefined) return input.privacyMessage;
+    if (typeof input.message === "function") return input.message(true);
+  }
+  return typeof input.message === "function" ? input.message(privacy) : input.message;
 }
 
 interface Toast extends ToastInput {
@@ -20,7 +31,7 @@ export interface ToastController {
   region: React.ReactNode;
 }
 
-export function useToasts(): ToastController {
+export function useToasts(privacy = false): ToastController {
   const { t } = useI18n();
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [busyActions, setBusyActions] = useState<Set<number>>(new Set());
@@ -77,9 +88,10 @@ export function useToasts(): ToastController {
     } catch {
       setToasts((current) => current.map((item) => {
         if (item.id !== toast.id) return item;
-        const failed = { ...item, tone: "error" as const, message: t("error.actionFailed") };
+        const failed: Toast = { ...item, tone: "error" as const, message: t("error.actionFailed") };
         delete failed.actionLabel;
         delete failed.onAction;
+        delete failed.privacyMessage;
         return failed;
       }));
       schedule(toast.id, 4_000);
@@ -114,7 +126,7 @@ export function useToasts(): ToastController {
             onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) resume(toast); }}
           >
             {toast.tone === "error" ? <AlertCircle size={18} aria-hidden="true" /> : toast.tone === "success" ? <CheckCircle2 size={18} aria-hidden="true" /> : <Info size={18} aria-hidden="true" />}
-            <span>{toast.message}</span>
+            <span>{resolveToastMessage(toast, privacy)}</span>
             {toast.actionLabel && toast.onAction ? (
               <Button variant="ghost" size="small" disabled={busyActions.has(toast.id)} onClick={() => { void runAction(toast); }}>{toast.actionLabel}</Button>
             ) : null}
