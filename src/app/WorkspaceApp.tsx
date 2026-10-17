@@ -25,9 +25,11 @@ import {
   updateBoard,
   updateSettings,
 } from "../db/repository";
-import { copyText, ExtensionRequestError, openUrl } from "../browser/api";
+import { copyText, ExtensionRequestError, openUrl, openUrls } from "../browser/api";
+import { isSafeOpenUrl } from "../domain/urls";
 import { Button } from "../components/Button";
 import { IconButton } from "../components/IconButton";
+import { Modal } from "../components/Modal";
 import { MoveDialog } from "../components/MoveDialog";
 import { NameDialog } from "../components/NameDialog";
 import { useToasts } from "../components/ToastRegion";
@@ -55,6 +57,7 @@ type NameIntent =
   | { kind: "rename-board"; board: Board };
 type MoveIntent = { kind: "bookmark"; bookmark: Bookmark } | { kind: "board"; board: Board } | { kind: "bulk" };
 interface EditorIntent { bookmark: Bookmark | null; boardId: string }
+interface OpenBoardIntent { urls: string[]; mode: "new-tabs" | "new-window"; count: number; truncated: boolean }
 
 export function WorkspaceApp() {
   const { workspace, failed, retry } = useWorkspace();
@@ -73,13 +76,14 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   const [nameIntent, setNameIntent] = useState<NameIntent | null>(null);
   const [moveIntent, setMoveIntent] = useState<MoveIntent | null>(null);
   const [editor, setEditor] = useState<EditorIntent | null>(null);
+  const [openBoardIntent, setOpenBoardIntent] = useState<OpenBoardIntent | null>(null);
   const [pendingReveal, setPendingReveal] = useState<{ bookmarkId: string; pageId: string } | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
   const initialSettingsSeen = useRef(false);
   const performanceMode = useThemeRuntime(workspace.settings.theme);
   const { privacy, setPrivacy } = usePrivacyMode(workspace.settings);
-  const blockingOverlayOpen = searchOpen || settingsOpen || trashOpen || nameIntent !== null || moveIntent !== null || editor !== null;
+  const blockingOverlayOpen = searchOpen || settingsOpen || trashOpen || nameIntent !== null || moveIntent !== null || editor !== null || openBoardIntent !== null;
 
   useEffect(() => {
     const preload = (): void => { void Promise.allSettled([loadSearchPalette(), loadSettingsDialog(), loadTrashDialog(), loadBookmarkEditor()]); };
@@ -229,6 +233,28 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
     setSettingsOpen(true);
   };
 
+  const executeOpenBoard = async (urls: string[], mode: "new-tabs" | "new-window", truncated: boolean): Promise<void> => {
+    const success = truncated ? t("board.openAllTruncated", { count: urls.length }) : t("board.openAllDone", { count: urls.length });
+    await run(async () => {
+      await openUrls(urls, mode);
+    }, success);
+  };
+  const openBoard = (targetBoard: Board, mode: "new-tabs" | "new-window"): void => {
+    const boardBookmarks = bookmarks.filter((item) => item.boardId === targetBoard.id);
+    const openableUrls = boardBookmarks.filter((item) => isSafeOpenUrl(item.url)).map((item) => item.url);
+    if (openableUrls.length === 0) {
+      notifyError(t("board.openAllNone"));
+      return;
+    }
+    const truncated = openableUrls.length > 50;
+    const urlsToOpen = openableUrls.slice(0, 50);
+    if (urlsToOpen.length > 12) {
+      setOpenBoardIntent({ urls: urlsToOpen, mode, count: urlsToOpen.length, truncated });
+      return;
+    }
+    void executeOpenBoard(urlsToOpen, mode, truncated);
+  };
+
   return (
     <div className={`app-shell performance-${performanceMode} ${performanceMode === "compatibility" || performanceMode === "software" ? "low-power-mode" : ""} ${privacy ? "privacy-mode" : ""} ${workspace.settings.theme.motion ? "" : "motion-disabled"} ${workspace.settings.theme.bookmarkHoverMotion ? "" : "motion-hover-disabled"} ${workspace.settings.theme.menuMotion ? "" : "motion-menu-disabled"} ${workspace.settings.theme.dragMotion ? "" : "motion-drag-disabled"}`}>
       <div className="wallpaper" aria-hidden="true" />
@@ -243,6 +269,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
         onEditBoard={(board) => setNameIntent({ kind: "rename-board", board })}
         onPatchBoard={(board, patch) => void run(() => updateBoard(board.id, patch))}
         onMoveBoard={(board) => setMoveIntent({ kind: "board", board })}
+        onOpenBoard={openBoard}
         onDuplicateBoard={(board) => void run(() => duplicateBoard(board.id))}
         onDeleteBoard={deleteBoard}
         onMoveBoardIndex={(id, index, targetId) => void run(() => workspace.settings.workspaceLayoutMode === "free"
@@ -299,6 +326,32 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
           if (moveIntent?.kind === "bulk") { await bulkMoveBookmarks([...selectedIds], destinationId); setSelectedIds(new Set()); }
             }}
       />
+      {openBoardIntent ? (
+        <Modal
+          open
+          size="small"
+          title={t("board.openAllConfirmTitle")}
+          description={t("board.openAllConfirmBody", { count: openBoardIntent.count })}
+          onClose={() => setOpenBoardIntent(null)}
+          footer={(
+            <>
+              <Button onClick={() => setOpenBoardIntent(null)}>{t("generic.cancel")}</Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  const intent = openBoardIntent;
+                  setOpenBoardIntent(null);
+                  void executeOpenBoard(intent.urls, intent.mode, intent.truncated);
+                }}
+              >
+                {t("generic.open")}
+              </Button>
+            </>
+          )}
+        >
+          <div />
+        </Modal>
+      ) : null}
       <Suspense fallback={<div className="overlay-loading" role="status" aria-label={t("loading.opening")} />}>
         {settingsOpen ? <SettingsDialog open initialSection={settingsSection} workspace={workspace} onClose={() => setSettingsOpen(false)} onUpdated={notifySuccess} onError={notifyError} onOpenTrash={() => { setSettingsOpen(false); setTrashOpen(true); }} /> : null}
         {trashOpen ? <TrashDialog open privacy={privacy} onClose={() => setTrashOpen(false)} onChanged={notifySuccess} onError={notifyError} /> : null}

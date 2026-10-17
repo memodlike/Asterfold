@@ -34,6 +34,7 @@ interface BoardCanvasProps {
   onEditBoard: (board: Board) => void;
   onPatchBoard: (board: Board, patch: Partial<Pick<Board, "bookmarkColumns" | "gridSpan">>) => void;
   onMoveBoard: (board: Board) => void;
+  onOpenBoard: (board: Board, mode: "new-tabs" | "new-window") => void;
   onDuplicateBoard: (board: Board) => void;
   onDeleteBoard: (board: Board) => void;
   onMoveBoardIndex: (id: string, index: number, targetId: string) => void;
@@ -169,6 +170,7 @@ export function BoardCanvas(props: BoardCanvasProps) {
                 onEditBoard={props.onEditBoard}
                 onPatchBoard={props.onPatchBoard}
                 onMoveBoard={props.onMoveBoard}
+                onOpenBoard={props.onOpenBoard}
                 onDuplicateBoard={props.onDuplicateBoard}
                 onDeleteBoard={props.onDeleteBoard}
                 onKeyboardMoveBoard={(movingBoard, delta) => {

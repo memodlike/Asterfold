@@ -6,6 +6,7 @@ const urlSchema = z.string().min(1).max(8_192);
 export const extensionMessageSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("OPEN_WORKSPACE"), pageId: entityIdSchema.optional() }).strict(),
   z.object({ type: z.literal("OPEN_URL"), url: urlSchema, mode: z.enum(["current", "new-tab", "new-window", "incognito"]) }).strict(),
+  z.object({ type: z.literal("OPEN_URLS"), urls: z.array(urlSchema).min(1).max(50), mode: z.enum(["new-tabs", "new-window"]) }).strict(),
   z.object({ type: z.literal("DATA_CHANGED"), entity: z.enum(["page", "board", "bookmark", "settings", "trash"]) }).strict(),
 ]);
 

@@ -58,6 +58,26 @@ export async function openUrl(url: string, mode: BookmarkOpenMode): Promise<void
   if (!response.ok) throw new ExtensionRequestError(response.code, response.params);
 }
 
+export async function openUrls(urls: string[], mode: "new-tabs" | "new-window"): Promise<void> {
+  if (!urls.length || urls.length > 50) {
+    throw new ExtensionRequestError("INVALID_MESSAGE");
+  }
+  const safeUrls: string[] = [];
+  for (const url of urls) {
+    try {
+      safeUrls.push(parseSafeNavigationUrl(url));
+    } catch {
+      throw new ExtensionRequestError("UNSAFE_URL");
+    }
+  }
+  const response = await browser.runtime.sendMessage({
+    type: "OPEN_URLS",
+    urls: safeUrls,
+    mode,
+  }) as ExtensionResponse;
+  if (!response.ok) throw new ExtensionRequestError(response.code, response.params);
+}
+
 export async function copyText(value: string): Promise<void> {
   await navigator.clipboard.writeText(value);
 }

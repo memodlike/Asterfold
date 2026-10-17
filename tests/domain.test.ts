@@ -216,4 +216,38 @@ describe("themes and runtime messages", () => {
       entity: "page",
     });
   });
+
+  it("parses OPEN_URLS runtime messages with bounds and strict schema", () => {
+    const validTabs = {
+      type: "OPEN_URLS",
+      urls: ["https://example.com/1", "https://example.com/2"],
+      mode: "new-tabs",
+    };
+    expect(parseExtensionMessage(validTabs)).toEqual(validTabs);
+
+    const validWindow = {
+      type: "OPEN_URLS",
+      urls: ["https://example.com"],
+      mode: "new-window",
+    };
+    expect(parseExtensionMessage(validWindow)).toEqual(validWindow);
+
+    // Rejects empty list
+    expect(parseExtensionMessage({ type: "OPEN_URLS", urls: [], mode: "new-tabs" })).toBeNull();
+
+    // Rejects > 50 urls
+    const tooMany = Array.from({ length: 51 }, (_, i) => `https://example.com/${i}`);
+    expect(parseExtensionMessage({ type: "OPEN_URLS", urls: tooMany, mode: "new-tabs" })).toBeNull();
+
+    // Accepts exactly 50 urls
+    const maxUrls = Array.from({ length: 50 }, (_, i) => `https://example.com/${i}`);
+    expect(parseExtensionMessage({ type: "OPEN_URLS", urls: maxUrls, mode: "new-tabs" })).not.toBeNull();
+
+    // Rejects unknown mode
+    expect(parseExtensionMessage({ type: "OPEN_URLS", urls: ["https://example.com"], mode: "new-tab" })).toBeNull();
+    expect(parseExtensionMessage({ type: "OPEN_URLS", urls: ["https://example.com"], mode: "incognito" })).toBeNull();
+
+    // Rejects extra keys
+    expect(parseExtensionMessage({ type: "OPEN_URLS", urls: ["https://example.com"], mode: "new-tabs", extra: true })).toBeNull();
+  });
 });
