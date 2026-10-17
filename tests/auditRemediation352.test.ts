@@ -4,7 +4,6 @@ import { AsterfoldDatabase } from "../src/db/database";
 import { ensureStarterWorkspace, renamePage, updateBoard, updateBookmark } from "../src/db/repository";
 import { importRecords, parseNetscapeHtml, type ImportRecord } from "../src/services/exportImport";
 import { parseExtensionMessage } from "../src/browser/messages";
-import "fake-indexeddb/auto";
 
 describe("Asterfold 3.5.2 Audit Remediation Suite", () => {
   describe("AF-DATA-001: Chrome refresh idempotency and machine-readable destination Page", () => {

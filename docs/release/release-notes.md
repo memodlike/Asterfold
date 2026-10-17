@@ -1,3 +1,13 @@
+# Asterfold 3.8.5
+
+## Dependency refresh
+
+- **Runtime**: React and React DOM 19.3.1, Zod 4.6.7, Lucide 1.59.0.
+- **Testing**: Playwright 1.64.1 together with axe-core 4.14.0, so the tree has a single playwright-core; Vitest and coverage 5.0.5, jsdom 30.1.3, fake-indexeddb 6.2.6.
+- **Tooling**: Vite 8.3.4, @vitejs/plugin-react 6.1.2, ESLint 10.13.0, typescript-eslint 8.71.2, @types/chrome 0.3.5, @types/node 26.6.5.
+- **TypeScript stays on 6.0.3**: typescript-eslint does not support TypeScript 7 yet.
+- Zero known vulnerabilities in production and development dependencies.
+
 # Asterfold 3.8.4
 
 ## Follow-up audit fixes

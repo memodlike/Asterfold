@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import { CURRENT_DB_SCHEMA_VERSION, V9_STORES, V10_STORES } from "../src/db/migrations";
 import { AsterfoldDatabase } from "../src/db/database";
 import { importRecords } from "../src/services/exportImport";
-import "fake-indexeddb/auto";
 
 describe("Asterfold privacy hardening invariants", () => {
   it("enforces least privilege manifest configuration with zero permissions", async () => {

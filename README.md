@@ -176,7 +176,7 @@ Contribution guidance is available in [docs/development/CONTRIBUTING.md](docs/de
 
 ## Release artifacts
 
-Asterfold 3.8.4 produces a reproducible, cryptographically verifiable release containing:
+Asterfold 3.8.5 produces a reproducible, cryptographically verifiable release containing:
 
 - `Asterfold-Chrome.zip` (runtime Chrome Web Store bundle)
 - `chrome-unpacked.zip` (unpacked developer distribution)
@@ -188,6 +188,8 @@ Asterfold 3.8.4 produces a reproducible, cryptographically verifiable release co
 The release pipeline verifies Manifest V3 structure, permission policy, CSP, forbidden files, remote-code patterns, Store asset dimensions, Windows packaging, CodeQL, accessibility, and real unpacked-extension behavior.
 
 ## Release highlights
+
+**Asterfold 3.8.5** refreshes dependencies: React 19.3.1, Zod 4.6.7, Lucide 1.59, Playwright 1.64.1 with axe-core 4.14, Vite 8.3.4 and Vitest 5.0.5, with zero known vulnerabilities. TypeScript stays on 6.0.3 until typescript-eslint supports TypeScript 7.
 
 **Asterfold 3.8.4** closes the follow-up audit: stale selections can no longer act on another Page, Privacy Mode hides Page names everywhere, backup merges keep their order, count messages read naturally in every language, and glass is solid at 0% transparency and in increased-contrast and forced-colors modes.
 
@@ -221,6 +223,7 @@ The repository does not claim Chrome Web Store publication, approval, user count
 
 ## Version history
 
+1. **v3.8.5 — Dependency refresh.** React/React DOM 19.3.1, Zod 4.6.7, Lucide 1.59.0, Playwright 1.64.1 + axe-core 4.14.0 (single playwright-core), Vite 8.3.4, @vitejs/plugin-react 6.1.2, Vitest 5.0.5, ESLint 10.13.0, typescript-eslint 8.71.2, jsdom 30.1.3, fake-indexeddb 6.2.6 and type packages; TypeScript held at 6.0.3.
 1. **v3.8.4 — Follow-up audit fixes.** Selection cleared on Page change and bulk actions limited to the visible Page, private Page names in the launcher and move pickers, launcher Escape, order-preserving backup merge, count-neutral copy in 12 languages, an announced open-board confirmation, and glass fixes for the empty state, forced colors, increased contrast and Settings previews.
 1. **v3.8.3 — Reliability, privacy & glass fixes.** Local monogram icons instead of Google S2, removal of the permission-less Chrome bookmark import, transactional board/page updates, workspace limits on every insertion path, order-preserving restore, privacy-safe toasts, nested Escape and bookmark Shift+F10 fixes, and glass corrections for Smooth glass, Lightweight, reduced transparency, increased contrast, forced colors and startup pre-paint.
 1. **v3.8.2 — Open Board & Paste links.** Board menu opens all links in new tabs or a new window through a strictly validated, 50-link-bounded runtime message re-checked in the service worker; quick paste adds a link to the focused or hovered board and multi-link paste opens a review dialog with new/duplicate/invalid counts, one transactional save and Undo. No new permissions.
