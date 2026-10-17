@@ -18,6 +18,7 @@ describe("new-tab startup runtime", () => {
     document.documentElement.removeAttribute("data-performance");
     document.documentElement.style.removeProperty("--startup-canvas");
     document.documentElement.style.removeProperty("--startup-wallpaper");
+    document.documentElement.style.removeProperty("--startup-wallpaper-dim");
     document.documentElement.style.colorScheme = "";
   });
 
@@ -37,6 +38,7 @@ describe("new-tab startup runtime", () => {
     expect(parseStartupThemeSnapshot(JSON.stringify({ version: 2, theme: "dark", canvas: "#16171a", performance: "software" }))).not.toHaveProperty("performance");
     expect(parseStartupThemeSnapshot(JSON.stringify({ version: 1, theme: "dark", canvas: "white" }))).toBeNull();
     expect(parseStartupThemeSnapshot(JSON.stringify({ version: 1, theme: "dark", canvas: "#16171a", wallpaper: 'url("https://example.com/remote.jpg")' }))?.wallpaper).toBe("none");
+    expect(parseStartupThemeSnapshot(JSON.stringify({ version: 3, theme: "dark", canvas: "#16171a", wallpaper: "none", wallpaperDim: 0.65 }))?.wallpaperDim).toBe(0.65);
   });
 
   it("persists only safe visual data and applies it synchronously", () => {
@@ -56,6 +58,39 @@ describe("new-tab startup runtime", () => {
     expect(document.documentElement.dataset.performance).toBe("compatibility");
     expect(document.documentElement.style.getPropertyValue("--startup-canvas")).toBe("#16171a");
     expect(document.documentElement.style.getPropertyValue("--startup-wallpaper")).toContain("quiet-aurora.webp");
+    expect(document.documentElement.style.getPropertyValue("--startup-wallpaper-dim")).toBe("0.16");
+  });
+
+  it("persists wallpaperDim and sets --startup-wallpaper-dim synchronously to prevent brightness jump (DEFECT-03)", () => {
+    storeStartupThemeSnapshot(true, {
+      "--color-canvas": "#16171a",
+      "--wallpaper-image": 'url("/wallpapers/quiet-aurora.webp")',
+      "--wallpaper-dim": 0.55,
+    }, localStorage, true, "quality");
+    const snapshot = readStartupThemeSnapshot();
+    expect(snapshot?.wallpaperDim).toBe(0.55);
+    applyStartupThemeSnapshot(document.documentElement, snapshot!);
+    expect(document.documentElement.style.getPropertyValue("--startup-wallpaper-dim")).toBe("0.55");
+  });
+
+  it("persists tier-appropriate compatibility/software wallpaper assets to avoid heavy downloads and swap flash (DEFECT-08)", () => {
+    storeStartupThemeSnapshot(true, {
+      "--color-canvas": "#16171a",
+      "--wallpaper-image": 'url("/wallpapers/quiet-aurora.webp")',
+      "--wallpaper-compat-image": 'url("/wallpapers/quiet-aurora-compat.webp")',
+      "--wallpaper-software-image": 'url("/wallpapers/quiet-aurora-compat.webp")',
+    }, localStorage, true, "compatibility");
+    const compatSnapshot = readStartupThemeSnapshot();
+    expect(compatSnapshot?.wallpaper).toBe('url("/wallpapers/quiet-aurora-compat.webp")');
+
+    storeStartupThemeSnapshot(true, {
+      "--color-canvas": "#16171a",
+      "--wallpaper-image": 'url("/wallpapers/dusk.webp")',
+      "--wallpaper-compat-image": 'url("/wallpapers/dusk-compat.webp")',
+      "--wallpaper-software-image": 'url("/wallpapers/dusk-compat.webp")',
+    }, localStorage, true, "software");
+    const softwareSnapshot = readStartupThemeSnapshot();
+    expect(softwareSnapshot?.wallpaper).toBe('url("/wallpapers/dusk-compat.webp")');
   });
 
   it("falls back safely when storage is denied", () => {

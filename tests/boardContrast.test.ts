@@ -52,4 +52,15 @@ describe("board contrast against uploaded wallpapers", () => {
     expect(regular["--glass-clear-boost"]).toBe("0");
     expect(clear["--glass-clear-boost"]).toBe("1");
   });
+
+  it("uses primary text color for .board__empty to satisfy WCAG AA contrast over dark backgrounds (DEFECT-05)", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const globalCss = readFileSync(resolve("src/styles/global.css"), "utf-8");
+    const emptyMatch = /\.board__empty\s*\{([^}]+)\}/.exec(globalCss);
+    expect(emptyMatch).not.toBeNull();
+    const emptyBody = emptyMatch![1]!;
+    expect(emptyBody).toContain("color: var(--color-text)");
+    expect(emptyBody).not.toContain("color: var(--color-text-secondary)");
+  });
 });
