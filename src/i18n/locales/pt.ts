@@ -325,4 +325,5 @@ export const pt: Record<MessageKey, string> = {
   "paste.failed": "Não foi possível adicionar os links",
   "trash.movedOne": "Movido para o lixo: {name}",
   "trash.movedMany": "Itens movidos para o lixo: {count}",
+  "bookmark.urlInvalid": "Introduza um endereço web, por exemplo https://example.com",
 };

@@ -325,4 +325,5 @@ export const id: Record<MessageKey, string> = {
   "paste.failed": "Tidak dapat menambahkan tautan",
   "trash.movedOne": "Dipindahkan ke sampah: {name}",
   "trash.movedMany": "Item dipindahkan ke sampah: {count}",
+  "bookmark.urlInvalid": "Masukkan alamat web, misalnya https://example.com",
 };

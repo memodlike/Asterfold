@@ -325,4 +325,5 @@ export const kk: Record<MessageKey, string> = {
   "paste.failed": "Сілтемелерді қосу мүмкін болмады",
   "trash.movedOne": "Себетке жіберілді: {name}",
   "trash.movedMany": "Себетке жіберілген элементтер: {count}",
+  "bookmark.urlInvalid": "Сайт мекенжайын енгізіңіз, мысалы https://example.com",
 };

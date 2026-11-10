@@ -325,4 +325,5 @@ export const fr: Record<MessageKey, string> = {
   "paste.failed": "Impossible d’ajouter les liens",
   "trash.movedOne": "Déplacé dans la corbeille : {name}",
   "trash.movedMany": "Éléments déplacés dans la corbeille : {count}",
+  "bookmark.urlInvalid": "Saisissez une adresse web, par exemple https://example.com",
 };

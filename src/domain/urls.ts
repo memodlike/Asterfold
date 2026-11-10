@@ -45,6 +45,19 @@ function hasControlCharacters(value: string): boolean {
   return false;
 }
 
+/**
+ * Lets people type "github.com" instead of a full URL: adds https:// when the input has no scheme.
+ * Inputs that already carry a scheme ("javascript:", "chrome://", "mailto:") are returned untouched
+ * so the safety checks in parseSafeNavigationUrl still see exactly what was typed.
+ */
+export function withDefaultScheme(input: string): string {
+  const trimmed = input.trim();
+  if (trimmed.length === 0 || /^[a-z][a-z0-9+.-]*:\/\//iu.test(trimmed)) return trimmed;
+  if (/^(?:mailto|javascript|data|vbscript|file|blob|about|chrome|chrome-extension|view-source):/iu.test(trimmed)) return trimmed;
+  if (/\s/u.test(trimmed) || !/^[^/?#]+\.[^/?#.]{2,}(?::\d+)?(?:[/?#]|$)|^localhost(?::\d+)?(?:[/?#]|$)/iu.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
 export function parseSafeNavigationUrl(input: string, options: SafeNavigationOptions = {}): SafeNavigationUrl {
   const parsed = parseUrl(input);
   const mailtoAllowed = options.allowMailto === true && parsed.protocol === "mailto:";

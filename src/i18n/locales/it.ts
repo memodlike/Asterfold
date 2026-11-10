@@ -325,4 +325,5 @@ export const it: Record<MessageKey, string> = {
   "paste.failed": "Impossibile aggiungere i link",
   "trash.movedOne": "Spostato nel cestino: {name}",
   "trash.movedMany": "Elementi spostati nel cestino: {count}",
+  "bookmark.urlInvalid": "Inserisci un indirizzo web, ad esempio https://example.com",
 };

@@ -325,4 +325,5 @@ export const es: Record<MessageKey, string> = {
   "paste.failed": "No se pudieron añadir los enlaces",
   "trash.movedOne": "Movido a la papelera: {name}",
   "trash.movedMany": "Elementos movidos a la papelera: {count}",
+  "bookmark.urlInvalid": "Introduce una dirección web, por ejemplo https://example.com",
 };

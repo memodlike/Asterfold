@@ -323,6 +323,7 @@ export const ru = {
   "paste.failed": "Не удалось добавить ссылки",
   "trash.movedOne": "Перемещено в корзину: {name}",
   "trash.movedMany": "Перемещено в корзину: {count} шт.",
+  "bookmark.urlInvalid": "Введите адрес сайта, например https://example.com",
 } as const;
 
 export type MessageKey = keyof typeof ru;

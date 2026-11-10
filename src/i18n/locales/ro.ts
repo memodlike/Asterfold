@@ -325,4 +325,5 @@ export const ro: Record<MessageKey, string> = {
   "paste.failed": "Linkurile nu au putut fi adăugate",
   "trash.movedOne": "Mutat în coș: {name}",
   "trash.movedMany": "Elemente mutate în coș: {count}",
+  "bookmark.urlInvalid": "Introdu o adresă web, de exemplu https://example.com",
 };

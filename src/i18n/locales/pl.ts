@@ -325,4 +325,5 @@ export const pl: Record<MessageKey, string> = {
   "paste.failed": "Nie udało się dodać linków",
   "trash.movedOne": "Przeniesiono do kosza: {name}",
   "trash.movedMany": "Elementy przeniesione do kosza: {count}",
+  "bookmark.urlInvalid": "Wpisz adres strony, na przykład https://example.com",
 };

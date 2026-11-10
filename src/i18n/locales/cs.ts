@@ -325,4 +325,5 @@ export const cs: Record<MessageKey, string> = {
   "paste.failed": "Odkazy se nepodařilo přidat",
   "trash.movedOne": "Přesunuto do koše: {name}",
   "trash.movedMany": "Položky přesunuté do koše: {count}",
+  "bookmark.urlInvalid": "Zadejte webovou adresu, například https://example.com",
 };

@@ -325,4 +325,5 @@ export const tr: Record<MessageKey, string> = {
   "paste.failed": "Bağlantılar eklenemedi",
   "trash.movedOne": "Çöp kutusuna taşındı: {name}",
   "trash.movedMany": "Çöp kutusuna taşınan öğeler: {count}",
+  "bookmark.urlInvalid": "Bir web adresi girin, örneğin https://example.com",
 };

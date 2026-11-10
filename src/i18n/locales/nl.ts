@@ -325,4 +325,5 @@ export const nl: Record<MessageKey, string> = {
   "paste.failed": "Links konden niet worden toegevoegd",
   "trash.movedOne": "Naar prullenbak verplaatst: {name}",
   "trash.movedMany": "Items naar prullenbak verplaatst: {count}",
+  "bookmark.urlInvalid": "Voer een webadres in, bijvoorbeeld https://example.com",
 };

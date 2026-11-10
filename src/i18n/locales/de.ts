@@ -325,4 +325,5 @@ export const de: Record<MessageKey, string> = {
   "paste.failed": "Links konnten nicht hinzugefügt werden",
   "trash.movedOne": "In den Papierkorb verschoben: {name}",
   "trash.movedMany": "In den Papierkorb verschobene Elemente: {count}",
+  "bookmark.urlInvalid": "Geben Sie eine Webadresse ein, zum Beispiel https://example.com",
 };

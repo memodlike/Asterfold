@@ -325,4 +325,5 @@ export const ja: Record<MessageKey, string> = {
   "paste.failed": "リンクを追加できませんでした",
   "trash.movedOne": "ゴミ箱に移動しました: {name}",
   "trash.movedMany": "ゴミ箱に移動した項目: {count}",
+  "bookmark.urlInvalid": "ウェブアドレスを入力してください（例: https://example.com）",
 };

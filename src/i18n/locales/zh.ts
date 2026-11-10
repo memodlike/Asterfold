@@ -325,4 +325,5 @@ export const zh: Record<MessageKey, string> = {
   "paste.failed": "无法添加链接",
   "trash.movedOne": "已移到回收站：{name}",
   "trash.movedMany": "已移到回收站的项目：{count}",
+  "bookmark.urlInvalid": "请输入网址，例如 https://example.com",
 };

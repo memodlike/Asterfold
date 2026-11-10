@@ -325,4 +325,5 @@ export const uk: Record<MessageKey, string> = {
   "paste.failed": "Не вдалося додати посилання",
   "trash.movedOne": "Переміщено до кошика: {name}",
   "trash.movedMany": "Переміщено до кошика елементів: {count}",
+  "bookmark.urlInvalid": "Введіть адресу сайту, наприклад https://example.com",
 };
