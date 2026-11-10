@@ -52,9 +52,11 @@ function hasControlCharacters(value: string): boolean {
  */
 export function withDefaultScheme(input: string): string {
   const trimmed = input.trim();
-  if (trimmed.length === 0 || /^[a-z][a-z0-9+.-]*:\/\//iu.test(trimmed)) return trimmed;
-  if (/^(?:mailto|javascript|data|vbscript|file|blob|about|chrome|chrome-extension|view-source):/iu.test(trimmed)) return trimmed;
-  if (/\s/u.test(trimmed) || !/^[^/?#]+\.[^/?#.]{2,}(?::\d+)?(?:[/?#]|$)|^localhost(?::\d+)?(?:[/?#]|$)/iu.test(trimmed)) return trimmed;
+  if (trimmed.length === 0 || /\s/u.test(trimmed)) return trimmed;
+  // "scheme:" followed by anything except a bare port number is an explicit scheme (http:example.com,
+  // javascript:…, mailto:…); "localhost:3000" and "example.com:8080/x" are host:port and still get https://.
+  if (/^[a-z][a-z0-9+.-]*:(?!\d+(?:[/?#]|$))/iu.test(trimmed)) return trimmed;
+  if (!/^[^/?#]+\.[^/?#.]{2,}(?::\d+)?(?:[/?#]|$)|^localhost(?::\d+)?(?:[/?#]|$)/iu.test(trimmed)) return trimmed;
   return `https://${trimmed}`;
 }
 
