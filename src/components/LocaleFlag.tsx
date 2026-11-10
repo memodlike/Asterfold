@@ -23,5 +23,10 @@ export function LocaleFlag({ locale }: LocaleFlagProps) {
   if (locale === "pl") return <Frame label="Poland"><rect width="24" height="9" fill="#fff" /><rect y="9" width="24" height="9" fill="#dc143c" /></Frame>;
   if (locale === "uk") return <Frame label="Ukraine"><rect width="24" height="9" fill="#0057b7" /><rect y="9" width="24" height="9" fill="#ffd700" /></Frame>;
   if (locale === "tr") return <Frame label="Türkiye"><rect width="24" height="18" fill="#e30a17" /><circle cx="10" cy="9" r="4" fill="#fff" /><circle cx="11.2" cy="9" r="3.2" fill="#e30a17" /><path d="m15.5 6.7.7 1.5 1.7.2-1.25 1.1.35 1.65-1.5-.85-1.5.85.35-1.65-1.25-1.1 1.7-.2Z" fill="#fff" /></Frame>;
+  if (locale === "ro") return <Frame label="Romania"><rect width="8" height="18" fill="#002b7f" /><rect x="8" width="8" height="18" fill="#fcd116" /><rect x="16" width="8" height="18" fill="#ce1126" /></Frame>;
+  if (locale === "cs") return <Frame label="Czechia"><rect width="24" height="9" fill="#fff" /><rect y="9" width="24" height="9" fill="#d7141a" /><path d="M0 0 11 9 0 18Z" fill="#11457e" /></Frame>;
+  if (locale === "id") return <Frame label="Indonesia"><rect width="24" height="9" fill="#ce1126" /><rect y="9" width="24" height="9" fill="#fff" /></Frame>;
+  if (locale === "ja") return <Frame label="Japan"><rect width="24" height="18" fill="#fff" /><circle cx="12" cy="9" r="4.6" fill="#bc002d" /></Frame>;
+  if (locale === "zh") return <Frame label="China"><rect width="24" height="18" fill="#de2910" /><path d="m5 2.6.9 2.7h2.8L6.4 7l.9 2.7L5 8 2.7 9.7 3.6 7 1.3 5.3h2.8Z" fill="#ffde00" /><circle cx="10" cy="2.6" r=".8" fill="#ffde00" /><circle cx="11.8" cy="4.6" r=".8" fill="#ffde00" /><circle cx="11.8" cy="7.2" r=".8" fill="#ffde00" /><circle cx="10" cy="9.2" r=".8" fill="#ffde00" /></Frame>;
   return <Frame label="Netherlands"><rect width="24" height="6" fill="#ae1c28" /><rect y="6" width="24" height="6" fill="#fff" /><rect y="12" width="24" height="6" fill="#21468b" /></Frame>;
 }

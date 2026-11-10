@@ -109,7 +109,7 @@ export const nl: Record<MessageKey, string> = {
   "search.thisPage": "Deze pagina",
   "search.privateTitle": "Zoekinhoud is beveiligd",
   "search.privateBody": "Schakel privacymodus uit om in opgeslagen tekst te zoeken.",
-  "search.noMatches": "Geen overeenkomsten. Probeer een kortere zoekopdracht.",
+  "search.noMatches": "Geen resultaten. Controleer de spelling of wijzig de filters.",
   "search.start": "Begin met typen om te zoeken.",
   "search.reveal": "Tonen",
   "search.mode": "Zoekmodus",
@@ -323,4 +323,6 @@ export const nl: Record<MessageKey, string> = {
   "paste.addedOne": "{title} toegevoegd aan {board}",
   "paste.addedMany": "Bladwijzers toegevoegd aan {board}: {count}",
   "paste.failed": "Links konden niet worden toegevoegd",
+  "trash.movedOne": "Naar prullenbak verplaatst: {name}",
+  "trash.movedMany": "Items naar prullenbak verplaatst: {count}",
 };

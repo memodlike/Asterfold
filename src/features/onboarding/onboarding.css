@@ -32,6 +32,10 @@ html[data-performance="software"] .onboarding-tile { --enter-y: 0px; --enter-sca
 .onboarding-tile__icon { display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; border-radius: 9px; color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 16%, transparent); }
 .onboarding-tile .select-field { width: 100%; }
 .onboarding-privacy { display: flex; gap: 9px; align-items: flex-start; margin: auto 0 0; color: var(--color-text-secondary); font-size: 12.5px; line-height: 1.45; }
+.onboarding-hint { display: flex; gap: 8px; align-items: center; margin: -4px 0 0; color: var(--color-text-secondary); font-size: 12.5px; line-height: 1.45; }
+.onboarding-hint .locale-flag { flex: 0 0 auto; width: 20px; height: 15px; }
+.onboarding-hint > svg { flex: 0 0 auto; }
+.onboarding-hint--end { justify-content: flex-end; margin-top: -6px; text-align: end; }
 .onboarding-privacy svg { flex: 0 0 auto; margin-top: 1px; color: var(--color-success); }
 
 .onboarding-sources { display: grid; gap: 8px; }

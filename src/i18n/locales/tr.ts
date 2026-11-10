@@ -109,7 +109,7 @@ export const tr: Record<MessageKey, string> = {
   "search.thisPage": "Bu sayfa",
   "search.privateTitle": "Arama içeriği korunuyor",
   "search.privateBody": "Kayıtlı metinlerde arama yapmak için gizlilik modunu kapatın.",
-  "search.noMatches": "Eşleşme bulunamadı. Daha kısa bir sorgu deneyin.",
+  "search.noMatches": "Eşleşme yok. Yazımı kontrol edin veya filtreleri değiştirin.",
   "search.start": "Aramak için yazmaya başlayın.",
   "search.reveal": "Göster",
   "search.mode": "Arama modu",
@@ -323,4 +323,6 @@ export const tr: Record<MessageKey, string> = {
   "paste.addedOne": "{title}, {board} panosuna eklendi",
   "paste.addedMany": "{board} panosuna eklenen yer işaretleri: {count}",
   "paste.failed": "Bağlantılar eklenemedi",
+  "trash.movedOne": "Çöp kutusuna taşındı: {name}",
+  "trash.movedMany": "Çöp kutusuna taşınan öğeler: {count}",
 };

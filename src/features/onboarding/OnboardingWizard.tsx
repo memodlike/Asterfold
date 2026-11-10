@@ -3,6 +3,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ChangeEvent,
   type CSSProperties,
   type FormEvent,
@@ -32,7 +33,7 @@ import { parseBackupOffThread, parseHtmlOffThread } from "../../services/importW
 import { publishThemePreview } from "../appearance/themePreview";
 import { BUILTIN_WALLPAPERS } from "../appearance/themeRuntime";
 import { commitOnboardingPlan } from "./onboardingCommit";
-import { onboardingText, type OnboardingMessageKey } from "./onboardingMessages";
+import { onboardingText, resolveOnboardingLocale, type OnboardingMessageKey } from "./onboardingMessages";
 import {
   backupPreview,
   canContinue,
@@ -47,6 +48,24 @@ interface OnboardingWizardProps {
 }
 
 const SOURCE_ORDER: readonly OnboardingSource[] = ["default", "html", "backup"];
+
+const DARK_QUERY = "(prefers-color-scheme: dark)";
+
+function subscribeSystemDark(onChange: () => void): () => void {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return () => undefined;
+  const query = window.matchMedia(DARK_QUERY);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+function readSystemDark(): boolean {
+  return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia(DARK_QUERY).matches;
+}
+
+/** Tracks the operating-system colour scheme so "Auto" can say what it currently resolves to. */
+function useSystemDark(): boolean {
+  return useSyncExternalStore(subscribeSystemDark, readSystemDark, () => false);
+}
 
 export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardProps) {
   const initialLocale = workspace.settings.locale;
@@ -82,6 +101,10 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
     })),
     [plan.locale],
   );
+
+  const detectedLocale = resolveOnboardingLocale("auto");
+  const detectedLanguageName = localeOptions.find((option) => option.value === detectedLocale)?.label ?? "English";
+  const systemDark = useSystemDark();
 
   useEffect(() => {
     publishThemePreview(plan.theme);
@@ -294,6 +317,12 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
         <section className="onboarding-tile" aria-labelledby="onboarding-language-title">
           <header className="onboarding-tile__header"><span className="onboarding-tile__icon" aria-hidden="true"><Languages size={16} /></span><h3 id="onboarding-language-title">{t("welcome.language")}</h3></header>
           <SelectField value={plan.locale} options={languageOptions} onChange={setLocale} label={t("welcome.language")} autoFocus />
+          {plan.locale === "auto" ? (
+            <p className="onboarding-hint" data-testid="onboarding-detected-language">
+              <LocaleFlag locale={detectedLocale} />
+              <span>{t("welcome.detected", { language: detectedLanguageName })}</span>
+            </p>
+          ) : null}
           <p className="onboarding-privacy"><ShieldCheck size={16} aria-hidden="true" />{t("welcome.privacy")}</p>
         </section>
 
@@ -345,6 +374,12 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
               ))}
             </div>
           </div>
+          {plan.theme.mode === "system" ? (
+            <p className="onboarding-hint onboarding-hint--end" data-testid="onboarding-system-theme">
+              {systemDark ? <Moon size={13} aria-hidden="true" /> : <Sun size={13} aria-hidden="true" />}
+              <span>{t("appearance.systemTheme", { theme: translate(plan.locale, systemDark ? "settings.dark" : "settings.light") })}</span>
+            </p>
+          ) : null}
           <div className="onboarding-row">
             <span>{t("appearance.density")}</span>
             <div className="segmented" role="group" aria-label={t("appearance.density")}>

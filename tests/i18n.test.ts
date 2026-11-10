@@ -36,7 +36,7 @@ describe("runtime dictionaries", () => {
     const expectedTitles = {
       de: "Neuer Tab", en: "New Tab", es: "Nueva pestaña", fr: "Nouvel onglet", it: "Nuova scheda",
       kk: "Жаңа қойынды", nl: "Nieuw tabblad", pl: "Nowa karta", pt: "Novo separador", ru: "Новая вкладка",
-      tr: "Yeni sekme", uk: "Нова вкладка",
+      tr: "Yeni sekme", uk: "Нова вкладка", ro: "Filă nouă", cs: "Nová karta", id: "Tab Baru", ja: "新しいタブ", zh: "新标签页",
     } as const;
     for (const [locale, title] of Object.entries(expectedTitles)) {
       expect(translate(locale as AppLocale, "tab.title"), locale).toBe(title);
@@ -45,8 +45,8 @@ describe("runtime dictionaries", () => {
     }
   });
 
-  it("enforces exact 322 key coverage with no English leakage in European locales", () => {
-    expect(messageKeys.length).toBe(322);
+  it("enforces exact 324 key coverage with no English leakage in European locales", () => {
+    expect(messageKeys.length).toBe(324);
     const sampleKeys = [
       "settings.appearance",
       "settings.performance",

@@ -283,8 +283,8 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
     void run(async () => {
       await softDeleteBoard(board.id);
       toasts.push({
-        message: `${board.title} → ${t("generic.trash")}`,
-        privacyMessage: `${t("generic.board")} → ${t("generic.trash")}`,
+        message: t("trash.movedOne", { name: board.title }),
+        privacyMessage: t("trash.movedOne", { name: t("generic.board") }),
         actionLabel: t("generic.undo"),
         onAction: async () => { await restoreBoard(board.id); },
       });
@@ -295,8 +295,8 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
       await softDeleteBookmark(bookmark.id);
       setSelectedIds((current) => { const next = new Set(current); next.delete(bookmark.id); return next; });
       toasts.push({
-        message: `${bookmark.title} → ${t("generic.trash")}`,
-        privacyMessage: `${t("privacy.hiddenBookmark")} → ${t("generic.trash")}`,
+        message: t("trash.movedOne", { name: bookmark.title }),
+        privacyMessage: t("trash.movedOne", { name: t("privacy.hiddenBookmark") }),
         actionLabel: t("generic.undo"),
         onAction: async () => { await restoreBookmark(bookmark.id); },
       });
@@ -306,8 +306,8 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
     void run(async () => {
       await softDeletePage(page.id);
       toasts.push({
-        message: `${page.title} → ${t("generic.trash")}`,
-        privacyMessage: `${t("generic.page")} → ${t("generic.trash")}`,
+        message: t("trash.movedOne", { name: page.title }),
+        privacyMessage: t("trash.movedOne", { name: t("generic.page") }),
         actionLabel: t("generic.undo"),
         onAction: async () => { await restorePage(page.id); },
       });
@@ -354,7 +354,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
     void run(async () => {
       await bulkDeleteBookmarks(ids);
       setSelectedIds(new Set());
-      toasts.push({ message: `${ids.length} → ${t("generic.trash")}`, actionLabel: t("generic.undo"), onAction: async () => { await bulkRestoreBookmarks(ids); } });
+      toasts.push({ message: t("trash.movedMany", { count: ids.length }), actionLabel: t("generic.undo"), onAction: async () => { await bulkRestoreBookmarks(ids); } });
     });
   };
   const exportSelected = (): void => {

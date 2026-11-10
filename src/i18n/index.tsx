@@ -13,8 +13,16 @@ import { pl } from "./locales/pl";
 import { uk } from "./locales/uk";
 import { tr } from "./locales/tr";
 import { nl } from "./locales/nl";
+import { ro } from "./locales/ro";
+import { cs } from "./locales/cs";
+import { id } from "./locales/id";
+import { ja } from "./locales/ja";
+import { zh } from "./locales/zh";
+
+import { matchLocale } from "./matchLocale";
 
 export type { MessageKey };
+export { matchLocale };
 export const messageKeys = Object.keys(ru) as MessageKey[];
 
 export type AppLocale = Exclude<LocalePreference, "auto">;
@@ -33,6 +41,11 @@ export const localeOptions: ReadonlyArray<{ value: LocalePreference; label: stri
   { value: "uk", label: "Українська", flag: "🇺🇦" },
   { value: "tr", label: "Türkçe", flag: "🇹🇷" },
   { value: "nl", label: "Nederlands", flag: "🇳🇱" },
+  { value: "ro", label: "Română", flag: "🇷🇴" },
+  { value: "cs", label: "Čeština", flag: "🇨🇿" },
+  { value: "id", label: "Bahasa Indonesia", flag: "🇮🇩" },
+  { value: "ja", label: "日本語", flag: "🇯🇵" },
+  { value: "zh", label: "简体中文", flag: "🇨🇳" },
 ];
 
 const dictionaries: Record<AppLocale, Record<MessageKey, string>> = {
@@ -48,12 +61,16 @@ const dictionaries: Record<AppLocale, Record<MessageKey, string>> = {
   uk,
   tr,
   nl,
+  ro,
+  cs,
+  id,
+  ja,
+  zh,
 };
 
 function detectLocale(): AppLocale {
   const chromeLocale = typeof chrome !== "undefined" && chrome.i18n?.getUILanguage ? chrome.i18n.getUILanguage() : "";
-  const language = (chromeLocale || (typeof navigator !== "undefined" ? navigator.language : "en")).toLowerCase().split("-")[0] ?? "en";
-  return language in dictionaries ? language as AppLocale : "en";
+  return matchLocale(chromeLocale || (typeof navigator !== "undefined" ? navigator.language : "en"), Object.keys(dictionaries)) as AppLocale;
 }
 
 export function resolveLocale(preference: LocalePreference): AppLocale {

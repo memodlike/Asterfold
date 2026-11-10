@@ -107,7 +107,7 @@ export const ru = {
   "search.thisPage": "На этой странице",
   "search.privateTitle": "Содержимое поиска защищено",
   "search.privateBody": "Выключите приватный режим, чтобы искать сохранённый текст.",
-  "search.noMatches": "Совпадений нет. Попробуйте более короткий запрос.",
+  "search.noMatches": "Ничего не найдено. Проверьте написание или измените фильтры.",
   "search.start": "Начните вводить запрос.",
   "search.reveal": "Показать",
   "search.mode": "Режим поиска",
@@ -321,6 +321,8 @@ export const ru = {
   "paste.addedOne": "Добавлено: {title} в {board}",
   "paste.addedMany": "Добавлено закладок в {board}: {count}",
   "paste.failed": "Не удалось добавить ссылки",
+  "trash.movedOne": "Перемещено в корзину: {name}",
+  "trash.movedMany": "Перемещено в корзину: {count} шт.",
 } as const;
 
 export type MessageKey = keyof typeof ru;

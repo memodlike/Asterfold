@@ -1,4 +1,5 @@
 import type { LocalePreference } from "../../domain/models";
+import { matchLocale } from "../../i18n/matchLocale";
 
 export type OnboardingMessageKey =
   | "greeting.morning"
@@ -53,7 +54,9 @@ export type OnboardingMessageKey =
   | "welcome.summary"
   | "import.summary"
   | "import.skipDuplicates"
-  | "action.open";
+  | "action.open"
+  | "welcome.detected"
+  | "appearance.systemTheme";
 
 type AppLocale = Exclude<LocalePreference, "auto">;
 type Dictionary = Record<OnboardingMessageKey, string>;
@@ -112,6 +115,8 @@ const en: Dictionary = {
   "import.summary": "Bookmarks: {bookmarks} · boards: {boards}",
   "import.skipDuplicates": "Skip duplicates",
   "action.open": "Open my workspace",
+  "welcome.detected": "Detected from Chrome: {language}",
+  "appearance.systemTheme": "Auto follows your system. Now: {theme}",
 };
 
 const ru: Dictionary = {
@@ -168,6 +173,8 @@ const ru: Dictionary = {
   "import.summary": "Закладок: {bookmarks} · блоков: {boards}",
   "import.skipDuplicates": "Пропускать дубликаты",
   "action.open": "Открыть мой стол",
+  "welcome.detected": "Определено по Chrome: {language}",
+  "appearance.systemTheme": "Авто повторяет систему. Сейчас: {theme}",
 };
 
 const kk: Dictionary = {
@@ -224,6 +231,8 @@ const kk: Dictionary = {
   "import.summary": "Бетбелгілер: {bookmarks} · блоктар: {boards}",
   "import.skipDuplicates": "Қайталанғандарды өткізу",
   "action.open": "Үстелімді ашу",
+  "welcome.detected": "Chrome бойынша анықталды: {language}",
+  "appearance.systemTheme": "Авто жүйеге сәйкес келеді. Қазір: {theme}",
 };
 
 const es: Dictionary = {
@@ -244,6 +253,8 @@ const es: Dictionary = {
   "import.summary": "Marcadores: {bookmarks} · tableros: {boards}",
   "import.skipDuplicates": "Omitir duplicados",
   "action.open": "Abrir mi espacio",
+  "welcome.detected": "Detectado en Chrome: {language}",
+  "appearance.systemTheme": "Auto sigue al sistema. Ahora: {theme}",
 };
 
 const de: Dictionary = {
@@ -264,6 +275,8 @@ const de: Dictionary = {
   "import.summary": "Lesezeichen: {bookmarks} · Boards: {boards}",
   "import.skipDuplicates": "Duplikate überspringen",
   "action.open": "Meinen Arbeitsbereich öffnen",
+  "welcome.detected": "Aus Chrome erkannt: {language}",
+  "appearance.systemTheme": "Auto folgt dem System. Jetzt: {theme}",
 };
 
 const fr: Dictionary = {
@@ -284,6 +297,8 @@ const fr: Dictionary = {
   "import.summary": "Favoris : {bookmarks} · tableaux : {boards}",
   "import.skipDuplicates": "Ignorer les doublons",
   "action.open": "Ouvrir mon espace",
+  "welcome.detected": "Détecté depuis Chrome : {language}",
+  "appearance.systemTheme": "Auto suit le système. Actuellement : {theme}",
 };
 
 const it: Dictionary = {
@@ -304,6 +319,8 @@ const it: Dictionary = {
   "import.summary": "Preferiti: {bookmarks} · bacheche: {boards}",
   "import.skipDuplicates": "Salta i duplicati",
   "action.open": "Apri il mio spazio",
+  "welcome.detected": "Rilevato da Chrome: {language}",
+  "appearance.systemTheme": "Auto segue il sistema. Ora: {theme}",
 };
 
 const pt: Dictionary = {
@@ -324,6 +341,8 @@ const pt: Dictionary = {
   "import.summary": "Favoritos: {bookmarks} · quadros: {boards}",
   "import.skipDuplicates": "Ignorar duplicados",
   "action.open": "Abrir o meu espaço",
+  "welcome.detected": "Detetado no Chrome: {language}",
+  "appearance.systemTheme": "Auto segue o sistema. Agora: {theme}",
 };
 
 const pl: Dictionary = {
@@ -344,6 +363,8 @@ const pl: Dictionary = {
   "import.summary": "Zakładki: {bookmarks} · tablice: {boards}",
   "import.skipDuplicates": "Pomijaj duplikaty",
   "action.open": "Otwórz mój obszar",
+  "welcome.detected": "Wykryto w Chrome: {language}",
+  "appearance.systemTheme": "Auto podąża za systemem. Teraz: {theme}",
 };
 
 const uk: Dictionary = {
@@ -364,6 +385,8 @@ const uk: Dictionary = {
   "import.summary": "Закладок: {bookmarks} · дошок: {boards}",
   "import.skipDuplicates": "Пропускати дублікати",
   "action.open": "Відкрити мій стіл",
+  "welcome.detected": "Визначено за Chrome: {language}",
+  "appearance.systemTheme": "Авто повторює систему. Зараз: {theme}",
 };
 
 const tr: Dictionary = {
@@ -384,6 +407,8 @@ const tr: Dictionary = {
   "import.summary": "Yer imleri: {bookmarks} · panolar: {boards}",
   "import.skipDuplicates": "Yinelenenleri atla",
   "action.open": "Çalışma alanımı aç",
+  "welcome.detected": "Chrome'dan algılandı: {language}",
+  "appearance.systemTheme": "Otomatik, sistemi izler. Şu an: {theme}",
 };
 
 const nl: Dictionary = {
@@ -404,15 +429,126 @@ const nl: Dictionary = {
   "import.summary": "Bladwijzers: {bookmarks} · borden: {boards}",
   "import.skipDuplicates": "Duplicaten overslaan",
   "action.open": "Mijn werkruimte openen",
+  "welcome.detected": "Gedetecteerd via Chrome: {language}",
+  "appearance.systemTheme": "Auto volgt het systeem. Nu: {theme}",
 };
 
-const dictionaries: Record<AppLocale, Dictionary> = { en, ru, kk, es, de, fr, it, pt, pl, uk, tr, nl };
+const ro: Dictionary = {
+  "greeting.morning": "Bună dimineața", "greeting.afternoon": "Bună ziua", "greeting.evening": "Bună seara",
+  "welcome.title": "Bun venit în Asterfold", "welcome.body": "Configurează în câțiva pași un spațiu vizual de marcaje, privat și local.", "welcome.privacy": "Datele tale rămân în acest profil de browser. Fără cont și fără statistici.", "welcome.language": "Limba interfeței",
+  "step.welcome": "Bun venit", "step.import": "Marcaje", "step.appearance": "Aspect", "step.review": "Verificare",
+  "import.title": "Adu marcajele sau începe de la zero", "import.body": "Nu se scrie nimic până nu termini configurarea.", "import.default.title": "Începe cu Asterfold", "import.default.body": "Păstrează spațiul de lucru inițial. Poți importa mai târziu din Setări.",
+  "import.html.title": "Importă marcaje HTML", "import.html.body": "Alege un fișier de marcaje în format Netscape exportat de un browser.", "import.backup.title": "Restaurează o copie Asterfold", "import.backup.body": "Verifică și previzualizează copia JSON înainte de a o aplica.",
+  "import.preview": "{bookmarks} marcaje · {folders} dosare · {pages} pagini · {boards} panouri",
+  "import.empty": "Nu s-au găsit marcaje în această sursă.",
+  "import.parsing": "Se verifică fișierul ales…",
+  "appearance.title": "Alege aspectul de pornire", "appearance.body": "Schimbările sunt doar previzualizări până la finalizare.", "appearance.preset": "Temă", "appearance.density": "Densitate", "appearance.compact": "Compact", "appearance.comfortable": "Confortabil", "appearance.spacious": "Aerisit", "appearance.rows": "Rânduri în spațiul de lucru",
+  "review.title": "Verifică configurarea", "review.body": "Asterfold aplică toate alegerile într-o singură operațiune controlată.",
+  "review.source": "Sursa datelor", "review.language": "Limbă", "review.theme": "Temă", "review.layout": "Aranjare", "review.duplicates": "Duplicate",
+  "action.continue": "Continuă", "action.back": "Înapoi", "action.finish": "Termină configurarea", "action.finishing": "Se finalizează…", "action.skip": "Sari peste configurare", "action.retry": "Reîncearcă",
+  "skip.title": "Sari peste configurarea ghidată?", "skip.body": "Asterfold păstrează spațiul de lucru și aspectul implicite. Poți importa și personaliza mai târziu din Setări.", "skip.continue": "Continuă configurarea", "skip.confirm": "Sari și folosește valorile implicite", "status.ready": "Configurare finalizată", "status.error": "Configurarea nu a putut fi finalizată. Spațiul de lucru anterior a fost restaurat.",
+  "welcome.summary": "Trei alegeri rapide transformă fila nouă în biroul tău de marcaje. Poți schimba totul mai târziu din Setări.",
+  "import.summary": "Marcaje: {bookmarks} · panouri: {boards}",
+  "import.skipDuplicates": "Omite duplicatele",
+  "action.open": "Deschide spațiul meu de lucru",
+  "welcome.detected": "Detectat din Chrome: {language}",
+  "appearance.systemTheme": "Auto urmează sistemul. Acum: {theme}",
+};
+
+const cs: Dictionary = {
+  "greeting.morning": "Dobré ráno", "greeting.afternoon": "Dobré odpoledne", "greeting.evening": "Dobrý večer",
+  "welcome.title": "Vítejte v Asterfold", "welcome.body": "V několika krocích si nastavte soukromý, místní vizuální prostor pro záložky.", "welcome.privacy": "Vaše data zůstávají v tomto profilu prohlížeče. Bez účtu a bez analytiky.", "welcome.language": "Jazyk rozhraní",
+  "step.welcome": "Vítejte", "step.import": "Záložky", "step.appearance": "Vzhled", "step.review": "Kontrola",
+  "import.title": "Přeneste záložky, nebo začněte načisto", "import.body": "Dokud nastavení nedokončíte, nic se nezapíše.", "import.default.title": "Začít s Asterfold", "import.default.body": "Ponechte výchozí pracovní prostor. Importovat můžete později v Nastavení.",
+  "import.html.title": "Importovat záložky HTML", "import.html.body": "Vyberte soubor záložek ve formátu Netscape exportovaný z prohlížeče.", "import.backup.title": "Obnovit zálohu Asterfold", "import.backup.body": "Zálohu JSON před použitím ověřte a prohlédněte si ji.",
+  "import.preview": "{bookmarks} záložek · {folders} složek · {pages} stránek · {boards} nástěnek",
+  "import.empty": "V tomto zdroji nebyly nalezeny žádné záložky.",
+  "import.parsing": "Ověřuje se vybraný soubor…",
+  "appearance.title": "Zvolte výchozí vzhled", "appearance.body": "Do dokončení nastavení jde jen o náhled.", "appearance.preset": "Motiv", "appearance.density": "Hustota", "appearance.compact": "Kompaktní", "appearance.comfortable": "Pohodlná", "appearance.spacious": "Vzdušná", "appearance.rows": "Řady v pracovním prostoru",
+  "review.title": "Zkontrolujte nastavení", "review.body": "Asterfold použije všechny volby v jedné řízené operaci.",
+  "review.source": "Zdroj dat", "review.language": "Jazyk", "review.theme": "Motiv", "review.layout": "Rozložení", "review.duplicates": "Duplicity",
+  "action.continue": "Pokračovat", "action.back": "Zpět", "action.finish": "Dokončit nastavení", "action.finishing": "Dokončuje se…", "action.skip": "Přeskočit nastavení", "action.retry": "Zkusit znovu",
+  "skip.title": "Přeskočit průvodce nastavením?", "skip.body": "Asterfold ponechá výchozí pracovní prostor a vzhled. Importovat a upravovat můžete později v Nastavení.", "skip.continue": "Pokračovat v nastavení", "skip.confirm": "Přeskočit a použít výchozí", "status.ready": "Nastavení dokončeno", "status.error": "Nastavení se nepodařilo dokončit. Předchozí pracovní prostor byl obnoven.",
+  "welcome.summary": "Tři rychlé volby promění novou kartu ve váš stůl se záložkami. Vše můžete později změnit v Nastavení.",
+  "import.summary": "Záložky: {bookmarks} · nástěnky: {boards}",
+  "import.skipDuplicates": "Přeskočit duplicity",
+  "action.open": "Otevřít můj pracovní prostor",
+  "welcome.detected": "Zjištěno z Chromu: {language}",
+  "appearance.systemTheme": "Auto se řídí systémem. Nyní: {theme}",
+};
+
+const id: Dictionary = {
+  "greeting.morning": "Selamat pagi", "greeting.afternoon": "Selamat siang", "greeting.evening": "Selamat malam",
+  "welcome.title": "Selamat datang di Asterfold", "welcome.body": "Siapkan ruang kerja bookmark visual yang privat dan lokal dalam beberapa langkah.", "welcome.privacy": "Data Anda tetap di profil browser ini. Tanpa akun dan tanpa analitik.", "welcome.language": "Bahasa antarmuka",
+  "step.welcome": "Selamat datang", "step.import": "Bookmark", "step.appearance": "Tampilan", "step.review": "Tinjau",
+  "import.title": "Bawa bookmark atau mulai dari awal", "import.body": "Tidak ada yang ditulis sampai penyiapan selesai.", "import.default.title": "Mulai dengan Asterfold", "import.default.body": "Pertahankan ruang kerja awal. Anda bisa mengimpor nanti di Setelan.",
+  "import.html.title": "Impor bookmark HTML", "import.html.body": "Pilih file bookmark berformat Netscape yang diekspor dari browser.", "import.backup.title": "Pulihkan cadangan Asterfold", "import.backup.body": "Validasi dan pratinjau cadangan JSON sebelum menerapkannya.",
+  "import.preview": "{bookmarks} bookmark · {folders} folder · {pages} halaman · {boards} papan",
+  "import.empty": "Tidak ada bookmark di sumber ini.",
+  "import.parsing": "Memvalidasi file yang dipilih…",
+  "appearance.title": "Pilih tampilan awal", "appearance.body": "Perubahan ini hanya pratinjau sampai penyiapan selesai.", "appearance.preset": "Tema", "appearance.density": "Kerapatan", "appearance.compact": "Ringkas", "appearance.comfortable": "Nyaman", "appearance.spacious": "Lapang", "appearance.rows": "Baris ruang kerja",
+  "review.title": "Tinjau penyiapan", "review.body": "Asterfold menerapkan semua pilihan dalam satu operasi terkendali.",
+  "review.source": "Sumber data", "review.language": "Bahasa", "review.theme": "Tema", "review.layout": "Tata letak", "review.duplicates": "Duplikat",
+  "action.continue": "Lanjutkan", "action.back": "Kembali", "action.finish": "Selesaikan penyiapan", "action.finishing": "Menyelesaikan…", "action.skip": "Lewati penyiapan", "action.retry": "Coba lagi",
+  "skip.title": "Lewati penyiapan terpandu?", "skip.body": "Asterfold akan memakai ruang kerja dan tampilan default. Anda bisa mengimpor dan menyesuaikan nanti di Setelan.", "skip.continue": "Lanjutkan penyiapan", "skip.confirm": "Lewati dan pakai default", "status.ready": "Penyiapan selesai", "status.error": "Penyiapan tidak dapat diselesaikan. Ruang kerja sebelumnya telah dipulihkan.",
+  "welcome.summary": "Tiga pilihan singkat mengubah tab baru ini menjadi meja bookmark Anda. Semuanya bisa diubah nanti di Setelan.",
+  "import.summary": "Bookmark: {bookmarks} · papan: {boards}",
+  "import.skipDuplicates": "Lewati duplikat",
+  "action.open": "Buka ruang kerja saya",
+  "welcome.detected": "Terdeteksi dari Chrome: {language}",
+  "appearance.systemTheme": "Otomatis mengikuti sistem. Sekarang: {theme}",
+};
+
+const ja: Dictionary = {
+  "greeting.morning": "おはようございます", "greeting.afternoon": "こんにちは", "greeting.evening": "こんばんは",
+  "welcome.title": "Asterfold へようこそ", "welcome.body": "プライベートでローカル優先のビジュアル ブックマーク ワークスペースを、数ステップで用意します。", "welcome.privacy": "データはこのブラウザ プロファイル内にとどまります。アカウントも分析もありません。", "welcome.language": "表示言語",
+  "step.welcome": "ようこそ", "step.import": "ブックマーク", "step.appearance": "外観", "step.review": "確認",
+  "import.title": "ブックマークを取り込むか、新しく始める", "import.body": "設定を完了するまで、何も書き込まれません。", "import.default.title": "Asterfold で始める", "import.default.body": "最初のワークスペースをそのまま使います。あとで設定からインポートできます。",
+  "import.html.title": "ブックマーク HTML をインポート", "import.html.body": "ブラウザからエクスポートした Netscape 形式のブックマーク ファイルを選びます。", "import.backup.title": "Asterfold のバックアップを復元", "import.backup.body": "適用する前に JSON バックアップを検証してプレビューします。",
+  "import.preview": "ブックマーク {bookmarks} · フォルダ {folders} · ページ {pages} · ボード {boards}",
+  "import.empty": "このソースにブックマークは見つかりませんでした。",
+  "import.parsing": "選択したファイルを検証しています…",
+  "appearance.title": "最初の外観を選ぶ", "appearance.body": "設定が完了するまで、変更はプレビューです。", "appearance.preset": "テーマ", "appearance.density": "密度", "appearance.compact": "コンパクト", "appearance.comfortable": "標準", "appearance.spacious": "ゆったり", "appearance.rows": "ワークスペースの行",
+  "review.title": "設定を確認", "review.body": "Asterfold は選択内容を 1 回の操作でまとめて適用します。",
+  "review.source": "データの取得元", "review.language": "言語", "review.theme": "テーマ", "review.layout": "レイアウト", "review.duplicates": "重複",
+  "action.continue": "続ける", "action.back": "戻る", "action.finish": "設定を完了", "action.finishing": "完了しています…", "action.skip": "設定をスキップ", "action.retry": "再試行",
+  "skip.title": "ガイド付き設定をスキップしますか？", "skip.body": "Asterfold は既定のワークスペースと外観を使います。インポートやカスタマイズは、あとで設定から行えます。", "skip.continue": "設定を続ける", "skip.confirm": "スキップして既定を使う", "status.ready": "設定が完了しました", "status.error": "設定を完了できませんでした。以前のワークスペースを復元しました。",
+  "welcome.summary": "3 つ選ぶだけで、この新しいタブがあなたのブックマーク デスクになります。すべて、あとで設定から変更できます。",
+  "import.summary": "ブックマーク: {bookmarks} · ボード: {boards}",
+  "import.skipDuplicates": "重複をスキップ",
+  "action.open": "ワークスペースを開く",
+  "welcome.detected": "Chrome から検出: {language}",
+  "appearance.systemTheme": "自動はシステムに合わせます。現在: {theme}",
+};
+
+const zh: Dictionary = {
+  "greeting.morning": "早上好", "greeting.afternoon": "下午好", "greeting.evening": "晚上好",
+  "welcome.title": "欢迎使用 Asterfold", "welcome.body": "只需几步，即可建立私密、本地优先的可视化书签工作区。", "welcome.privacy": "你的数据只保存在这个浏览器配置文件中。无需账号，没有统计分析。", "welcome.language": "界面语言",
+  "step.welcome": "欢迎", "step.import": "书签", "step.appearance": "外观", "step.review": "确认",
+  "import.title": "带上书签，或从头开始", "import.body": "完成设置之前不会写入任何内容。", "import.default.title": "从 Asterfold 开始", "import.default.body": "保留初始工作区。之后可以在设置中导入。",
+  "import.html.title": "导入书签 HTML", "import.html.body": "选择浏览器导出的 Netscape 格式书签文件。", "import.backup.title": "恢复 Asterfold 备份", "import.backup.body": "应用之前先校验并预览 JSON 备份。",
+  "import.preview": "{bookmarks} 个书签 · {folders} 个文件夹 · {pages} 个页面 · {boards} 个看板",
+  "import.empty": "此来源中没有找到书签。",
+  "import.parsing": "正在校验所选文件…",
+  "appearance.title": "选择初始外观", "appearance.body": "完成设置之前，这些更改只是预览。", "appearance.preset": "主题", "appearance.density": "密度", "appearance.compact": "紧凑", "appearance.comfortable": "舒适", "appearance.spacious": "宽松", "appearance.rows": "工作区行数",
+  "review.title": "确认设置", "review.body": "Asterfold 会在一次受控操作中应用这些选择。",
+  "review.source": "数据来源", "review.language": "语言", "review.theme": "主题", "review.layout": "布局", "review.duplicates": "重复项",
+  "action.continue": "继续", "action.back": "返回", "action.finish": "完成设置", "action.finishing": "正在完成…", "action.skip": "跳过设置", "action.retry": "重试",
+  "skip.title": "要跳过引导设置吗？", "skip.body": "Asterfold 将使用默认工作区和外观。之后可以在设置中导入和自定义。", "skip.continue": "继续设置", "skip.confirm": "跳过并使用默认值", "status.ready": "设置完成", "status.error": "无法完成设置。已恢复之前的工作区。",
+  "welcome.summary": "三个简单的选择，就能把新标签页变成你的书签桌面。之后都可以在设置中更改。",
+  "import.summary": "书签：{bookmarks} · 看板：{boards}",
+  "import.skipDuplicates": "跳过重复项",
+  "action.open": "打开我的工作区",
+  "welcome.detected": "已从 Chrome 检测到：{language}",
+  "appearance.systemTheme": "自动模式跟随系统。当前：{theme}",
+};
+
+const dictionaries: Record<AppLocale, Dictionary> = { en, ru, kk, es, de, fr, it, pt, pl, uk, tr, nl, ro, cs, id, ja, zh };
 
 export function resolveOnboardingLocale(preference: LocalePreference): AppLocale {
   if (preference !== "auto") return preference;
   const chromeLocale = typeof chrome !== "undefined" && chrome.i18n?.getUILanguage ? chrome.i18n.getUILanguage() : "";
-  const language = (chromeLocale || (typeof navigator !== "undefined" ? navigator.language : "en")).toLowerCase().split("-")[0] ?? "en";
-  return language in dictionaries ? language as AppLocale : "en";
+  return matchLocale(chromeLocale || (typeof navigator !== "undefined" ? navigator.language : "en"), Object.keys(dictionaries)) as AppLocale;
 }
 
 export function onboardingText(

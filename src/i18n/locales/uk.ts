@@ -109,7 +109,7 @@ export const uk: Record<MessageKey, string> = {
   "search.thisPage": "Ця сторінка",
   "search.privateTitle": "Вміст пошуку захищено",
   "search.privateBody": "Вимкніть режим приватності, щоб шукати у збереженому тексті.",
-  "search.noMatches": "Збігів не знайдено. Спробуйте коротший запит.",
+  "search.noMatches": "Нічого не знайдено. Перевірте написання або змініть фільтри.",
   "search.start": "Почніть вводити для пошуку.",
   "search.reveal": "Показати",
   "search.mode": "Режим пошуку",
@@ -323,4 +323,6 @@ export const uk: Record<MessageKey, string> = {
   "paste.addedOne": "Додано {title} до {board}",
   "paste.addedMany": "Додано закладок до {board}: {count}",
   "paste.failed": "Не вдалося додати посилання",
+  "trash.movedOne": "Переміщено до кошика: {name}",
+  "trash.movedMany": "Переміщено до кошика елементів: {count}",
 };

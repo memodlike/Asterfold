@@ -94,7 +94,7 @@ export function SearchPalette(props: SearchPaletteProps) {
       <div ref={fieldRef} className="spotlight__field">
         <Search size={20} aria-hidden="true" />
         <input ref={inputRef} maxLength={240} disabled={props.privacy} value={props.privacy ? t("search.protected") : query} onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }} onKeyDown={handleSearchKeyDown} placeholder={t("search.placeholder")} aria-label={t("search.title")} aria-keyshortcuts={searchShortcut.aria} aria-controls="spotlight-results" aria-activedescendant={activeResult ? `spotlight-result-${activeResult.id}` : undefined} />
-        {!props.privacy && query.trim() ? <span className="spotlight__count" role="status">{t("search.found", { count: results.length })}</span> : null}
+        {!props.privacy && query.trim() ? <span className={`spotlight__count${results.length === 0 ? " is-empty" : ""}`} role="status">{t("search.found", { count: results.length })}</span> : null}
         <kbd>Esc</kbd>
       </div>
       <div className="spotlight__panel">
@@ -105,7 +105,7 @@ export function SearchPalette(props: SearchPaletteProps) {
         </div>
         {props.privacy ? <div className="spotlight__state"><span className="spotlight__state-icon"><ShieldCheck size={20} /></span><div><strong>{t("search.privateTitle")}</strong><span>{t("search.privateBody")}</span></div></div> : null}
         {!props.privacy && query && results.length === 0 ? <div className="spotlight__state"><span className="spotlight__state-icon"><Search size={20} /></span><div><strong>{t("search.noMatches")}</strong></div></div> : null}
-        {!props.privacy && !query ? <div className="spotlight__state"><span className="spotlight__state-icon"><Search size={20} /></span><div><strong>{t("search.start")}</strong><span>{t("search.placeholder")}</span></div></div> : null}
+        {!props.privacy && !query ? <div className="spotlight__state"><span className="spotlight__state-icon"><Search size={20} /></span><div><strong>{t("search.start")}</strong></div></div> : null}
         <div ref={listRef} id="spotlight-results" className="spotlight__results" role="list" aria-label={t("search.results")}>
           {results.map((result, index) => {
             const bookmark = bookmarkById.get(result.id);

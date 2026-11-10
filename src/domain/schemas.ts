@@ -116,7 +116,7 @@ export const appSettingsSchema = z.object({
   schemaVersion: finite.int().positive(),
   activePageId: nullableId,
   navigationMode: z.enum(["rail", "expanded"]),
-  locale: z.enum(["auto", "ru", "kk", "en", "es", "de", "fr", "it", "pt", "pl", "uk", "tr", "nl"]).default("auto"),
+  locale: z.enum(["auto", "ru", "kk", "en", "es", "de", "fr", "it", "pt", "pl", "uk", "tr", "nl", "ro", "cs", "id", "ja", "zh"]).default("auto"),
   workspaceLayoutMode: z.enum(["auto", "free"]).default("auto"),
   workspaceRows: z.union([z.literal(1), z.literal(2)]).default(2),
   workspaceAlignment: z.enum(["left", "center", "right"]).default("center"),

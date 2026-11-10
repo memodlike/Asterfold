@@ -106,7 +106,7 @@ export const kk: Record<MessageKey, string> = {
   "search.thisPage": "Осы бетте",
   "search.privateTitle": "Іздеу мазмұны қорғалған",
   "search.privateBody": "Сақталған мәтінді іздеу үшін құпиялық режимін өшіріңіз.",
-  "search.noMatches": "Сәйкестік жоқ. Қысқа сұрау қолданып көріңіз.",
+  "search.noMatches": "Ештеңе табылмады. Жазылуын тексеріңіз немесе сүзгілерді өзгертіңіз.",
   "search.start": "Іздеуді тере бастаңыз.",
   "search.reveal": "Көрсету",
   "search.mode": "Іздеу режимі",
@@ -323,4 +323,6 @@ export const kk: Record<MessageKey, string> = {
   "paste.addedOne": "{title} {board} блогына қосылды",
   "paste.addedMany": "{board} блогына қосылған бетбелгілер: {count}",
   "paste.failed": "Сілтемелерді қосу мүмкін болмады",
+  "trash.movedOne": "Себетке жіберілді: {name}",
+  "trash.movedMany": "Себетке жіберілген элементтер: {count}",
 };

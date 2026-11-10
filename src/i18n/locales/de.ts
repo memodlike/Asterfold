@@ -109,7 +109,7 @@ export const de: Record<MessageKey, string> = {
   "search.thisPage": "Diese Seite",
   "search.privateTitle": "Suchinhalte sind geschützt",
   "search.privateBody": "Deaktivieren Sie den Privatsphäre-Modus, um gespeicherten Text zu durchsuchen.",
-  "search.noMatches": "Keine Treffer. Versuchen Sie einen kürzeren Suchbegriff.",
+  "search.noMatches": "Keine Treffer. Prüfen Sie die Schreibweise oder ändern Sie die Filter.",
   "search.start": "Tippen Sie, um zu suchen.",
   "search.reveal": "Anzeigen",
   "search.mode": "Suchmodus",
@@ -323,4 +323,6 @@ export const de: Record<MessageKey, string> = {
   "paste.addedOne": "{title} zu {board} hinzugefügt",
   "paste.addedMany": "Lesezeichen zu {board} hinzugefügt: {count}",
   "paste.failed": "Links konnten nicht hinzugefügt werden",
+  "trash.movedOne": "In den Papierkorb verschoben: {name}",
+  "trash.movedMany": "In den Papierkorb verschobene Elemente: {count}",
 };
