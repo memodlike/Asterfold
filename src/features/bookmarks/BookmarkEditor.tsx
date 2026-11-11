@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Bookmark as BookmarkIcon, ExternalLink } from "lucide-react";
+import { AlertCircle, AlertTriangle, Bookmark as BookmarkIcon } from "lucide-react";
 import type { Board, Bookmark, BookmarkOpenMode, Page } from "../../domain/models";
 import { createBookmark, findDuplicate, updateBookmark } from "../../db/repository";
-import { DuplicateError, WorkspaceLimitError } from "../../domain/errors";
+import { DuplicateError, ValidationError, WorkspaceLimitError } from "../../domain/errors";
+import { withDefaultScheme } from "../../domain/urls";
 import { Button } from "../../components/Button";
 import { BrowserFavicon } from "../../components/BrowserFavicon";
 import { Modal } from "../../components/Modal";
@@ -34,6 +35,8 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
   const [duplicate, setDuplicate] = useState<Bookmark | null>(null);
   const [allowDuplicate, setAllowDuplicate] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [urlError, setUrlError] = useState(false);
+  const urlInputRef = useRef<HTMLInputElement>(null);
   const savingRef = useRef(false);
 
   useEffect(() => {
@@ -72,23 +75,29 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
     { value: "incognito", label: t("bookmark.incognito") },
   ], [t]);
   const formId = "asterfold-bookmark-editor";
+  const urlErrorId = "asterfold-bookmark-url-error";
 
   const save = async (): Promise<void> => {
     if (savingRef.current) return;
     savingRef.current = true;
     setSaving(true);
+    setUrlError(false);
+    const finalUrl = withDefaultScheme(url);
     performance.mark("asterfold-save-start");
     try {
       const saved = props.bookmark
-        ? await updateBookmark(props.bookmark.id, { title, url, description, boardId, openMode })
-        : await createBookmark({ boardId, title, url, description, openMode }, { allowDuplicate });
+        ? await updateBookmark(props.bookmark.id, { title, url: finalUrl, description, boardId, openMode })
+        : await createBookmark({ boardId, title, url: finalUrl, description, openMode }, { allowDuplicate });
       performance.mark("asterfold-save-committed");
       performance.measure("asterfold-local-save", "asterfold-save-start", "asterfold-save-committed");
       props.onSaved(saved);
       props.onClose();
     } catch (error) {
       if (error instanceof DuplicateError) {
-        setDuplicate(await findDuplicate(boardId, url));
+        setDuplicate(await findDuplicate(boardId, finalUrl));
+      } else if (error instanceof ValidationError) {
+        setUrlError(true);
+        urlInputRef.current?.focus();
       } else {
         props.onError(t(error instanceof WorkspaceLimitError ? "error.workspaceLimit" : "error.saveBookmarkFailed"));
       }
@@ -112,18 +121,18 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
     >
       {props.privacy ? (
         <div className="search-state search-private"><span className="search-state__icon"><BookmarkIcon size={22} /></span><div><strong>{t("search.privateTitle")}</strong><span>{t("search.privateBody")}</span></div></div>
-      ) : <form id={formId} className="form-stack" onSubmit={(event) => { event.preventDefault(); void save(); }}>
+      ) : <form id={formId} className="form-stack" noValidate onSubmit={(event) => { event.preventDefault(); void save(); }}>
         <div className="bookmark-preview">
           <span className="favicon--large"><BrowserFavicon url={url} title={title} privacy={props.privacy} /></span>
           <div><strong>{title || t("bookmark.untitled")}</strong><small>{url}</small></div>
         </div>
         <label>{t("generic.title")}<input autoFocus value={title} maxLength={240} onChange={(event) => setTitle(event.target.value)} placeholder={t("bookmark.untitled")} /></label>
-        <label>{t("bookmark.url")}<input type="url" required value={url} maxLength={8192} onChange={(event) => setUrl(event.target.value)} placeholder={t("bookmark.urlPlaceholder")} /></label>
+        <label>{t("bookmark.url")}<input ref={urlInputRef} type="url" inputMode="url" required value={url} maxLength={8192} aria-invalid={urlError || undefined} aria-describedby={urlError ? urlErrorId : undefined} onChange={(event) => { setUrl(event.target.value); setUrlError(false); }} placeholder={t("bookmark.urlPlaceholder")} />{urlError ? <span id={urlErrorId} className="field-error" role="alert"><AlertCircle size={14} aria-hidden="true" />{t("bookmark.urlInvalid")}</span> : null}</label>
         <label>{t("generic.description")}<textarea value={description} maxLength={2000} rows={4} onChange={(event) => setDescription(event.target.value)} placeholder={t("bookmark.optionalNote")} /></label>
         <label>{t("generic.destination")}<SelectField value={boardId} options={destinationOptions} label={t("generic.destination")} onChange={setBoardId} /></label>
         <label>{t("bookmark.openMode")}<SelectField value={openMode} options={openModeOptions} label={t("bookmark.openMode")} onChange={(value) => setOpenMode(value as BookmarkOpenMode)} /></label>
         {duplicate ? (
-          <div className="inline-warning"><AlertTriangle size={18} /><div><strong>{t("bookmark.duplicateWarning")}</strong><span>{duplicate.title}</span>{!props.bookmark ? <button type="button" onClick={() => setAllowDuplicate(true)}>{t(allowDuplicate ? "bookmark.copyWillSave" : "bookmark.saveCopy")}</button> : null}</div><ExternalLink size={15} /></div>
+          <div className="inline-warning" role="status"><AlertTriangle size={18} aria-hidden="true" /><div><strong>{t("bookmark.duplicateWarning")}</strong><span>{duplicate.title}</span>{!props.bookmark ? <button type="button" onClick={() => setAllowDuplicate(true)}>{t(allowDuplicate ? "bookmark.copyWillSave" : "bookmark.saveCopy")}</button> : null}</div></div>
         ) : null}
         <button type="submit" hidden aria-hidden="true" />
       </form>}

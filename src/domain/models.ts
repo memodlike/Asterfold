@@ -110,7 +110,12 @@ export type LocalePreference =
   | "pl"
   | "uk"
   | "tr"
-  | "nl";
+  | "nl"
+  | "ro"
+  | "cs"
+  | "id"
+  | "ja"
+  | "zh";
 export type WorkspaceLayoutMode = "auto" | "free";
 export type WorkspaceAlignment = "left" | "center" | "right";
 

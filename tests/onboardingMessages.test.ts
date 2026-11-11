@@ -6,7 +6,7 @@ import {
   type OnboardingMessageKey,
 } from "../src/features/onboarding/onboardingMessages";
 
-const locales = ["en", "ru", "kk", "es", "de", "fr", "it", "pt", "pl", "uk", "tr", "nl"] as const satisfies readonly LocalePreference[];
+const locales = ["en", "ru", "kk", "es", "de", "fr", "it", "pt", "pl", "uk", "tr", "nl", "ro", "cs", "id", "ja", "zh"] as const satisfies readonly LocalePreference[];
 const keys = [
   "greeting.morning", "greeting.afternoon", "greeting.evening", "welcome.title", "welcome.body", "welcome.privacy", "welcome.language",
   "step.welcome", "step.import", "step.appearance", "step.review", "import.title", "import.body", "import.default.title", "import.default.body",
@@ -42,7 +42,7 @@ describe("onboarding localization", () => {
 
   it("falls back to English for an unsupported system locale", () => {
     const originalNavigator = globalThis.navigator;
-    Object.defineProperty(globalThis, "navigator", { configurable: true, value: { language: "ja-JP" } });
+    Object.defineProperty(globalThis, "navigator", { configurable: true, value: { language: "sv-SE" } });
     try {
       expect(resolveOnboardingLocale("auto")).toBe("en");
       expect(onboardingText("auto", "welcome.title")).toBe("Welcome to Asterfold");
@@ -50,4 +50,17 @@ describe("onboarding localization", () => {
       Object.defineProperty(globalThis, "navigator", { configurable: true, value: originalNavigator });
     }
   });
+
+  it.each([["ja-JP", "ja"], ["zh-TW", "zh"], ["zh_CN", "zh"], ["in", "id"], ["id-ID", "id"], ["ro-MD", "ro"], ["cs", "cs"], ["pt-BR", "pt"]] as const)(
+    "detects %s from the browser as %s",
+    (language, expected) => {
+      const originalNavigator = globalThis.navigator;
+      Object.defineProperty(globalThis, "navigator", { configurable: true, value: { language } });
+      try {
+        expect(resolveOnboardingLocale("auto")).toBe(expected);
+      } finally {
+        Object.defineProperty(globalThis, "navigator", { configurable: true, value: originalNavigator });
+      }
+    },
+  );
 });

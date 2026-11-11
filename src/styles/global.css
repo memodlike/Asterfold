@@ -78,7 +78,9 @@ html[data-performance="software"] .board__glare, .motion-disabled .board__glare 
 .context-menu .danger { color: var(--color-danger); }
 .context-menu__group { margin-block: 3px; padding-block: 3px; border-block: 1px solid var(--color-border); }
 .context-menu__group + .context-menu__group { margin-top: -4px; border-top: 0; }
-.context-menu__group > span { display: block; padding: 3px 8px; color: var(--color-text-secondary); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+.context-menu__group > span { display: block; padding: 4px 10px 2px; color: var(--color-text-secondary); font-size: 11px; font-weight: 600; }
+.context-menu__separator { height: 1px; margin: 3px 6px; background: var(--color-border); }
+.context-menu__group + .context-menu__separator { display: none; }
 .context-menu__group button i, .context-menu__group button svg { width: 14px; flex: 0 0 14px; }
 .drag-overlay { display: inline-flex; align-items: center; gap: 8px; max-width: 280px; padding: 8px 14px; overflow: hidden; border-radius: var(--mat-radius-popover); color: var(--color-text); text-overflow: ellipsis; white-space: nowrap; font-size: 13px; box-shadow: var(--shadow-panel); pointer-events: none; }
 
@@ -137,6 +139,21 @@ kbd { padding: 5px 8px; border: 1px solid var(--color-border); border-radius: 7p
 .form-row label, .form-stack label { display: grid; flex: 1; gap: 6px; color: var(--color-text-secondary); font-size: 12px; }
 .form-row input, .form-row select, .form-stack input, .form-stack select, .form-stack textarea { width: 100%; }
 .form-stack { display: grid; gap: 13px; padding: 18px; }
+.form-stack .select-field { width: 100%; }
+.form-stack input[aria-invalid="true"] { border-color: var(--color-danger); }
+.field-error { display: flex; align-items: flex-start; gap: 6px; color: var(--color-danger); font-size: 12px; line-height: 1.4; }
+.field-error svg { flex: 0 0 auto; margin-top: 1px; }
+.bookmark-preview { display: flex; align-items: center; min-width: 0; gap: 12px; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--control-fill); }
+.bookmark-preview > div { display: grid; min-width: 0; gap: 2px; }
+.bookmark-preview strong, .bookmark-preview small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bookmark-preview strong { color: var(--color-text); font-size: 13.5px; font-weight: 650; }
+.bookmark-preview small { color: var(--color-text-secondary); font-size: 12px; }
+.bookmark-preview small:empty { display: none; }
+.inline-warning { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 14px; color: var(--color-text); background: var(--control-fill); font-size: 12.5px; line-height: 1.4; }
+.inline-warning > svg { flex: 0 0 auto; margin-top: 1px; color: var(--color-text-secondary); }
+.inline-warning > div { display: grid; min-width: 0; flex: 1; gap: 3px; justify-items: start; }
+.inline-warning span { overflow: hidden; max-width: 100%; color: var(--color-text-secondary); text-overflow: ellipsis; white-space: nowrap; }
+.inline-warning button { min-height: 28px; margin-top: 4px; padding: 4px 10px; border: 1px solid var(--color-border); border-radius: 9px; color: var(--color-text); background: var(--control-fill); font-size: 12px; font-weight: 600; }
 .modal__confirm-text { margin: 0; font-size: 13px; line-height: 1.5; color: var(--color-text-secondary); }
 .button-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .is-healthy { color: var(--color-success); }

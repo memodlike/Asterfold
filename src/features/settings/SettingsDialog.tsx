@@ -26,6 +26,7 @@ import { LocaleFlag } from "../../components/LocaleFlag";
 import { Modal } from "../../components/Modal";
 import { SelectField, type SelectOption } from "../../components/SelectField";
 import { localeOptions, useI18n } from "../../i18n";
+import { onboardingText, resolveOnboardingLocale } from "../onboarding/onboardingMessages";
 import { publishThemePreview } from "../appearance/themePreview";
 import { ACCENT_SWATCHES, accentFromImageBlob } from "../appearance/accent";
 import { BUILTIN_WALLPAPERS, isDarkTheme } from "../appearance/themeRuntime";
@@ -484,6 +485,12 @@ export function SettingsDialog(props: SettingsDialogProps) {
       keywords: [t("settings.languageDescription"), ...localeOptions.map((item) => item.label)],
       body: <>
         <SelectField value={settings.locale} options={languageOptions} label={t("settings.language")} onChange={(value) => void patchSettings({ locale: value as AppSettings["locale"] })} />
+        {settings.locale === "auto" ? (
+          <p className="settings-note settings-note--detected">
+            <LocaleFlag locale={resolveOnboardingLocale("auto")} />
+            <span>{onboardingText(settings.locale, "welcome.detected", { language: localeOptions.find((item) => item.value === resolveOnboardingLocale("auto"))?.label ?? "English" })}</span>
+          </p>
+        ) : null}
         <p className="settings-note">{t("settings.languageDescription")}</p>
       </>,
     },

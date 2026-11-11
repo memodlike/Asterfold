@@ -72,7 +72,7 @@ describe("SearchPalette interaction coverage", () => {
     expect(screen.getByText("Start typing to search.")).toBeVisible();
 
     query("no-result-token");
-    expect(screen.getByText("No matches. Try a shorter query.")).toBeVisible();
+    expect(screen.getByText("No matches. Check the spelling or change the filters.")).toBeVisible();
 
     view.rerender(createElement(I18nProvider, { preference: "en", children: createElement(SearchPalette, { ...view.props, privacy: true }) }));
     expect(screen.getByRole("textbox")).toBeDisabled();
@@ -150,7 +150,7 @@ describe("SearchPalette interaction coverage", () => {
     expect(screen.getByText("Example Personal")).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "This page" }));
-    expect(screen.getByText("No matches. Try a shorter query.")).toBeVisible();
+    expect(screen.getByText("No matches. Check the spelling or change the filters.")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Everywhere" }));
     expect(screen.getByText("Example Personal")).toBeVisible();
   });

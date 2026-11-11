@@ -144,3 +144,5 @@ html[data-performance="software"] .settings-tile { box-shadow: var(--mat-shadow)
   .settings-find { width: auto; flex: 1; }
   .settings-modal .modal__header { flex-wrap: wrap; }
 }
+.settings-note--detected { display: flex; align-items: center; gap: 8px; }
+.settings-note--detected .locale-flag { flex: 0 0 auto; width: 20px; height: 15px; }

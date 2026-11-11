@@ -1,7 +1,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { AppWindow, Check, ClipboardPaste, Copy, ExternalLink, MoveRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { AppWindow, Check, ClipboardPaste, CopyPlus, ExternalLink, MoveRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { memo, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
 import type { Board, Bookmark } from "../../domain/models";
 import { isSafeOpenUrl } from "../../domain/urls";
@@ -133,8 +133,9 @@ export const BoardColumn = memo(function BoardColumn(props: BoardColumnProps) {
             </button>
           </>
         ) : null}
-        <button onClick={() => action(() => props.onDuplicateBoard(props.board))}><Copy size={15} />{t("generic.duplicate")}</button>
+        <button onClick={() => action(() => props.onDuplicateBoard(props.board))}><CopyPlus size={15} />{t("generic.duplicate")}</button>
         <button onClick={() => action(() => props.onPasteLinks(props.board))}><ClipboardPaste size={15} />{t("paste.menu")}</button>
+        <div className="context-menu__separator" role="separator" />
         <button className="danger" onClick={() => action(() => props.onDeleteBoard(props.board))}><Trash2 size={15} />{t("bookmark.moveTrash")}</button>
       </FloatingContextMenu> : null}
     </section>

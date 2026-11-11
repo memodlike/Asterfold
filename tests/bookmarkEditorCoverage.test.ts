@@ -210,6 +210,18 @@ describe("BookmarkEditor complete behavior", () => {
     expect(screen.queryByRole("button", { name: "Save another copy" })).toBeNull();
   });
 
+  it("explains an invalid address next to the field instead of a generic toast", async () => {
+    const { ValidationError } = await import("../src/domain/errors");
+    mocks.createBookmark.mockRejectedValueOnce(new ValidationError("This URL scheme is not allowed"));
+    const { handlers } = renderEditor();
+    fireEvent.submit(form());
+    const message = await screen.findByText("Enter a web address, for example https://example.com");
+    expect(message).toBeVisible();
+    expect(message.closest("[role=alert]")).not.toBeNull();
+    expect(handlers.onError).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Save" })).not.toBeDisabled();
+  });
+
   it("reports generic persistence failures and re-enables Save", async () => {
     mocks.createBookmark.mockRejectedValueOnce(new Error("save"));
     const { handlers } = renderEditor();

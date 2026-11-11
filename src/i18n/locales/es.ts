@@ -109,7 +109,7 @@ export const es: Record<MessageKey, string> = {
   "search.thisPage": "Esta página",
   "search.privateTitle": "El contenido de búsqueda está protegido",
   "search.privateBody": "Desactiva el modo de privacidad para buscar en el texto guardado.",
-  "search.noMatches": "Sin coincidencias. Prueba con una búsqueda más corta.",
+  "search.noMatches": "Sin coincidencias. Revisa la ortografía o cambia los filtros.",
   "search.start": "Empieza a escribir para buscar.",
   "search.reveal": "Mostrar",
   "search.mode": "Modo de búsqueda",
@@ -323,4 +323,7 @@ export const es: Record<MessageKey, string> = {
   "paste.addedOne": "Añadido {title} a {board}",
   "paste.addedMany": "Marcadores añadidos a {board}: {count}",
   "paste.failed": "No se pudieron añadir los enlaces",
+  "trash.movedOne": "Movido a la papelera: {name}",
+  "trash.movedMany": "Elementos movidos a la papelera: {count}",
+  "bookmark.urlInvalid": "Introduce una dirección web, por ejemplo https://example.com",
 };

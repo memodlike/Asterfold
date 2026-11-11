@@ -1,6 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Copy, ExternalLink, Link2, MoveRight, Pencil, Trash2 } from "lucide-react";
+import { Copy, CopyPlus, ExternalLink, Link2, MoveRight, Pencil, Trash2 } from "lucide-react";
 import { memo, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
 import type { Bookmark } from "../../domain/models";
 import { FloatingContextMenu, type ContextMenuPoint } from "../../components/FloatingContextMenu";
@@ -82,9 +82,11 @@ export const BookmarkCard = memo(function BookmarkCard(props: BookmarkCardProps)
         <button onClick={() => action(() => props.onOpen(props.bookmark))}><ExternalLink size={15} />{t("bookmark.open", { name: "" }).trim()}</button>
         <button onClick={() => action(() => props.onEdit(props.bookmark))}><Pencil size={15} />{t("bookmark.edit")}</button>
         <button onClick={() => action(() => props.onMove(props.bookmark))}><MoveRight size={15} />{t("generic.move")}</button>
+        <div className="context-menu__separator" role="separator" />
         <button disabled={props.privacy} onClick={() => action(() => props.onCopyUrl(props.bookmark))}><Link2 size={15} />{t("bookmark.copyUrl")}</button>
         <button disabled={props.privacy} onClick={() => action(() => props.onCopyMarkdown(props.bookmark))}><Copy size={15} />{t("bookmark.copyMarkdown")}</button>
-        <button onClick={() => action(() => props.onDuplicate(props.bookmark))}><Copy size={15} />{t("generic.duplicate")}</button>
+        <button onClick={() => action(() => props.onDuplicate(props.bookmark))}><CopyPlus size={15} />{t("generic.duplicate")}</button>
+        <div className="context-menu__separator" role="separator" />
         <button className="danger" onClick={() => action(() => props.onDelete(props.bookmark))}><Trash2 size={15} />{t("bookmark.moveTrash")}</button>
       </FloatingContextMenu> : null}
     </article>

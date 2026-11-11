@@ -2,7 +2,7 @@
   <img src="public/icons/mark.svg" width="72" alt="Asterfold" />
   <h1>Asterfold</h1>
   <p><strong>A local-first visual bookmark workspace for the Chrome New Tab page.</strong></p>
-  <p>No account · No analytics · 12 selectable interface languages · Manifest V3</p>
+  <p>No account · No analytics · 17 selectable interface languages · Manifest V3</p>
 </div>
 
 ![Asterfold workspace](docs/images/workspace.png)
@@ -41,7 +41,7 @@ Page: Work
 | Privacy Mode | Temporarily hides bookmark titles and URLs in New Tab and popup |
 | Trash | Restores accidentally deleted Pages, Boards, and Bookmarks |
 | Import and export | Supports Asterfold JSON backups, Netscape HTML, and optional Chrome bookmark import |
-| 12 interface languages | Full English, Russian, and Kazakh coverage with safe English fallback for rare strings |
+| 17 interface languages | Full English, Russian, and Kazakh coverage with safe English fallback for rare strings |
 | Light and dark themes | Follows the system theme or uses a selected mode |
 | Wallpaper controls | Adjusts background, surface opacity, blur, dimming, and saturation |
 | Adaptive Compatibility Glass | Preserves transparency and motion on legacy Windows GPUs without live blur |
@@ -176,7 +176,7 @@ Contribution guidance is available in [docs/development/CONTRIBUTING.md](docs/de
 
 ## Release artifacts
 
-Asterfold 3.8.5 produces a reproducible, cryptographically verifiable release containing:
+Asterfold 3.8.6 produces a reproducible, cryptographically verifiable release containing:
 
 - `Asterfold-Chrome.zip` (runtime Chrome Web Store bundle)
 - `chrome-unpacked.zip` (unpacked developer distribution)
@@ -188,6 +188,8 @@ Asterfold 3.8.5 produces a reproducible, cryptographically verifiable release co
 The release pipeline verifies Manifest V3 structure, permission policy, CSP, forbidden files, remote-code patterns, Store asset dimensions, Windows packaging, CodeQL, accessibility, and real unpacked-extension behavior.
 
 ## Release highlights
+
+**Asterfold 3.8.6** adds Romanian, Czech, Indonesian, Japanese and Simplified Chinese (17 interface languages), shows the detected language and theme on first run, and polishes search, context menus, Trash messages and the bookmark editor. The main workspace screen is unchanged.
 
 **Asterfold 3.8.5** refreshes dependencies: React 19.3.1, Zod 4.6.7, Lucide 1.59, Playwright 1.64.1 with axe-core 4.14, Vite 8.3.4 and Vitest 5.0.5, with zero known vulnerabilities. TypeScript stays on 6.0.3 until typescript-eslint supports TypeScript 7.
 
@@ -223,6 +225,7 @@ The repository does not claim Chrome Web Store publication, approval, user count
 
 ## Version history
 
+1. **v3.8.6 — Five new languages and interface polish.** Romanian, Czech, Indonesian, Japanese and Simplified Chinese; detected language and resolved theme shown in onboarding and Settings; clearer empty search state; grouped context menus; sentence-style Trash messages; inline address errors and automatic `https://` in the bookmark editor.
 1. **v3.8.5 — Dependency refresh.** React/React DOM 19.3.1, Zod 4.6.7, Lucide 1.59.0, Playwright 1.64.1 + axe-core 4.14.0 (single playwright-core), Vite 8.3.4, @vitejs/plugin-react 6.1.2, Vitest 5.0.5, ESLint 10.13.0, typescript-eslint 8.71.2, jsdom 30.1.3, fake-indexeddb 6.2.6 and type packages; TypeScript held at 6.0.3.
 1. **v3.8.4 — Follow-up audit fixes.** Selection cleared on Page change and bulk actions limited to the visible Page, private Page names in the launcher and move pickers, launcher Escape, order-preserving backup merge, count-neutral copy in 12 languages, an announced open-board confirmation, and glass fixes for the empty state, forced colors, increased contrast and Settings previews.
 1. **v3.8.3 — Reliability, privacy & glass fixes.** Local monogram icons instead of Google S2, removal of the permission-less Chrome bookmark import, transactional board/page updates, workspace limits on every insertion path, order-preserving restore, privacy-safe toasts, nested Escape and bookmark Shift+F10 fixes, and glass corrections for Smooth glass, Lightweight, reduced transparency, increased contrast, forced colors and startup pre-paint.

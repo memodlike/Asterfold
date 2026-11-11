@@ -251,3 +251,25 @@ describe("themes and runtime messages", () => {
     expect(parseExtensionMessage({ type: "OPEN_URLS", urls: ["https://example.com"], mode: "new-tabs", extra: true })).toBeNull();
   });
 });
+
+describe("withDefaultScheme", () => {
+  it("adds https:// to bare domains and leaves everything else exactly as typed", async () => {
+    const { withDefaultScheme, parseSafeNavigationUrl } = await import("../src/domain/urls");
+    expect(withDefaultScheme("github.com")).toBe("https://github.com");
+    expect(withDefaultScheme("  example.org/docs?x=1 ")).toBe("https://example.org/docs?x=1");
+    expect(withDefaultScheme("localhost:3000/app")).toBe("https://localhost:3000/app");
+    expect(withDefaultScheme("https://a.b")).toBe("https://a.b");
+    expect(withDefaultScheme("http://a.b")).toBe("http://a.b");
+    expect(withDefaultScheme("mailto:someone@example.com")).toBe("mailto:someone@example.com");
+    expect(withDefaultScheme("http:example.com")).toBe("http:example.com");
+    expect(withDefaultScheme("https:example.com/a")).toBe("https:example.com/a");
+    expect(withDefaultScheme("example.com:8080/x")).toBe("https://example.com:8080/x");
+    expect(parseSafeNavigationUrl(withDefaultScheme("http:example.com"))).toBe("http://example.com/");
+    expect(withDefaultScheme("")).toBe("");
+    expect(withDefaultScheme("not a url")).toBe("not a url");
+    for (const unsafe of ["javascript:alert(1)", "JavaScript:alert(1)", "data:text/html,<b>x</b>", "vbscript:x", "chrome://settings"]) {
+      expect(withDefaultScheme(unsafe), unsafe).toBe(unsafe);
+    }
+    expect(() => parseSafeNavigationUrl(withDefaultScheme("javascript:alert(1)"))).toThrow();
+  });
+});
