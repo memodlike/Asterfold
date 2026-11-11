@@ -37,7 +37,7 @@ It replaces each new tab with a visual workspace where bookmarks are organized i
 - Choose a built-in background or a wallpaper stored locally in Asterfold.
 - Adjust layout, opacity, blur, wallpaper and glass controls.
 - Choose Auto, Maximum Quality or Smooth Glass rendering, with a separate Low Power option for weaker hardware.
-- Select from 12 interface languages; rare untranslated strings in secondary locales may fall back to English.
+- Select from 17 interface languages; rare untranslated strings in secondary locales may fall back to English.
 
 ### Local-first privacy model
 

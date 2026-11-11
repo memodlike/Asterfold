@@ -1,3 +1,15 @@
+# Asterfold 3.8.6
+
+## Five new languages and interface polish
+
+- **Languages**: Romanian, Czech, Indonesian, Japanese and Simplified Chinese join the interface, for 17 languages in total. Legacy browser codes (`in`, `mo`) resolve to Indonesian and Romanian.
+- **First run**: the welcome screen shows which language was detected from Chrome and which theme "Auto" currently resolves to; Settings shows the detected language too.
+- **Search**: the empty state explains what to try next, and the result counter is muted when there is nothing to count.
+- **Menus**: bookmark and Board context menus group actions with separators and readable group labels; Duplicate has its own icon.
+- **Trash messages**: moving items to Trash now reads as a sentence in every language instead of "name → Trash".
+- **Bookmark editor**: an address that cannot be saved is explained next to the field instead of in a passing toast; addresses typed without a scheme get `https://`, while explicit schemes and `host:port` are kept as written; the link preview and duplicate warning are styled.
+- The main workspace screen and the rendering tiers are unchanged.
+
 # Asterfold 3.8.5
 
 ## Dependency refresh
