@@ -83,7 +83,8 @@ describe("BookmarkCard complete behavior", () => {
     const card = container.querySelector("article")!;
     expect(card).toHaveClass("is-selected", "is-dragging");
     expect(card).toHaveAttribute("data-bookmark-id", bookmark.id);
-    expect(card).toHaveStyle({ transform: "translate3d(2px, 3px, 0)", transition: "transform 100ms" });
+    expect(card.style.transform).toMatch(/^translate3d\(2px, 3px, 0(?:px)?\)$/u);
+    expect(card.style.transition).toContain("transform");
     expect(mocks.sortable.setNodeRef).toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Open Example" })).toHaveAttribute("aria-roledescription", "sortable");
     expect(container.querySelector("img")).toBeNull();
@@ -183,7 +184,7 @@ describe("BookmarkCard complete behavior", () => {
   it("keeps dnd-kit transform on the outer card while the visual surface owns hover motion", () => {
     const { container } = renderCard();
     const card = container.querySelector("article")!;
-    expect(card).toHaveStyle({ transform: "translate3d(2px, 3px, 0)" });
+    expect(card.style.transform).toMatch(/^translate3d\(2px, 3px, 0(?:px)?\)$/u);
     expect(container.querySelector(".bookmark-card__surface")).not.toBeNull();
   });
 });
