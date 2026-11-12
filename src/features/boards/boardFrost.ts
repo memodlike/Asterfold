@@ -21,7 +21,7 @@ export function useBoardFrost(): (track: HTMLElement | null) => (() => void) | u
     const written = new WeakMap<HTMLElement, Map<string, string>>();
     const write = (element: HTMLElement, name: string, value: string): void => {
       let values = written.get(element);
-      if (!values) written.set(element, values = new Map());
+      if (!values) written.set(element, values = new Map<string, string>());
       if (values.get(name) === value) return;
       values.set(name, value);
       element.style.setProperty(name, value);

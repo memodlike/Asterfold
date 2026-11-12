@@ -109,7 +109,8 @@ describe("Windows 11 adaptive rendering stress gates", () => {
     const files = [
       "src/styles/global.css", "src/styles/material.css", "src/styles/controls.css", "src/styles/design-hardening.css",
       "src/app/launcher.css", "src/features/search/spotlight.css", "src/features/settings/settings.css",
-      "src/features/onboarding/onboarding.css", "entrypoints/popup/popup.css", "entrypoints/newtab/bootstrap.css",
+      "src/features/onboarding/onboarding.css", "src/features/onboarding/importGuide.css", "src/features/onboarding/guideTour.css",
+      "entrypoints/popup/popup.css", "entrypoints/newtab/bootstrap.css",
     ];
     for (const file of files) {
       const css = readFileSync(`${process.cwd()}/${file}`, "utf8");

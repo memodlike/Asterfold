@@ -55,7 +55,7 @@
   background: var(--ui-control);
   text-align: left;
   font-size: 13px;
-  transition: border-color 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+  transition: border-color 120ms ease, background-color 120ms ease;
 }
 
 .select-field > button:hover,

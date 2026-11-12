@@ -62,12 +62,17 @@ html[data-performance="software"] .board__glare, .motion-disabled .board__glare 
 .bookmark-card.is-dragging { z-index: 4; opacity: .22; }
 .bookmark-card__open strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 500; line-height: 1.25; }
 .favicon { display: grid; width: min(18px, calc(var(--bookmark-row-height) - 4px), calc(var(--favicon-size) / 2)); height: min(18px, calc(var(--bookmark-row-height) - 4px), calc(var(--favicon-size) / 2)); place-items: center; flex: 0 0 min(18px, calc(var(--bookmark-row-height) - 4px), calc(var(--favicon-size) / 2)); overflow: hidden; color: var(--color-text-secondary); }
-.favicon img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.favicon > * { grid-area: 1 / 1; }
+.favicon img { display: block; width: 100%; height: 100%; object-fit: contain; border-radius: 4px; }
+/* A site icon stays invisible over the letter until it has loaded, so a row never flashes or jumps. */
+.favicon__image { opacity: 0; }
+.favicon__image.is-loaded { opacity: 1; }
 .favicon svg { width: 82%; height: 82%; opacity: .72; }
 .favicon__monogram { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: 4px; color: #ffffff; font-size: 11px; font-weight: 700; line-height: 1; text-transform: uppercase; user-select: none; }
 .favicon--large { display: contents; }
 .favicon--large .favicon { width: min(48px, var(--favicon-size)); height: min(48px, var(--favicon-size)); flex-basis: min(48px, var(--favicon-size)); }
 .favicon--large .favicon__monogram { border-radius: 8px; font-size: 20px; }
+.favicon--large .favicon img { border-radius: 8px; }
 .private-content { user-select: none; }
 .private-placeholder { color: transparent; background: linear-gradient(90deg, rgb(var(--border-rgb) / .08), rgb(var(--border-rgb) / .17), rgb(var(--border-rgb) / .08)); background-size: 100% 65%; background-position: center; background-repeat: no-repeat; border-radius: 4px; }
 
@@ -133,11 +138,13 @@ html[data-performance="software"] .board__glare, .motion-disabled .board__glare 
 .segmented { display: flex; padding: 3px; border-radius: var(--control-radius); background: var(--control-fill); }
 .segmented button { min-height: calc(var(--control-h) - 6px); padding: 4px 10px; border-radius: calc(var(--control-radius) - 3px); background: transparent; color: var(--color-text-secondary); font-size: 12px; font-weight: 500; white-space: nowrap; transition: background-color var(--dur-quick, 140ms) ease, color var(--dur-quick, 140ms) ease; }
 .segmented button.is-active { color: var(--color-text); background: var(--control-selected); box-shadow: var(--control-selected-edge); }
-select, input[type="text"], input[type="url"], input[type="search"], input:not([type]), textarea { min-height: var(--control-h); padding: 6px 10px; border: 1px solid var(--color-border); border-radius: var(--control-radius); color: var(--color-text); background: var(--control-fill); font-size: 13px; transition: border-color 120ms ease, background-color 120ms ease, box-shadow 120ms ease; }
+select, input[type="text"], input[type="url"], input[type="search"], input:not([type]), textarea { min-height: var(--control-h); padding: 6px 10px; border: 1px solid var(--color-border); border-radius: var(--control-radius); color: var(--color-text); background: var(--control-fill); font-size: 13px; transition: border-color 120ms ease, background-color 120ms ease; }
 :is(input[type="text"], input[type="url"], input[type="search"], input:not([type]), textarea):hover { border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-border)); }
 :is(input[type="text"], input[type="url"], input[type="search"], input:not([type]), textarea):focus-visible { outline: 0; border-color: var(--color-accent); box-shadow: var(--focus-halo); }
 :is(input, textarea)::placeholder { color: var(--color-text-secondary); opacity: .8; }
-textarea { min-height: 90px; resize: vertical; }
+textarea { min-height: 72px; resize: vertical; line-height: 1.4; }
+.form-row--pair .select-field { width: 100%; }
+@media (max-width: 520px) { .form-row--pair { flex-direction: column; } }
 input[type="color"] { width: 44px; height: var(--control-h); padding: 3px; border: 1px solid var(--color-border); border-radius: var(--control-radius); background: transparent; }
 .range-control { display: grid; gap: 12px; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: rgb(var(--border-rgb) / .035); }
 .range-control > span { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; }

@@ -219,7 +219,7 @@ describe("workspace integration coverage", () => {
   it("executes board and bookmark context actions", async () => {
     render(createElement(WorkspaceApp));
     openBoardContext();
-    fireEvent.click(screen.getByRole("menuitem", { name: "Two columns" }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Two columns" }));
     expect(mocks.repository.updateBoard).toHaveBeenCalledWith("b1", { bookmarkColumns: 2 });
 
     openBoardContext();

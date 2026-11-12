@@ -1,6 +1,6 @@
 import { createElement, type ComponentProps } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Bookmark } from "../src/domain/models";
 
 const mocks = vi.hoisted(() => ({
@@ -19,6 +19,11 @@ vi.mock("@dnd-kit/utilities", () => ({ CSS: { Transform: { toString: vi.fn(() =>
 
 import { BookmarkCard } from "../src/features/bookmarks/BookmarkCard";
 import { I18nProvider } from "../src/i18n";
+import { resetSiteIconsForTests, writeSiteIconsEnabled } from "../src/features/icons/siteIcons";
+
+// These suites pin the fully local contract: with site icons switched off nothing is requested.
+beforeEach(() => { resetSiteIconsForTests(); writeSiteIconsEnabled(false); });
+afterAll(() => { resetSiteIconsForTests(); localStorage.removeItem("asterfold:site-icons:v1"); });
 
 const timestamp = "2026-01-01T00:00:00.000Z";
 const bookmark: Bookmark = {

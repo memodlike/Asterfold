@@ -384,7 +384,7 @@ describe("SettingsDialog import, privacy and diagnostics", () => {
   it("does not offer Chrome import and displays export hint in data-privacy section", () => {
     renderSettings({ initialSection: "data-privacy" });
     expect(screen.queryByRole("button", { name: /Import from Chrome/ })).toBeNull();
-    expect(screen.getByText(/To import from Chrome: Chrome menu → Bookmarks and lists/)).toBeVisible();
+    expect(screen.getByRole("group", { name: "Move bookmarks from Chrome" })).toHaveTextContent("Export bookmarks");
     expect(screen.getByRole("button", { name: /Import file/i })).toBeVisible();
   });
 

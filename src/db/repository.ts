@@ -820,6 +820,8 @@ export async function updateBookmark(
       url: normalized?.url ?? current.url,
       normalizedUrl: normalized?.normalizedUrl ?? current.normalizedUrl,
       hostname: normalized?.hostname ?? current.hostname,
+      // An icon imported with the bookmark belongs to its site; a new site starts without one.
+      customIcon: normalized && normalized.hostname !== current.hostname ? null : current.customIcon,
       updatedAt: nowIso(),
       version: current.version + 1,
     };

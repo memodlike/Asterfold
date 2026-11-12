@@ -242,7 +242,7 @@ describe("SettingsDialog behavior", () => {
     expect(mocks.downloadText).toHaveBeenNthCalledWith(3, "asterfold-bookmarks.md", "# Bookmarks", "text/markdown");
 
     expect(screen.queryByRole("button", { name: /Import from Chrome/ })).toBeNull();
-    expect(screen.getByText(/To import from Chrome: Chrome menu → Bookmarks and lists/)).toBeVisible();
+    expect(screen.getByRole("group", { name: "Move bookmarks from Chrome" })).toHaveTextContent("Export bookmarks");
 
     fireEvent.click(screen.getByRole("switch", { name: "Remember privacy mode" }));
     await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ privacyPersist: true, privacyEnabled: true }));

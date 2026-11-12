@@ -57,3 +57,11 @@ export async function openWorkspace(pageId?: string): Promise<void> {
   const url = chrome.runtime.getURL(`/newtab.html${pageId ? `?page=${encodeURIComponent(pageId)}` : ""}`);
   await browser.tabs.create({ url });
 }
+
+/**
+ * Opens Chrome's own Bookmark manager in a new tab so the user can export their bookmarks.
+ * `tabs.create` needs no permission and Asterfold never reads that page; it only saves a click.
+ */
+export async function openChromeBookmarkManager(): Promise<void> {
+  await browser.tabs.create({ url: "chrome://bookmarks/" });
+}

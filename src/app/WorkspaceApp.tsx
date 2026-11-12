@@ -44,6 +44,7 @@ import { usePrivacyMode } from "./usePrivacyMode";
 import { analyzePastedLinks } from "../domain/pasteLinks";
 import { PasteLinksDialog } from "../features/bookmarks/PasteLinksDialog";
 import { packBoards } from "../features/boards/layout";
+import { completeTour, readTourPending, TOUR_EVENT } from "../features/onboarding/tourState";
 
 const loadBookmarkEditor = async () => import("../features/bookmarks/BookmarkEditor").then((module) => ({ default: module.BookmarkEditor }));
 const loadSearchPalette = async () => import("../features/search/SearchPalette").then((module) => ({ default: module.SearchPalette }));
@@ -53,6 +54,7 @@ const BookmarkEditor = lazy(loadBookmarkEditor);
 const SearchPalette = lazy(loadSearchPalette);
 const SettingsDialog = lazy(loadSettingsDialog);
 const TrashDialog = lazy(loadTrashDialog);
+const GuideTour = lazy(async () => import("../features/onboarding/GuideTour").then((module) => ({ default: module.GuideTour })));
 
 type SettingsSection = "appearance" | "layout" | "language" | "data-privacy";
 type NameIntent =
@@ -91,6 +93,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
   const initialSettingsSeen = useRef(false);
+  const [tourPending, setTourPending] = useState(readTourPending);
   const performanceMode = useThemeRuntime(workspace.settings.theme);
   const privacyRef = useRef(privacy);
   useEffect(() => { privacyRef.current = privacy; }, [privacy]);
@@ -105,6 +108,12 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
     }
     const handle = window.setTimeout(preload, 250);
     return () => window.clearTimeout(handle);
+  }, []);
+
+  useEffect(() => {
+    const syncTour = (): void => setTourPending(readTourPending());
+    window.addEventListener(TOUR_EVENT, syncTour);
+    return () => window.removeEventListener(TOUR_EVENT, syncTour);
   }, []);
 
   useEffect(() => {
@@ -519,6 +528,7 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
         {settingsOpen ? <SettingsDialog open initialSection={settingsSection} workspace={workspace} onClose={() => setSettingsOpen(false)} onUpdated={notifySuccess} onError={notifyError} onOpenTrash={() => { setSettingsOpen(false); setTrashOpen(true); }} /> : null}
         {trashOpen ? <TrashDialog open privacy={privacy} onClose={() => setTrashOpen(false)} onChanged={notifySuccess} onError={notifyError} /> : null}
       </Suspense>
+      {tourPending && !blockingOverlayOpen && !privacy ? <Suspense fallback={null}><GuideTour onFinish={completeTour} onOpenImport={() => openSettings("data-privacy")} /></Suspense> : null}
       {toasts.region}
     </div>
   );

@@ -1,0 +1,26 @@
+/* Chrome import guide: three numbered steps, shared by the welcome screen and Settings. */
+.import-guide { display: grid; gap: 8px; min-width: 0; padding: 12px; border: 1px dashed transparent; border-radius: var(--radius-lg); background: var(--control-fill); transition: border-color var(--dur-quick) var(--ease-out), background-color var(--dur-quick) var(--ease-out); }
+.import-guide.is-dragging { border-color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
+.import-guide__title { margin: 0; font-size: 13px; font-weight: 620; letter-spacing: -.005em; }
+.import-guide__steps { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.import-guide__steps li { display: flex; min-width: 0; align-items: center; gap: 9px; min-height: 28px; font-size: 12.5px; line-height: 1.35; }
+.import-guide__number { display: grid; width: 20px; height: 20px; flex: 0 0 20px; place-items: center; border-radius: 50%; color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 18%, transparent); font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.import-guide__text { min-width: 0; flex: 1; }
+.import-guide__action { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 5px; min-height: 28px; padding: 3px 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text); background: var(--control-fill); font-size: 12px; font-weight: 600; white-space: nowrap; transition: background-color var(--dur-quick) var(--ease-out); }
+.import-guide__action:hover { background: var(--control-fill-hover); }
+.import-guide__action:disabled { opacity: .5; cursor: progress; }
+.import-guide__action--primary { border-color: transparent; color: var(--color-on-accent, #fff); background: var(--color-accent); }
+.import-guide__action--primary:hover { background: color-mix(in srgb, var(--color-accent) 88%, white); }
+.import-guide__note { display: flex; align-items: flex-start; gap: 7px; margin: 0; color: var(--color-text-secondary); font-size: 12px; line-height: 1.4; }
+.import-guide__note svg { flex: 0 0 auto; margin-top: 1px; color: var(--color-success); }
+
+@container (min-width: 560px) {
+  .import-guide--row .import-guide__steps { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .import-guide--row .import-guide__steps li { flex-wrap: wrap; align-content: start; align-items: flex-start; gap: 6px 8px; padding: 9px 10px; border-radius: var(--radius-md); background: var(--control-fill); }
+  .import-guide--row .import-guide__text { flex: 1 1 calc(100% - 30px); }
+  .import-guide--row .import-guide__action { margin-left: 28px; }
+}
+
+@media (forced-colors: active) {
+  .import-guide { border: 1px solid CanvasText; background: Canvas; }
+}

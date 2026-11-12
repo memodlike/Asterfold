@@ -32,7 +32,9 @@ import { localeOptions, translate } from "../../i18n";
 import { parseBackupOffThread, parseHtmlOffThread } from "../../services/importWorker";
 import { publishThemePreview } from "../appearance/themePreview";
 import { BUILTIN_WALLPAPERS } from "../appearance/themeRuntime";
+import { ChromeImportGuide } from "./ChromeImportGuide";
 import { commitOnboardingPlan } from "./onboardingCommit";
+import { requestTour } from "./tourState";
 import { onboardingText, resolveOnboardingLocale, type OnboardingMessageKey } from "./onboardingMessages";
 import {
   backupPreview,
@@ -194,13 +196,13 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
     });
   };
 
-  // Choosing a source starts it in the same click: Chrome's permission prompt and the file
-  // picker both require the user gesture, so nothing may await before them.
+  // A backup opens the file picker in the same click (it needs the user gesture). Browser
+  // bookmarks first show the three export steps, which carry their own file button and drop area.
   const chooseSource = (source: OnboardingSource): void => {
     selectSource(source);
-    if (source === "html") htmlInputRef.current?.click();
     if (source === "backup") backupInputRef.current?.click();
   };
+  const tMain = (key: Parameters<typeof translate>[1], params?: Record<string, string | number>): string => translate(plan.locale, key, params);
 
   const ready = canContinue("import", plan, parsing);
 
@@ -229,6 +231,8 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
       : plan;
     try {
       await commitOnboardingPlan(finalPlan);
+      // The workspace opens next; a few tips there point at the real controls.
+      requestTour();
       publishThemePreview(null);
       onCompleted?.();
     } catch (error) {
@@ -342,7 +346,7 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
               );
             })}
           </div>
-          <p className="onboarding-status__note">{translate(plan.locale, "settings.chromeExportHint")}</p>
+          {plan.source === "html" && !plan.preview && !parsing ? <ChromeImportGuide t={tMain} busy={busy} onFile={(file) => void parseFile(file, "html")} /> : null}
           {renderImportStatus()}
           <input ref={htmlInputRef} type="file" accept=".html,.htm,text/html" hidden onChange={handleFile("html")} />
           <input ref={backupInputRef} type="file" accept=".json,application/json" hidden onChange={handleFile("backup")} />

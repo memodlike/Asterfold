@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNod
 import { readSessionPrivacy, writeSessionPrivacy } from "../../browser/privacySession";
 import { IMPORT_LIMITS } from "../../domain/importLimits";
 import { WALLPAPER_FILE_ACCEPT } from "../../domain/wallpaperFormats";
-import { AlignCenter, AlignLeft, AlignRight, Brush, Check, CheckCircle2, Database, Download, FileJson, FileText, Gauge, Grid2X2, ImageIcon, Languages, Moon, RotateCcw, Search, Sparkles, Sun, Trash2, TriangleAlert, Upload, Wind } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Brush, Check, CheckCircle2, Database, Download, FileJson, FileText, Gauge, Grid2X2, ImageIcon, Languages, Lightbulb, Moon, RotateCcw, Search, Sparkles, Sun, Trash2, TriangleAlert, Upload, Wind } from "lucide-react";
 import type { AppSettings, ThemeConfig, Wallpaper, WorkspaceData } from "../../domain/models";
 import { validateTheme } from "../../domain/themes";
 import { auditInvariants, getWallpaper, saveWallpaper, updateSettings } from "../../db/repository";
@@ -27,6 +27,9 @@ import { Modal } from "../../components/Modal";
 import { SelectField, type SelectOption } from "../../components/SelectField";
 import { localeOptions, useI18n } from "../../i18n";
 import { onboardingText, resolveOnboardingLocale } from "../onboarding/onboardingMessages";
+import { ChromeImportGuide } from "../onboarding/ChromeImportGuide";
+import { requestTour } from "../onboarding/tourState";
+import { useSiteIconsEnabled, writeSiteIconsEnabled } from "../icons/siteIcons";
 import { publishThemePreview } from "../appearance/themePreview";
 import { ACCENT_SWATCHES, accentFromImageBlob } from "../appearance/accent";
 import { BUILTIN_WALLPAPERS, isDarkTheme } from "../appearance/themeRuntime";
@@ -94,6 +97,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
   // (0% gives solid boards). The OS "reduce transparency" request makes surfaces solid in every tier.
   const liveBlurDisabled = resolvedPerformanceMode === "compatibility" || resolvedPerformanceMode === "software";
   const systemReducedTransparency = useReducedTransparency();
+  const siteIcons = useSiteIconsEnabled();
   const resolvedPerformanceLabel = t(resolvedPerformanceMode === "quality"
     ? "settings.performanceQuality"
     : resolvedPerformanceMode === "balanced"
@@ -307,6 +311,10 @@ export function SettingsDialog(props: SettingsDialogProps) {
       setDiagnosticsBusy(false);
     }
   };
+  const showTips = (): void => {
+    closeSettings();
+    requestTour();
+  };
   const restartOnboarding = async (): Promise<void> => {
     try {
       await updateSettings({ onboardingComplete: false });
@@ -457,7 +465,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
     },
     {
       id: "data", title: t("settings.dataPrivacy"), icon: <Database size={16} />, span: "wide",
-      keywords: [t("settings.exportJson"), t("settings.exportHtml"), t("settings.exportMarkdown"), t("settings.importFile"), t("settings.privacyPersist"), t("settings.retention"), t("settings.openTrash"), t("settings.rerunOnboarding")],
+      keywords: [t("settings.exportJson"), t("settings.exportHtml"), t("settings.exportMarkdown"), t("settings.importFile"), t("guide.title"), "Chrome", t("settings.siteIcons"), t("settings.showTour"), t("settings.privacyPersist"), t("settings.retention"), t("settings.openTrash"), t("settings.rerunOnboarding")],
       body: <>
         <div className="settings-actions">
           <button type="button" onClick={() => void exportAll("json")}><FileJson size={17} /><strong>{t("settings.exportJson")}</strong><span>{t("settings.backupVersion")}</span></button>
@@ -465,7 +473,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
           <button type="button" onClick={() => void exportAll("markdown")}><FileText size={17} /><strong>{t("settings.exportMarkdown")}</strong><span>.md</span></button>
           <button type="button" disabled={importParsing} onClick={() => importInputRef.current?.click()}><Upload size={17} /><strong>{t("settings.importFile")}</strong><span>{t("settings.importFileHint")}</span></button>
         </div>
-        <p className="settings-note">{t("settings.chromeExportHint")}</p>
+        <ChromeImportGuide t={t} layout="row" busy={importParsing || importBusy} onFile={(file) => void readImportFile(file)} />
         <input ref={importInputRef} hidden type="file" accept="application/json,text/html,.json,.html,.htm" onChange={(event) => { const file = event.target.files?.[0]; if (file) void readImportFile(file); event.currentTarget.value = ""; }} />
         {importParsing ? <div className="import-preview" role="status"><p>{t("settings.importParsing")}</p><Button onClick={cancelImportParsing}>{t("generic.cancel")}</Button></div> : null}
         {importRecordsPreview.length > 0 ? <div className="import-preview"><h3>{importSource}</h3><p>{t("settings.importPreview", { count: importRecordsPreview.length })}</p><div className="form-row"><label>{t("settings.defaultPage")}<input value={importPageTitle} maxLength={240} onChange={(event) => setImportPageTitle(event.target.value)} /></label><label>{t("settings.duplicates")}<SelectField value={duplicateStrategy} options={duplicateOptions} label={t("settings.duplicates")} onChange={(value) => setDuplicateStrategy(value as "skip" | "allow")} /></label></div><div className="button-row"><Button onClick={() => setImportRecordsPreview([])}>{t("generic.cancel")}</Button><Button variant="primary" disabled={importBusy} onClick={() => void commitRecordImport()}>{t("generic.create")}</Button></div></div> : null}
@@ -474,8 +482,13 @@ export function SettingsDialog(props: SettingsDialogProps) {
           <SettingRow label={t("settings.privacyPersist")}><Switch label={t("settings.privacyPersist")} checked={settings.privacyPersist} onChange={(enabled) => void setPrivacyPersistence(enabled)} /></SettingRow>
           <SettingRow label={t("settings.retention")}><SelectField compact value={settings.trashRetentionDays === null ? "never" : String(settings.trashRetentionDays)} options={retentionOptions} label={t("settings.retention")} onChange={(value) => void patchSettings({ trashRetentionDays: value === "never" ? null : Number(value) as 7 | 30 | 90 })} /></SettingRow>
         </div>
+        <div className="settings-option">
+          <div><strong>{t("settings.siteIcons")}</strong><p className="settings-note">{t("settings.siteIconsHint")}</p></div>
+          <Switch label={t("settings.siteIcons")} checked={siteIcons} onChange={writeSiteIconsEnabled} />
+        </div>
         <div className="button-row">
           <Button icon={<Trash2 size={15} />} onClick={props.onOpenTrash}>{t("settings.openTrash")}</Button>
+          <Button icon={<Lightbulb size={15} />} onClick={showTips}>{t("settings.showTour")}</Button>
           <Button icon={<Sparkles size={15} />} title={t("settings.rerunOnboardingDescription")} onClick={() => void restartOnboarding()}>{t("settings.rerunOnboarding")}</Button>
         </div>
       </>,

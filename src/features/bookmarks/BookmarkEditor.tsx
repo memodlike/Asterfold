@@ -123,14 +123,16 @@ export function BookmarkEditor(props: BookmarkEditorProps) {
         <div className="search-state search-private"><span className="search-state__icon"><BookmarkIcon size={22} /></span><div><strong>{t("search.privateTitle")}</strong><span>{t("search.privateBody")}</span></div></div>
       ) : <form id={formId} className="form-stack" noValidate onSubmit={(event) => { event.preventDefault(); void save(); }}>
         <div className="bookmark-preview">
-          <span className="favicon--large"><BrowserFavicon url={url} title={title} privacy={props.privacy} /></span>
+          <span className="favicon--large"><BrowserFavicon url={url} title={title} icon={props.bookmark && url === props.bookmark.url ? props.bookmark.customIcon : null} remote={Boolean(props.bookmark && url === props.bookmark.url)} privacy={props.privacy} /></span>
           <div><strong>{title || t("bookmark.untitled")}</strong><small>{url}</small></div>
         </div>
         <label>{t("generic.title")}<input autoFocus value={title} maxLength={240} onChange={(event) => setTitle(event.target.value)} placeholder={t("bookmark.untitled")} /></label>
         <label>{t("bookmark.url")}<input ref={urlInputRef} type="url" inputMode="url" required value={url} maxLength={8192} aria-invalid={urlError || undefined} aria-describedby={urlError ? urlErrorId : undefined} onChange={(event) => { setUrl(event.target.value); setUrlError(false); }} placeholder={t("bookmark.urlPlaceholder")} />{urlError ? <span id={urlErrorId} className="field-error" role="alert"><AlertCircle size={14} aria-hidden="true" />{t("bookmark.urlInvalid")}</span> : null}</label>
-        <label>{t("generic.description")}<textarea value={description} maxLength={2000} rows={4} onChange={(event) => setDescription(event.target.value)} placeholder={t("bookmark.optionalNote")} /></label>
-        <label>{t("generic.destination")}<SelectField value={boardId} options={destinationOptions} label={t("generic.destination")} onChange={setBoardId} /></label>
-        <label>{t("bookmark.openMode")}<SelectField value={openMode} options={openModeOptions} label={t("bookmark.openMode")} onChange={(value) => setOpenMode(value as BookmarkOpenMode)} /></label>
+        <label>{t("generic.description")}<textarea value={description} maxLength={2000} rows={3} onChange={(event) => setDescription(event.target.value)} placeholder={t("bookmark.optionalNote")} /></label>
+        <div className="form-row form-row--pair">
+          <label>{t("generic.destination")}<SelectField value={boardId} options={destinationOptions} label={t("generic.destination")} onChange={setBoardId} /></label>
+          <label>{t("bookmark.openMode")}<SelectField value={openMode} options={openModeOptions} label={t("bookmark.openMode")} onChange={(value) => setOpenMode(value as BookmarkOpenMode)} /></label>
+        </div>
         {duplicate ? (
           <div className="inline-warning" role="status"><AlertTriangle size={18} aria-hidden="true" /><div><strong>{t("bookmark.duplicateWarning")}</strong><span>{duplicate.title}</span>{!props.bookmark ? <button type="button" onClick={() => setAllowDuplicate(true)}>{t(allowDuplicate ? "bookmark.copyWillSave" : "bookmark.saveCopy")}</button> : null}</div></div>
         ) : null}
