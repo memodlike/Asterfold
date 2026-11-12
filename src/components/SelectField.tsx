@@ -174,6 +174,14 @@ export function SelectField({ value, options, onChange, label, className = "", d
     if (autoFocus) triggerRef.current?.focus();
   }, [autoFocus]);
 
+  // The list may be wider than its trigger (long option labels); keep it inside the viewport.
+  useLayoutEffect(() => {
+    const popover = popoverRef.current;
+    if (!popover || !position) return;
+    const overflow = position.left + popover.offsetWidth - (document.documentElement.clientWidth - VIEWPORT_MARGIN);
+    popover.style.left = `${String(overflow > 0 ? Math.max(VIEWPORT_MARGIN, position.left - overflow) : position.left)}px`;
+  }, [position]);
+
   useLayoutEffect(() => {
     const trigger = triggerRef.current;
     if (!trigger) return;

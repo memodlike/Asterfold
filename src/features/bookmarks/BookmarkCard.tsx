@@ -74,7 +74,7 @@ export const BookmarkCard = memo(function BookmarkCard(props: BookmarkCardProps)
         }}
       >
         <span className="bookmark-card__surface">
-          <BrowserFavicon url={props.bookmark.url} title={props.bookmark.title} privacy={props.privacy} />
+          <BrowserFavicon url={props.bookmark.url} title={props.bookmark.title} icon={props.bookmark.customIcon} privacy={props.privacy} />
           <strong className={props.privacy ? "private-content private-placeholder" : ""}>{displayTitle}</strong>
         </span>
       </button>

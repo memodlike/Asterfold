@@ -83,7 +83,7 @@ describe("BoardColumn behavior", () => {
     expect(callbacks.onKeyboardMoveBoard).toHaveBeenNthCalledWith(2, board, -1);
   });
 
-  it("routes board context menu actions and closes after each action", () => {
+  it("routes board context menu actions; one-row pickers keep the menu open", () => {
     const { container, callbacks } = renderColumn();
 
     openMenu(container);
@@ -91,11 +91,11 @@ describe("BoardColumn behavior", () => {
     expect(callbacks.onEditBoard).toHaveBeenCalledWith(board);
 
     openMenu(container);
-    fireEvent.click(screen.getByRole("menuitem", { name: "Two columns" }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Two columns" }));
     expect(callbacks.onPatchBoard).toHaveBeenCalledWith(board, { bookmarkColumns: 2 });
 
     openMenu(container);
-    fireEvent.click(screen.getByRole("menuitem", { name: "Medium" }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Medium" }));
     expect(callbacks.onPatchBoard).toHaveBeenCalledWith(board, { gridSpan: 4 });
 
     openMenu(container);

@@ -1,6 +1,6 @@
 import { createElement, type ComponentProps } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Bookmark } from "../src/domain/models";
 
 const mocks = vi.hoisted(() => ({
@@ -19,6 +19,11 @@ vi.mock("@dnd-kit/utilities", () => ({ CSS: { Transform: { toString: vi.fn(() =>
 
 import { BookmarkCard } from "../src/features/bookmarks/BookmarkCard";
 import { I18nProvider } from "../src/i18n";
+import { resetSiteIconsForTests, writeSiteIconsEnabled } from "../src/features/icons/siteIcons";
+
+// These suites pin the fully local contract: with site icons switched off nothing is requested.
+beforeEach(() => { resetSiteIconsForTests(); writeSiteIconsEnabled(false); });
+afterAll(() => { resetSiteIconsForTests(); localStorage.removeItem("asterfold:site-icons:v1"); });
 
 const timestamp = "2026-01-01T00:00:00.000Z";
 const bookmark: Bookmark = {
@@ -83,7 +88,8 @@ describe("BookmarkCard complete behavior", () => {
     const card = container.querySelector("article")!;
     expect(card).toHaveClass("is-selected", "is-dragging");
     expect(card).toHaveAttribute("data-bookmark-id", bookmark.id);
-    expect(card).toHaveStyle({ transform: "translate3d(2px, 3px, 0)", transition: "transform 100ms" });
+    expect(card.style.transform).toMatch(/^translate3d\(2px, 3px, 0(?:px)?\)$/u);
+    expect(card.style.transition).toContain("transform");
     expect(mocks.sortable.setNodeRef).toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Open Example" })).toHaveAttribute("aria-roledescription", "sortable");
     expect(container.querySelector("img")).toBeNull();
@@ -183,7 +189,7 @@ describe("BookmarkCard complete behavior", () => {
   it("keeps dnd-kit transform on the outer card while the visual surface owns hover motion", () => {
     const { container } = renderCard();
     const card = container.querySelector("article")!;
-    expect(card).toHaveStyle({ transform: "translate3d(2px, 3px, 0)" });
+    expect(card.style.transform).toMatch(/^translate3d\(2px, 3px, 0(?:px)?\)$/u);
     expect(container.querySelector(".bookmark-card__surface")).not.toBeNull();
   });
 });

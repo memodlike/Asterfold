@@ -1,7 +1,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { AppWindow, Check, ClipboardPaste, CopyPlus, ExternalLink, MoveRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { AppWindow, ClipboardPaste, CopyPlus, ExternalLink, MoveRight, Pencil, Plus, Trash2, WandSparkles } from "lucide-react";
 import { memo, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
 import type { Board, Bookmark } from "../../domain/models";
 import { isSafeOpenUrl } from "../../domain/urls";
@@ -118,11 +118,33 @@ export const BoardColumn = memo(function BoardColumn(props: BoardColumnProps) {
       </div>
       {menuPoint ? <FloatingContextMenu label={t("board.actions", { name: props.board.title })} point={menuPoint} onClose={() => setMenuPoint(null)}>
         <button onClick={() => action(() => props.onEditBoard(props.board))}><Pencil size={15} />{t("generic.rename")}</button>
-        <div className="context-menu__group"><span>{t("board.columns")}</span>{(["auto", 1, 2] as const).map((value) => <button key={value} onClick={() => action(() => props.onPatchBoard(props.board, { bookmarkColumns: value }))}>{props.board.bookmarkColumns === value ? <Check size={14} /> : <i />}{t(value === "auto" ? "board.columnsAuto" : value === 1 ? "board.columnsOne" : "board.columnsTwo")}</button>)}</div>
-        <div className="context-menu__group"><span>{t("board.size")}</span>{([2, 4, 6] as const).map((value) => <button key={value} onClick={() => action(() => props.onPatchBoard(props.board, { gridSpan: value }))}>{props.board.gridSpan === value ? <Check size={14} /> : <i />}{t(value === 2 ? "board.sizeSmall" : value === 4 ? "board.sizeMedium" : "board.sizeLarge")}</button>)}</div>
+        <div className="context-menu__separator" role="separator" />
+        {/* Columns and size are one row each; the menu stays open so the board answers live. */}
+        <div className="context-menu__choice" role="group" aria-label={t("board.columns")}>
+          <span aria-hidden="true">{t("board.columns")}</span>
+          <div className="context-menu__options">
+            {(["auto", 1, 2] as const).map((value) => {
+              const label = t(value === "auto" ? "board.columnsAuto" : value === 1 ? "board.columnsOne" : "board.columnsTwo");
+              return <button key={value} role="menuitemradio" aria-checked={props.board.bookmarkColumns === value} aria-label={label} title={label} onClick={() => props.onPatchBoard(props.board, { bookmarkColumns: value })}>{value === "auto" ? <WandSparkles size={13} aria-hidden="true" /> : value}</button>;
+            })}
+          </div>
+        </div>
+        <div className="context-menu__choice" role="group" aria-label={t("board.size")}>
+          <span aria-hidden="true">{t("board.size")}</span>
+          <div className="context-menu__options">
+            {([2, 4, 6] as const).map((value) => {
+              const label = t(value === 2 ? "board.sizeSmall" : value === 4 ? "board.sizeMedium" : "board.sizeLarge");
+              return <button key={value} role="menuitemradio" aria-checked={props.board.gridSpan === value} aria-label={label} title={label} onClick={() => props.onPatchBoard(props.board, { gridSpan: value })}><span className={`context-menu__size context-menu__size--${String(value)}`} aria-hidden="true" /></button>;
+            })}
+          </div>
+        </div>
+        <div className="context-menu__separator" role="separator" />
         <button onClick={() => action(() => props.onMoveBoard(props.board))}><MoveRight size={15} />{t("board.movePage")}</button>
+        <button onClick={() => action(() => props.onDuplicateBoard(props.board))}><CopyPlus size={15} />{t("generic.duplicate")}</button>
+        <button onClick={() => action(() => props.onPasteLinks(props.board))}><ClipboardPaste size={15} />{t("paste.menu")}</button>
         {openableCount > 0 ? (
           <>
+            <div className="context-menu__separator" role="separator" />
             <button onClick={() => action(() => props.onOpenBoard(props.board, "new-tabs"))}>
               <ExternalLink size={15} />
               {t("board.openAllTabs", { count: openableCount })}
@@ -133,8 +155,6 @@ export const BoardColumn = memo(function BoardColumn(props: BoardColumnProps) {
             </button>
           </>
         ) : null}
-        <button onClick={() => action(() => props.onDuplicateBoard(props.board))}><CopyPlus size={15} />{t("generic.duplicate")}</button>
-        <button onClick={() => action(() => props.onPasteLinks(props.board))}><ClipboardPaste size={15} />{t("paste.menu")}</button>
         <div className="context-menu__separator" role="separator" />
         <button className="danger" onClick={() => action(() => props.onDeleteBoard(props.board))}><Trash2 size={15} />{t("bookmark.moveTrash")}</button>
       </FloatingContextMenu> : null}

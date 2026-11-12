@@ -45,8 +45,8 @@ describe("runtime dictionaries", () => {
     }
   });
 
-  it("enforces exact 325 key coverage with no English leakage in European locales", () => {
-    expect(messageKeys.length).toBe(325);
+  it("enforces exact 350 key coverage with no English leakage in European locales", () => {
+    expect(messageKeys.length).toBe(350);
     const sampleKeys = [
       "settings.appearance",
       "settings.performance",

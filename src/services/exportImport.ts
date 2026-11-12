@@ -12,12 +12,15 @@ import { normalizeUrl } from "../domain/urls";
 import { normalizeDescription, normalizeEntityTitle } from "../domain/text";
 import { recoverBookmarkTitle } from "../domain/bookmarkNaming";
 import { IMPORT_LIMITS } from "../domain/importLimits";
+import { safeCustomIconUrl } from "../domain/icons";
 import { WALLPAPER_LIMITS } from "../domain/mediaLimits";
 import { isWallpaperMimeType, type WallpaperMimeType } from "../domain/wallpaperFormats";
 import { createId, nowIso } from "../utils/ids";
 import { inspectWallpaperSource } from "./wallpaper";
 
 export const CURRENT_BACKUP_FORMAT_VERSION = 4;
+/** Browser exports carry 16–32 px icons of about a kilobyte; anything much larger is not a favicon. */
+const MAX_IMPORTED_ICON_LENGTH = 24_000;
 export { backupSchema, type AsterfoldBackup } from "../domain/schemas";
 
 export interface ImportRecord {
@@ -28,6 +31,8 @@ export interface ImportRecord {
   source?: "manual" | "chrome" | undefined;
   sourceId?: string | null | undefined;
   folderSourceId?: string | null | undefined;
+  /** Small raster icon carried by a browser bookmark export (`ICON="data:image/png;base64,…"`). */
+  icon?: string | null | undefined;
 }
 
 export interface ImportSummary {
@@ -386,7 +391,8 @@ export function toNetscapeHtml(backup: AsterfoldBackup): string {
     for (const board of (boardsByPage.get(page.id) ?? []).sort((a, b) => a.position.localeCompare(b.position))) {
       lines.push(`    <DT><H3>${escapeHtml(board.title)}</H3>`, "    <DL><p>");
       for (const bookmark of (bookmarksByBoard.get(board.id) ?? []).sort((a, b) => a.position.localeCompare(b.position))) {
-        lines.push(`      <DT><A HREF="${escapeHtml(bookmark.url)}" ADD_DATE="${Math.floor(new Date(bookmark.createdAt).getTime() / 1000)}">${escapeHtml(bookmark.title)}</A>`);
+        const storedIcon = safeCustomIconUrl(bookmark.customIcon);
+        lines.push(`      <DT><A HREF="${escapeHtml(bookmark.url)}" ADD_DATE="${Math.floor(new Date(bookmark.createdAt).getTime() / 1000)}"${storedIcon ? ` ICON="${storedIcon}"` : ""}>${escapeHtml(bookmark.title)}</A>`);
         if (bookmark.description) lines.push(`      <DD>${escapeHtml(bookmark.description)}</DD>`);
       }
       lines.push("    </DL><p>");
@@ -439,6 +445,7 @@ export function parseNetscapeHtml(text: string): ImportRecord[] {
   let capture: "folder" | "anchor" | "description" | null = null;
   let buffer = "";
   let href = "";
+  let icon = "";
   let lastRecord: ImportRecord | undefined;
   const decodeNumericEntity = (match: string, codeStr: string, radix: number): string => {
     const num = Number.parseInt(codeStr, radix);
@@ -484,11 +491,14 @@ export function parseNetscapeHtml(text: string): ImportRecord[] {
     } else if (tag === "dl" && closing) { folders.pop(); }
     else if (tag === "a" && !closing) {
       href = decode(/\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/iu.exec(token)?.slice(1).find(Boolean) ?? "");
+      // Browsers embed each bookmark's icon in the export; only small validated rasters are kept.
+      const rawIcon = /\sicon\s*=\s*(?:"(data:image\/[^"]*)"|'(data:image\/[^']*)')/iu.exec(token)?.slice(1).find(Boolean);
+      icon = rawIcon && rawIcon.length <= MAX_IMPORTED_ICON_LENGTH ? safeCustomIconUrl(rawIcon) : "";
       capture = "anchor"; buffer = "";
     } else if (tag === "a" && closing && capture === "anchor") {
       try {
         const normalized = normalizeUrl(href, false);
-        lastRecord = { title: recoverBookmarkTitle(decode(buffer), normalized.url), url: normalized.url, description: null, folderPath: [...folders] };
+        lastRecord = { title: recoverBookmarkTitle(decode(buffer), normalized.url), url: normalized.url, description: null, folderPath: [...folders], ...(icon ? { icon } : {}) };
         if (records.length >= IMPORT_LIMITS.bookmarks) throw new ImportError("Bookmark file contains too many bookmarks");
         records.push(lastRecord);
       } catch (error) {
@@ -540,6 +550,7 @@ export async function importRecords(
         ...(record.source !== undefined ? { source: record.source } : {}),
         ...(record.sourceId !== undefined ? { sourceId: record.sourceId } : {}),
         ...(record.folderSourceId !== undefined ? { folderSourceId: record.folderSourceId } : {}),
+        ...(safeCustomIconUrl(record.icon) ? { icon: record.icon } : {}),
       });
     } catch (error) {
       invalid.push({ row: index + 1, reason: error instanceof Error ? error.message : "Invalid URL" });
@@ -753,7 +764,7 @@ export async function importRecords(
         await database.bookmarks.bulkAdd(accepted.map((record, index) => ({
           id: createId(), userId: null, boardId: board.id, title: record.title, url: record.url,
           normalizedUrl: record.normalizedUrl, hostname: record.hostname, description: record.description,
-          faviconUrl: null, customIcon: null, position: allocation.positions[index]!, openMode: "current" as const, pinned: false,
+          faviconUrl: null, customIcon: record.icon ?? null, position: allocation.positions[index]!, openMode: "current" as const, pinned: false,
           createdAt: timestamp, updatedAt: timestamp, deletedAt: null, deletedBatchId: null, version: 1,
           source: record.source ?? "manual",
           sourceId: record.sourceId ?? null,

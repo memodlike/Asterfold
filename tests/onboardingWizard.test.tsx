@@ -115,15 +115,19 @@ describe("one-screen onboarding", () => {
     expect(autoOption.textContent).toContain("Авто (Chrome тілі)");
   });
 
-  it("does not offer Chrome bookmark import and displays export hint (K2)", () => {
+  it("offers no permission-based Chrome import and shows the export steps once chosen (K2)", () => {
     renderWizard();
     expect(screen.queryByRole("radio", { name: /Import from Chrome/u })).toBeNull();
     expect(screen.getByRole("radio", { name: /Start with Asterfold/u })).toBeVisible();
     expect(screen.getByRole("radio", { name: /Import bookmark HTML/u })).toBeVisible();
-    expect(screen.getByText(/To import from Chrome: Chrome menu → Bookmarks and lists/u)).toBeVisible();
+    expect(screen.queryByRole("group", { name: "Move bookmarks from Chrome" })).toBeNull();
+    fireEvent.click(screen.getByRole("radio", { name: /Import bookmark HTML/u }));
+    const guide = screen.getByRole("group", { name: "Move bookmarks from Chrome" });
+    expect(guide).toHaveTextContent("Export bookmarks");
+    expect(guide).toHaveTextContent("No permission needed");
   });
 
-  it("opens the file picker from the source itself, parses off-thread and clears stale previews", async () => {
+  it("shows the export steps for a browser import, parses off-thread and clears stale previews", async () => {
     mocks.parseHtml.mockResolvedValue([
       { title: "A", url: "https://a.example", description: null, folderPath: ["Work"] },
       { title: "B", url: "https://b.example", description: null, folderPath: ["Work"] },
@@ -132,7 +136,9 @@ describe("one-screen onboarding", () => {
     const input = container.querySelector<HTMLInputElement>('input[type="file"][accept*="text/html"]')!;
     const picker = vi.spyOn(input, "click");
     fireEvent.click(screen.getByRole("radio", { name: /Import bookmark HTML/u }));
-    expect(picker).toHaveBeenCalledTimes(1);
+    // Browser bookmarks show the three export steps first; the steps own the file button.
+    expect(picker).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Choose file" })).toBeVisible();
     const file = new File(["<DL><p></DL>"], "bookmarks.html", { type: "text/html" });
     Object.defineProperty(file, "text", { configurable: true, value: vi.fn().mockResolvedValue("<DL><p></DL>") });
     fireEvent.change(input, { target: { files: [file] } });

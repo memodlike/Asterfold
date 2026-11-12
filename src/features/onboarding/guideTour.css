@@ -1,0 +1,27 @@
+/* First-run tips: one ring around the real control and one glass card next to it.
+   Material comes from material.css tokens, so every rendering tier applies. */
+.tour { position: fixed; z-index: 80; inset: 0; }
+/* The ring's spread shadow is the dimmed backdrop, with the control left clear in the middle. */
+.tour__ring { position: fixed; pointer-events: none; border: 2px solid var(--color-accent); box-shadow: 0 0 0 100vmax rgb(6 6 10 / .34); animation: af-fade var(--dur-base) var(--ease-out) both; }
+html[data-theme="light"] .tour__ring { box-shadow: 0 0 0 100vmax rgb(20 22 30 / .22); }
+.tour__card { --mat-alpha: var(--mat-alpha-sheet); --enter-y: 6px; --enter-scale: .98; position: fixed; display: grid; gap: 6px; padding: 14px 14px 12px 16px; border: 1px solid var(--mat-edge); border-radius: var(--radius-xl); color: var(--color-text); background: var(--mat-sheen), rgb(var(--surface-rgb) / var(--mat-alpha)); box-shadow: var(--mat-rim), var(--mat-shadow); -webkit-backdrop-filter: var(--mat-filter); backdrop-filter: var(--mat-filter); animation: af-pop var(--dur-base) var(--ease-spring) both; }
+.tour__card strong { font-size: 14px; font-weight: 650; letter-spacing: -.01em; }
+.tour__card p { margin: 0; color: var(--color-text-secondary); font-size: 12.5px; line-height: 1.45; }
+.tour__footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 6px; }
+.tour__footer button { flex: 0 1 auto; }
+.tour__dots { display: flex; flex: 0 0 auto; gap: 4px; margin-right: auto; }
+.tour__dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--control-track); }
+.tour__dots i.is-current { width: 14px; border-radius: 3px; background: var(--color-accent); }
+.tour__link { min-height: 28px; padding: 0 6px; color: var(--color-text-secondary); background: transparent; font-size: 12px; font-weight: 560; }
+.tour__link:hover { color: var(--color-text); }
+.tour__button { min-height: 28px; padding: 3px 11px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text); background: var(--control-fill); font-size: 12px; font-weight: 600; transition: background-color var(--dur-quick) var(--ease-out); }
+.tour__button:hover { background: var(--control-fill-hover); }
+.tour__button--primary { border-color: transparent; color: var(--color-on-accent, #fff); background: var(--color-accent); }
+.tour__button--primary:hover { background: color-mix(in srgb, var(--color-accent) 88%, white); }
+/* The "add" tip shows the + button it talks about, which otherwise appears on hover. */
+html[data-tour-step="add"] .board-track > .board:first-child .board__add { opacity: 1; transform: scale(1); }
+
+.motion-disabled .tour__ring, .motion-disabled .tour__card { animation: none; }
+@media (prefers-reduced-transparency: reduce) { .tour__card { background: var(--color-surface-solid); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+@media (prefers-contrast: more) { .tour__card { border-width: 2px; background: var(--color-surface-solid); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+@media (forced-colors: active) { .tour__card { border: 1px solid CanvasText; background: Canvas; } .tour__ring { border-color: Highlight; box-shadow: none; } }

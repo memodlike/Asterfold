@@ -1,3 +1,16 @@
+# Asterfold 3.9.0
+
+## Frosted glass on any computer, real site icons and a guided start
+
+- **Frosted glass without live blur**: in the Smooth glass and Lightweight rendering modes boards now frost the wallpaper like Maximum quality does, in both themes. A small copy of the wallpaper is blurred once, cached and painted under the board tint, so no `backdrop-filter` runs and nothing is recomputed per frame on old or integrated graphics.
+- **Site icons with no permission**: bookmarks show real website icons. Icons inside a Chrome export file are stored with the bookmark; other icons load as plain images straight from the bookmarked site, with a coloured letter as the fallback. Settings → Data & privacy has the switch; Privacy Mode never loads icons. The manifest still requests no permissions.
+- **Moving from Chrome**: a three-step guide in the welcome screen and in Settings opens Chrome's Bookmark manager, explains Export bookmarks and takes the file by button or drag and drop. No bookmark permission is involved.
+- **First-run tips**: four short tips after the welcome screen point at boards, adding links, the menu and import. Settings can show them again; skipping setup skips them.
+- **Compact menus**: context menus are denser, and a board's columns and size are one-row pickers that apply while the menu stays open.
+- **One control system**: buttons, fields, selects and segmented controls share one height, radius scale and focus style; switches and key hints use one design; the bookmark editor is shorter.
+- **Dependencies**: Vite 8.3.8, Playwright 1.65.0, jsdom 31.0.0, Lucide 1.72.0, @vitejs/plugin-react 6.3.0, typescript-eslint 8.72.2, fake-indexeddb 6.2.8. TypeScript stays on 6.0.3 until typescript-eslint supports TypeScript 7.
+- The layout of the main workspace screen is unchanged.
+
 # Asterfold 3.8.6
 
 ## Five new languages and interface polish

@@ -4,7 +4,8 @@ import type { ThemeConfig } from "../../domain/models";
 import { browserPerformanceSignals, classifyPerformanceMode, type ResolvedPerformanceMode } from "../performance/performanceProfile";
 import { extractCssImageUrl, storeStartupThemeSnapshot } from "./startupSnapshot";
 import { THEME_PREVIEW_EVENT, themePreviewFromEvent } from "./themePreview";
-import { themeStyle } from "./themeRuntime";
+import { BUILTIN_WALLPAPERS, themeStyle } from "./themeRuntime";
+import { applyFrost, buildFrost, readFrost, storeFrost } from "./frost";
 import { sampleWallpaperExtremes } from "./boardContrast";
 
 interface WallpaperUrls {
@@ -120,6 +121,35 @@ export function useThemeRuntime(theme: ThemeConfig | undefined): ResolvedPerform
     previousVariables.current = next;
   }, [activeTheme, dark, performanceMode, style]);
 
+  // Frosted boards without live blur (Smooth glass and Lightweight): a small pre-blurred copy of
+  // the wallpaper, cached per wallpaper so later tabs have it before the first paint.
+  const frostWallpaperId = activeTheme && activeTheme.backgroundMode === "wallpaper" && (performanceMode === "compatibility" || performanceMode === "software")
+    ? activeTheme.wallpaperId ?? null
+    : null;
+  const frostSource = !frostWallpaperId
+    ? null
+    : isUploadedWallpaper(frostWallpaperId)
+      ? (wallpaperUrls.sourceId === frostWallpaperId ? wallpaperUrls.compatibility : null)
+      : extractCssImageUrl(BUILTIN_WALLPAPERS.find((item) => item.id === frostWallpaperId)?.compatibilityValue);
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const solid = matchMedia("(prefers-reduced-transparency: reduce), (prefers-contrast: more), (forced-colors: active)").matches;
+    if (!frostWallpaperId || solid) {
+      applyFrost(root, null);
+      return;
+    }
+    const cached = readFrost(frostWallpaperId);
+    applyFrost(root, cached);
+    if (cached || !frostSource) return;
+    let active = true;
+    void buildFrost(frostWallpaperId, frostSource).then((entry) => {
+      if (!entry) return;
+      storeFrost(entry);
+      if (active) applyFrost(root, entry);
+    });
+    return () => { active = false; };
+  }, [frostSource, frostWallpaperId]);
+
   useEffect(() => {
     if (!activeTheme || !style || !wallpaperUrls.resolved || wallpaperUrls.sourceId !== (activeTheme.wallpaperId ?? null)) return;
     let active = true;
@@ -173,6 +203,7 @@ export function useThemeRuntime(theme: ThemeConfig | undefined): ResolvedPerform
     previousVariables.current.clear();
     delete root.dataset.performance;
     delete root.dataset.asterfoldMotion;
+    applyFrost(root, null);
   }, []);
 
   return performanceMode;

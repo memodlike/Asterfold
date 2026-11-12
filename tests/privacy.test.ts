@@ -1,12 +1,17 @@
 import { createElement } from "react";
 import { DndContext } from "@dnd-kit/core";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BookmarkCard } from "../src/features/bookmarks/BookmarkCard";
 import { BookmarkEditor } from "../src/features/bookmarks/BookmarkEditor";
 import { I18nProvider } from "../src/i18n";
 import { safeCustomIconUrl } from "../src/domain/icons";
 import type { Bookmark } from "../src/domain/models";
+import { resetSiteIconsForTests, writeSiteIconsEnabled } from "../src/features/icons/siteIcons";
+
+// These suites pin the fully local contract: with site icons switched off nothing is requested.
+beforeEach(() => { resetSiteIconsForTests(); writeSiteIconsEnabled(false); });
+afterAll(() => { resetSiteIconsForTests(); localStorage.removeItem("asterfold:site-icons:v1"); });
 
 const bookmark: Bookmark = {
   id: "bookmark-private",
@@ -68,7 +73,7 @@ describe("favicon and privacy contract", () => {
     expect(safeCustomIconUrl(`data:image/png;base64,${"A".repeat(200_000)}`)).toBe("");
   });
 
-  it("does not render legacy remote or custom favicon fields", () => {
+  it("never renders the legacy remote favicon field and shows a stored raster icon locally", () => {
     const customIcon = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Z7S8AAAAASUVORK5CYII=";
     const view = renderCard(false);
     expect(view.container.querySelector('img[src*="tracker.invalid"]')).toBeNull();
@@ -92,7 +97,8 @@ describe("favicon and privacy contract", () => {
         onSelect: callback,
       })),
     }));
-    expect(customView.container.querySelector(`img[src="${customIcon}"]`)).toBeNull();
+    expect(customView.container.querySelector(`img[src="${customIcon}"]`)).not.toBeNull();
+    expect(customView.container.querySelector('img[src^="http"]')).toBeNull();
   });
 
   it("removes the real bookmark title from privacy DOM and context menu", () => {

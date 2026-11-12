@@ -47,7 +47,7 @@ describe("board pointer highlight", () => {
     expect(frames).toHaveLength(1);
     expect(board).toHaveClass("is-lit");
     flush();
-    expect(layer.style.transform).toBe("translate3d(60px, 70px, 0)");
+    expect(layer.style.transform).toMatch(/^translate3d\(60px, 70px, 0(?:px)?\)$/u);
     expect(board.style.transform).toBe("");
 
     const other = view.container.querySelector<HTMLElement>('[data-board-id="b"]')!;

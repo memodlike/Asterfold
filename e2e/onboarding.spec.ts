@@ -1,4 +1,6 @@
 import { existsSync } from "node:fs";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { chromium, expect, test, type BrowserContext, type Worker } from "@playwright/test";
@@ -129,8 +131,115 @@ test("fresh profile completes accessible guided setup and never reopens it", asy
     await page.reload();
     await expect(page.locator(".launcher-discovery")).toHaveCount(0);
     await expect(page.locator(".app-shell")).toBeVisible();
+    // Skipping setup also skips the tips.
+    await expect(page.getByTestId("guide-tour")).toHaveCount(0);
     await page.close();
   } finally {
     await context.close();
+  }
+});
+
+
+test("a Chrome export moves in with its icons, tips appear once and site icons come only from bookmarked sites", async () => {
+  const context = await chromium.launchPersistentContext(join(tmpdir(), `asterfold-import-guide-${Date.now()}`), {
+    executablePath: browserPath(),
+    headless: false,
+    args: [
+      "--headless=new",
+      "--no-sandbox",
+      "--disable-crash-reporter",
+      "--disable-features=DisableLoadExtensionCommandLineSwitch",
+      `--disable-extensions-except=${extensionPath}`,
+      `--load-extension=${extensionPath}`,
+    ],
+  });
+
+  const webRequests: string[] = [];
+  const served = new Map<string, Buffer>();
+  const server = createServer((request, response) => {
+    const host = (request.headers.host ?? "").split(":")[0] ?? "";
+    webRequests.push(`${host}${request.url ?? ""}`);
+    const icon = request.url === "/favicon.ico" ? served.get(host) : undefined;
+    if (icon) response.writeHead(200, { "content-type": "image/png", "cache-control": "no-store" }).end(icon);
+    else response.writeHead(404).end();
+  });
+  await new Promise<void>((resolvePromise) => server.listen(0, "127.0.0.1", resolvePromise));
+  const port = (server.address() as AddressInfo).port;
+
+  try {
+    const worker = await extensionWorker(context);
+    const extensionId = new URL(worker.url()).hostname;
+    const page = await context.newPage();
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    // Two local "sites": one serves a favicon, one has none. Every request they receive is recorded.
+    const siteIcon = await page.screenshot({ clip: { x: 0, y: 0, width: 16, height: 16 } });
+    await page.goto(`chrome-extension://${extensionId}/newtab.html`);
+    await expect(page.locator(".onboarding-tile")).toHaveCount(3);
+    const withIcon = `http://with-site-icon.localhost:${String(port)}`;
+    const withoutIcon = `http://no-icon.localhost:${String(port)}`;
+    served.set("with-site-icon.localhost", siteIcon);
+
+    // Choosing a browser import shows the three export steps; no permission prompt, no picker yet.
+    await page.getByRole("radio").nth(1).click();
+    const guide = page.locator(".import-guide");
+    await expect(guide).toBeVisible();
+    await expect(guide.locator("ol > li")).toHaveCount(3);
+
+    const storedIcon = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Z7S8AAAAASUVORK5CYII=";
+    const exported = [
+      "<!DOCTYPE NETSCAPE-Bookmark-file-1>",
+      "<DL><p>",
+      "  <DT><H3>Bookmarks bar</H3>",
+      "  <DL><p>",
+      `    <DT><A HREF="https://stored-icon.example/" ICON="${storedIcon}">Stored icon</A>`,
+      `    <DT><A HREF="${withIcon}/docs">Site icon</A>`,
+      `    <DT><A HREF="${withoutIcon}/">No icon</A>`,
+      "  </DL><p>",
+      "</DL><p>",
+    ].join("\n");
+    await page.getByTestId("import-guide-file").setInputFiles({ name: "bookmarks.html", mimeType: "text/html", buffer: Buffer.from(exported, "utf8") });
+    await expect(page.locator(".onboarding-status.is-ready")).toBeVisible();
+    await page.locator(".onboarding-open").click();
+    await expect(page.locator(".onboarding-modal")).toHaveCount(0);
+
+    // Tips appear once, are a labelled dialog, and Escape ends them for good.
+    const tour = page.getByTestId("guide-tour");
+    await expect(tour).toBeVisible();
+    await expect(tour.getByRole("dialog")).toHaveAccessibleName(/\S/u);
+    const accessibility = await new AxeBuilder({ page }).include(".tour").analyze();
+    expect(accessibility.violations.filter((violation) => violation.impact === "serious" || violation.impact === "critical")).toEqual([]);
+    await page.keyboard.press("Escape");
+    await expect(tour).toHaveCount(0);
+
+    // The icon from the file is shown from local data; the others ask only their own site.
+    const cards = page.locator(".bookmark-card");
+    await expect(cards).toHaveCount(3);
+    await expect(cards.nth(0).locator("img")).toHaveAttribute("src", storedIcon);
+    await expect(cards.nth(1).locator("img.is-loaded")).toHaveAttribute("src", `${withIcon}/favicon.ico`);
+    await expect(cards.nth(1).locator(".favicon__monogram")).toHaveCount(0);
+    await expect(cards.nth(2).locator(".favicon__monogram")).toBeVisible();
+    await expect(cards.nth(2).locator("img")).toHaveCount(0);
+    expect([...new Set(webRequests)].sort()).toEqual(["no-icon.localhost/favicon.ico", "with-site-icon.localhost/favicon.ico"]);
+
+    // A site without an icon is remembered; switching site icons off stops every request.
+    webRequests.length = 0;
+    await page.waitForTimeout(800);
+    await page.reload();
+    await expect(cards).toHaveCount(3);
+    await expect(tour).toHaveCount(0);
+    await expect(cards.nth(1).locator("img.is-loaded")).toBeVisible();
+    expect(webRequests.filter((url) => url.startsWith("no-icon."))).toEqual([]);
+    await page.evaluate(() => localStorage.setItem("asterfold:site-icons:v1", "off"));
+    webRequests.length = 0;
+    await page.reload();
+    await expect(cards).toHaveCount(3);
+    await expect(cards.nth(1).locator(".favicon__monogram")).toBeVisible();
+    await expect(cards.nth(0).locator("img")).toHaveAttribute("src", storedIcon);
+    expect(webRequests).toEqual([]);
+    await page.close();
+  } finally {
+    await context.close();
+    await new Promise<void>((resolvePromise) => server.close(() => resolvePromise()));
   }
 });

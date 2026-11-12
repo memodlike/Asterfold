@@ -114,7 +114,7 @@ export function SearchPalette(props: SearchPaletteProps) {
             return (
               <div key={result.id} id={`spotlight-result-${result.id}`} role="listitem" className={`spotlight__result ${active ? "is-active" : ""}`} onMouseEnter={() => setActiveIndex(index)}>
                 <button type="button" aria-current={active ? "true" : undefined} className="spotlight__open" onClick={() => { props.onOpen(bookmark); close(); }}>
-                  <span className="spotlight__favicon"><BrowserFavicon url={bookmark.url} title={bookmark.title} privacy={props.privacy} /></span>
+                  <span className="spotlight__favicon"><BrowserFavicon url={bookmark.url} title={bookmark.title} icon={bookmark.customIcon} privacy={props.privacy} /></span>
                   <span className="spotlight__text">
                     <strong>{highlightMatch(result.title, query)}</strong>
                     <small>{highlightMatch(result.hostname, query)}</small>

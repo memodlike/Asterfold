@@ -20,6 +20,7 @@ import type { AppSettings, Board, Bookmark } from "../../domain/models";
 import { Button } from "../../components/Button";
 import { useI18n } from "../../i18n";
 import { BoardColumn } from "./BoardColumn";
+import { useBoardFrost } from "./boardFrost";
 import { useBoardGlare } from "./boardGlare";
 import { packBoards } from "./layout";
 
@@ -62,6 +63,12 @@ export function BoardCanvas(props: BoardCanvasProps) {
   const [active, setActive] = useState<{ type: "board" | "bookmark"; title: string } | null>(null);
   // A callback ref: the track mounts only once the page has boards.
   const glareRef = useBoardGlare();
+  const frostRef = useBoardFrost();
+  const trackRef = useCallback((track: HTMLDivElement | null) => {
+    const releaseGlare = glareRef(track);
+    const releaseFrost = frostRef(track);
+    return () => { releaseGlare?.(); releaseFrost?.(); };
+  }, [frostRef, glareRef]);
   const keyboardCoordinates = useCallback<KeyboardCoordinateGetter>((event, args) => {
     if (args.context.active?.data.current?.type !== "board") return sortableKeyboardCoordinates(event, args);
     if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.code)) return undefined;
@@ -156,7 +163,7 @@ export function BoardCanvas(props: BoardCanvasProps) {
     <main className="canvas">
       <DndContext sensors={sensors} autoScroll={false} measuring={{ droppable: { strategy: MeasuringStrategy.BeforeDragging } }} collisionDetection={collisionDetection} onDragStart={handleStart} onDragCancel={() => setActive(null)} onDragEnd={handleEnd}>
         <SortableContext items={props.boards.map((board) => `board:${board.id}`)} strategy={rectSortingStrategy}>
-          <div ref={glareRef} className={`board-track board-track--${props.settings.workspaceAlignment}`} style={trackStyle}>
+          <div ref={trackRef} className={`board-track board-track--${props.settings.workspaceAlignment}`} style={trackStyle}>
             {props.boards.map((board) => {
               const placement = packed.placements.get(board.id);
               return <BoardColumn
