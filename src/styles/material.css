@@ -41,7 +41,18 @@
   --mat-sheen: radial-gradient(130% 90% at 0 0, rgb(255 255 255 / .06), rgb(255 255 255 / 0) 52%), linear-gradient(180deg, rgb(255 255 255 / .06), rgb(255 255 255 / 0) 44%);
   --mat-edge: rgb(255 255 255 / .13);
   --mat-rim: inset 0 1px 0 var(--glass-highlight), inset 0 -1px 0 rgb(255 255 255 / .035), inset 0 0 0 .5px rgb(255 255 255 / .045);
-  --mat-radius-popover: 14px;
+  /* One radius scale. Nested shapes are concentric: inner radius = outer radius − padding. */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 22px;
+  /* One control size: buttons, fields, selects and segmented controls share a height and radius. */
+  --control-h: 36px;
+  --control-radius: var(--radius-md);
+  --focus-halo: 0 0 0 3px color-mix(in srgb, var(--color-accent, #155eef) 24%, transparent);
+  --mat-radius-popover: 12px;
   --mat-radius-bar: 18px;
   --mat-radius-menu: 20px;
   --mat-radius-sheet: 22px;
@@ -270,5 +281,38 @@ html[data-performance="software"] :is(.modal, .launcher-menu, .context-menu, .se
     background: Canvas;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+  }
+}
+
+/* -------- Frosted boards without live blur (Smooth glass, Lightweight) --------
+   html[data-frost="on"] is set only in those two tiers, over a wallpaper, and never when the
+   system asks for solid surfaces. Layers, top to bottom: sheen, board tint, the wallpaper dim,
+   and a pre-blurred copy of the wallpaper that boardFrost.ts lines up with the real one.
+   No backdrop-filter, no fixed attachment, nothing recomputed per frame. */
+@media (prefers-reduced-transparency: no-preference) and (prefers-contrast: no-preference) and (forced-colors: none) {
+  html[data-frost="on"] {
+    /* The backdrop is blurred again, so the boards can be as clear as in Maximum quality. */
+    --board-alpha: var(--board-alpha-base);
+  }
+  html[data-frost="on"] .board-track > .board::before {
+    background-color: transparent;
+    background-image:
+      radial-gradient(circle at 18% 0, rgb(255 255 255 / calc(var(--glass-sheen) * .7)), transparent 34%),
+      linear-gradient(145deg, rgb(255 255 255 / calc(var(--glass-sheen) * .55)), transparent 42%),
+      linear-gradient(rgb(var(--surface-rgb) / var(--board-alpha)), rgb(var(--surface-rgb) / var(--board-alpha))),
+      linear-gradient(rgb(0 0 0 / var(--wallpaper-dim, 0)), rgb(0 0 0 / var(--wallpaper-dim, 0))),
+      var(--frost-image);
+    background-repeat: no-repeat;
+    background-size: auto, auto, auto, auto, var(--frost-size, cover);
+    background-position: 0 0, 0 0, 0 0, 0 0, calc(var(--frost-x, 0px) - var(--frost-bx, 0px)) calc(var(--frost-y, 0px) - var(--frost-by, 0px));
+  }
+  /* Lightweight keeps the frost and drops the two sheen gradients. */
+  html[data-frost="on"][data-performance="software"] .board-track > .board::before {
+    background-image:
+      linear-gradient(rgb(var(--surface-rgb) / var(--board-alpha)), rgb(var(--surface-rgb) / var(--board-alpha))),
+      linear-gradient(rgb(0 0 0 / var(--wallpaper-dim, 0)), rgb(0 0 0 / var(--wallpaper-dim, 0))),
+      var(--frost-image);
+    background-size: auto, auto, var(--frost-size, cover);
+    background-position: 0 0, 0 0, calc(var(--frost-x, 0px) - var(--frost-bx, 0px)) calc(var(--frost-y, 0px) - var(--frost-by, 0px));
   }
 }

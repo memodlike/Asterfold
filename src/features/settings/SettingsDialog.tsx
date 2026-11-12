@@ -504,7 +504,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
         </div>
         <div className="button-row">
           <Button icon={<CheckCircle2 size={15} />} disabled={diagnosticsBusy} onClick={() => void repeatDiagnostics()}>{t("settings.repeatDiagnostics")}</Button>
-          <Button variant="ghost" icon={<RotateCcw size={15} />} onClick={() => void resetDefaults()}>{t("settings.resetDefaults")}</Button>
+          <Button icon={<RotateCcw size={15} />} onClick={() => void resetDefaults()}>{t("settings.resetDefaults")}</Button>
         </div>
       </>,
     },

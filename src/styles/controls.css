@@ -44,18 +44,18 @@
 .select-field > button {
   display: flex;
   width: 100%;
-  min-height: 38px;
+  min-height: var(--control-h, 36px);
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 7px 10px;
+  padding: 6px 10px;
   border: 1px solid var(--color-border, #d5dbe6);
-  border-radius: 10px;
+  border-radius: var(--control-radius, 10px);
   color: var(--color-text, #172033);
   background: var(--ui-control);
   text-align: left;
-  font-size: 12px;
-  transition: border-color 120ms ease, background-color 120ms ease;
+  font-size: 13px;
+  transition: border-color 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
 }
 
 .select-field > button:hover,
@@ -67,12 +67,12 @@
 .select-field > button:focus-visible {
   outline: 0;
   border-color: var(--color-accent, #155eef);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent, #155eef) 18%, transparent);
+  box-shadow: var(--focus-halo);
 }
 
 .select-field > button:disabled { opacity: .48; cursor: not-allowed; }
 .select-field--compact { width: auto; min-width: 124px; }
-.select-field--compact > button { min-height: 34px; padding: 5px 9px; font-size: 12px; }
+.select-field--compact > button { min-height: 32px; padding: 4px 9px; font-size: 12.5px; }
 .select-field__value { display: flex; min-width: 0; align-items: center; gap: 9px; }
 .select-field__value > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .select-field__icon { display: inline-grid; width: 26px; min-width: 26px; place-items: center; }
@@ -82,7 +82,7 @@
 .select-popover {
   position: fixed;
   z-index: 2147483646;
-  padding: 5px;
+  padding: 4px;
   overflow-y: auto;
   overscroll-behavior: contain;
   border: 1px solid var(--color-border, #d5dbe6);
@@ -106,26 +106,27 @@
 .select-popover button {
   display: grid;
   width: 100%;
-  min-height: 34px;
+  min-height: 30px;
   grid-template-columns: auto minmax(0, 1fr) 18px;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px;
-  border-radius: 9px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm, 8px);
   color: inherit;
   background: transparent;
   text-align: left;
-  font-size: 12px;
+  font-size: 12.5px;
 }
 
 .select-popover button.is-active,
 .select-popover button:hover,
 .select-popover button:focus-visible {
   outline: 0;
-  background: color-mix(in srgb, var(--color-accent, #155eef) 16%, transparent);
+  background: var(--control-fill-hover, color-mix(in srgb, var(--color-accent, #155eef) 16%, transparent));
 }
 
-.select-popover button.is-selected { color: var(--color-accent, #155eef); font-weight: 650; }
+.select-popover button.is-selected { font-weight: 650; }
+.select-popover button.is-selected > svg:last-child { color: var(--color-accent, #155eef); }
 .select-popover button:disabled { opacity: .42; cursor: not-allowed; }
 .select-popover__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .select-popover__check-placeholder { width: 15px; }
@@ -205,7 +206,7 @@
 .popup .select-field > button {
   min-height: 34px;
   border-color: var(--popup-border, var(--color-border));
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--popup-text, var(--color-text));
   background: var(--popup-surface, var(--color-surface-elevated));
   font-size: 12px;
