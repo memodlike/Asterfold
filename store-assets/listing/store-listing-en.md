@@ -43,11 +43,11 @@ It replaces each new tab with a visual workspace where bookmarks are organized i
 
 Asterfold stores the primary workspace locally in the Chrome profile. No Asterfold account is required. The current release has no application backend, cloud synchronization, analytics, advertising or telemetry. It requests no host permissions and injects no content scripts into websites.
 
-Chrome bookmark access is optional and requested only when you choose to import Chrome bookmarks.
+Chrome bookmarks move in from the file Chrome itself exports (Bookmark manager → ⋮ → Export bookmarks); Asterfold never asks for access to your Chrome bookmarks. A three-step guide is built in.
 
 Privacy Mode hides bookmark titles in the interface and prevents local search indexing while it is active. It is visual shoulder-surfing protection, not database encryption.
 
-Chrome itself may use the network when you open a destination page. Asterfold makes no application network requests in the reviewed default build.
+Chrome itself may use the network when you open a destination page. Asterfold contacts no developer or third-party server. To show website icons it may load `/favicon.ico` directly from a site you bookmarked; this can be switched off in Settings.
 
 Read the privacy policy before installation:
 
@@ -55,9 +55,7 @@ https://github.com/memodlike/Asterfold/blob/main/docs/security/privacy.md
 
 ## Permission summary
 
-- `storage`: stores the temporary Privacy Mode flag in `chrome.storage.session`.
-- `favicon`: displays website icons for saved bookmarks using Chrome's local browser cache.
-- optional `bookmarks`: requested only when you choose Import Chrome bookmarks.
+Asterfold requests no permissions at all: `permissions`, `optional_permissions` and `host_permissions` are empty.
 
 No browsing-history, cookies or host-origin access is requested.
 
