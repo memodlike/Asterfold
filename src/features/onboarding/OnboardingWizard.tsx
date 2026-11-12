@@ -232,7 +232,8 @@ export function OnboardingWizard({ workspace, onCompleted }: OnboardingWizardPro
     try {
       await commitOnboardingPlan(finalPlan);
       // The workspace opens next; a few tips there point at the real controls.
-      requestTour();
+      // Someone who skipped setup asked not to be walked through anything.
+      if (!skip) requestTour();
       publishThemePreview(null);
       onCompleted?.();
     } catch (error) {

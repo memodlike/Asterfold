@@ -230,6 +230,26 @@ test("main-screen boards follow the glass settings in every rendering tier", asy
       await seedTheme(page, { mode: "light", performanceMode, blur: 16, backgroundMode: "wallpaper", wallpaperId: "builtin-aurora" });
       expect(await page.locator(".board").first().evaluate((element) => getComputedStyle(element, "::before").backdropFilter), performanceMode).toMatch(pattern);
     }
+    // Smooth glass and Lightweight still frost the boards: a pre-blurred copy of the wallpaper sits
+    // under the tint, lined up with the real one, with no backdrop-filter anywhere.
+    for (const mode of ["light", "dark"] as const) {
+      for (const performanceMode of ["compatibility", "software"] as const) {
+        await seedTheme(page, { mode, performanceMode, lowPowerMode: true, surfaceOpacity: 0.5, backgroundMode: "wallpaper", wallpaperId: "builtin-aurora" });
+        await expect(page.locator("html"), `${mode} ${performanceMode}`).toHaveAttribute("data-frost", "on");
+        const frost = await page.locator(".board").nth(1).evaluate((element) => {
+          const style = getComputedStyle(element, "::before");
+          return { image: style.backgroundImage, filter: style.backdropFilter, offset: (element as HTMLElement).style.getPropertyValue("--frost-bx"), left: Math.round(element.getBoundingClientRect().left) };
+        });
+        expect(frost.image, `${mode} ${performanceMode}`).toContain("data:image/webp;base64,");
+        expect(frost.filter, `${mode} ${performanceMode}`).toBe("none");
+        expect(frost.offset, `${mode} ${performanceMode}`).toBe(`${String(frost.left)}px`);
+      }
+    }
+    // Live-blur tiers and flat backgrounds do not use the copy.
+    await seedTheme(page, { mode: "dark", performanceMode: "quality", blur: 16, backgroundMode: "wallpaper", wallpaperId: "builtin-aurora" });
+    await expect(page.locator("html")).not.toHaveAttribute("data-frost", "on");
+    await seedTheme(page, { mode: "dark", performanceMode: "compatibility", lowPowerMode: true, backgroundMode: "solid", canvas: "#101014" });
+    await expect(page.locator("html")).not.toHaveAttribute("data-frost", "on");
     // The shadowed board never carries the blur itself (blur-bleed fix); its transform belongs to dnd-kit.
     expect(await page.locator(".board").first().evaluate((element) => getComputedStyle(element).backdropFilter)).toBe("none");
     await seedTheme(page, { mode: "light", performanceMode: "quality", blur: 0, backgroundMode: "wallpaper", wallpaperId: "builtin-aurora" });
