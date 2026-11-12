@@ -10,9 +10,9 @@ html[data-performance="software"] .modal-backdrop--spotlight { --scrim: rgb(6 6 
 
 .spotlight__field { --mat-alpha: var(--mat-alpha-pill); --enter-y: 10px; --enter-scale: .97; display: flex; flex: 0 0 auto; align-items: center; gap: 12px; height: 60px; padding: 0 16px 0 20px; border-radius: 30px; color: var(--color-text); animation: af-drop var(--dur-base) var(--ease-spring) both; }
 .spotlight__field > svg { flex: 0 0 auto; opacity: .62; }
-.spotlight__field input { min-width: 0; min-height: 0; flex: 1; padding: 0; border: 0; border-radius: 0; outline: 0; color: var(--color-text); background: transparent; font-size: 19px; font-weight: 500; letter-spacing: -.01em; }
+/* The pill is the field; the input inside it carries no box, hover or focus treatment of its own. */
+.spotlight__field input, .spotlight__field input:hover, .spotlight__field input:focus-visible { min-width: 0; min-height: 0; flex: 1; padding: 0; border: 0; border-radius: 0; outline: 0; color: var(--color-text); background: transparent; box-shadow: none; font-size: 19px; font-weight: 500; letter-spacing: -.01em; }
 .spotlight__field input::placeholder { color: var(--color-text-secondary); opacity: 1; }
-.spotlight__field input:focus-visible { outline: 0; }
 .spotlight__field:focus-within { outline: 2px solid color-mix(in srgb, var(--color-accent) 70%, transparent); outline-offset: 2px; }
 .spotlight__count { flex: 0 0 auto; color: var(--color-accent); font-size: 12.5px; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .spotlight__count.is-empty { color: var(--color-text-secondary); font-weight: 500; }
@@ -68,7 +68,7 @@ html[data-performance="software"][data-spotlight="active"] .bookmark-card[data-s
   .modal-backdrop--spotlight { padding: 12px 8px; }
   .modal.spotlight { width: calc(100vw - 16px); }
   .spotlight__field { height: 52px; }
-  .spotlight__field input { font-size: 16px; }
+  .spotlight__field input, .spotlight__field input:hover, .spotlight__field input:focus-visible { font-size: 16px; }
   .spotlight__path, .spotlight__hint { display: none; }
 }
 

@@ -91,6 +91,8 @@
   animation: select-popover-in 120ms cubic-bezier(.2,.8,.2,1) both;
 }
 
+/* A compact select can be narrower than its longest option; the list is never clipped to it. */
+.select-popover { min-width: max-content; max-width: calc(100vw - 16px); }
 .select-popover[data-placement="top"] { transform-origin: center bottom; }
 .select-popover[data-placement="bottom"] { transform-origin: center top; }
 .select-popover__entry { display: contents; }

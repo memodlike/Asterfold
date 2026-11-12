@@ -118,7 +118,7 @@ html[data-performance="software"] .board__glare, .motion-disabled .board__glare 
 .button--danger { color: var(--color-danger); }
 .button:disabled { opacity: .42; cursor: not-allowed; }
 .icon-button { width: var(--control-h); height: var(--control-h); padding: 0; border-radius: var(--control-radius); }
-.bulk-toolbar .icon-button { width: 30px; height: 30px; border-radius: var(--radius-sm); }
+.bulk-toolbar .icon-button, .toast .icon-button { width: 30px; height: 30px; border-radius: var(--radius-sm); }
 .icon-button.is-active { color: var(--color-on-accent, #fff); background: var(--color-accent); }
 
 .modal-backdrop { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 24px; }
