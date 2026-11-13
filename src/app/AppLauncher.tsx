@@ -60,8 +60,13 @@ export function AppLauncher(props: AppLauncherProps) {
     }, 350);
   };
 
+  // Opened from the keyboard, focus goes to the first item. Opened with the pointer, it goes to the
+  // menu itself: arrow keys still work, and no item gets a focus ring next to the hovered one.
+  const pointerOpenRef = useRef(false);
   useEffect(() => {
-    if (open) menuRef.current?.querySelector<HTMLButtonElement>("button:not([disabled])")?.focus();
+    if (!open) return;
+    if (pointerOpenRef.current) menuRef.current?.focus();
+    else menuRef.current?.querySelector<HTMLButtonElement>("button:not([disabled])")?.focus();
   }, [open]);
 
   useEffect(() => {
@@ -107,23 +112,23 @@ export function AppLauncher(props: AppLauncherProps) {
           <button className="launcher-discovery__dismiss" aria-label={t("launcher.discoveryDismiss")} onClick={props.onDismissFirstRunHint}>×</button>
           <strong>{t("launcher.discoveryTitle")}</strong>
           <p>{t("launcher.discoveryBody")}</p>
-          <button className="launcher-discovery__action" onClick={() => { discover(); setOpen(true); }}>
+          <button className="launcher-discovery__action" onClick={(event) => { pointerOpenRef.current = event.detail > 0; discover(); setOpen(true); }}>
             {t("launcher.discoveryAction")}
           </button>
         </aside>
       ) : null}
       {open ? (
-        <div ref={menuRef} className="launcher-menu" role="menu" aria-label={t("launcher.label")} onKeyDown={(event) => {
+        <div ref={menuRef} tabIndex={-1} className="launcher-menu" role="menu" aria-label={t("launcher.label")} onKeyDown={(event) => {
           const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>("button:not([disabled])")].filter((item) => item.offsetParent !== null);
           const index = items.indexOf(document.activeElement as HTMLButtonElement);
           if (event.key === "ArrowDown" || event.key === "ArrowUp" || event.key === "Home" || event.key === "End") {
             event.preventDefault();
-            const next = event.key === "Home" ? 0 : event.key === "End" ? items.length - 1 : event.key === "ArrowDown" ? (index + 1) % items.length : (index - 1 + items.length) % items.length;
+            const next = event.key === "Home" ? 0 : event.key === "End" || (index < 0 && event.key === "ArrowUp") ? items.length - 1 : event.key === "ArrowDown" ? (index + 1) % items.length : (index - 1 + items.length) % items.length;
             items[next]?.focus();
           }
         }}>
           <div className="launcher-menu__header" role="presentation">
-            <span className="launcher-menu__page"><span className="launcher-menu__dot" aria-hidden="true" />{props.privacy || !activePage ? t("generic.page") : activePage.title}</span>
+            <span className="launcher-menu__page"><span className="launcher-menu__dot" aria-hidden="true" /><span className="launcher-menu__title">{props.privacy || !activePage ? t("generic.page") : activePage.title}</span></span>
             {props.pageStats ? (
               <span className="launcher-menu__stats" title={t("launcher.pageSummary", props.pageStats)}>
                 <span aria-hidden="true"><LayoutGrid size={12} />{props.pageStats.boards}</span>
@@ -184,7 +189,7 @@ export function AppLauncher(props: AppLauncherProps) {
           <button role="menuitem" onClick={() => act(props.onSettings)}><Settings size={17} /><span>{t("generic.settings")}</span></button>
         </div>
       ) : null}
-      <button ref={triggerRef} className="launcher-trigger" aria-label={t("launcher.label")} aria-haspopup="menu" aria-expanded={open} onClick={() => { discover(); setOpen((value) => !value); }}>
+      <button ref={triggerRef} className="launcher-trigger" aria-label={t("launcher.label")} aria-haspopup="menu" aria-expanded={open} onClick={(event) => { pointerOpenRef.current = event.detail > 0; discover(); setOpen((value) => !value); }}>
         <img src="/icons/mark-monochrome.svg" alt="" />
         <span>Asterfold</span>
       </button>

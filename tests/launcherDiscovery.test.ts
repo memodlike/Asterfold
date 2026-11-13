@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { createElement } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -47,5 +49,15 @@ describe("first-use launcher discovery", () => {
     renderLauncher({ showFirstRunHint: true, onDismissFirstRunHint: dismiss });
     fireEvent.click(screen.getByRole("button", { name: "Open Asterfold menu" }));
     expect(dismiss).toHaveBeenCalledOnce();
+  });
+});
+describe("launcher menu width and focus (3.9.1)", () => {
+  const css = readFileSync(resolve(process.cwd(), "src/app/launcher.css"), "utf8");
+
+  it("keeps a long page name from widening the menu", () => {
+    // The single grid column may shrink below its content, and the name itself is what truncates.
+    expect(css).toMatch(/\.launcher-menu \{[^}]*grid-template-columns: minmax\(0, 1fr\)/u);
+    expect(css).toMatch(/\.launcher-menu__title \{[^}]*text-overflow: ellipsis/u);
+    expect(css).toMatch(/\.launcher-menu__header \{[^}]*min-width: 0/u);
   });
 });
