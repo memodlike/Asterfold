@@ -49,9 +49,13 @@ html[data-performance="software"] .launcher-trigger {
 }
 
 /* Menu */
-.launcher-menu { --mat-alpha: var(--mat-alpha-menu); --enter-y: 10px; --enter-scale: .94; display: grid; width: 244px; padding: 5px; border-radius: var(--radius-xl); color: var(--color-text); transform-origin: 18px calc(100% + 24px); animation: af-pop var(--dur-base) var(--ease-spring) both; }
-.launcher-menu__header { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 30px; margin-bottom: 4px; padding: 3px 9px 7px; border-bottom: 1px solid var(--mat-divider); }
-.launcher-menu__page { display: flex; min-width: 0; align-items: center; gap: 8px; overflow: hidden; font-size: 12.5px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.launcher-menu { --mat-alpha: var(--mat-alpha-menu); --enter-y: 10px; --enter-scale: .94; display: grid; grid-template-columns: minmax(0, 1fr); width: 244px; padding: 5px; border-radius: var(--radius-xl); color: var(--color-text); transform-origin: 18px calc(100% + 24px); animation: af-pop var(--dur-base) var(--ease-spring) both; }
+.launcher-menu__header { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 10px; min-height: 30px; margin-bottom: 4px; padding: 3px 9px 7px; border-bottom: 1px solid var(--mat-divider); }
+.launcher-menu__page { display: flex; min-width: 0; flex: 1; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 650; }
+/* A long page name shortens with an ellipsis; it never widens the menu or pushes the counters out. */
+.launcher-menu__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.launcher-menu:focus { outline: 0; }
+.launcher-menu > button > span:first-of-type { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .launcher-menu__dot { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: var(--color-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 22%, transparent); }
 .launcher-menu__stats { display: flex; flex: 0 0 auto; gap: 9px; color: var(--color-text-secondary); font-size: 12px; font-variant-numeric: tabular-nums; }
 .launcher-menu__stats > span[aria-hidden] { display: inline-flex; align-items: center; gap: 4px; }

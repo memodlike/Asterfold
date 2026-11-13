@@ -1,3 +1,10 @@
+# Asterfold 3.9.1
+
+## Launcher menu fix
+
+- **Menu width**: a long page name no longer widens the Asterfold menu or pushes its items past the menu's edge; the name is shortened with an ellipsis and the board and bookmark counters stay in place.
+- **Focus**: opening the menu with the mouse no longer draws a focus ring on "New board" next to the hovered item. Opened from the keyboard, the first item is still focused; arrow keys work either way.
+
 # Asterfold 3.9.0
 
 ## Frosted glass on any computer, real site icons and a guided start

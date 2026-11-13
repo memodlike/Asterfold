@@ -1,8 +1,8 @@
 # Asterfold privacy policy
 
 Effective date: 13 November 2026<br>
-Policy version: 3.9.0<br>
-Applies to: Asterfold 3.9.0 for Chrome
+Policy version: 3.9.1<br>
+Applies to: Asterfold 3.9.1 for Chrome
 
 Asterfold replaces the Chrome new tab with a local-first visual workspace for organizing and opening bookmarks. It processes the information needed for those features strictly on the user's device. It does not collect, record, track, or monitor general browsing history.
 
@@ -23,9 +23,9 @@ This information may include personal or sensitive content if the user puts such
 
 ## Where information is stored
 
-Workspace records and uploaded assets are stored locally in the user's Chrome profile, primarily in IndexedDB. Search indexes and import previews are created locally. Older installations may retain legacy diagnostic snapshot records created by an earlier version; version 3.9.0 does not create new snapshots. The temporary Privacy Mode state is stored in session storage so popup and New Tab stay consistent; Chrome clears that value when the browser session ends. To paint the correct theme and rendering mode before the page loads, the New Tab page keeps a small startup record (light or dark theme, canvas colour, built-in wallpaper name, motion preference and rendering tier) and the graphics renderer name reported by Chrome (refreshed at most weekly) in the extension's own `localStorage`. An accent colour may be computed locally from a wallpaper the user selects. None of these values leave the device.
+Workspace records and uploaded assets are stored locally in the user's Chrome profile, primarily in IndexedDB. Search indexes and import previews are created locally. Older installations may retain legacy diagnostic snapshot records created by an earlier version; version 3.9.1 does not create new snapshots. The temporary Privacy Mode state is stored in session storage so popup and New Tab stay consistent; Chrome clears that value when the browser session ends. To paint the correct theme and rendering mode before the page loads, the New Tab page keeps a small startup record (light or dark theme, canvas colour, built-in wallpaper name, motion preference and rendering tier) and the graphics renderer name reported by Chrome (refreshed at most weekly) in the extension's own `localStorage`. An accent colour may be computed locally from a wallpaper the user selects. None of these values leave the device.
 
-Asterfold 3.9.0 has no application backend, account system or cloud synchronization. The default build has zero permissions, no host permissions and no active-tab queries. It makes no request to the developer or to any third-party service; the only network requests the application itself can make are the optional site-icon image loads described below. Data is not sent to the developer.
+Asterfold 3.9.1 has no application backend, account system or cloud synchronization. The default build has zero permissions, no host permissions and no active-tab queries. It makes no request to the developer or to any third-party service; the only network requests the application itself can make are the optional site-icon image loads described below. Data is not sent to the developer.
 
 Website icons need no extension permission. Icons that come inside a bookmark file exported by a browser are stored locally with the bookmark. For other bookmarks the New Tab page may load `/favicon.ico` directly from the bookmarked site itself, as an ordinary image request without a referrer; no favicon service, developer server or other third party is involved, and the request reveals to that site only that its icon was requested. A site without an icon is remembered locally and a coloured letter is shown instead. This can be switched off in Settings → Data & privacy → Site icons, after which no icon request is made. Privacy Mode never loads or shows site icons.
 
@@ -57,9 +57,9 @@ The local Chrome profile, operating system, browser sync settings outside Asterf
 
 ## Permissions
 
-Asterfold 3.9.0 operates with ZERO permissions (`permissions: []`, `optional_permissions: []`, `host_permissions: []`). It does not request access to tabs, browsing history, web pages, or storage permissions.
+Asterfold 3.9.1 operates with ZERO permissions (`permissions: []`, `optional_permissions: []`, `host_permissions: []`). It does not request access to tabs, browsing history, web pages, or storage permissions.
 
-Asterfold 3.9.0 does NOT request `activeTab`, `contextMenus`, `alarms`, `storage`, `favicon`, or `bookmarks`. Asterfold never inspects active tabs, background browsing activity, or context menus, and makes zero telemetry calls. Site icons are stored locally or loaded as plain images from the bookmarked site itself (see above); no permission is involved.
+Asterfold 3.9.1 does NOT request `activeTab`, `contextMenus`, `alarms`, `storage`, `favicon`, or `bookmarks`. Asterfold never inspects active tabs, background browsing activity, or context menus, and makes zero telemetry calls. Site icons are stored locally or loaded as plain images from the bookmarked site itself (see above); no permission is involved.
 
 ## Import, backup and deletion
 
@@ -81,7 +81,7 @@ Privacy Mode is shoulder-surfing protection, not encryption. The underlying loca
 
 ## Children
 
-Asterfold is a general-purpose productivity tool and is not directed specifically to children. It does not knowingly collect information through a developer-operated service because no such service exists in version 3.9.0.
+Asterfold is a general-purpose productivity tool and is not directed specifically to children. It does not knowingly collect information through a developer-operated service because no such service exists in version 3.9.1.
 
 ## Limited Use
 

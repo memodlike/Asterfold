@@ -176,7 +176,7 @@ Contribution guidance is available in [docs/development/CONTRIBUTING.md](docs/de
 
 ## Release artifacts
 
-Asterfold 3.9.0 produces a reproducible, cryptographically verifiable release containing:
+Asterfold 3.9.1 produces a reproducible, cryptographically verifiable release containing:
 
 - `Asterfold-Chrome.zip` (runtime Chrome Web Store bundle)
 - `chrome-unpacked.zip` (unpacked developer distribution)
@@ -188,6 +188,8 @@ Asterfold 3.9.0 produces a reproducible, cryptographically verifiable release co
 The release pipeline verifies Manifest V3 structure, permission policy, CSP, forbidden files, remote-code patterns, Store asset dimensions, Windows packaging, CodeQL, accessibility, and real unpacked-extension behavior.
 
 ## Release highlights
+
+**Asterfold 3.9.1** keeps the Asterfold menu at its width when the page name is long and removes the stray focus ring when the menu is opened with the mouse.
 
 **Asterfold 3.9.0** frosts the boards without live blur in the Smooth glass and Lightweight modes, shows real site icons with no extension permission, adds a three-step guide for moving bookmarks from Chrome and first-run tips, and makes menus and controls compact and consistent.
 
@@ -227,6 +229,7 @@ The repository does not claim Chrome Web Store publication, approval, user count
 
 ## Version history
 
+1. **v3.9.1 — Launcher menu fix.** A long page name is shortened instead of widening the menu; no focus ring on the first item after a mouse open.
 1. **v3.9.0 — Frosted glass on any computer, site icons and a guided start.** Pre-blurred wallpaper frost for the no-blur rendering tiers; permission-free site icons (from the Chrome export file or the bookmarked site, with a switch); Chrome import guide with drag and drop; first-run tips; compact context menus and one control scale; dependency refresh.
 1. **v3.8.6 — Five new languages and interface polish.** Romanian, Czech, Indonesian, Japanese and Simplified Chinese; detected language and resolved theme shown in onboarding and Settings; clearer empty search state; grouped context menus; sentence-style Trash messages; inline address errors and automatic `https://` in the bookmark editor.
 1. **v3.8.5 — Dependency refresh.** React/React DOM 19.3.1, Zod 4.6.7, Lucide 1.59.0, Playwright 1.64.1 + axe-core 4.14.0 (single playwright-core), Vite 8.3.4, @vitejs/plugin-react 6.1.2, Vitest 5.0.5, ESLint 10.13.0, typescript-eslint 8.71.2, jsdom 30.1.3, fake-indexeddb 6.2.6 and type packages; TypeScript held at 6.0.3.
