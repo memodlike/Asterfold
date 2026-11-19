@@ -35,8 +35,16 @@ export function ReviewNudge({ allowed, bookmarkCount }: ReviewNudgeProps) {
     recordVisit();
   }, []);
 
+  // The delay only runs while the tab is on screen and starts over when the person comes back to it.
+  const [pageVisible, setPageVisible] = useState(() => document.visibilityState === "visible");
   useEffect(() => {
-    if (!allowed || visible) return;
+    const sync = (): void => setPageVisible(document.visibilityState === "visible");
+    document.addEventListener("visibilitychange", sync);
+    return () => document.removeEventListener("visibilitychange", sync);
+  }, []);
+
+  useEffect(() => {
+    if (!allowed || visible || !pageVisible) return;
     const version = currentExtensionVersion();
     if (!isReviewDue(readReviewState(), version, bookmarkCount, Date.now())) return;
     const handle = window.setTimeout(() => {
@@ -47,7 +55,7 @@ export function ReviewNudge({ allowed, bookmarkCount }: ReviewNudgeProps) {
       setVisible(true);
     }, REVIEW_SHOW_DELAY_MS);
     return () => window.clearTimeout(handle);
-  }, [allowed, bookmarkCount, visible]);
+  }, [allowed, bookmarkCount, visible, pageVisible]);
 
   useEffect(() => {
     if (!visible) return;

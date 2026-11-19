@@ -125,6 +125,20 @@ describe("ReviewNudge card", () => {
     vi.useRealTimers();
   });
 
+  it("waits for a hidden tab to come back before showing", () => {
+    seedDue();
+    const visibility = vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+    mount();
+    expect(screen.queryByRole("complementary")).toBeNull();
+    expect(readReviewState()?.status).toBe("waiting");
+    visibility.mockReturnValue("visible");
+    act(() => { document.dispatchEvent(new Event("visibilitychange")); });
+    act(() => { vi.advanceTimersByTime(REVIEW_SHOW_DELAY_MS + 10); });
+    expect(screen.getByRole("complementary")).toBeTruthy();
+    visibility.mockRestore();
+    vi.useRealTimers();
+  });
+
   it("stays hidden while a dialog, tips or Privacy Mode is on screen", () => {
     seedDue();
     mount(false);
