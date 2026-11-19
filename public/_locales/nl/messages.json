@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "Asterfold — Bladwijzers op nieuw tabblad & visuele Speed Dial",
+    "description": "Extension name shown in Chrome and the Chrome Web Store."
+  },
+  "extShortName": {
+    "message": "Asterfold",
+    "description": "Short name; the brand is not translated."
+  },
+  "extDescription": {
+    "message": "Elk nieuw tabblad wordt een visueel bord met je bladwijzers: speed dial, direct zoeken, achtergronden. Zonder account.",
+    "description": "Item summary, at most 132 characters."
+  }
+}

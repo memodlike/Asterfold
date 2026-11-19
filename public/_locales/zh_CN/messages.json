@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "Asterfold — 新标签页书签与可视化快速拨号",
+    "description": "Extension name shown in Chrome and the Chrome Web Store."
+  },
+  "extShortName": {
+    "message": "Asterfold",
+    "description": "Short name; the brand is not translated."
+  },
+  "extDescription": {
+    "message": "把每个新标签页变成书签的可视化面板：快速拨号、即时搜索、壁纸。无需账号，不做追踪。",
+    "description": "Item summary, at most 132 characters."
+  }
+}

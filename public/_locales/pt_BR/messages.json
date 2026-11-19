@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "Asterfold — Favoritos na nova guia e Speed Dial visual",
+    "description": "Extension name shown in Chrome and the Chrome Web Store."
+  },
+  "extShortName": {
+    "message": "Asterfold",
+    "description": "Short name; the brand is not translated."
+  },
+  "extDescription": {
+    "message": "Cada nova guia vira um painel visual dos seus favoritos: speed dial, busca instantânea, papéis de parede. Sem conta.",
+    "description": "Item summary, at most 132 characters."
+  }
+}

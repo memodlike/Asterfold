@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "Asterfold — Zakładki w nowej karcie i wizualny Speed Dial",
+    "description": "Extension name shown in Chrome and the Chrome Web Store."
+  },
+  "extShortName": {
+    "message": "Asterfold",
+    "description": "Short name; the brand is not translated."
+  },
+  "extDescription": {
+    "message": "Każda nowa karta to wizualne tablice zakładek: szybkie wybieranie, natychmiastowe wyszukiwanie, tapety. Bez konta.",
+    "description": "Item summary, at most 132 characters."
+  }
+}

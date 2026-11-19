@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "Asterfold — Marcaje în fila nouă și Speed Dial vizual",
+    "description": "Extension name shown in Chrome and the Chrome Web Store."
+  },
+  "extShortName": {
+    "message": "Asterfold",
+    "description": "Short name; the brand is not translated."
+  },
+  "extDescription": {
+    "message": "Fiecare filă nouă devine un panou vizual cu marcajele tale: speed dial, căutare instant, imagini de fundal. Fără cont.",
+    "description": "Item summary, at most 132 characters."
+  }
+}

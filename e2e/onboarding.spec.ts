@@ -243,3 +243,36 @@ test("a Chrome export moves in with its icons, tips appear once and site icons c
     await new Promise<void>((resolvePromise) => server.close(() => resolvePromise()));
   }
 });
+
+test("a fresh install opens the welcome screen in its own tab with a localized name", async () => {
+  const context = await chromium.launchPersistentContext(join(tmpdir(), `asterfold-welcome-${Date.now()}`), {
+    executablePath: browserPath(),
+    headless: false,
+    reducedMotion: "reduce",
+    args: [
+      "--headless=new",
+      "--no-sandbox",
+      "--disable-crash-reporter",
+      "--disable-features=DisableLoadExtensionCommandLineSwitch",
+      `--disable-extensions-except=${extensionPath}`,
+      `--load-extension=${extensionPath}`,
+    ],
+  });
+
+  try {
+    const worker = await extensionWorker(context);
+    const extensionId = new URL(worker.url()).hostname;
+    const isWelcome = (url: string): boolean => url.startsWith(`chrome-extension://${extensionId}/newtab.html`);
+    const welcome = context.pages().find((candidate) => isWelcome(candidate.url()))
+      ?? await context.waitForEvent("page", { predicate: (candidate) => isWelcome(candidate.url()), timeout: 15_000 });
+    await expect(welcome.getByRole("dialog").first()).toBeVisible();
+
+    const manifest = await worker.evaluate(() => chrome.runtime.getManifest());
+    expect(manifest.name).not.toContain("__MSG_");
+    expect(manifest.name).toMatch(/^Asterfold/u);
+    expect(manifest.description ?? "").not.toContain("__MSG_");
+    expect((manifest.description ?? "").length).toBeLessThanOrEqual(132);
+  } finally {
+    await context.close();
+  }
+});

@@ -1,0 +1,72 @@
+/* "Rate Asterfold" card: same glass material as the launcher hint (see material.css), lower-right corner,
+   one quiet entrance and nothing that moves afterwards. */
+.review-nudge {
+  --mat-alpha: var(--mat-alpha-menu);
+  position: fixed;
+  z-index: 58;
+  right: 18px;
+  bottom: 16px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  column-gap: 12px;
+  width: min(328px, calc(100vw - 36px));
+  padding: 15px 42px 14px 15px;
+  border-radius: var(--radius-xl);
+  color: var(--color-text);
+  animation: review-nudge-in var(--dur-base) var(--ease-out) both;
+}
+
+.review-nudge__mark {
+  grid-row: 1 / span 3;
+  width: 34px;
+  height: 34px;
+  padding: 7px;
+  border-radius: 11px;
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+}
+
+.review-nudge__title { display: block; margin: 1px 0 4px; font-size: 13px; font-weight: 680; line-height: 1.3; }
+.review-nudge__body { margin: 0 0 11px; color: var(--color-text-secondary); font-size: 12px; line-height: 1.45; }
+.review-nudge__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+
+.review-nudge__rate,
+.review-nudge__later { min-height: 32px; padding: 6px 12px; border-radius: 10px; font-size: 12px; font-weight: 650; }
+.review-nudge__rate { color: var(--color-on-accent); background: var(--color-accent); }
+.review-nudge__rate:hover { filter: brightness(1.06); }
+.review-nudge__later { color: var(--color-text-secondary); background: transparent; }
+.review-nudge__later:hover,
+.review-nudge__later:focus-visible { color: var(--color-text); background: var(--control-fill-hover); }
+
+.review-nudge__dismiss {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 9px;
+  color: var(--color-text-secondary);
+  background: transparent;
+}
+.review-nudge__dismiss:hover,
+.review-nudge__dismiss:focus-visible { color: var(--color-text); background: var(--control-fill-hover); }
+
+@keyframes review-nudge-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .review-nudge { animation: none; }
+}
+
+@media (max-width: 520px) {
+  .review-nudge { right: 12px; left: 12px; bottom: 76px; width: auto; }
+}
+
+@media (forced-colors: active) {
+  .review-nudge__mark { color: CanvasText; background: Canvas; border: 1px solid CanvasText; }
+  .review-nudge__rate { border: 1px solid ButtonText; }
+}

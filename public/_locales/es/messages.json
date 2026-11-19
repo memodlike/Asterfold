@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "Asterfold — Marcadores en nueva pestaña y Speed Dial visual",
+    "description": "Extension name shown in Chrome and the Chrome Web Store."
+  },
+  "extShortName": {
+    "message": "Asterfold",
+    "description": "Short name; the brand is not translated."
+  },
+  "extDescription": {
+    "message": "Cada nueva pestaña se vuelve un tablero visual de tus marcadores: speed dial, búsqueda al instante, fondos. Sin cuenta.",
+    "description": "Item summary, at most 132 characters."
+  }
+}

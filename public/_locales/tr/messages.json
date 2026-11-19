@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "Asterfold — Yeni sekmede yer imleri ve görsel Speed Dial",
+    "description": "Extension name shown in Chrome and the Chrome Web Store."
+  },
+  "extShortName": {
+    "message": "Asterfold",
+    "description": "Short name; the brand is not translated."
+  },
+  "extDescription": {
+    "message": "Her yeni sekme yer imlerinizin görsel panosuna dönüşür: hızlı erişim, anında arama, duvar kâğıtları. Hesap gerekmez.",
+    "description": "Item summary, at most 132 characters."
+  }
+}

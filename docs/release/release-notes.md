@@ -1,3 +1,12 @@
+# Asterfold 3.9.2
+
+## A better first minute, a store page in your language and a polite rating invitation
+
+- **Welcome right after installing**: installing Asterfold now opens the welcome screen in its own tab at once. Before, nothing opened, and the first thing people met on their next new tab was Chrome asking whether to change the page back. Updates never open it.
+- **Name and summary in 16 languages**: the extension name and the Chrome Web Store summary now come from `_locales`, so Chrome and the Store show them in the browser's language (Czech, Dutch, English, French, German, Indonesian, Italian, Japanese, Polish, Portuguese (Brazil), Romanian, Russian, Simplified Chinese, Spanish, Turkish, Ukrainian). The new name says what Asterfold is: "Asterfold — Bookmarks New Tab & Visual Speed Dial".
+- **Rating invitation, once per release**: after a week with Asterfold, five separate days of use and a few bookmarks, a small card in the lower-right corner asks for a rating in the Chrome Web Store. Showing it counts as the ask for that version, whatever the answer; it can return only with a newer version and at least two weeks later, never more than three times, and never after **Rate Asterfold**. It stays away during setup, first-run tips, Privacy Mode and any dialog. The state is kept on the device only.
+- **Store page**: new screenshots and promotional tiles captured from the running extension, a plain-text description ready to paste, and Dashboard values without the stale permission justifications. `scripts/capture-store-screenshots.mjs` rebuilds every image from the current build.
+
 # Asterfold 3.9.1
 
 ## Launcher menu fix

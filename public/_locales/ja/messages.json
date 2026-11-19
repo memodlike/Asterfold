@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "Asterfold — 新しいタブでブックマーク＆ビジュアル スピードダイヤル",
+    "description": "Extension name shown in Chrome and the Chrome Web Store."
+  },
+  "extShortName": {
+    "message": "Asterfold",
+    "description": "Short name; the brand is not translated."
+  },
+  "extDescription": {
+    "message": "新しいタブをブックマークのビジュアルボードに。スピードダイヤル、即時検索、壁紙。アカウント不要、トラッキングなし。",
+    "description": "Item summary, at most 132 characters."
+  }
+}

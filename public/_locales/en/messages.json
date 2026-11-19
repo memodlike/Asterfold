@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "Asterfold — Bookmarks New Tab & Visual Speed Dial",
+    "description": "Extension name shown in Chrome and the Chrome Web Store."
+  },
+  "extShortName": {
+    "message": "Asterfold",
+    "description": "Short name; the brand is not translated."
+  },
+  "extDescription": {
+    "message": "Turn every new tab into visual boards of your bookmarks: speed dial, instant search, wallpapers. No account, no tracking.",
+    "description": "Item summary, at most 132 characters."
+  }
+}

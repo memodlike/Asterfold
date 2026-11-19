@@ -1,16 +1,17 @@
-# Chrome Web Store submission values — Asterfold 3.9.1
+# Chrome Web Store submission values — Asterfold 3.9.2
 
-Current version: 3.9.1
+Current version: 3.9.2
 Copy these values into the owner Dashboard only after checking them against the final release ZIP.
 
 ## Core values
 
 | Field | English value | Russian value |
 | --- | --- | --- |
-| Name | Asterfold — Visual Bookmark Workspace | Asterfold — Visual Bookmark Workspace |
+| Name | Asterfold — Bookmarks New Tab & Visual Speed Dial | Asterfold — закладки на новой вкладке и визуальный Speed Dial |
 | Single purpose | Asterfold replaces Chrome New Tab with a local-first visual bookmark workspace for organizing, searching, and opening user-saved bookmarks in Pages and Boards. | Asterfold заменяет новую вкладку Chrome локальным визуальным пространством закладок для организации, поиска и открытия сохранённых закладок со Страницами и Блоками. |
-| Short description | Turn Chrome New Tab into a visual bookmark workspace with Pages, Boards, search, and local-first storage. | Новая вкладка Chrome как визуальное пространство закладок со Страницами, Блоками, поиском и локальным хранением. |
+| Short description | Turn every new tab into visual boards of your bookmarks: speed dial, instant search, wallpapers. No account, no tracking. | Новая вкладка с визуальными досками закладок: экспресс-панель, быстрый поиск, обои. Без аккаунта и без слежки. |
 | Category | Workflow & Planning | Workflow & Planning |
+| Localized name and summary | Shipped in the package: `public/_locales/<locale>/messages.json` (16 locales). The Store reads them from the manifest; do not retype them per language. | |
 | Language | English | Русский |
 
 ## URLs
@@ -26,21 +27,9 @@ Use only a privacy URL that has been opened publicly without authentication. The
 
 ## Permission justifications
 
-### `storage`
+The manifest requests no permissions: `permissions`, `optional_permissions` and `host_permissions` are all empty. Leave every justification field empty. If the Dashboard still shows `storage`, `favicon`, `bookmarks`, `activeTab`, `alarms` or `contextMenus` from an older upload, stop: the uploaded ZIP is not the current release.
 
-> The storage permission is used only for the temporary Privacy Mode state in chrome.storage.session so the New Tab page and extension popup can share the same visual privacy state. Chrome clears this session value when the browser session ends. Asterfold bookmark workspace data remains stored locally in IndexedDB.
-
-### `favicon`
-
-> The favicon permission is required to display website icons for URLs that the user has explicitly saved as bookmarks in Asterfold. Asterfold uses Chrome's built-in Manifest V3 favicon resource only for visual bookmark identification. Asterfold does not read page content or browsing history, does not request host permissions, does not contact third-party favicon services, and does not store or transmit favicon data.
-
-### Optional `bookmarks`
-
-> The bookmarks permission is requested only after the user explicitly chooses Import Chrome bookmarks or Refresh from Chrome. Asterfold reads the Chrome bookmark tree locally to import or refresh the user's selected bookmark workspace, then immediately removes the permission. Declining this permission does not affect normal Asterfold use.
-
-### Removed permissions (`activeTab`, `alarms`, `contextMenus`)
-
-> Asterfold 3.7.2 does not request or require `activeTab`, `alarms`, or `contextMenus`. No active-tab URLs/titles are queried, and no background alarm loops run.
+Chrome bookmarks are imported from the HTML file Chrome itself exports, so no `bookmarks` permission is needed.
 
 ## Remote code
 
