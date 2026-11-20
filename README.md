@@ -5,6 +5,8 @@
   <p>No account · No analytics · 17 selectable interface languages · Manifest V3</p>
 </div>
 
+**[Install Asterfold from the Chrome Web Store](https://chromewebstore.google.com/detail/asterfold-%E2%80%94-visual-bookma/alnapeajnjifldmbifnjahkofgbmeamg)**
+
 ![Asterfold workspace](docs/images/workspace.png)
 
 <p align="center">
@@ -227,7 +229,7 @@ Asterfold 3.6.0 gave every overlay the same glass material as the boards, with f
 
 Asterfold 3.5.5 delivered finalized Chrome Web Store packaging and verified permission justification metadata while preserving Chrome-native website favicons via `chrome.runtime.getURL("/_favicon/")` with high-DPI DPR scaling, refined bookmark motion, and strict zero-telemetry and privacy guarantees.
 
-The repository does not claim Chrome Web Store publication, approval, user counts, ratings, awards, or endorsements until those facts exist publicly.
+The Chrome Web Store listing linked above shows the current public version and store information.
 
 ## Version history
 
