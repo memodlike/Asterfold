@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "Asterfold — Segnalibri nella nuova scheda e Speed Dial visivo",
+    "description": "Extension name shown in Chrome and the Chrome Web Store."
+  },
+  "extShortName": {
+    "message": "Asterfold",
+    "description": "Short name; the brand is not translated."
+  },
+  "extDescription": {
+    "message": "Ogni nuova scheda diventa una bacheca visiva dei tuoi segnalibri: speed dial, ricerca istantanea, sfondi. Senza account.",
+    "description": "Item summary, at most 132 characters."
+  }
+}

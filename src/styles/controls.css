@@ -241,6 +241,7 @@ html[data-performance="software"] .select-popover {
   .modal:not(.settings-modal, .spotlight, .onboarding-modal),
   .launcher-menu,
   .launcher-discovery,
+  .review-nudge,
   .context-menu,
   .select-popover,
   .select-field > button,

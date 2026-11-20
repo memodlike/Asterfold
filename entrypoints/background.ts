@@ -66,8 +66,11 @@ export async function handleRuntimeMessage(raw: unknown, sender: chrome.runtime.
 }
 
 export default defineBackground(() => {
-  browser.runtime.onInstalled.addListener(() => {
+  browser.runtime.onInstalled.addListener((details) => {
     runTask(ensureStarterWorkspace(), "installed");
+    // A fresh install opens the welcome flow right away, so the first thing people meet is Asterfold
+    // itself rather than Chrome's "change it back?" prompt on their next blank New Tab.
+    if (details.reason === "install") runTask(openWorkspace(), "welcome");
   });
   browser.runtime.onStartup.addListener(() => {
     runTask(Promise.all([ensureStarterWorkspace(), purgeTrash()]), "startup");

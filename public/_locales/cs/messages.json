@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "Asterfold — Záložky na nové kartě a vizuální Speed Dial",
+    "description": "Extension name shown in Chrome and the Chrome Web Store."
+  },
+  "extShortName": {
+    "message": "Asterfold",
+    "description": "Short name; the brand is not translated."
+  },
+  "extDescription": {
+    "message": "Každá nová karta se stane vizuální nástěnkou vašich záložek: rychlá volba, okamžité hledání, tapety. Bez účtu.",
+    "description": "Item summary, at most 132 characters."
+  }
+}

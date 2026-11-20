@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "Asterfold — закладки на новой вкладке и визуальный Speed Dial",
+    "description": "Extension name shown in Chrome and the Chrome Web Store."
+  },
+  "extShortName": {
+    "message": "Asterfold",
+    "description": "Short name; the brand is not translated."
+  },
+  "extDescription": {
+    "message": "Новая вкладка с визуальными досками закладок: экспресс-панель, быстрый поиск, обои. Без аккаунта и без слежки.",
+    "description": "Item summary, at most 132 characters."
+  }
+}

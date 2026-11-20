@@ -2,56 +2,54 @@
 
 ## Name
 
-Asterfold — Visual Bookmark Workspace
+Asterfold — Bookmarks New Tab & Visual Speed Dial
 
 ## Short description
 
-Turn Chrome New Tab into a visual bookmark workspace with Pages, Boards, search, and local-first storage.
+Turn every new tab into visual boards of your bookmarks: speed dial, instant search, wallpapers. No account, no tracking.
 
-Character count: 101 including spaces.
+Character count: 121 including spaces. The same text ships in `public/_locales/en/messages.json`.
 
 ## Detailed description
 
-Asterfold is a local-first visual bookmark workspace for Chrome New Tab.
+Paste the text below into the Dashboard as is. The Chrome Web Store shows plain text only: no Markdown, so the bullets are the "•" character and the headings are plain lines.
 
-It replaces each new tab with a visual workspace where bookmarks are organized into Pages and Boards, so frequently used links stay visible, structured and quick to open.
+```text
+Asterfold turns every new tab into a calm visual board of the sites you open most, so the right link is always one click away.
 
-### Organize bookmarks visually
+Stop digging through the bookmarks bar and 40 open tabs. Put work, study and personal links on their own Pages, group them into Boards, and open what you need the moment a new tab appears.
 
-- Create Pages for work, study, personal projects or other contexts.
-- Group related bookmarks in visual Boards.
-- Reorder Boards and bookmarks with drag-and-drop or keyboard controls.
-- Choose whether a bookmark opens in the current tab, a new tab or a new window.
+WHAT YOU GET
+• Visual speed dial: your bookmarks as tiles with site icons, grouped into Boards
+• Pages for every context: work, study, side projects, home
+• Instant search: press Ctrl+K (⌘K on Mac) and type a few letters
+• Open a whole Board at once, in tabs or a new window
+• Drag and drop, or move everything with the keyboard
+• Paste a link onto the page to save it in a second
+• Trash with undo, so nothing disappears by accident
+• Light, dark and system themes, built-in wallpapers or your own photo, frosted glass boards
+• Smooth on any computer: a lightweight mode keeps weaker laptops fast
+• 17 interface languages
 
-### Find and import links
+MOVE IN IN A MINUTE
+1. Install Asterfold and open a new tab. The welcome screen opens on its own.
+2. Start with a ready-made workspace, or bring your Chrome bookmarks: Chrome exports them to a file and Asterfold reads that file. A three-step guide is built in.
+3. When Chrome asks whether to keep the new New Tab page, choose "Keep it".
 
-- Search the local workspace for saved bookmarks.
-- Import Chrome bookmarks only after you explicitly grant the optional `bookmarks` permission.
-- Import browser-exported HTML bookmarks or a validated Asterfold backup.
-- Export local backups and supported bookmark formats.
-- Restore deleted Pages, Boards and bookmarks from Trash before permanent cleanup.
+PRIVATE BY DESIGN
+• No account, no sign-up, no cloud
+• No analytics, no ads, no tracking
+• Asterfold asks for no permissions: it cannot read the pages you visit or your browsing history
+• Everything stays in your Chrome profile; export a backup file whenever you like
+• Privacy Mode hides bookmark titles when someone is looking over your shoulder
 
-### Customize the New Tab workspace
+Site icons load straight from the sites you bookmarked and can be turned off in Settings.
 
-- Use light, dark or system appearance.
-- Choose a built-in background or a wallpaper stored locally in Asterfold.
-- Adjust layout, opacity, blur, wallpaper and glass controls.
-- Choose Auto, Maximum Quality or Smooth Glass rendering, with a separate Low Power option for weaker hardware.
-- Select from 17 interface languages; rare untranslated strings in secondary locales may fall back to English.
+Free. Source code on GitHub. Questions and ideas: https://github.com/memodlike/Asterfold/issues
+Privacy policy: https://github.com/memodlike/Asterfold/blob/main/docs/security/privacy.md
 
-### Local-first privacy model
-
-Asterfold stores the primary workspace locally in the Chrome profile. No Asterfold account is required. The current release has no application backend, cloud synchronization, analytics, advertising or telemetry. It requests no host permissions and injects no content scripts into websites.
-
-Chrome bookmarks move in from the file Chrome itself exports (Bookmark manager → ⋮ → Export bookmarks); Asterfold never asks for access to your Chrome bookmarks. A three-step guide is built in.
-
-Privacy Mode hides bookmark titles in the interface and prevents local search indexing while it is active. It is visual shoulder-surfing protection, not database encryption.
-
-Chrome itself may use the network when you open a destination page. Asterfold contacts no developer or third-party server. To show website icons it may load `/favicon.ico` directly from a site you bookmarked; this can be switched off in Settings.
-
-Read the privacy policy before installation:
-
-https://github.com/memodlike/Asterfold/blob/main/docs/security/privacy.md
+What's new in 3.9.2: the welcome screen opens right after installation, the name and summary appear in your language, and, after a week of use, an easy-to-dismiss invitation to rate Asterfold, at most once per release.
+```
 
 ## Permission summary
 

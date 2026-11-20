@@ -55,6 +55,7 @@ const SearchPalette = lazy(loadSearchPalette);
 const SettingsDialog = lazy(loadSettingsDialog);
 const TrashDialog = lazy(loadTrashDialog);
 const GuideTour = lazy(async () => import("../features/onboarding/GuideTour").then((module) => ({ default: module.GuideTour })));
+const ReviewNudge = lazy(async () => import("../features/review/ReviewNudge").then((module) => ({ default: module.ReviewNudge })));
 
 type SettingsSection = "appearance" | "layout" | "language" | "data-privacy";
 type NameIntent =
@@ -529,6 +530,11 @@ function WorkspaceScreen({ workspace }: { workspace: WorkspaceData }) {
         {trashOpen ? <TrashDialog open privacy={privacy} onClose={() => setTrashOpen(false)} onChanged={notifySuccess} onError={notifyError} /> : null}
       </Suspense>
       {tourPending && !blockingOverlayOpen && !privacy ? <Suspense fallback={null}><GuideTour onFinish={completeTour} onOpenImport={() => openSettings("data-privacy")} /></Suspense> : null}
+      {workspace.settings.onboardingComplete ? (
+        <Suspense fallback={null}>
+          <ReviewNudge allowed={!tourPending && !blockingOverlayOpen && !privacy && selectedIds.size === 0} bookmarkCount={workspace.bookmarks.length} />
+        </Suspense>
+      ) : null}
       {toasts.region}
     </div>
   );

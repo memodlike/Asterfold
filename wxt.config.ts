@@ -6,9 +6,11 @@ export default defineConfig({
   srcDir: ".",
   manifestVersion: 3,
   manifest: {
-    name: "Asterfold — Visual Bookmark Workspace",
-    short_name: "Asterfold",
-    description: "Turn Chrome New Tab into a visual bookmark workspace with Pages, Boards, search, and local-first storage.",
+    // Localized in public/_locales so the Chrome Web Store shows and searches the name in each language.
+    name: "__MSG_extName__",
+    short_name: "__MSG_extShortName__",
+    description: "__MSG_extDescription__",
+    default_locale: "en",
     version: packageVersion,
     minimum_chrome_version: "120",
     permissions: [],
